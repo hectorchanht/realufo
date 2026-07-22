@@ -54,6 +54,8 @@ describe("threads", () => {
     expect(tid).toBeTruthy();
     expect(typeof j.thread.created_at).toBe("string");
     expect(j.thread.created_at.length).toBeGreaterThan(0);
+    expect(j.thread.boardSlug).toBeDefined();
+    expect(j.thread.accent).toBeDefined();
 
     // record -> thread direction
     const back: any = await (await call("/api/records/CIA-UAP-017")).json();
@@ -73,6 +75,13 @@ describe("threads", () => {
     const j: any = await (await post("/api/threads", { board: "uap", op_body: longLine + "\nsecond line" })).json();
     expect(j.thread.title.length).toBeLessThanOrEqual(70);
     expect(j.thread.title).toBe(longLine.slice(0, 70));
+  });
+
+  it("caps a client-supplied title at 120 chars", async () => {
+    const longTitle = "y".repeat(200);
+    const j: any = await (await post("/api/threads", { board: "uap", op_body: "body", title: longTitle })).json();
+    expect(j.thread.title.length).toBe(120);
+    expect(j.thread.title).toBe(longTitle.slice(0, 120));
   });
 
   it("reply increments reply_count", async () => {
