@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="./data.js"></script>
+<style>
+:root{
+  --bg:#07080c;--bg2:#0b0d13;--surface:#111420;--surface2:#161a28;--elev:#1b2030;
+  --line:rgba(150,170,205,.12);--line2:rgba(150,170,205,.24);
+  --ink:#e7ecf4;--dim:#8b96a9;--faint:#525c70;
+  --grn:#4df0a6;--cyan:#46dfff;--amber:#ffb648;--red:#ff5d57;--violet:#b39bff;
+  --signal:#4df0a6;--signal-dim:rgba(77,240,166,.14);
+  --shadow:0 18px 50px -16px rgba(0,0,0,.72);--grain:.055;--deskbg:#050609;
+}
+[data-theme="light"]{
+  --bg:#e9e5d9;--bg2:#efece1;--surface:#fbf9f1;--surface2:#f1eee2;--elev:#ffffff;
+  --line:rgba(30,35,45,.13);--line2:rgba(30,35,45,.22);
+  --ink:#161a21;--dim:#59626f;--faint:#8b93a1;
+  --grn:#0f9e63;--cyan:#0a86b8;--amber:#b5730a;--red:#d13b34;--violet:#6a4fd0;
+  --signal:#0f9e63;--signal-dim:rgba(15,158,99,.12);
+  --shadow:0 18px 50px -18px rgba(50,60,80,.28);--grain:.03;--deskbg:#d8d3c4;
+}
+[data-accent="cyan"]{--signal:var(--cyan);--grn:var(--cyan);--signal-dim:rgba(70,223,255,.14)}
+[data-accent="amber"]{--signal:var(--amber);--grn:var(--amber);--signal-dim:rgba(255,182,72,.14)}
+[data-accent="violet"]{--signal:var(--violet);--grn:var(--violet);--signal-dim:rgba(179,155,255,.16)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--deskbg);color:var(--ink);-webkit-font-smoothing:antialiased}
+a{color:var(--cyan);text-decoration:none}
+a:hover{color:var(--grn)}
+button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+::selection{background:var(--signal-dim);color:var(--ink)}
+[data-scroll]{scrollbar-width:none;-ms-overflow-style:none}
+[data-scroll]::-webkit-scrollbar{display:none;width:0}
+[data-device="mobile"] [data-frame]{width:392px;height:min(852px,96vh);border-radius:52px;padding:11px}
+[data-device="mobile"] [data-device-inner]{border-radius:42px}
+[data-device="mobile"] [data-shell]{flex-direction:column}
+[data-device="mobile"] [data-screenpad]{padding:18px 16px 40px}
+[data-device="mobile"] [data-grid]{grid-template-columns:1fr 1fr}
+[data-device="desktop"] [data-frame]{width:min(1120px,97vw);height:min(788px,95vh);border-radius:18px;padding:0}
+[data-device="desktop"] [data-device-inner]{border-radius:18px}
+[data-device="desktop"] [data-shell]{flex-direction:row}
+[data-device="desktop"] [data-screenpad]{padding:26px 34px 64px;max-width:1000px;margin:0 auto;width:100%}
+[data-device="desktop"] [data-grid]{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+@keyframes blink{0%,60%{opacity:1}61%,100%{opacity:.15}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--signal-dim)}70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes scandrift{0%{background-position:0 0}100%{background-position:0 4px}}
+@keyframes fadeup{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
+@keyframes sheetin{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+@keyframes fadein{0%{opacity:0}100%{opacity:1}}
+@keyframes twinkle{0%,100%{opacity:.25}50%{opacity:.9}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important}}
+</style>
+</helmet>
+<div data-theme="{{theme}}" data-device="{{device}}" data-accent="{{accent}}" style="min-height:100vh;width:100%;background:var(--deskbg);display:flex;align-items:center;justify-content:center;padding:22px;overflow:hidden">
+  <div data-frame style="position:relative;background:#000;box-shadow:var(--shadow),0 0 0 1.5px rgba(255,255,255,.06);flex:none;overflow:hidden">
+    <div style="position:relative;width:100%;height:100%;overflow:hidden;background:var(--bg);display:flex;flex-direction:column" data-device-inner>
+      <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(1200px 500px at 78% -8%,var(--signal-dim),transparent 60%),radial-gradient(900px 500px at 10% 108%,rgba(70,223,255,.06),transparent 55%);z-index:0"></div>
+      <div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;z-index:1;opacity:var(--grain);background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 120 120%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E')"></div>
+      <sc-if value="{{scanlines}}" hint-placeholder-val="{{ true }}"><div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;z-index:40;mix-blend-mode:overlay;background:repeating-linear-gradient(to bottom,transparent 0,transparent 2px,rgba(255,255,255,.05) 3px,transparent 4px);animation:scandrift 6s linear infinite"></div></sc-if>
+
+      <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ true }}"><div data-statusbar style="position:relative;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:14px 26px 4px;font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:var(--ink);flex:none">
+        <span>9:41</span>
+        <div data-notch style="position:absolute;left:50%;top:8px;transform:translateX(-50%);width:104px;height:26px;background:#000;border-radius:16px"></div>
+        <span style="display:flex;gap:6px;align-items:center;font-size:11px;letter-spacing:1px">◉ SIGNAL ▮▮▮▯</span>
+      </div></sc-if>
+
+      <div data-shell style="position:relative;z-index:10;flex:1;min-height:0;display:flex;flex-direction:column">
+
+        <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ false }}"><nav data-topnav style="flex:none;display:flex;align-items:center;gap:20px;border-bottom:1px solid var(--line);background:var(--bg2);padding:12px 26px">
+          <div style="display:flex;align-items:center;gap:11px;flex:none;padding-right:6px;border-right:1px solid var(--line)">
+            <div style="flex:none">{{ saucer }}</div>
+            <div style="line-height:1.1;padding-right:14px"><div style="font-family:'Press Start 2P';font-size:11px;color:var(--ink)">REAL<span style="color:var(--signal)">UFO</span></div><div style="font-family:'JetBrains Mono';font-size:8.5px;color:var(--faint);letter-spacing:1px;margin-top:5px">DECLASSIFIED ARCHIVE</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:0">
+          <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="5">
+            <button onClick="{{ n.onTab }}" style="display:flex;align-items:center;gap:9px;flex:none;text-align:left;padding:9px 14px;border-radius:11px;font-family:'JetBrains Mono';font-size:13px;font-weight:500;color:{{ n.color }};background:{{ n.bg }}" style-hover="background:var(--surface)">
+              <span style="text-align:center;font-size:15px">{{ n.glyph }}</span><span>{{ n.label }}</span>
+            </button>
+          </sc-for>
+          </div>
+          <div style="flex:none;display:flex;align-items:center;gap:16px">
+            <div style="display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono';font-size:11px;color:var(--dim);white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:var(--signal);animation:blink 1.6s infinite"></span>{{ onlineNow }} online</div>
+            <button onClick="{{ onLogin }}" style="flex:none;padding:9px 16px;border:1px solid var(--line2);border-radius:10px;font-family:'JetBrains Mono';font-size:12px;color:var(--ink);white-space:nowrap" style-hover="border-color:var(--signal);color:var(--signal)">{{ meLabel }}</button>
+          </div>
+        </nav></sc-if>
+
+        <main data-scroll ref="{{ scrollRef }}" style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;position:relative;-webkit-overflow-scrolling:touch">
+
+          <div data-appbar style="position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:11px 18px;background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);border-bottom:1px solid var(--line)">
+            <sc-if value="{{ canBack }}" hint-placeholder-val="{{ false }}"><button onClick="{{ back }}" style="flex:none;width:34px;height:34px;border-radius:10px;border:1px solid var(--line2);font-size:17px;color:var(--ink);display:grid;place-items:center" style-active="transform:scale(.94)">‹</button></sc-if>
+            <sc-if value="{{ showBrand }}" hint-placeholder-val="{{ true }}"><div style="flex:none">{{ saucer }}</div></sc-if>
+            <div style="flex:1;min-width:0;line-height:1.15">
+              <div style="font-family:'Press Start 2P';font-size:10px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ headerTitle }}</div>
+              <div style="font-family:'JetBrains Mono';font-size:9.5px;color:var(--faint);letter-spacing:.5px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ headerSub }}</div>
+            </div>
+            <button onClick="{{ onLogin }}" style="flex:none;display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:9px;border:1px solid var(--line2);font-family:'JetBrains Mono';font-size:11px;color:var(--ink)" style-active="transform:scale(.96)"><span style="width:6px;height:6px;border-radius:50%;background:var(--signal)"></span>{{ meShort }}</button>
+          </div>
+
+          <div data-screenpad style="padding:18px 16px 40px;position:relative">
+
+            <sc-if value="{{ showFeed }}" hint-placeholder-val="{{ true }}">
+            <div style="animation:fadeup .4s ease both">
+              <div style="display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);margin-bottom:20px">
+                <div style="flex:none;display:flex;align-items:center;gap:7px;padding:9px 12px;background:var(--signal-dim);font-family:'JetBrains Mono';font-size:10px;font-weight:700;color:var(--signal);letter-spacing:1px;border-right:1px solid var(--line)"><span style="width:7px;height:7px;border-radius:50%;background:var(--signal);animation:blink 1.4s infinite"></span>LIVE</div>
+                <div style="flex:1;overflow:hidden;white-space:nowrap"><div style="display:inline-flex;gap:34px;padding-left:16px;animation:marquee 26s linear infinite;font-family:'JetBrains Mono';font-size:11.5px;color:var(--dim)">{{ tickerRow }}{{ tickerRow }}</div></div>
+              </div>
+
+              <div style="font-family:'Press Start 2P';font-size:9px;color:var(--faint);letter-spacing:1px;margin:0 2px 12px;text-transform:uppercase">◆ Hot right now</div>
+              <div data-grid style="display:grid;gap:12px;margin-bottom:26px">
+                <sc-for list="{{ featuredDocs }}" as="d" hint-placeholder-count="4">
+                  <button onClick="{{ d.onOpen }}" style="text-align:left;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:15px;overflow:hidden;position:relative" style-active="transform:scale(.985)" style-hover="border-color:var(--line2)">
+                    <div style="aspect-ratio:4/3;position:relative;background:var(--bg2);overflow:hidden;border-bottom:1px solid var(--line)">
+                      <img src="{{ d.thumb }}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;filter:contrast(1.05) saturate(.92);display:block">
+                      <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55),transparent 55%)"></div>
+                      <span style="position:absolute;top:8px;left:8px;font-family:'JetBrains Mono';font-size:8.5px;font-weight:700;letter-spacing:.6px;padding:3px 6px;border-radius:5px;background:rgba(0,0,0,.72);color:{{ d.accent }}">{{ d.badge }}</span>
+                      <sc-if value="{{ d.redacted }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:8px;right:8px;font-family:'JetBrains Mono';font-size:8px;font-weight:700;letter-spacing:.5px;padding:3px 6px;border-radius:5px;background:var(--red);color:#fff">REDACTED</span></sc-if>
+                      <sc-if value="{{ d.isVideo }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.55);border:1.5px solid #fff;display:grid;place-items:center;color:#fff;font-size:14px">▶</span></sc-if>
+                    </div>
+                    <div style="padding:11px 12px 13px;display:flex;flex-direction:column;gap:7px;flex:1">
+                      <div style="font-family:'JetBrains Mono';font-size:9px;color:var(--faint);letter-spacing:.4px">{{ d.metaLine }}</div>
+                      <div style="font-size:13px;font-weight:600;line-height:1.28;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">{{ d.shortTitle }}</div>
+                      <div style="margin-top:auto;display:flex;gap:12px;font-family:'JetBrains Mono';font-size:10px;color:var(--dim);padding-top:2px"><span>▲ {{ d.credible }}</span><span>💬 {{ d.commentN }}</span></div>
+                    </div>
+                  </button>
+                </sc-for>
+              </div>
+
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 12px"><div style="font-family:'Press Start 2P';font-size:9px;color:var(--faint);letter-spacing:1px;text-transform:uppercase">◆ Trending threads</div><button onClick="{{ onBoards }}" style="font-family:'JetBrains Mono';font-size:11px;color:var(--signal)">all boards ›</button></div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ hotThreads }}" as="t" hint-placeholder-count="4">
+                  <div style="display:flex;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 14px" style-hover="border-color:var(--line2)">
+                    <button onClick="{{ t.onVote }}" style="flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:2px 8px;border-radius:10px;border:1px solid {{ t.voteBorder }};background:{{ t.voteBg }};color:{{ t.voteColor }};min-width:46px" style-active="transform:scale(.93)"><span style="font-size:13px;line-height:1">▲</span><span style="font-family:'JetBrains Mono';font-size:11px;font-weight:700">{{ t.voteN }}</span></button>
+                    <button onClick="{{ t.onOpen }}" style="flex:1;min-width:0;text-align:left">
+                      <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap">
+                        <span style="font-family:'JetBrains Mono';font-size:9.5px;font-weight:700;color:{{ t.accent }}">{{ t.boardSlug }}</span>
+                        <sc-if value="{{ t.hot }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono';font-size:8.5px;font-weight:700;color:var(--amber)">🔥 HOT</span></sc-if>
+                        <span style="font-family:'JetBrains Mono';font-size:9px;color:var(--faint)">{{ t.ago }} ago</span>
+                      </div>
+                      <div style="font-size:13.5px;font-weight:600;line-height:1.32;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ t.title }}</div>
+                      <div style="display:flex;gap:14px;margin-top:8px;font-family:'JetBrains Mono';font-size:10px;color:var(--dim)"><span>💬 {{ t.replies }}</span><span>🖼 {{ t.imgs }}</span><span style="color:{{ t.stanceColor }}">● {{ t.stance }}</span></div>
+                    </button>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="margin-top:26px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:linear-gradient(135deg,var(--signal-dim),transparent)">
+                <div style="padding:18px 18px 16px">
+                  <div style="font-family:'Press Start 2P';font-size:9px;color:var(--signal);letter-spacing:1px;margin-bottom:10px">◆ 91,808 FILES · 15 ARCHIVES</div>
+                  <div style="font-size:14px;color:var(--ink);line-height:1.5;font-weight:500">Every declassified record, mirrored offline. Read the file, then argue about it — anonymously or not.</div>
+                  <button onClick="{{ onArchive }}" style="margin-top:14px;display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:11px;background:var(--signal);color:#04140c;font-family:'JetBrains Mono';font-size:12px;font-weight:700;letter-spacing:.5px" style-active="transform:scale(.97)">BROWSE THE ARCHIVE →</button>
+                </div>
+              </div>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ showArchive }}" hint-placeholder-val="{{ false }}">
+            <div style="animation:fadeup .35s ease both">
+              <div style="display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line2);border-radius:12px;padding:10px 13px;margin-bottom:14px">
+                <span style="color:var(--faint);font-size:15px">⌕</span>
+                <input value="{{ search }}" onInput="{{ onSearch }}" placeholder="search 91,808 records — title, agency, location…" style="flex:1;background:none;border:0;outline:none;color:var(--ink);font-family:'JetBrains Mono';font-size:12.5px"/>
+                <span style="font-family:'JetBrains Mono';font-size:9px;color:var(--faint);border:1px solid var(--line);border-radius:6px;padding:2px 6px">AI-RAG soon</span>
+              </div>
+              <div style="display:flex;gap:7px;overflow-x:auto;padding-bottom:10px;margin-bottom:6px" data-scroll>
+                <sc-for list="{{ archChips }}" as="c" hint-placeholder-count="6">
+                  <button onClick="{{ c.onPick }}" style="flex:none;display:flex;align-items:center;gap:6px;padding:7px 11px;border-radius:9px;border:1px solid {{ c.border }};background:{{ c.bg }};font-family:'JetBrains Mono';font-size:11px;color:{{ c.color }};white-space:nowrap" style-active="transform:scale(.96)"><span>{{ c.flag }}</span>{{ c.label }} <span style="opacity:.6">{{ c.count }}</span></button>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 2px 14px;flex-wrap:wrap">
+                <div style="display:flex;gap:6px">
+                  <sc-for list="{{ typeChips }}" as="tp" hint-placeholder-count="3">
+                    <button onClick="{{ tp.onPick }}" style="padding:5px 10px;border-radius:8px;border:1px solid {{ tp.border }};background:{{ tp.bg }};font-family:'JetBrains Mono';font-size:10.5px;color:{{ tp.color }}">{{ tp.label }}</button>
+                  </sc-for>
+                </div>
+                <button onClick="{{ onToggleRed }}" style="display:flex;align-items:center;gap:7px;font-family:'JetBrains Mono';font-size:10.5px;color:{{ redColor }}"><span style="width:15px;height:15px;border-radius:4px;border:1px solid {{ redBorder }};background:{{ redFill }};display:grid;place-items:center;font-size:10px;color:#fff">{{ redCheck }}</span>redacted only</button>
+              </div>
+              <div style="font-family:'JetBrains Mono';font-size:10px;color:var(--faint);letter-spacing:.8px;text-transform:uppercase;margin:0 2px 12px"><b style="color:var(--signal)">{{ resultCount }}</b> records · swipe a file to flip through</div>
+              <div data-grid style="display:grid;gap:12px">
+                <sc-for list="{{ filteredRecords }}" as="d" hint-placeholder-count="6">
+                  <button onClick="{{ d.onOpen }}" style="text-align:left;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden" style-active="transform:scale(.985)" style-hover="border-color:var(--line2)">
+                    <div style="aspect-ratio:4/3;position:relative;background:var(--bg2);border-bottom:1px solid var(--line);overflow:hidden">
+                      <sc-if value="{{ d.hasThumb }}" hint-placeholder-val="{{ true }}"><img src="{{ d.thumb }}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;filter:contrast(1.05) saturate(.9)"></sc-if>
+                      <sc-if value="{{ d.noThumb }}" hint-placeholder-val="{{ false }}"><div style="width:100%;height:100%;display:grid;place-items:center;background:repeating-linear-gradient(45deg,var(--bg2),var(--bg2) 9px,var(--surface) 9px,var(--surface) 18px)"><span style="font-family:'JetBrains Mono';font-weight:700;color:{{ d.accent }};border:2px solid {{ d.accent }};padding:5px 10px;border-radius:7px;font-size:13px">{{ d.typeGlyph }}</span></div></sc-if>
+                      <span style="position:absolute;top:7px;left:7px;font-family:'JetBrains Mono';font-size:8px;font-weight:700;padding:3px 6px;border-radius:5px;background:rgba(0,0,0,.72);color:{{ d.accent }}">{{ d.badge }}</span>
+                      <sc-if value="{{ d.redacted }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:7px;right:7px;font-family:'JetBrains Mono';font-size:7.5px;font-weight:700;padding:3px 5px;border-radius:5px;background:var(--red);color:#fff">■</span></sc-if>
+                    </div>
+                    <div style="padding:10px 11px 12px;display:flex;flex-direction:column;gap:6px;flex:1">
+                      <div style="font-size:12.5px;font-weight:600;line-height:1.3;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">{{ d.shortTitle }}</div>
+                      <div style="margin-top:auto;font-family:'JetBrains Mono';font-size:9px;color:var(--faint);display:flex;gap:8px;flex-wrap:wrap"><span>{{ d.locOrDate }}</span></div>
+                    </div>
+                  </button>
+                </sc-for>
+              </div>
+              <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}"><div style="padding:60px 20px;text-align:center;font-family:'JetBrains Mono';font-size:12px;color:var(--faint)">no records match.<br>the truth is elsewhere.</div></sc-if>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ showBoards }}" hint-placeholder-val="{{ false }}">
+            <div style="animation:fadeup .35s ease both">
+              <div style="display:flex;gap:10px;align-items:stretch;margin-bottom:18px">
+                <div style="flex:1;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 15px">
+                  <div style="font-family:'JetBrains Mono';font-size:10px;color:var(--faint);letter-spacing:.5px">POST ANONYMOUSLY · NO ACCOUNT NEEDED</div>
+                  <div style="font-size:14px;color:var(--ink);font-weight:600;margin-top:6px;line-height:1.4">Drop a file, a photo, a theory. Or just lurk.</div>
+                </div>
+                <button onClick="{{ onNewThread }}" style="flex:none;width:64px;border-radius:14px;background:var(--signal);color:#04140c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px" style-active="transform:scale(.95)"><span style="font-size:22px">✎</span><span style="font-family:'JetBrains Mono';font-size:8px;font-weight:700">NEW</span></button>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ boardsList }}" as="b" hint-placeholder-count="7">
+                  <button onClick="{{ b.onOpen }}" style="text-align:left;display:flex;align-items:center;gap:13px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px" style-active="transform:scale(.99)" style-hover="border-color:var(--line2)">
+                    <div style="flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:{{ b.accent }};color:#04140c;font-family:'Press Start 2P';font-size:11px;box-shadow:0 0 22px -6px {{ b.accent }}">{{ b.slug }}</div>
+                    <div style="flex:1;min-width:0">
+                      <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:15px;font-weight:700;color:var(--ink)">{{ b.name }}</span><span style="font-family:'JetBrains Mono';font-size:10px;color:{{ b.accent }}">{{ b.slug }}</span></div>
+                      <div style="font-size:12px;color:var(--dim);margin-top:3px;line-height:1.4">{{ b.desc }}</div>
+                      <div style="font-family:'JetBrains Mono';font-size:9.5px;color:var(--faint);margin-top:7px;display:flex;gap:14px"><span>{{ b.threads }} threads</span><span style="color:var(--signal)">● {{ b.onlineFmt }} online</span></div>
+                    </div>
+                    <span style="flex:none;color:var(--faint);font-size:18px">›</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ curBoard }}" hint-placeholder-val="{{ false }}">
+            <div style="animation:fadeup .3s ease both">
+              <div style="border:1px solid var(--line);border-radius:16px;padding:16px 17px;margin-bottom:16px;background:linear-gradient(135deg,var(--surface),transparent)">
+                <div style="display:flex;align-items:center;gap:11px">
+                  <div style="flex:none;width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:{{ curBoard.accent }};color:#04140c;font-family:'Press Start 2P';font-size:9px">{{ curBoard.slug }}</div>
+                  <div><div style="font-size:17px;font-weight:700;color:var(--ink)">{{ curBoard.name }}</div><div style="font-family:'JetBrains Mono';font-size:10px;color:var(--faint);margin-top:3px">{{ curBoard.threads }} threads · {{ curBoard.desc }}</div></div>
+                </div>
+                <button onClick="{{ onNewThread }}" style="margin-top:13px;width:100%;padding:10px;border-radius:11px;border:1px solid {{ curBoard.accent }};color:{{ curBoard.accent }};font-family:'JetBrains Mono';font-size:12px;font-weight:700;letter-spacing:.5px" style-active="transform:scale(.98)">✎ START A NEW THREAD</button>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ boardThreads }}" as="t" hint-placeholder-count="4">
+                  <div style="display:flex;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 14px">
+                    <button onClick="{{ t.onVote }}" style="flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:2px 8px;border-radius:10px;border:1px solid {{ t.voteBorder }};background:{{ t.voteBg }};color:{{ t.voteColor }};min-width:46px" style-active="transform:scale(.93)"><span style="font-size:13px;line-height:1">▲</span><span style="font-family:'JetBrains Mono';font-size:11px;font-weight:700">{{ t.voteN }}</span></button>
+                    <button onClick="{{ t.onOpen }}" style="flex:1;min-width:0;text-align:left">
+                      <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono';font-size:8.5px;color:var(--faint)">No.{{ t.no }}</span><span style="font-family:'JetBrains Mono';font-size:9px;color:var(--faint)">{{ t.ago }} ago</span><sc-if value="{{ t.hot }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono';font-size:8.5px;font-weight:700;color:var(--amber)">🔥</span></sc-if></div>
+                      <div style="font-size:13.5px;font-weight:600;line-height:1.32;color:var(--ink)">{{ t.title }}</div>
+                      <div style="font-size:11.5px;color:var(--dim);margin-top:5px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ t.op }}</div>
+                      <div style="display:flex;gap:14px;margin-top:8px;font-family:'JetBrains Mono';font-size:10px;color:var(--dim)"><span>💬 {{ t.replies }}</span><span>🖼 {{ t.imgs }}</span><span style="color:{{ t.stanceColor }}">● {{ t.stance }}</span></div>
+                    </button>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ curThread }}" hint-placeholder-val="{{ false }}">
+            <div style="animation:fadeup .3s ease both;padding-bottom:64px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><span style="font-family:'JetBrains Mono';font-size:9.5px;font-weight:700;color:{{ curThread.accent }}">{{ curThread.boardSlug }}</span><span style="font-family:'JetBrains Mono';font-size:9px;color:var(--faint)">No.{{ curThread.no }}</span></div>
+              <h2 style="font-size:18px;font-weight:700;line-height:1.28;color:var(--ink);margin:0 0 16px">{{ curThread.title }}</h2>
+              <div style="display:flex;flex-direction:column;gap:11px">
+                <sc-for list="{{ curPosts }}" as="p" hint-placeholder-count="4">
+                  <div style="border:1px solid {{ p.opBorder }};border-radius:14px;padding:13px 14px;background:{{ p.opBg }}" data-post>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px">
+                      <sc-if value="{{ p.isOp }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono';font-size:8px;font-weight:700;padding:2px 6px;border-radius:5px;background:var(--signal);color:#04140c">OP</span></sc-if>
+                      <span style="font-family:'JetBrains Mono';font-size:10px;color:{{ p.stanceColor }};font-weight:700">Anonymous</span>
+                      <sc-if value="{{ p.handleShow }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono';font-size:10px;color:var(--cyan)">{{ p.handleShow }}</span></sc-if>
+                      <span style="font-family:'JetBrains Mono';font-size:9px;color:var(--faint)">ID:{{ p.id }}</span>
+                      <span style="font-family:'JetBrains Mono';font-size:9px;color:var(--faint);margin-left:auto">{{ p.ago }} · No.{{ p.no }}</span>
+                    </div>
+                    <sc-if value="{{ p.hasImg }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ p.onImg }}" style="float:left;margin:0 12px 8px 0;width:96px;height:96px;border-radius:10px;overflow:hidden;border:1px solid var(--line2);position:relative;background:var(--bg2)" style-active="transform:scale(.96)">{{ p.thumbEl }}</button>
+                    </sc-if>
+                    <div style="font-size:13.5px;line-height:1.55;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere">{{ p.body }}</div>
+                    <div style="clear:both;display:flex;align-items:center;gap:16px;margin-top:10px;font-family:'JetBrains Mono';font-size:11px">
+                      <button onClick="{{ p.onVote }}" style="display:flex;align-items:center;gap:5px;color:var(--dim)" style-active="transform:scale(.92)"><span style="font-size:13px">▲</span>{{ p.voteN }} credible</button>
+                      <span style="color:var(--faint)">↩ reply</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;z-index:20;padding:10px 14px;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line)">
+              <button onClick="{{ onThreadReply }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;border:1px solid var(--line2);background:var(--surface);color:var(--dim);font-family:'JetBrains Mono';font-size:12px;text-align:left" style-active="transform:scale(.99)"><span style="color:var(--signal);font-size:15px">✎</span>Post a reply — anonymous by default</button>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ curCase }}" hint-placeholder-val="{{ false }}">
+            <div style="animation:fadeup .3s ease both">
+              <div style="font-family:'JetBrains Mono';font-size:10px;color:{{ curCase.accent }};letter-spacing:.4px;margin-bottom:12px">{{ curCase.coord }}</div>
+              <h1 style="font-size:27px;font-weight:700;line-height:1.12;color:var(--ink);margin:0 0 6px;letter-spacing:-.01em">{{ curCase.name }}</h1>
+              <div style="font-family:'JetBrains Mono';font-size:10px;color:var(--faint);letter-spacing:.5px;text-transform:uppercase;margin-bottom:18px">{{ curCase.archiveLabel }}<sc-if value="{{ curCase.status }}" hint-placeholder-val="{{ false }}"> · <span style="color:var(--amber)">{{ curCase.status }}</span></sc-if></div>
+              <p style="font-size:15px;line-height:1.65;color:var(--dim);margin:0 0 22px">{{ curCase.lede }}</p>
+              <sc-if value="{{ curCase.pull }}" hint-placeholder-val="{{ false }}">
+              <blockquote style="margin:0 0 22px;padding:16px 18px;border-left:3px solid {{ curCase.accent }};background:var(--surface);border-radius:0 12px 12px 0">
+                <div style="font-size:16px;line-height:1.55;color:var(--ink);font-style:italic">“{{ curCase.pull }}”</div>
+                <div style="font-family:'JetBrains Mono';font-size:10px;color:var(--faint);margin-top:11px;letter-spacing:.3px">{{ curCase.pullCite }}</div>
+              </blockquote>
+              </sc-if>
+              <sc-if value="{{ caseThread }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ onCaseThread }}" style="width:100%;text-align:left;display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line2);border-radius:14px;padding:14px" style-active="transform:scale(.99)">
+                <span style="flex:none;width:38px;height:38px;border-radius:10px;background:var(--signal-dim);display:grid;place-items:center;color:var(--signal);font-size:17px">💬</span>
+                <div style="flex:1;min-width:0"><div style="font-family:'JetBrains Mono';font-size:9.5px;color:var(--faint)">ACTIVE DISCUSSION · {{ caseThread.boardSlug }}</div><div style="font-size:13px;font-weight:600;color:var(--ink);margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ caseThread.title }}</div></div>
+                <span style="flex:none;color:var(--faint)">›</span>
+              </button>
+              </sc-if>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ showMap }}" hint-placeholder-val="{{ false }}">
+            <div style="animation:fadeup .35s ease both">
+              <div style="position:relative;aspect-ratio:16/10;border:1px solid var(--line2);border-radius:16px;overflow:hidden;background:radial-gradient(120% 120% at 50% 0%,var(--surface),var(--bg2));margin-bottom:14px">
+                <div style="position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:9.09% 12.5%;opacity:.5"></div>
+                <div style="position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line2)"></div>
+                <div style="position:absolute;top:0;bottom:0;left:50%;width:1px;background:var(--line2)"></div>
+                <sc-for list="{{ mapPts }}" as="p" hint-placeholder-count="10">
+                  <button onClick="{{ p.onTap }}" title="{{ p.name }}" style="position:absolute;left:{{ p.left }};top:{{ p.top }};transform:translate(-50%,-50%);width:{{ p.size }};height:{{ p.size }};border-radius:50%;background:{{ p.accent }};box-shadow:0 0 12px 2px {{ p.accent }};animation:twinkle 3s ease-in-out infinite" style-hover="transform:translate(-50%,-50%) scale(1.5)"></button>
+                </sc-for>
+                <div style="position:absolute;left:12px;bottom:11px;font-family:'JetBrains Mono';font-size:9px;color:var(--faint);letter-spacing:.5px">◉ 12 HOTSPOTS · TAP A SIGNAL</div>
+              </div>
+              <div data-grid style="display:grid;gap:10px;margin-bottom:20px">
+                <div style="background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px"><div style="font-family:'Press Start 2P';font-size:15px;color:var(--signal)">{{ statNums.records }}</div><div style="font-family:'JetBrains Mono';font-size:9px;color:var(--faint);letter-spacing:.6px;text-transform:uppercase;margin-top:8px">Records</div></div>
+                <div style="background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px"><div style="font-family:'Press Start 2P';font-size:15px;color:var(--cyan)">{{ statNums.videos }}</div><div style="font-family:'JetBrains Mono';font-size:9px;color:var(--faint);letter-spacing:.6px;text-transform:uppercase;margin-top:8px">Videos</div></div>
+                <div style="background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px"><div style="font-family:'Press Start 2P';font-size:15px;color:var(--amber)">{{ statNums.threads }}</div><div style="font-family:'JetBrains Mono';font-size:9px;color:var(--faint);letter-spacing:.6px;text-transform:uppercase;margin-top:8px">Threads</div></div>
+                <div style="background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px"><div style="font-family:'Press Start 2P';font-size:15px;color:var(--violet)">{{ statNums.posts }}</div><div style="font-family:'JetBrains Mono';font-size:9px;color:var(--faint);letter-spacing:.6px;text-transform:uppercase;margin-top:8px">Posts today</div></div>
+              </div>
+              <div style="font-family:'Press Start 2P';font-size:9px;color:var(--faint);letter-spacing:1px;margin:0 2px 12px">◆ Records by decade</div>
+              <div style="display:flex;align-items:flex-end;gap:5px;height:110px;padding:0 2px 0;margin-bottom:8px">
+                <sc-for list="{{ decadeBars }}" as="d" hint-placeholder-count="9">
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">
+                    <div title="{{ d.n }}" style="width:100%;height:{{ d.h }};border-radius:4px 4px 0 0;background:linear-gradient(to top,var(--signal-dim),var(--signal))"></div>
+                    <span style="font-family:'JetBrains Mono';font-size:7.5px;color:var(--faint);writing-mode:vertical-rl;transform:rotate(180deg)">{{ d.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font-family:'Press Start 2P';font-size:9px;color:var(--faint);letter-spacing:1px;margin:20px 2px 12px">◆ Top locations</div>
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <sc-for list="{{ locBars }}" as="l" hint-placeholder-count="6">
+                  <div style="display:flex;align-items:center;gap:10px"><span style="flex:none;width:96px;font-family:'JetBrains Mono';font-size:11px;color:var(--dim);text-align:right">{{ l.label }}</span><div style="flex:1;height:16px;border-radius:5px;background:var(--surface);overflow:hidden"><div style="width:{{ l.w }};height:100%;background:linear-gradient(90deg,var(--cyan),var(--signal))"></div></div><span style="flex:none;font-family:'JetBrains Mono';font-size:10px;color:var(--faint);width:48px">{{ l.n }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ curDoc }}" hint-placeholder-val="{{ false }}">
+            <div style="animation:fadeup .28s ease both;padding-bottom:20px">
+              <div onPointerDown="{{ docDown }}" onPointerUp="{{ docUp }}" style="position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;border:1px solid var(--line2);background:var(--bg2);touch-action:pan-y;margin-bottom:14px">
+                <sc-if value="{{ curDoc.hasThumb }}" hint-placeholder-val="{{ false }}"><img src="{{ curDoc.thumb }}" alt="" style="width:100%;height:100%;object-fit:cover;filter:contrast(1.05) saturate(.92)"></sc-if>
+                <sc-if value="{{ curDoc.noThumb }}" hint-placeholder-val="{{ false }}"><div style="width:100%;height:100%;display:grid;place-items:center;background:repeating-linear-gradient(45deg,var(--bg2),var(--bg2) 12px,var(--surface) 12px,var(--surface) 24px)"><span style="font-family:'JetBrains Mono';font-weight:700;color:{{ curDoc.accent }};border:2px solid {{ curDoc.accent }};padding:8px 16px;border-radius:9px;font-size:16px">{{ curDoc.typeGlyph }}</span></div></sc-if>
+                <button onClick="{{ curDoc.onView }}" style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.45),transparent 45%)"><sc-if value="{{ curDoc.isVideo }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:60px;height:60px;border-radius:50%;background:rgba(0,0,0,.55);border:2px solid #fff;display:grid;place-items:center;color:#fff;font-size:22px">▶</span></sc-if><span style="position:absolute;right:12px;bottom:11px;font-family:'JetBrains Mono';font-size:10px;color:#fff;background:rgba(0,0,0,.6);padding:4px 9px;border-radius:7px">⛶ open {{ curDoc.typeGlyph }}</span></button>
+                <span style="position:absolute;top:10px;left:10px;font-family:'JetBrains Mono';font-size:9px;font-weight:700;padding:4px 8px;border-radius:6px;background:rgba(0,0,0,.72);color:{{ curDoc.accent }}">{{ curDoc.badge }}</span>
+                <sc-if value="{{ curDoc.redacted }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:10px;right:10px;font-family:'JetBrains Mono';font-size:9px;font-weight:700;padding:4px 8px;border-radius:6px;background:var(--red);color:#fff">REDACTED</span></sc-if>
+                <span style="position:absolute;left:50%;top:11px;transform:translateX(-50%);font-family:'JetBrains Mono';font-size:9px;color:#fff;background:rgba(0,0,0,.55);padding:3px 9px;border-radius:20px">{{ docIdx }}</span>
+                <sc-if value="{{ docPrevOk }}" hint-placeholder-val="{{ false }}"><button onClick="{{ onDocPrev }}" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:19px" style-active="transform:translateY(-50%) scale(.9)">‹</button></sc-if>
+                <sc-if value="{{ docNextOk }}" hint-placeholder-val="{{ false }}"><button onClick="{{ onDocNext }}" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:19px" style-active="transform:translateY(-50%) scale(.9)">›</button></sc-if>
+              </div>
+              <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px"><span style="font-family:'JetBrains Mono';font-size:10px;padding:4px 9px;border-radius:7px;border:1px solid var(--line2);color:{{ curDoc.accent }}">{{ curDoc.agencyFull }}</span><span style="font-family:'JetBrains Mono';font-size:10px;padding:4px 9px;border-radius:7px;border:1px solid var(--line);color:var(--dim)">{{ curDoc.archiveLabel }}</span></div>
+              <h1 style="font-size:19px;font-weight:700;line-height:1.3;color:var(--ink);margin:0 0 14px;overflow-wrap:anywhere">{{ curDoc.shortTitle }}</h1>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:16px">
+                <div style="background:var(--surface);padding:11px 13px"><div style="font-family:'JetBrains Mono';font-size:8.5px;color:var(--faint);letter-spacing:.6px;text-transform:uppercase">Incident</div><div style="font-family:'JetBrains Mono';font-size:12px;color:var(--ink);margin-top:4px">{{ curDoc.incidentDate }}</div></div>
+                <div style="background:var(--surface);padding:11px 13px"><div style="font-family:'JetBrains Mono';font-size:8.5px;color:var(--faint);letter-spacing:.6px;text-transform:uppercase">Location</div><div style="font-family:'JetBrains Mono';font-size:12px;color:var(--ink);margin-top:4px">{{ curDoc.location }}</div></div>
+                <div style="background:var(--surface);padding:11px 13px"><div style="font-family:'JetBrains Mono';font-size:8.5px;color:var(--faint);letter-spacing:.6px;text-transform:uppercase">Released</div><div style="font-family:'JetBrains Mono';font-size:12px;color:var(--ink);margin-top:4px">{{ curDoc.releaseDate }}</div></div>
+                <div style="background:var(--surface);padding:11px 13px"><div style="font-family:'JetBrains Mono';font-size:8.5px;color:var(--faint);letter-spacing:.6px;text-transform:uppercase">VIRIN</div><div style="font-family:'JetBrains Mono';font-size:11px;color:var(--ink);margin-top:4px;overflow-wrap:anywhere">{{ curDoc.virin }}</div></div>
+              </div>
+              <p style="font-size:14.5px;line-height:1.65;color:var(--dim);margin:0 0 16px">{{ curDoc.desc }}</p>
+              <button onClick="{{ curDoc.onView }}" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--line2);color:var(--ink);font-family:'JetBrains Mono';font-size:12px;font-weight:600;margin-bottom:22px" style-active="transform:scale(.99)">⛶ OPEN ORIGINAL {{ curDoc.typeGlyph }}</button>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px"><div style="font-family:'Press Start 2P';font-size:9px;color:var(--faint);letter-spacing:1px">◆ Discussion</div><span style="font-family:'JetBrains Mono';font-size:10px;color:var(--signal)">{{ curDoc.commentN }} comments</span></div>
+              <button onClick="{{ onAddDocComment }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:1px solid var(--line2);background:var(--surface);margin-bottom:14px;text-align:left" style-active="transform:scale(.99)" style-hover="border-color:var(--signal)">
+                <span style="flex:none;width:26px;height:26px;border-radius:50%;background:var(--signal-dim);display:grid;place-items:center;color:var(--signal);font-size:13px">✎</span>
+                <span style="flex:1;font-family:'Space Grotesk';font-size:13.5px;color:var(--faint)">Add your read on this file…</span>
+                <span style="flex:none;font-family:'JetBrains Mono';font-size:8.5px;color:var(--faint);letter-spacing:.5px">ANON OK</span>
+              </button>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ docComments }}" as="c" hint-placeholder-count="3">
+                  <div style="border:1px solid var(--line);border-radius:12px;padding:12px 13px;background:var(--surface)">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px"><span style="font-family:'JetBrains Mono';font-size:10px;font-weight:700;color:{{ c.stanceColor }}">Anonymous</span><sc-if value="{{ c.handleShow }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono';font-size:10px;color:var(--cyan)">{{ c.handleShow }}</span></sc-if><span style="font-family:'JetBrains Mono';font-size:9px;color:var(--faint)">ID:{{ c.id }}</span><span style="font-family:'JetBrains Mono';font-size:9px;color:var(--faint);margin-left:auto">{{ c.ago }}</span></div>
+                    <div style="font-size:13px;line-height:1.55;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere">{{ c.body }}</div>
+                    <div style="margin-top:9px;display:flex;align-items:center;gap:16px">
+                      <button onClick="{{ c.onVote }}" style="display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono';font-size:11px;color:var(--dim)" style-active="transform:scale(.93)"><span style="font-size:12px">▲</span>{{ c.voteN }}</button>
+                      <button onClick="{{ c.onPromote }}" style="display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono';font-size:11px;color:var(--amber)" style-active="transform:scale(.93)"><span style="font-size:12px">⤴</span>to a board</button>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <button onClick="{{ onFileThread }}" style="margin-top:16px;width:100%;display:flex;align-items:center;justify-content:center;gap:9px;padding:13px;border-radius:12px;border:1px dashed var(--line2);color:var(--ink);font-family:'JetBrains Mono';font-size:12px;font-weight:600" style-active="transform:scale(.98)" style-hover="border-color:var(--signal);color:var(--signal)">◈ Start a board thread about this file</button>
+            </div>
+            </sc-if>
+
+          </div>
+        </main>
+
+        <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ true }}"><div data-bottomtab style="position:relative;z-index:30;flex:none;display:flex;justify-content:space-around;padding:8px 8px 4px;background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);border-top:1px solid var(--line)">
+          <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="5">
+            <button onClick="{{ n.onTab }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 2px;color:{{ n.color }}" style-active="transform:scale(.9)">
+              <span style="font-size:19px;line-height:1">{{ n.glyph }}</span>
+              <span style="font-family:'JetBrains Mono';font-size:8.5px;letter-spacing:.3px;font-weight:500">{{ n.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div data-homeind style="flex:none;display:flex;justify-content:center;padding:6px 0 9px;background:color-mix(in srgb,var(--bg) 78%,transparent)"><div style="width:128px;height:5px;border-radius:3px;background:var(--line2)"></div></div></sc-if>
+      </div>
+
+      <sc-if value="{{ viewer }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:70;background:rgba(0,0,0,.94);display:flex;flex-direction:column;animation:fadein .2s ease">
+        <div style="flex:none;display:flex;align-items:center;gap:10px;padding:14px 16px"><span style="flex:1;font-family:'JetBrains Mono';font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ viewer.label }}</span><button onClick="{{ onCloseViewer }}" style="flex:none;width:36px;height:36px;border-radius:10px;border:1px solid var(--line2);color:#fff;font-size:17px">✕</button></div>
+        <div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 12px 12px">
+          <sc-if value="{{ viewer.isVideo }}" hint-placeholder-val="{{ false }}"><video src="{{ viewer.url }}" controls playsinline style="max-width:100%;max-height:100%;border-radius:10px;background:#000"></video></sc-if>
+          <sc-if value="{{ viewer.isDoc }}" hint-placeholder-val="{{ true }}"><div style="width:100%;height:100%;display:flex;flex-direction:column;gap:10px"><iframe src="{{ viewer.url }}" style="flex:1;width:100%;border:1px solid var(--line2);border-radius:10px;background:#fff"></iframe></div></sc-if>
+          <sc-if value="{{ viewer.isPh }}" hint-placeholder-val="{{ false }}"><div style="text-align:center;color:var(--dim)"><div style="width:120px;height:120px;margin:0 auto 16px;border-radius:14px;background:repeating-linear-gradient(45deg,var(--surface),var(--surface) 12px,var(--bg2) 12px,var(--bg2) 24px);display:grid;place-items:center;font-size:34px">🖼</div><div style="font-family:'JetBrains Mono';font-size:12px">{{ viewer.label }}</div><div style="font-family:'JetBrains Mono';font-size:10px;color:var(--faint);margin-top:8px">user upload · anon</div></div></sc-if>
+        </div>
+        <sc-if value="{{ viewer.isDoc }}" hint-placeholder-val="{{ false }}"><div style="flex:none;padding:0 16px 16px;text-align:center"><a href="{{ viewer.src }}" target="_blank" rel="noopener" style="font-family:'JetBrains Mono';font-size:11px;color:var(--signal)">↗ open source on official server</a></div></sc-if>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ composer }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:80;animation:fadein .2s ease">
+        <div onClick="{{ composer.onClose }}" style="position:absolute;inset:0;background:rgba(0,0,0,.62)"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;background:var(--bg2);border-radius:22px 22px 0 0;border-top:1px solid var(--line2);padding:16px 16px 18px;animation:sheetin .34s cubic-bezier(.32,.72,0,1)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><div style="flex:1"><div style="font-family:'Press Start 2P';font-size:8px;color:var(--signal);letter-spacing:.5px">{{ composer.headline }}</div><div style="font-size:12px;color:var(--dim);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ composer.title }}</div></div><button onClick="{{ composer.onClose }}" style="flex:none;width:32px;height:32px;border-radius:9px;border:1px solid var(--line2);color:var(--dim);font-size:16px">✕</button></div>
+          <sc-if value="{{ composer.refLabel }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:9px;margin-bottom:11px;padding:9px 11px;border-radius:10px;border:1px solid var(--line2);background:var(--surface)"><span style="flex:none;font-size:14px">◨</span><div style="flex:1;min-width:0"><div style="font-family:'JetBrains Mono';font-size:8.5px;color:var(--faint);letter-spacing:.5px">REFERENCING FILE</div><div style="font-size:12px;color:var(--cyan);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ composer.refLabel }}</div></div></div></sc-if>
+          <sc-if value="{{ composer.isNewThread }}" hint-placeholder-val="{{ false }}"><input value="{{ composer.threadTitle }}" onInput="{{ composer.onThreadTitle }}" placeholder="Thread title" style="width:100%;background:var(--surface);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;color:var(--ink);font-family:'Space Grotesk';font-size:14px;font-weight:600;outline:none;margin-bottom:11px"/></sc-if>
+          <div style="display:flex;gap:6px;margin-bottom:11px">
+            <sc-for list="{{ composer.stanceOpts }}" as="o" hint-placeholder-count="4"><button onClick="{{ o.onPick }}" style="flex:1;padding:7px 4px;border-radius:9px;border:1px solid {{ o.col }};background:{{ o.bg }};color:{{ o.fg }};font-family:'JetBrains Mono';font-size:10px;font-weight:600" style-active="transform:scale(.96)">{{ o.lab }}</button></sc-for>
+          </div>
+          <textarea value="{{ composer.body }}" onInput="{{ composer.onBody }}" placeholder="Say your piece. Keep it sourced." style="width:100%;min-height:100px;resize:none;background:var(--surface);border:1px solid var(--line2);border-radius:12px;padding:12px;color:var(--ink);font-family:'Space Grotesk';font-size:14px;line-height:1.5;outline:none"></textarea>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:11px">
+            <input value="{{ composer.handle }}" onInput="{{ composer.onHandle }}" placeholder="handle (optional)" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--line2);border-radius:10px;padding:9px 11px;color:var(--ink);font-family:'JetBrains Mono';font-size:12px;outline:none"/>
+            <button onClick="{{ composer.onToggleImg }}" style="flex:none;padding:9px 12px;border-radius:10px;border:1px dashed var(--line2);font-family:'JetBrains Mono';font-size:11px;color:{{ composer.imgColor }}" style-active="transform:scale(.96)">{{ composer.imgLabel }}</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:14px"><span style="flex:1;font-family:'JetBrains Mono';font-size:9.5px;color:var(--faint)">◉ Posting as {{ composer.asLabel }}</span><button onClick="{{ composer.onSubmit }}" style="flex:none;padding:11px 22px;border-radius:11px;background:var(--signal);color:#04140c;font-family:'JetBrains Mono';font-size:12px;font-weight:700;letter-spacing:.5px" style-active="transform:scale(.96)">POST →</button></div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ login }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:90;display:grid;place-items:center;padding:24px;animation:fadein .2s ease">
+        <div onClick="{{ onCloseLogin }}" style="position:absolute;inset:0;background:rgba(0,0,0,.7)"></div>
+        <div style="position:relative;width:100%;max-width:340px;background:var(--bg2);border:1px solid var(--line2);border-radius:20px;padding:24px;text-align:center;animation:fadeup .3s ease both">
+          <div style="margin:0 auto 14px;width:fit-content">{{ saucer }}</div>
+          <div style="font-family:'Press Start 2P';font-size:12px;color:var(--ink)">JOIN THE <span style="color:var(--signal)">SIGNAL</span></div>
+          <p style="font-size:13px;color:var(--dim);line-height:1.55;margin:12px 0 20px">You can post anonymously without any of this. An account just keeps your handle, saved files, and "you were quoted" pings.</p>
+          <button onClick="{{ onGoogle }}" style="width:100%;padding:12px;border-radius:12px;background:var(--ink);color:var(--bg);font-family:'JetBrains Mono';font-size:12px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:9px" style-active="transform:scale(.98)"><span style="font-weight:900">G</span>Continue with Google</button>
+          <button onClick="{{ onMagic }}" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--line2);color:var(--ink);font-family:'JetBrains Mono';font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:9px" style-active="transform:scale(.98)">✦ Email me a magic link</button>
+          <button onClick="{{ onCloseLogin }}" style="margin-top:16px;font-family:'JetBrains Mono';font-size:11px;color:var(--faint)">stay anonymous →</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:50%;bottom:96px;transform:translateX(-50%);z-index:95;background:var(--ink);color:var(--bg);font-family:'JetBrains Mono';font-size:12px;font-weight:600;padding:11px 18px;border-radius:11px;box-shadow:var(--shadow);animation:fadeup .3s ease both;white-space:nowrap">◉ {{ toast }}</div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:960},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark'|'light'&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;device&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;mobile&quot;,&quot;desktop&quot;],&quot;default&quot;:&quot;mobile&quot;,&quot;tsType&quot;:&quot;'mobile'|'desktop'&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;phosphor&quot;,&quot;cyan&quot;,&quot;amber&quot;,&quot;violet&quot;],&quot;default&quot;:&quot;phosphor&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;scanlines&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Appearance&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    const D = (typeof window!=='undefined' && window.UFO_DATA) ? window.UFO_DATA : {};
+    ['records','cases','archives','boards','threads','ticker','mapPoints'].forEach(k=>{ if(!Array.isArray(D[k])) D[k]=[]; });
+    D.threadPosts=D.threadPosts||{}; D.docComments=D.docComments||{}; D.stats=D.stats||{};
+    this.D=D;
+    this.recMap={}; D.records.forEach(r=>{this.recMap[r.id]=r;});
+    this.caseMap={}; D.cases.forEach(c=>{this.caseMap[c.slug]=c;});
+    this.boardMap={}; D.boards.forEach(b=>{this.boardMap[b.id]=b;});
+    this.archMap={}; D.archives.forEach(a=>{this.archMap[a.id]=a;});
+    this.scrollRef=React.createRef();
+    this.sheetRef=React.createRef();
+    this.state={ view:{t:'feed'}, hist:[], votes:{}, search:'', fArch:'all', fType:'all', fRed:false,
+      sheet:null, viewer:null, composer:null, login:false, me:null, toast:null,
+      upThreads:{}, upDocs:{}, newThreads:[] };
+  }
+  go=(v)=>{ this.setState(s=>({view:v, hist:[...s.hist,s.view]})); this._top(); };
+  back=()=>{ this.setState(s=> s.hist.length ? {view:s.hist[s.hist.length-1], hist:s.hist.slice(0,-1)} : s); this._top(); };
+  tab=(t)=>{ this.setState({view:{t}, hist:[]}); this._top(); };
+  _top=()=>{ requestAnimationFrame(()=>{ const el=this.scrollRef.current; if(el) el.scrollTop=0; }); };
+  vote=(kind,id)=>{ const k=kind+':'+id; this.setState(s=>({votes:{...s.votes,[k]:!s.votes[k]}})); if(navigator.vibrate)navigator.vibrate(5); };
+  voted=(kind,id)=> !!this.state.votes[kind+':'+id];
+  openDoc=(id)=> this.go({t:'doc', id, list:this._orderedIds()});
+  openThread=(id)=> this.go({t:'thread', id});
+  openBoard=(id)=> this.go({t:'board', id});
+  openCase=(slug)=> this.go({t:'case', slug});
+  _findThread=(id)=> this.D.threads.find(x=>x.id===id) || this.state.newThreads.find(x=>x.id===id);
+  openSheet=(id)=> this.setState({sheet:id});
+  closeSheet=()=> this.setState({sheet:null});
+  openViewer=(o)=> this.setState({viewer:o});
+  closeViewer=()=> this.setState({viewer:null});
+  openLogin=()=> this.setState({login:true});
+  closeLogin=()=> this.setState({login:false});
+  doLogin=(method)=>{ this.setState({login:false, me:{handle: method==='google'?'agent_scully':'anon_signal'}}); this.toast(method==='google'?'Signed in via Google':'Magic link sent — you are in'); };
+  logout=()=> this.setState({me:null});
+  toast=(m)=>{ this.setState({toast:m}); clearTimeout(this._tt); this._tt=setTimeout(()=>this.setState({toast:null}),1900); };
+  openComposer=(o)=> this.setState({composer:{stance:'neutral', handle:(this.state.me&&this.state.me.handle)||'', body:'', img:false, ...o}});
+  closeComposer=()=> this.setState({composer:null});
+  setComposer=(patch)=> this.setState(s=> s.composer? {composer:{...s.composer,...patch}}:s);
+  submitComposer=()=>{ const c=this.state.composer; if(!c) return; const body=(c.body||'').trim(); if(!body){ this.toast('Say something first'); return; }
+    const post={ no:Math.floor(24419000+Math.random()*9000), id:this._newId(), ago:'now', votes:0, stance:c.stance,
+      handle:(c.handle||'').trim()||null, body, img: c.img?{kind:'placeholder',label:'your_upload.png'}:null, mine:true };
+    if(c.newThread){
+      const id='ut_'+this._newId();
+      const title=(c.threadTitle&&c.threadTitle.trim()) || body.split('\n')[0].slice(0,70) || 'Untitled thread';
+      const thread={ id, no:post.no, title, board:c.board||'uap', stance:c.stance, op:body,
+        opHandle:post.handle, opId:post.id, votes:0, ago:'now', rec:c.refRec||null, hot:false, mine:true };
+      this.setState(s=>({newThreads:[thread,...s.newThreads], composer:null}));
+      this.toast('Posted to /'+((this.boardMap[thread.board]||{}).slug?this.boardMap[thread.board].slug.replace(/\//g,''):'board')+'/'); if(navigator.vibrate)navigator.vibrate([4,20,4]);
+      this.go({t:'thread', id}); return;
+    }
+    this.setState(s=>{ if(c.kind==='reply'){ const cur={...s.upThreads}; cur[c.id]=[...(cur[c.id]||[]),post]; return {upThreads:cur,composer:null}; }
+      else { const cur={...s.upDocs}; cur[c.id]=[...(cur[c.id]||[]),post]; return {upDocs:cur,composer:null}; } });
+    this.toast('Posted'); if(navigator.vibrate)navigator.vibrate([4,20,4]); };
+  _newId=()=> Array.from({length:8},()=>Math.floor(Math.random()*16).toString(16)).join('').toUpperCase();
+  setSearch=(e)=> this.setState({search:e.target.value});
+  setArch=(id)=> this.setState({fArch:id});
+  setType=(id)=> this.setState({fType:id});
+  toggleRed=()=> this.setState(s=>({fRed:!s.fRed}));
+  imgErr=(e)=>{ const im=e.target; im.style.display='none'; if(im.parentElement) im.parentElement.style.background='repeating-linear-gradient(45deg,var(--bg2),var(--bg2) 9px,var(--surface) 9px,var(--surface) 18px)'; };
+  docDown=(e)=>{ this._sx=e.clientX; this._sy=e.clientY; };
+  docUp=(e)=>{ if(this._sx==null) return; const dx=e.clientX-this._sx, dy=e.clientY-this._sy; this._sx=null; if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4){ this.swipeDoc(dx<0?1:-1); } };
+  swipeDoc=(dir)=>{ const v=this.state.view; if(v.t!=='doc') return; const list=v.list||this._orderedIds(); const i=list.indexOf(v.id); const ni=i+dir; if(ni<0||ni>=list.length){ if(navigator.vibrate)navigator.vibrate(12); return; } this.setState({view:{...v,id:list[ni]}}); this._top(); if(navigator.vibrate)navigator.vibrate(4); };
+  sheetDown=(e)=>{ this._dy=e.clientY; this._drag=true; const el=this.sheetRef.current; if(el)el.style.transition='none'; try{e.target.setPointerCapture(e.pointerId);}catch(_){} };
+  sheetMove=(e)=>{ if(!this._drag) return; const d=Math.max(0,e.clientY-this._dy); const el=this.sheetRef.current; if(el)el.style.transform='translateY('+d+'px)'; };
+  sheetEnd=(e)=>{ if(!this._drag) return; this._drag=false; const d=e.clientY-this._dy; const el=this.sheetRef.current; if(el){ el.style.transition='transform .34s cubic-bezier(.32,.72,0,1)'; if(d>110){ el.style.transform='translateY(100%)'; setTimeout(()=>this.closeSheet(),200);} else { el.style.transform='translateY(0)'; } } };
+  _orderedIds=()=> this._filtered().map(r=>r.id);
+  accentOf=(archId)=> (this.archMap[archId]&&this.archMap[archId].accent) || 'var(--signal)';
+  labelOf=(archId)=> (this.archMap[archId]&&this.archMap[archId].label) || archId;
+  _commentsFor=(id)=>{ const base=this.D.docComments[id]||[]; const up=this.state.upDocs[id]||[]; return base.concat(up); }
+  _short=(t)=>{ t=t||''; const c=t.indexOf(','); let s = c>0 && c<34 ? t.slice(c+1).trim() : t; return s.replace(/_/g,' '); };
+  _filtered=()=>{ const {search,fArch,fType,fRed}=this.state; const q=search.trim().toLowerCase();
+    return this.D.records.filter(r=>{
+      if(fArch!=='all' && r.archive!==fArch) return false;
+      if(fType!=='all' && (r.type||'').toUpperCase()!==fType) return false;
+      if(fRed && !r.redacted) return false;
+      if(q){ const hay=((r.title||'')+' '+(r.agency||'')+' '+(r.location||'')+' '+(r.desc||'')).toLowerCase(); if(!hay.includes(q)) return false; }
+      return true; }); };
+  _enrichDoc=(r)=>{ const acc=this.accentOf(r.archive); const isV=(r.type||'')==='VIDEO'; const cN=this._commentsFor(r.id).length;
+    return { ...r, accent:acc, isVideo:isV, hasThumb:!!r.thumb, noThumb:!r.thumb, typeGlyph:isV?'VID':(r.type||'PDF'),
+      badge:(r.agency||'DOC'), shortTitle:this._short(r.title), metaLine:(r.agency||'')+' · '+(this.labelOf(r.archive).split('·')[0].trim()),
+      locOrDate:(r.location&&r.location!=='N/A'?r.location:(r.incidentDate||r.releaseDate||'—')),
+      credible:120+((r.id.length*7)%380), commentN:cN, onOpen:()=>this.openDoc(r.id) }; };
+
+  componentDidMount(){ this._imgErr=(e)=>{ const im=e.target; if(!im||im.tagName!=='IMG') return; im.style.display='none'; if(im.parentElement) im.parentElement.style.background='repeating-linear-gradient(45deg,var(--bg2),var(--bg2) 9px,var(--surface) 9px,var(--surface) 18px)'; }; document.addEventListener('error', this._imgErr, true); }
+  componentWillUnmount(){ if(this._imgErr) document.removeEventListener('error', this._imgErr, true); }
+  componentDidUpdate(prev){ const s=this.state; if(this.sheetRef.current && s.sheet && !prev.sheet){ const el=this.sheetRef.current; el.style.transition='none'; el.style.transform='translateY(100%)'; requestAnimationFrame(()=>{ el.style.transition='transform .4s cubic-bezier(.32,.72,0,1)'; el.style.transform='translateY(0)'; }); } }
+
+  renderVals(){
+    const s=this.state, v=s.view, D=this.D;
+    const theme=this.props.theme||'dark', device=this.props.device||'mobile';
+    const accent=this.props.accent||'phosphor';
+    const scanlines=this.props.scanlines!==undefined?this.props.scanlines:true;
+    const me=s.me;
+    const saucer = React.createElement('svg',{width:26,height:16,viewBox:'0 0 26 16',style:{imageRendering:'pixelated',display:'block'}},
+      React.createElement('g',{fill:'var(--signal)'},
+        React.createElement('rect',{x:10,y:1,width:6,height:2}),
+        React.createElement('rect',{x:8,y:3,width:10,height:2}),
+        React.createElement('rect',{x:2,y:6,width:22,height:2}),
+        React.createElement('rect',{x:0,y:8,width:26,height:2}),
+        React.createElement('rect',{x:4,y:10,width:4,height:2}),
+        React.createElement('rect',{x:18,y:10,width:4,height:2})),
+      React.createElement('g',{fill:'var(--cyan)'},
+        React.createElement('rect',{x:11,y:13,width:2,height:3}),
+        React.createElement('rect',{x:16,y:13,width:2,height:3})));
+
+    const titles={feed:['REALUFO','Declassified UAP archive + forum'],archive:['THE ARCHIVE','91,808 records · 15 sources'],boards:['THE BOARDS','Anonymous. Mostly.'],map:['SIGHTING MAP','Where the files come from']};
+    let ht,hs;
+    if(v.t==='doc'){ const r=this.recMap[v.id]; ht=(r&&r.agency)||'FILE'; hs=r?this._short(r.title):''; }
+    else if(v.t==='thread'){ const t=this._findThread(v.id); ht=t?(t.boardSlug||(this.boardMap[t.board]&&this.boardMap[t.board].slug)||'THREAD'):'THREAD'; hs=t?t.title:''; }
+    else if(v.t==='board'){ const b=this.boardMap[v.id]; ht=b?b.slug:'BOARD'; hs=b?b.desc:''; }
+    else if(v.t==='case'){ const c=this.caseMap[v.slug]; ht='COLD CASE'; hs=c?c.name:''; }
+    else { const p=titles[v.t]||titles.feed; ht=p[0]; hs=p[1]; }
+
+    const navDef=[['feed','◎','Feed'],['archive','▦','Archive'],['boards','◈','Boards'],['map','◐','Map']];
+    const curTab = ['doc'].includes(v.t)?'archive' : (['thread','board'].includes(v.t)?'boards' : (v.t==='case'?'feed':v.t));
+    const navItems=navDef.map(([t,g,l])=>({ glyph:g,label:l,onTab:()=>this.tab(t), color: curTab===t?'var(--signal)':'var(--dim)', bg: curTab===t?'var(--signal-dim)':'transparent' }));
+
+    const tickerRow = React.createElement('span',{style:{display:'inline-flex',gap:'34px'}},
+      (D.ticker||[]).map((t,i)=> React.createElement('span',{key:i,style:{display:'inline-flex',gap:'7px',alignItems:'center'}},
+        React.createElement('span',{style:{color:'var(--signal)',fontWeight:700}}, t.board),
+        React.createElement('span',null, t.text))));
+
+    const featuredDocs = D.records.filter(r=>r.featured).slice(0,6).map(r=> this._enrichDoc(r));
+    const stanceC={believer:'var(--grn)',skeptic:'var(--amber)',analyst:'var(--cyan)',neutral:'var(--dim)'};
+    const enrichThread=(t)=>{ const b=this.boardMap[t.board]||{}; const vd=this.voted('threads',t.id); return {
+      ...t, accent:b.accent||'var(--signal)', boardSlug:b.slug||('/'+t.board+'/'), stanceColor:stanceC[t.stance]||'var(--dim)',
+      voteN:(t.votes||0)+(vd?1:0), voteColor:vd?'#04140c':'var(--dim)', voteBg:vd?'var(--signal)':'transparent', voteBorder:vd?'var(--signal)':'var(--line2)',
+      onVote:()=>this.vote('threads',t.id), onOpen:()=>this.openThread(t.id) }; };
+    const hotThreads = D.threads.filter(t=>t.hot).map(enrichThread).sort((a,b)=>b.voteN-a.voteN).slice(0,4);
+
+    const archChips=[{id:'all',label:'All',flag:'🛰',count:''}].concat(D.archives.slice(0,8).map(a=>({id:a.id,label:a.label.split('·')[0].trim(),flag:a.flag,count:a.count>999?(Math.round(a.count/1000)+'k'):a.count})))
+      .map(c=>{ const on=s.fArch===c.id; return {...c, onPick:()=>this.setArch(c.id), color:on?(c.id==='all'?'var(--signal)':'#fff'):'var(--dim)', bg:on?(this.archMap[c.id]?this.archMap[c.id].accent:'var(--signal-dim)'):'transparent', border:on?'transparent':'var(--line2)'}; });
+    const typeDefs=[['all','All'],['PDF','Docs'],['VIDEO','Video']];
+    const typeChips=typeDefs.map(([id,label])=>{ const on=s.fType===id; return {id,label,onPick:()=>this.setType(id), color:on?'var(--signal)':'var(--dim)', bg:on?'var(--signal-dim)':'transparent', border:on?'var(--signal)':'var(--line2)'}; });
+    const filteredRecordsRaw=this._filtered();
+    const filteredRecords=filteredRecordsRaw.slice(0,40).map(r=>this._enrichDoc(r));
+
+    const boardsList = D.boards.map(b=>({ ...b, onlineFmt:(b.online||0).toLocaleString(), onOpen:()=>this.openBoard(b.id) }));
+    let curBoard=null, boardThreads=[];
+    if(v.t==='board'){ curBoard=this.boardMap[v.id]||null; boardThreads=D.threads.concat(s.newThreads).filter(t=>t.board===v.id).map(enrichThread); }
+    let curThread=null, curPosts=[], onThreadReply=null;
+    if(v.t==='thread'){ const t=this._findThread(v.id); if(t){ curThread=enrichThread(t);
+      let base=D.threadPosts[t.id]; if(!base){ base=[{op:true,no:t.no,id:t.opId,handle:t.opHandle,stance:t.stance,votes:t.votes,ago:t.ago,body:t.op,img:t.rec?{kind:'doc',rec:t.rec}:null}]; }
+      const all=base.concat(s.upThreads[t.id]||[]);
+      curPosts=all.map((p,i)=>{ const rec=p.img&&p.img.rec?this.recMap[p.img.rec]:null; const vd=this.voted('post',p.no);
+        return {...p, idx:i, stanceColor:stanceC[p.stance]||'var(--dim)', handleShow:p.handle?('!'+p.handle):null,
+          voteN:(p.votes||0)+(vd?1:0), onVote:()=>this.vote('post',p.no),
+          hasImg:!!p.img, imgLabel:p.img?(p.img.label||(rec?this._short(rec.title):'')):'', imgThumb:rec?rec.thumb:'', imgHasThumb:!!(rec&&rec.thumb), imgNoThumb:!!p.img&&!(rec&&rec.thumb), imgAccent:rec?this.accentOf(rec.archive):'var(--signal)',
+          opBorder:p.op?'var(--line2)':'var(--line)', opBg:p.op?'var(--surface2)':'var(--surface)',
+          onImg: rec?(()=>this.openViewer({kind:rec.type==='VIDEO'?'video':'doc',rec:rec.id})):(p.img?(()=>this.openViewer({kind:'placeholder',label:p.img.label})):null),
+          thumbEl: (rec&&rec.thumb)? React.createElement('img',{src:rec.thumb,alt:'',style:{width:'100%',height:'100%',objectFit:'cover'}}) : (p.img? React.createElement('div',{style:{width:'100%',height:'100%',display:'grid',placeItems:'center',background:'repeating-linear-gradient(45deg,var(--bg2),var(--bg2) 8px,var(--surface) 8px,var(--surface) 16px)',color:(rec?this.accentOf(rec.archive):'var(--signal)'),fontFamily:"'JetBrains Mono'",fontSize:'9px',textAlign:'center',padding:'6px'}}, '🖼') : null),
+          isOp:!!p.op, mine:!!p.mine }; });
+      onThreadReply=()=>this.openComposer({kind:'reply', id:t.id, title:curThread.title}); } }
+    let curCase=null, caseThread=null;
+    if(v.t==='case'){ curCase=this.caseMap[v.slug]||null; if(curCase){ const rel=D.threads.find(t=>t.caseSlug===v.slug); caseThread=rel?enrichThread(rel):null; } }
+    const mapPts=(D.mapPoints||[]).map(p=>({...p, left:(p.x*100)+'%', top:(p.y*100)+'%', size:(9+Math.min(15,p.n/11))+'px', onTap:p.slug?(()=>this.openCase(p.slug)):(()=>this.toast(p.name+' · '+p.n+' reports'))}));
+    const st=D.stats;
+    const decMax=Math.max(1,...(st.byDecade||[]).map(d=>d[1]));
+    const decadeBars=(st.byDecade||[]).map(d=>({label:d[0], n:d[1].toLocaleString(), h:(d[1]/decMax*94+6)+'%'}));
+    const locMax=Math.max(1,...(st.topLocations||[]).map(l=>l[1]));
+    const locBars=(st.topLocations||[]).map(l=>({label:l[0], n:l[1].toLocaleString(), w:(l[1]/locMax*100)+'%'}));
+    let curDoc=null, docComments=[], docPrevOk=false, docNextOk=false, docIdx='';
+    if(v.t==='doc'){ const r=this.recMap[v.id]; if(r){ curDoc=this._enrichDoc(r);
+      curDoc.desc=r.desc||''; curDoc.agencyFull=r.agencyFull||r.agency; curDoc.archiveLabel=this.labelOf(r.archive);
+      curDoc.location=(r.location&&r.location!=='N/A')?r.location:''; curDoc.incidentDate=r.incidentDate||''; curDoc.releaseDate=r.releaseDate||''; curDoc.virin=r.virin||''; curDoc.url=r.url;
+      curDoc.onView=()=>this.openViewer({kind:r.type==='VIDEO'?'video':'doc',rec:r.id});
+      const list=v.list||this._orderedIds(); const i=list.indexOf(v.id); docPrevOk=i>0; docNextOk=i>=0&&i<list.length-1; docIdx=(i+1)+' / '+list.length;
+      const defBoard=(D.boards[0]&&D.boards[0].id)||'uap';
+      curDoc.onAddComment=()=>this.openComposer({kind:'doc', id:r.id, title:curDoc.shortTitle});
+      curDoc.onFileThread=()=>this.openComposer({newThread:true, board:defBoard, refRec:r.id, title:curDoc.shortTitle, threadTitle:''});
+      docComments=this._commentsFor(v.id).map(c=>({...c, stanceColor:stanceC[c.stance]||'var(--dim)', handleShow:c.handle?('!'+c.handle):null, voteN:(c.votes||0)+(this.voted('post',c.no)?1:0), onVote:()=>this.vote('post',c.no),
+        onPromote:()=>this.openComposer({newThread:true, board:defBoard, refRec:r.id, title:curDoc.shortTitle, threadTitle:this._short(r.title), body:'Pulling this out of the file discussion:\n\n“'+c.body+'”\n\nWorth its own thread?'}) })); } }
+    let sheetDoc=null, sheetComments=[];
+    if(s.sheet){ const r=this.recMap[s.sheet]; if(r){ sheetDoc={id:r.id, title:this._short(r.title), n:this._commentsFor(r.id).length};
+      sheetComments=this._commentsFor(s.sheet).map(c=>({...c, stanceColor:stanceC[c.stance]||'var(--dim)', handleShow:c.handle?('!'+c.handle):null, voteN:(c.votes||0)+(this.voted('post',c.no)?1:0), onVote:()=>this.vote('post',c.no)})); } }
+    let viewer=null;
+    if(s.viewer){ const vw=s.viewer; const r=vw.rec?this.recMap[vw.rec]:null; viewer={ kind:vw.kind, label:vw.label||(r?this._short(r.title):''), url:r?r.url:'', thumb:r?r.thumb:'', hasThumb:!!(r&&r.thumb), isVideo:vw.kind==='video', isDoc:vw.kind==='doc', isPh:vw.kind==='placeholder', accent:r?this.accentOf(r.archive):'var(--signal)', src:r?(r.src||r.url):'' }; }
+    const comp=s.composer; let composer=null;
+    if(comp){ const ss=[['neutral','Neutral','var(--dim)'],['believer','Believer','var(--grn)'],['skeptic','Skeptic','var(--amber)'],['analyst','Analyst','var(--cyan)']];
+      composer={ ...comp, isReply:comp.kind==='reply', title:comp.title||'',
+        isNewThread:!!comp.newThread,
+        refLabel: comp.refRec ? this._short((this.recMap[comp.refRec]||{}).title||'') : null,
+        threadTitle: comp.threadTitle||'', onThreadTitle:(e)=>this.setComposer({threadTitle:e.target.value}),
+        headline: comp.newThread?'NEW THREAD':(comp.kind==='reply'?'POST A REPLY':'ADD A COMMENT'),
+        asLabel: (comp.handle&&comp.handle.trim())?comp.handle.trim():'Anonymous',
+        stanceOpts:ss.map(([id,lab,col])=>({id,lab,col, bg:comp.stance===id?col:'transparent', fg:comp.stance===id?'#04140c':col, onPick:()=>this.setComposer({stance:id})})),
+        onBody:(e)=>this.setComposer({body:e.target.value}), onHandle:(e)=>this.setComposer({handle:e.target.value}),
+        onToggleImg:()=>this.setComposer({img:!comp.img}), imgLabel:comp.img?'✓ image attached':'＋ attach image',
+        imgColor:comp.img?'var(--signal)':'var(--dim)', onSubmit:this.submitComposer, onClose:this.closeComposer }; }
+
+    return {
+      theme, device, accent, scanlines, saucer, isMobile:device==='mobile', isDesktop:device==='desktop',
+      boardsList, curBoard, boardThreads,
+      curThread, curPosts, onThreadReply,
+      curCase, caseThread, onCaseThread: caseThread?(()=>this.openThread(caseThread.id)):null,
+      mapPts, decadeBars, locBars,
+      statNums:{records:(st.records||0).toLocaleString(), archives:st.archives||15, countries:st.countries||12, videos:(st.videos||0).toLocaleString(), threads:(st.threads||0).toLocaleString(), posts:(st.postsToday||0).toLocaleString(), years:st.yearsCovered||''},
+      curDoc, docComments, docPrevOk, docNextOk, docIdx,
+      onDocPrev:()=>this.swipeDoc(-1), onDocNext:()=>this.swipeDoc(1), docDown:this.docDown, docUp:this.docUp,
+      onAddDocComment: curDoc?curDoc.onAddComment:null, onFileThread: curDoc?curDoc.onFileThread:null,
+      sheetDoc, sheetComments, sheetRef:this.sheetRef, onCloseSheet:this.closeSheet,
+      sheetDown:this.sheetDown, sheetMove:this.sheetMove, sheetEnd:this.sheetEnd,
+      onSheetReply: sheetDoc?(()=>{ const id=sheetDoc.id; this.closeSheet(); this.openComposer({kind:'doc', id, title:sheetDoc.title}); }):null,
+      viewer, onCloseViewer:this.closeViewer,
+      composer, login:s.login, onCloseLogin:this.closeLogin, onGoogle:()=>this.doLogin('google'), onMagic:()=>this.doLogin('magic'),
+      toast:s.toast, hasToast:!!s.toast,
+      onNewThread:()=>this.openComposer({kind:'reply', id:(v.t==='board'?v.id:'uap'), title:'New thread', newThread:true}),
+      canBack: s.hist.length>0, headerTitle:ht, headerSub:hs,
+      showBrand: v.t==='feed' && device==='mobile',
+      onlineNow: (D.stats.onlineNow||1245).toLocaleString(),
+      meLabel: me? '◉ '+me.handle : '◉ Sign in',
+      meShort: me? me.handle : 'Anon',
+      navItems, tickerRow,
+      showFeed:v.t==='feed', showArchive:v.t==='archive', showBoards:v.t==='boards', showMap:v.t==='map',
+      featuredDocs, hotThreads,
+      onBoards:()=>this.tab('boards'), onArchive:()=>this.tab('archive'), onLogin:this.openLogin, back:this.back,
+      scrollRef:this.scrollRef,
+      search:s.search, onSearch:this.setSearch, archChips, typeChips,
+      redColor:s.fRed?'var(--red)':'var(--dim)', redBorder:s.fRed?'var(--red)':'var(--line2)', redFill:s.fRed?'var(--red)':'transparent', redCheck:s.fRed?'✓':'',
+      onToggleRed:this.toggleRed, resultCount:filteredRecordsRaw.length.toLocaleString(),
+      filteredRecords, noResults:filteredRecordsRaw.length===0, imgErr:this.imgErr,
+    };
+  }
+}
+</script>
+</body>
+</html>
