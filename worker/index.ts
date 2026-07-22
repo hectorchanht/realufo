@@ -5,12 +5,15 @@ import { health } from "./routes/health";
 import { bootstrap } from "./routes/bootstrap";
 import { feed } from "./routes/feed";
 import { listRecords, getRecord } from "./routes/records";
+import { listComments, addComment } from "./routes/comments";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
 on("GET", "/api/feed", feed);
 on("GET", "/api/records", listRecords);
 on("GET", "/api/records/:id", getRecord);
+on("GET", "/api/records/:id/comments", listComments);
+on("POST", "/api/records/:id/comments", addComment);
 
 export default {
   async fetch(req: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
