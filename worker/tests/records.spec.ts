@@ -26,4 +26,17 @@ describe("records", () => {
   it("404s unknown id", async () => {
     expect((await get("/api/records/NOPE")).status).toBe(404);
   });
+  it("clamps a negative limit to the 100 cap without breaking the true count", async () => {
+    const res = await get("/api/records?limit=-1");
+    expect(res.status).toBe(200);
+    const j: any = await res.json();
+    expect(j.records.length).toBeLessThanOrEqual(100);
+    expect(j.count).toBeGreaterThan(0);
+  });
+  it("falls back to the default page size for a non-numeric limit", async () => {
+    const res = await get("/api/records?limit=abc");
+    expect(res.status).toBe(200);
+    const j: any = await res.json();
+    expect(j.records.length).toBeLessThanOrEqual(40);
+  });
 });

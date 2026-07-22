@@ -22,8 +22,8 @@ export async function listRecords(req: Request, env: Env) {
     bind.push("%" + q.toLowerCase() + "%");
   }
   const w = where.length ? "WHERE " + where.join(" AND ") : "";
-  const limit = Math.min(100, +(u.searchParams.get("limit") || 40));
-  const offset = +(u.searchParams.get("offset") || 0);
+  const limit = Math.max(1, Math.min(100, Number(u.searchParams.get("limit")) || 40));
+  const offset = Math.max(0, Number(u.searchParams.get("offset")) || 0);
   const total = await env.DB.prepare(`SELECT count(*) c FROM records r ${w}`).bind(...bind).first<{ c: number }>();
   const rows = await env.DB.prepare(
     `
