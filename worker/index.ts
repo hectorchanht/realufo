@@ -12,6 +12,7 @@ import { createPost } from "./routes/posts";
 import { toggleVote } from "./routes/votes";
 import { getCase } from "./routes/cases";
 import { login } from "./routes/auth";
+import { serveWithMeta } from "./lib/meta";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -35,6 +36,6 @@ export default {
       const res = await dispatch(req, env);
       return res ?? error(404, "not found");
     }
-    return env.ASSETS.fetch(req); // SPA + assets; meta-injection added in Task 11
+    return serveWithMeta(req, env); // SPA + assets, with per-route meta/OG injection for deep links
   },
 } satisfies ExportedHandler<Env>;
