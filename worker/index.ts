@@ -10,6 +10,8 @@ import { boardThreads } from "./routes/boards";
 import { getThread, createThread } from "./routes/threads";
 import { createPost } from "./routes/posts";
 import { toggleVote } from "./routes/votes";
+import { getCase } from "./routes/cases";
+import { login } from "./routes/auth";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -23,6 +25,8 @@ on("GET", "/api/threads/:id", getThread);
 on("POST", "/api/threads", createThread);
 on("POST", "/api/threads/:id/posts", createPost);
 on("POST", "/api/votes", toggleVote);
+on("GET", "/api/cases/:slug", getCase);
+on("POST", "/api/auth/login", login);
 
 export default {
   async fetch(req: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
