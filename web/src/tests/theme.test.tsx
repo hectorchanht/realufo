@@ -1,7 +1,14 @@
 import { render, screen, act } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { ThemeProvider } from "../theme/ThemeProvider";
 import { useTheme } from "../theme/useTheme";
+
+afterEach(() => {
+  localStorage.clear();
+  delete document.documentElement.dataset.theme;
+  delete document.documentElement.dataset.accent;
+  delete document.documentElement.dataset.scanlines;
+});
 
 function Probe() {
   const { accent, theme, setAccent, setTheme } = useTheme();
