@@ -1,0 +1,10 @@
+{
+  "name": "realufo",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": "web/dist", "binding": "ASSETS", "not_found_handling": "single-page-application" },
+  "vars": { "FEATURE_AUTH": "false" },
+  "d1_databases": [{ "binding": "DB", "database_name": "realufo-db", "database_id": "local", "migrations_dir": "db/migrations" }],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "realufo" }]
+}
