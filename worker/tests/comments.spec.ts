@@ -25,11 +25,18 @@ describe("comments", () => {
     expect(r.status).toBe(201);
     expect(j.comment.body).toBe("test read");
     expect(j.comment.stance).toBe("analyst");
+    expect(typeof j.comment.created_at).toBe("string");
+    expect(j.comment.created_at.length).toBeGreaterThan(0);
+    expect(j.comment.record_id).toBeUndefined();
     const list: any = await (await call("/api/records/CIA-UAP-017/comments")).json();
     expect(list.comments.some((c: any) => c.body === "test read")).toBe(true);
   });
   it("404s posting to an unknown record", async () => {
     const r = await call("/api/records/NOPE/comments", { method: "POST", body: JSON.stringify({ body: "hi" }) });
     expect(r.status).toBe(404);
+  });
+  it("rejects a non-string body instead of throwing", async () => {
+    const r = await call("/api/records/CIA-UAP-017/comments", { method: "POST", body: JSON.stringify({ body: 123 }) });
+    expect(r.status).toBe(400);
   });
 });

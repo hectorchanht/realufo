@@ -18,17 +18,18 @@ export async function addComment(req: Request, env: Env, p: Record<string, strin
   const exists = await env.DB.prepare("SELECT 1 FROM records WHERE id=?").bind(p.id).first();
   if (!exists) return error(404, "record not found");
   const b = await req.json<any>().catch(() => ({}));
-  const body = (b.body || "").trim();
+  const body = typeof b.body === "string" ? b.body.trim() : "";
   if (!body) return error(400, "empty body");
   const id = newId();
   const no = newNo();
   const stance = stanceOK(b.stance);
-  const handle = (b.handle || "").trim() || null;
-  await env.DB.prepare("INSERT INTO comments(id,no,record_id,body,handle,stance,votes) VALUES(?,?,?,?,?,?,0)")
-    .bind(id, no, p.id, body, handle, stance)
+  const handle = String(b.handle ?? "").trim() || null;
+  const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
+  await env.DB.prepare("INSERT INTO comments(id,no,record_id,body,handle,stance,votes,created_at) VALUES(?,?,?,?,?,?,0,?)")
+    .bind(id, no, p.id, body, handle, stance, created_at)
     .run();
   return json(
-    { comment: { id, no, record_id: p.id, body, handle, stance, votes: 0, ago: "now", handleShow: handle ? "!" + handle : null } },
+    { comment: { id, no, body, handle, stance, votes: 0, created_at, ago: "now", handleShow: handle ? "!" + handle : null } },
     { status: 201 }
   );
 }
