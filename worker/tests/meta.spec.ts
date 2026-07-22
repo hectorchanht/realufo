@@ -48,6 +48,19 @@ describe("injectMeta", () => {
     });
     expect(out).toContain('name="twitter:card" content="summary_large_image"');
   });
+
+  it("strips a pre-existing static <title> so only the injected one remains", () => {
+    const out = injectMeta("<head><title>web</title><!--META--></head>", {
+      title: "T",
+      description: "d",
+      url: "https://r/doc/1",
+    });
+    const titleCount = (out.match(/<title>/g) || []).length;
+    expect(titleCount).toBe(1);
+    expect(out).toContain("<title>T · RealUFO</title>");
+    expect(out).not.toContain("<title>web</title>");
+    expect(out).not.toContain("<!--META-->");
+  });
 });
 
 describe("serveWithMeta (via worker.fetch)", () => {

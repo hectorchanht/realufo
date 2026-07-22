@@ -12,7 +12,12 @@ const esc = (s: string) =>
 
 // Replaces the `<!--META-->` placeholder in `html` with per-route <title> +
 // description + OpenGraph/Twitter tags. All interpolated values are
-// HTML-escaped. If the placeholder isn't present, html is returned unchanged.
+// HTML-escaped. Also strips any pre-existing static `<title>` (e.g. the
+// `<title>web</title>` in web/index.html) so the injected title is the only
+// one left — per the HTML spec, the FIRST <title> in document order wins for
+// document.title, so leaving the static one in place would silently shadow
+// the per-entity title we inject. If the placeholder isn't present, html is
+// returned unchanged (aside from that title strip).
 export function injectMeta(html: string, m: MetaInput): string {
   const t = esc(m.title);
   const d = esc(m.description || "");
@@ -30,7 +35,8 @@ export function injectMeta(html: string, m: MetaInput): string {
   ]
     .filter(Boolean)
     .join("\n");
-  return html.replace("<!--META-->", tags);
+  const withoutStaticTitle = html.replace(/<title>.*?<\/title>/is, "");
+  return withoutStaticTitle.replace("<!--META-->", tags);
 }
 
 const META_ROUTES = [
