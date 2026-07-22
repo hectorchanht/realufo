@@ -9,6 +9,7 @@ import { listComments, addComment } from "./routes/comments";
 import { boardThreads } from "./routes/boards";
 import { getThread, createThread } from "./routes/threads";
 import { createPost } from "./routes/posts";
+import { toggleVote } from "./routes/votes";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -21,6 +22,7 @@ on("GET", "/api/boards/:id/threads", boardThreads);
 on("GET", "/api/threads/:id", getThread);
 on("POST", "/api/threads", createThread);
 on("POST", "/api/threads/:id/posts", createPost);
+on("POST", "/api/votes", toggleVote);
 
 export default {
   async fetch(req: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
