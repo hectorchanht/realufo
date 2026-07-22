@@ -42,4 +42,22 @@ describe("votes", () => {
     );
     expect(r.status).toBe(400);
   });
+
+  it("400s an Object.prototype-inherited target_type (constructor)", async () => {
+    const r = await worker.fetch(
+      new Request("https://x/api/votes", { method: "POST", headers: { "X-Anon-Id": "v5" }, body: JSON.stringify({ target_type: "constructor", target_id: "t1" }) }),
+      env as any,
+      {} as any
+    );
+    expect(r.status).toBe(400);
+  });
+
+  it("400s an Object.prototype-inherited target_type (__proto__)", async () => {
+    const r = await worker.fetch(
+      new Request("https://x/api/votes", { method: "POST", headers: { "X-Anon-Id": "v6" }, body: JSON.stringify({ target_type: "__proto__", target_id: "t1" }) }),
+      env as any,
+      {} as any
+    );
+    expect(r.status).toBe(400);
+  });
 });

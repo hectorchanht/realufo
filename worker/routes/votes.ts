@@ -11,7 +11,12 @@ export async function toggleVote(req: Request, env: Env) {
   const b = await req.json<any>().catch(() => ({}));
   const table = TBL[b.target_type];
   const targetId = b.target_id;
-  if (!table || typeof targetId !== "string" || !targetId.trim()) return error(400, "bad target");
+  // `TBL[...]` on a plain object literal resolves inherited Object.prototype
+  // keys too — target_type:"constructor"/"toString"/"valueOf"/"__proto__"
+  // returns a truthy function/object, which a bare `!table` check would let
+  // through. Every legitimate TBL value is a string; every prototype leak is
+  // not, so require `typeof table === "string"` to close that off.
+  if (typeof table !== "string" || typeof targetId !== "string" || !targetId.trim()) return error(400, "bad target");
 
   const actor = await actorId(req, env.ANON_SALT);
   const existing = await env.DB.prepare("SELECT id FROM votes WHERE actor_id=? AND target_type=? AND target_id=?")
