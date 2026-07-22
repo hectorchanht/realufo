@@ -6,6 +6,9 @@ import { bootstrap } from "./routes/bootstrap";
 import { feed } from "./routes/feed";
 import { listRecords, getRecord } from "./routes/records";
 import { listComments, addComment } from "./routes/comments";
+import { boardThreads } from "./routes/boards";
+import { getThread, createThread } from "./routes/threads";
+import { createPost } from "./routes/posts";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -14,6 +17,10 @@ on("GET", "/api/records", listRecords);
 on("GET", "/api/records/:id", getRecord);
 on("GET", "/api/records/:id/comments", listComments);
 on("POST", "/api/records/:id/comments", addComment);
+on("GET", "/api/boards/:id/threads", boardThreads);
+on("GET", "/api/threads/:id", getThread);
+on("POST", "/api/threads", createThread);
+on("POST", "/api/threads/:id/posts", createPost);
 
 export default {
   async fetch(req: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
