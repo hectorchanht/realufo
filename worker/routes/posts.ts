@@ -1,14 +1,17 @@
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
 import { stanceOK } from "../lib/db";
-import { newId, newNo } from "../lib/anon";
+import { newId, newNo, actorId } from "../lib/anon";
+import { allowWrite } from "../lib/ratelimit";
 
 export async function createPost(req: Request, env: Env, p: Record<string, string>) {
-  const t = await env.DB.prepare("SELECT 1 FROM threads WHERE id=?").bind(p.id).first();
-  if (!t) return error(404, "thread not found");
   const b = await req.json<any>().catch(() => ({}));
   const body = typeof b.body === "string" ? b.body.trim() : "";
   if (!body) return error(400, "empty body");
+  const actor = await actorId(req, env.ANON_SALT);
+  if (!(await allowWrite(env, actor, "post"))) return error(429, "slow down — too many posts");
+  const t = await env.DB.prepare("SELECT 1 FROM threads WHERE id=?").bind(p.id).first();
+  if (!t) return error(404, "thread not found");
   const id = newId();
   const no = newNo();
   const stance = stanceOK(b.stance);

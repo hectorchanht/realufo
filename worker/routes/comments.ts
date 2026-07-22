@@ -1,7 +1,8 @@
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
 import { relAgo, stanceOK } from "../lib/db";
-import { newId, newNo } from "../lib/anon";
+import { newId, newNo, actorId } from "../lib/anon";
+import { allowWrite } from "../lib/ratelimit";
 
 export async function listComments(_req: Request, env: Env, p: Record<string, string>) {
   const r = await env.DB.prepare(
@@ -15,11 +16,13 @@ export async function listComments(_req: Request, env: Env, p: Record<string, st
 }
 
 export async function addComment(req: Request, env: Env, p: Record<string, string>) {
-  const exists = await env.DB.prepare("SELECT 1 FROM records WHERE id=?").bind(p.id).first();
-  if (!exists) return error(404, "record not found");
   const b = await req.json<any>().catch(() => ({}));
   const body = typeof b.body === "string" ? b.body.trim() : "";
   if (!body) return error(400, "empty body");
+  const actor = await actorId(req, env.ANON_SALT);
+  if (!(await allowWrite(env, actor, "comment"))) return error(429, "slow down — too many posts");
+  const exists = await env.DB.prepare("SELECT 1 FROM records WHERE id=?").bind(p.id).first();
+  if (!exists) return error(404, "record not found");
   const id = newId();
   const no = newNo();
   const stance = stanceOK(b.stance);
