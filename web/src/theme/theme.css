@@ -1,0 +1,237 @@
+/*
+ * RealUFO CRT theme tokens.
+ * Ported VERBATIM from realufo-handoff/RealUFO.dc.html (the authoritative prototype):
+ *   :root / [data-theme="light"] / [data-accent="cyan|amber|violet"]  -> lines 16-34
+ *   keyframes + prefers-reduced-motion                                -> lines 54-62
+ *   *{box-sizing} / html,body / body / a / a:hover / button / ::selection / [data-scroll] -> lines 35-43
+ *   CRT overlay layers (.crt-grain, .crt-scan)                        -> lines 68-70 (film grain + scanline divs)
+ *
+ * ONE deliberate deviation: the prototype's `body` rule sets
+ * `background:var(--deskbg)` because in the prototype `--deskbg` colors the
+ * desktop/mobile "device frame" chrome behind the phone/desktop mockup. The
+ * running app IS the screen content (no outer device frame), so here `body`
+ * uses `var(--bg)` instead — this is explicitly called out as expected in
+ * the task brief. `--deskbg` itself is still ported verbatim into the
+ * variable blocks below (unused for now) in case a future device-frame
+ * preview needs it.
+ */
+
+:root {
+  --bg: #07080c;
+  --bg2: #0b0d13;
+  --surface: #111420;
+  --surface2: #161a28;
+  --elev: #1b2030;
+  --line: rgba(150, 170, 205, 0.12);
+  --line2: rgba(150, 170, 205, 0.24);
+  --ink: #e7ecf4;
+  --dim: #8b96a9;
+  --faint: #525c70;
+  --grn: #4df0a6;
+  --cyan: #46dfff;
+  --amber: #ffb648;
+  --red: #ff5d57;
+  --violet: #b39bff;
+  --signal: #4df0a6;
+  --signal-dim: rgba(77, 240, 166, 0.14);
+  --shadow: 0 18px 50px -16px rgba(0, 0, 0, 0.72);
+  --grain: 0.055;
+  --deskbg: #050609;
+}
+[data-theme="light"] {
+  --bg: #e9e5d9;
+  --bg2: #efece1;
+  --surface: #fbf9f1;
+  --surface2: #f1eee2;
+  --elev: #ffffff;
+  --line: rgba(30, 35, 45, 0.13);
+  --line2: rgba(30, 35, 45, 0.22);
+  --ink: #161a21;
+  --dim: #59626f;
+  --faint: #8b93a1;
+  --grn: #0f9e63;
+  --cyan: #0a86b8;
+  --amber: #b5730a;
+  --red: #d13b34;
+  --violet: #6a4fd0;
+  --signal: #0f9e63;
+  --signal-dim: rgba(15, 158, 99, 0.12);
+  --shadow: 0 18px 50px -18px rgba(50, 60, 80, 0.28);
+  --grain: 0.03;
+  --deskbg: #d8d3c4;
+}
+[data-accent="cyan"] {
+  --signal: var(--cyan);
+  --grn: var(--cyan);
+  --signal-dim: rgba(70, 223, 255, 0.14);
+}
+[data-accent="amber"] {
+  --signal: var(--amber);
+  --grn: var(--amber);
+  --signal-dim: rgba(255, 182, 72, 0.14);
+}
+[data-accent="violet"] {
+  --signal: var(--violet);
+  --grn: var(--violet);
+  --signal-dim: rgba(179, 155, 255, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  /* prototype: background:var(--deskbg) (device-frame desk color) — the app
+     has no outer device frame, so it sits directly on var(--bg). */
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+a {
+  color: var(--cyan);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--grn);
+}
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: 0;
+  background: none;
+  color: inherit;
+}
+::selection {
+  background: var(--signal-dim);
+  color: var(--ink);
+}
+[data-scroll] {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+[data-scroll]::-webkit-scrollbar {
+  display: none;
+  width: 0;
+}
+
+@keyframes blink {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  61%,
+  100% {
+    opacity: 0.15;
+  }
+}
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--signal-dim);
+  }
+  70% {
+    box-shadow: 0 0 0 9px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+@keyframes scandrift {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 4px;
+  }
+}
+@keyframes fadeup {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sheetin {
+  0% {
+    transform: translateY(100%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes fadein {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/*
+ * Reusable CRT overlay classes (prototype lines 68-70), for AppShell (Task 14)
+ * to drop in as absolutely-positioned full-bleed layers inside a
+ * `position:relative` screen container.
+ *
+ *   .crt-grain -> line 69: pointer-events-none film-grain layer (SVG fractal
+ *                 noise turbulence), opacity driven by --grain (theme-aware).
+ *   .crt-scan  -> line 70: pointer-events-none scanline layer, animated via
+ *                 the scandrift keyframes (respects prefers-reduced-motion
+ *                 above). The prototype wires this to a `scanlines` toggle
+ *                 (sc-if) rather than a CSS media query — AppShell should
+ *                 conditionally render/omit this class based on
+ *                 ThemeProvider's `scanlines` state.
+ */
+.crt-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: var(--grain);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 120 120%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E");
+}
+.crt-scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  mix-blend-mode: overlay;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 2px,
+    rgba(255, 255, 255, 0.05) 3px,
+    transparent 4px
+  );
+  animation: scandrift 6s linear infinite;
+}
