@@ -224,12 +224,13 @@ describe("BoardRow", () => {
     thread_count: 1284,
   };
 
-  it("renders name, desc, thread count, and online count", () => {
+  it("renders name, desc, and thread count (no fake online count)", () => {
     render(withRouter(<BoardRow board={board} />));
     expect(screen.getByText("UAP General")).toBeInTheDocument();
     expect(screen.getByText(board.desc)).toBeInTheDocument();
     expect(screen.getByText(/1,284 threads|1284 threads/)).toBeInTheDocument();
-    expect(screen.getByText(/412/)).toBeInTheDocument();
+    // online count was fake fillup — dropped from the UI
+    expect(screen.queryByText(/412/)).not.toBeInTheDocument();
   });
 
   it("links to /board/<slug without slashes>", () => {

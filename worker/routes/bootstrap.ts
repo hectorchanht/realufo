@@ -26,7 +26,15 @@ export async function bootstrap(req: Request, env: Env) {
               (SELECT count(*) FROM records r WHERE r.archive = a.id) AS count
        FROM archives a`,
     ).all<{ id: string; label: string; flag: string; accent: string; coord: string; count: number }>(),
-    env.DB.prepare("SELECT * FROM boards").all(),
+    // Real per-board thread counts (no fake fillups). `online` is dropped from
+    // the UI (there's no real per-board presence), returned as 0 for shape.
+    env.DB
+      .prepare(
+        `SELECT b.id, b.slug, b.name, b.desc, b.accent, b.icon, 0 AS online,
+                (SELECT count(*) FROM threads t WHERE t.board_id = b.id) AS thread_count
+         FROM boards b`,
+      )
+      .all(),
     env.DB.prepare("SELECT json FROM stats WHERE id=1").first<{ json: string }>(),
     env.DB.prepare("SELECT kind,board,text,ago FROM ticker ORDER BY sort").all(),
     env.DB.prepare("SELECT id,name,lat,lng,count,accent,case_slug FROM sightings").all(),

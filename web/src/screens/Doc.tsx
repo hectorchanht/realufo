@@ -231,12 +231,12 @@ export function Doc() {
       openViewer({ kind: "video", url: fullUrl, label: title });
       return;
     }
-    // PDFs/docs open in a new tab rather than the in-app <iframe> overlay:
-    // a cross-origin PDF (served from assets.realufo.org) renders blank inside
-    // an iframe on many browsers — mobile Safari/Chrome especially, and the
-    // Cloudflare/headless renderer — so hand the file to the browser's native
-    // PDF handling instead. (The overlay's own "open source" link did the same.)
-    window.open(fullUrl, "_blank", "noopener,noreferrer");
+    // PDFs/docs open in a new tab via the SAME-ORIGIN inline route (worker
+    // /api/file/:id sets Content-Disposition: inline). Opening the R2
+    // cross-origin URL directly makes mobile browsers *download* the PDF
+    // instead of viewing it; routing through our origin renders it inline in
+    // the browser's PDF viewer. (An in-app <iframe> renders blank on mobile.)
+    window.open(`/api/file/${id}`, "_blank", "noopener,noreferrer");
   }
 
   function handleAddComment() {

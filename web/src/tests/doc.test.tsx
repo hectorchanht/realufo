@@ -265,7 +265,8 @@ describe("Doc", () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     renderDoc();
     fireEvent.click(screen.getByRole("button", { name: /OPEN ORIGINAL/i }));
-    expect(openSpy).toHaveBeenCalledWith("https://cdn.example/full.pdf", "_blank", "noopener,noreferrer");
+    // same-origin inline route (mobile views instead of downloading)
+    expect(openSpy).toHaveBeenCalledWith("/api/file/rec1", "_blank", "noopener,noreferrer");
     expect(mockOpenViewer).not.toHaveBeenCalled();
     openSpy.mockRestore();
   });

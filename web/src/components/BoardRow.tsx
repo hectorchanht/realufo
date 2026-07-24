@@ -42,7 +42,6 @@ export function BoardRow({ board }: BoardRowProps) {
         <div className="mt-[3px] text-[12px] leading-[1.4] text-dim">{board.desc}</div>
         <div className="mt-[7px] flex gap-[14px] font-mono text-[9.5px] text-faint">
           <span>{(board.thread_count ?? 0).toLocaleString()} threads</span>
-          <span className="text-signal">● {(board.online ?? 0).toLocaleString()} online</span>
         </div>
       </div>
       <span aria-hidden="true" className="flex-none text-[18px] text-faint">
