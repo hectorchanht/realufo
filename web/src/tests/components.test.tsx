@@ -5,9 +5,11 @@
 // immediate local-optimistic toggle in its own display.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within, fireEvent } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
 import type {
+  Archive,
   Board,
   FeedRecordCard,
   ListRecordCard,
@@ -16,8 +18,14 @@ import type {
 } from "../api/types";
 
 const mockMutate = vi.fn();
+// Mutable per-test bootstrap fixture for DocCard's `useBootstrap()` archive
+// -accent lookup — `undefined` (the default) exercises the "bootstrap hasn't
+// loaded yet" fallback-to-signal path; individual tests below override it to
+// exercise the "resolve the archive's own accent" path.
+let mockBootstrapArchives: Archive[] | undefined;
 vi.mock("../api/queries", () => ({
   useVote: () => ({ mutate: mockMutate, isPending: false }),
+  useBootstrap: () => ({ data: mockBootstrapArchives ? { archives: mockBootstrapArchives } : undefined }),
 }));
 
 import { StanceTag } from "../components/StanceTag";
@@ -27,12 +35,22 @@ import { ThreadRow } from "../components/ThreadRow";
 import { BoardRow } from "../components/BoardRow";
 import { Ticker } from "../components/Ticker";
 
+// DocCard calls the (mocked) `useBootstrap()` react-query hook, so anything
+// that can render a DocCard needs a QueryClientProvider in its tree — a real
+// QueryClient is harmless for the other components in this file that don't
+// use any query hooks.
 function withRouter(children: ReactNode) {
-  return <MemoryRouter>{children}</MemoryRouter>;
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return (
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{children}</MemoryRouter>
+    </QueryClientProvider>
+  );
 }
 
 beforeEach(() => {
   mockMutate.mockClear();
+  mockBootstrapArchives = undefined;
 });
 
 describe("StanceTag", () => {
@@ -90,6 +108,19 @@ describe("DocCard", () => {
     render(withRouter(<DocCard record={feedRecord} variant="feed" />));
     expect(screen.getByText(/CIA-UAP-017/)).toBeInTheDocument();
     expect(screen.getByText("CIA")).toBeInTheDocument();
+  });
+
+  it("falls back to var(--signal) for the badge color when bootstrap hasn't loaded", () => {
+    render(withRouter(<DocCard record={feedRecord} variant="feed" />));
+    expect(screen.getByText("CIA")).toHaveStyle({ color: "var(--signal)" });
+  });
+
+  it("resolves the agency badge color from the matching bootstrap archive's accent", () => {
+    mockBootstrapArchives = [
+      { id: "wargov", label: "War/Gov Archive", flag: "🎖", accent: "#6ea8ff", count: 900, coord: "" },
+    ];
+    render(withRouter(<DocCard record={feedRecord} variant="feed" />));
+    expect(screen.getByText("CIA")).toHaveStyle({ color: "#6ea8ff" });
   });
 
   it("shows a REDACTED chip only when record.redacted is truthy", () => {

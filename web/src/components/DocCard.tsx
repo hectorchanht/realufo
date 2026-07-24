@@ -19,15 +19,19 @@
 //     whenever `record.kind === 'video'`, regardless of variant.
 //   - Per-archive accent color: the prototype colors the badge/type-glyph
 //     with `this.accentOf(r.archive)`, resolved from the bootstrap archives
-//     list. RecordCard (this component's only data input) doesn't carry an
-//     archive accent — GET /api/records and /api/feed never join in
-//     `archives.accent` (see FRONTEND-CONTEXT.md's RecordCard shapes) — so
-//     this falls back to `var(--signal)`. A screen that has the archives map
-//     handy can override this later with an `accentColor` prop if needed;
-//     not required by Task 15's interface (`record, variant?, onOpen?`).
+//     list (`D.archives`). RecordCard itself (`record.archive` is just an id
+//     like "wargov") doesn't carry that color — GET /api/records and
+//     /api/feed never join in `archives.accent` (see FRONTEND-CONTEXT.md's
+//     RecordCard shapes) — so DocCard resolves it itself via `useBootstrap()`
+//     (cached/shared across the app by TanStack Query, so this is cheap even
+//     though every card calls it) and looks up
+//     `archives.find(a => a.id === record.archive)?.accent`, falling back to
+//     `var(--signal)` while bootstrap hasn't loaded yet or for an unknown
+//     archive id.
 import { useState } from "react";
 import type { MouseEvent } from "react";
 import { Link } from "react-router-dom";
+import { useBootstrap } from "../api/queries";
 import type { FeedRecordCard, ListRecordCard, RecordCard } from "../api/types";
 
 export type DocCardVariant = "feed" | "grid";
@@ -65,9 +69,12 @@ function locOrDate(r: ListRecordCard): string {
 
 export function DocCard({ record, variant = "grid", onOpen }: DocCardProps) {
   const [imgFailed, setImgFailed] = useState(false);
+  const { data: boot } = useBootstrap();
   const showImg = !!record.thumb && !imgFailed;
   const badge = record.agency || "DOC";
-  const accentColor = "var(--signal)"; // see file header note — no per-archive accent on RecordCard
+  // see file header note — resolved from the shared bootstrap cache; falls
+  // back to var(--signal) until bootstrap loads or for an unknown archive id.
+  const accentColor = boot?.archives.find((a) => a.id === record.archive)?.accent ?? "var(--signal)";
   const isFeed = variant === "feed";
 
   function handleClick(e: MouseEvent) {

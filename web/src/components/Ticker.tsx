@@ -36,7 +36,7 @@ export function Ticker({ items }: TickerProps) {
         LIVE
       </div>
       <div className="flex-1 overflow-hidden whitespace-nowrap">
-        <div className="inline-flex animate-[marquee_26s_linear_infinite] gap-[34px] pl-4">
+        <div className="inline-flex animate-[marquee_26s_linear_infinite] gap-[34px] pl-4 font-mono text-[11.5px] text-dim">
           <Row items={items} />
           <Row items={items} />
         </div>
