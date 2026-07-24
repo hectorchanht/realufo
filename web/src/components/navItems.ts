@@ -29,6 +29,19 @@ export const NAV_ITEMS: NavItem[] = [
  * screens highlight Feed (cold cases are reached from the feed, not a tab of
  * their own), everything else maps 1:1 to its own tab.
  */
+/**
+ * Whether AppBar's back chevron should show for a path. Ported from the
+ * prototype's `canBack = hist.length>0` combined with the fact that
+ * switching top-level tabs resets its navigation history — net effect: back
+ * is absent on the four tab-root destinations (`/`, `/archive`, `/boards`,
+ * `/map`) and present on every detail screen (`/doc/:id`, `/thread/:id`,
+ * `/board/:slug`, `/case/:slug`). Any path that isn't one of the nav roots is
+ * a detail screen.
+ */
+export function canBackForPath(pathname: string): boolean {
+  return !NAV_ITEMS.some((item) => item.path === pathname);
+}
+
 export function activeTabForPath(pathname: string): NavTab {
   if (pathname.startsWith("/doc")) return "archive";
   if (pathname.startsWith("/archive")) return "archive";

@@ -1,5 +1,5 @@
-// App frame: CRT background layers + responsive nav (TopNav on desktop,
-// AppBar+BottomTab on mobile) + the react-router <Outlet/> for screen content.
+// App frame: CRT background layers + responsive nav + the react-router
+// <Outlet/> for screen content.
 //
 // Background layers ported from realufo-handoff/RealUFO.dc.html lines 68-70:
 //   - radial-glow gradient (line 68) — added here (not in theme.css) per the
@@ -9,13 +9,13 @@
 //   - `.crt-scan` (line 70) — conditional on ThemeProvider's `scanlines` state
 //     (the prototype wires this to the same toggle via `sc-if`).
 //
-// Divergence from the raw prototype worth flagging: in RealUFO.dc.html the
-// `data-appbar` block (line 100) has no `sc-if` of its own, i.e. literally it
-// renders on every device size, with only `data-topnav`/`data-bottomtab`
-// gated by isDesktop/isMobile. This task's brief is explicit that AppShell
-// should show *either* TopNav *or* AppBar+BottomTab based on the 900px
-// breakpoint, which is what's implemented below — desktop gets the full
-// TopNav only, no secondary AppBar underneath it.
+// Nav layering matches the prototype exactly: `data-topnav` (line 80) and
+// `data-bottomtab` (line 393) ARE device-gated (isDesktop/isMobile), but
+// `data-appbar` (line 100) has NO `sc-if` of its own — it renders on every
+// device size, inside `<main data-scroll>`, above the screen content. On
+// desktop it sits as a secondary sticky bar under TopNav carrying the back
+// button + per-screen title (needed since TopNav itself has no back
+// affordance for detail screens like /doc/:id).
 import { useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useMediaQuery } from "../lib/useMediaQuery";
@@ -23,7 +23,7 @@ import { useTheme } from "../theme/useTheme";
 import { TopNav } from "./TopNav";
 import { AppBar } from "./AppBar";
 import { BottomTab } from "./BottomTab";
-import { activeTabForPath, documentTitleForPath, headerForPath } from "./navItems";
+import { activeTabForPath, canBackForPath, documentTitleForPath, headerForPath } from "./navItems";
 
 export function AppShell() {
   const isDesktop = useMediaQuery("(min-width:900px)");
@@ -33,7 +33,10 @@ export function AppShell() {
 
   const activeTab = activeTabForPath(pathname);
   const { title: headerTitle, sub: headerSub } = headerForPath(pathname);
-  const canBack = pathname !== "/";
+  // canBack ports the prototype's `hist.length>0` (back only on detail
+  // screens — switching top-level tabs resets its history) — see
+  // navItems.ts's canBackForPath doc comment.
+  const canBack = canBackForPath(pathname);
 
   useEffect(() => {
     document.title = documentTitleForPath(pathname);
@@ -60,15 +63,13 @@ export function AppShell() {
           className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          {!isDesktop && (
-            <AppBar
-              canBack={canBack}
-              onBack={() => navigate(-1)}
-              showBrand={!canBack}
-              headerTitle={headerTitle}
-              headerSub={headerSub}
-            />
-          )}
+          <AppBar
+            canBack={canBack}
+            onBack={() => navigate(-1)}
+            showBrand={!canBack}
+            headerTitle={headerTitle}
+            headerSub={headerSub}
+          />
 
           <div data-screenpad className="relative px-4 pb-10 pt-[18px]">
             <Outlet />

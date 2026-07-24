@@ -44,10 +44,20 @@ export function TopNav({ activeTab, onlineNow = 0, meLabel = "GUEST", onLogin }:
               key={item.tab}
               to={item.path}
               aria-current={active ? "page" : undefined}
-              className="flex min-h-[44px] flex-none items-center gap-[9px] rounded-[11px] px-3.5 py-2 font-mono text-[13px] font-medium hover:bg-surface"
+              className={
+                "flex min-h-[44px] flex-none items-center gap-[9px] rounded-[11px] px-3.5 py-2 font-mono text-[13px] font-medium" +
+                (active ? "" : " hover:bg-surface")
+              }
               style={{
                 color: active ? "var(--signal)" : "var(--dim)",
-                background: active ? "var(--signal-dim)" : "transparent",
+                // Only set an inline background for the active item — an
+                // inline style always wins over a CSS class regardless of
+                // pseudo-class, so setting `background:transparent` inline
+                // here for inactive items would permanently shadow the
+                // `hover:bg-surface` class above and hover would never show.
+                // Leaving it unset for inactive items lets the class govern
+                // background-color (none by default, var(--surface) on hover).
+                background: active ? "var(--signal-dim)" : undefined,
               }}
             >
               <span className="text-center text-[15px]">{item.glyph}</span>

@@ -1,5 +1,5 @@
 import { screen, within } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { renderAppAt } from "./util";
 
 // Whichever of TopNav (desktop) / BottomTab (mobile) rendered — the shell
@@ -9,6 +9,36 @@ function getNavContainer(): HTMLElement {
   if (!nav) throw new Error("expected TopNav or BottomTab to render");
   return nav;
 }
+
+// jsdom in this project's vitest setup has no `matchMedia` at all
+// (`typeof window.matchMedia === "undefined"`), so useMediaQuery always
+// reports mobile (see useMediaQuery.ts's SSR-safe fallback). To exercise the
+// desktop layout deterministically, stub `matchMedia` to report a match for
+// the "(min-width:900px)" query AppShell uses.
+let restoreMatchMedia: (() => void) | null = null;
+
+function stubDesktopMatchMedia() {
+  const original = window.matchMedia;
+  window.matchMedia = ((query: string) =>
+    ({
+      matches: query.includes("900px"),
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList) as typeof window.matchMedia;
+  restoreMatchMedia = () => {
+    window.matchMedia = original;
+  };
+}
+
+afterEach(() => {
+  restoreMatchMedia?.();
+  restoreMatchMedia = null;
+});
 
 describe("AppShell", () => {
   it("shows nav labels Feed/Archive/Boards/Map and marks Feed active at /", async () => {
@@ -45,5 +75,29 @@ describe("AppShell", () => {
     await screen.findByText("Board", { selector: "[data-screen='board']" });
     const nav = within(getNavContainer());
     expect(nav.getByRole("link", { name: /Boards/i })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("renders AppBar unconditionally — alongside TopNav on desktop, not only on mobile", async () => {
+    stubDesktopMatchMedia();
+    renderAppAt("/");
+    await screen.findByText("Feed", { selector: "[data-screen='feed']" });
+
+    expect(document.querySelector("[data-topnav]")).toBeTruthy();
+    expect(document.querySelector("[data-bottomtab]")).toBeFalsy();
+    // The prototype's data-appbar div has no sc-if of its own (RealUFO.dc.html:100)
+    // — it renders on every device size, so it must be present here too.
+    expect(document.querySelector("[data-appbar]")).toBeTruthy();
+  });
+
+  it("hides the AppBar back button on tab-root destinations (/, /archive, /boards, /map)", async () => {
+    renderAppAt("/archive");
+    await screen.findByText("Archive", { selector: "[data-screen='archive']" });
+    expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
+  });
+
+  it("shows the AppBar back button on detail routes (e.g. /doc/:id)", async () => {
+    renderAppAt("/doc/abc123");
+    await screen.findByText("Doc", { selector: "[data-screen='doc']" });
+    expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
   });
 });
