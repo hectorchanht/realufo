@@ -17,7 +17,7 @@
 // input inside the sheet.
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAddComment, useCreateThread, useReply } from "../api/queries";
+import { useAddComment, useAddCaseComment, useCreateThread, useReply } from "../api/queries";
 import { ApiError } from "../api/client";
 import type { Stance } from "../api/types";
 import { useOverlay, type ComposerMode } from "./OverlayProvider";
@@ -50,6 +50,7 @@ export function Composer() {
   // renders — the empty-string fallback id is inert until .mutate() fires,
   // and only the branch matching `composer.mode` is ever invoked on submit.
   const addComment = useAddComment(composer?.recordId ?? "");
+  const addCaseComment = useAddCaseComment(composer?.caseSlug ?? "");
   const reply = useReply(composer?.threadId ?? "");
   const createThread = useCreateThread();
 
@@ -64,7 +65,7 @@ export function Composer() {
 
   // In-flight guard: without this, double-tapping POST before onSuccess
   // closes the sheet fires a second mutation -> duplicate thread/comment/reply.
-  const busy = addComment.isPending || reply.isPending || createThread.isPending;
+  const busy = addComment.isPending || addCaseComment.isPending || reply.isPending || createThread.isPending;
 
   if (!composer) return null;
 
@@ -123,7 +124,9 @@ export function Composer() {
     const trimmedHandle = handle.trim() || undefined;
 
     if (composer!.mode === "comment") {
-      addComment.mutate(
+      // A comment targets either a cold case or a record.
+      const mutation = composer!.caseSlug ? addCaseComment : addComment;
+      mutation.mutate(
         { body: trimmedBody, stance, handle: trimmedHandle },
         {
           onSuccess: () => {
@@ -161,6 +164,7 @@ export function Composer() {
         stance,
         handle: trimmedHandle,
         source_record_id: composer!.sourceRecordId,
+        case_slug: composer!.caseSlug,
       },
       {
         onSuccess: (data) => {

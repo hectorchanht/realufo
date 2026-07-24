@@ -5,7 +5,7 @@ import { health } from "./routes/health";
 import { bootstrap } from "./routes/bootstrap";
 import { feed } from "./routes/feed";
 import { listRecords, getRecord } from "./routes/records";
-import { listComments, addComment } from "./routes/comments";
+import { listComments, addComment, listCaseComments, addCaseComment } from "./routes/comments";
 import { boardThreads } from "./routes/boards";
 import { getThread, createThread } from "./routes/threads";
 import { createPost } from "./routes/posts";
@@ -27,6 +27,8 @@ on("POST", "/api/threads", createThread);
 on("POST", "/api/threads/:id/posts", createPost);
 on("POST", "/api/votes", toggleVote);
 on("GET", "/api/cases/:slug", getCase);
+on("GET", "/api/cases/:slug/comments", listCaseComments);
+on("POST", "/api/cases/:slug/comments", addCaseComment);
 on("POST", "/api/auth/login", login);
 
 export default {

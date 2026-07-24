@@ -46,6 +46,7 @@ export const qk = {
   boardThreads: (boardId: string) => ["boardThreads", boardId] as const,
   thread: (id: string) => ["thread", id] as const,
   case: (slug: string) => ["case", slug] as const,
+  caseComments: (slug: string) => ["caseComments", slug] as const,
 };
 
 function recordsPath(params: RecordsParams): string {
@@ -125,6 +126,14 @@ export function useCase(slug: string) {
   });
 }
 
+export function useCaseComments(slug: string) {
+  return useQuery({
+    queryKey: qk.caseComments(slug),
+    queryFn: () => api.get<CommentsResponse>(`/api/cases/${slug}/comments`),
+    enabled: !!slug,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Mutations
 // ---------------------------------------------------------------------------
@@ -146,6 +155,22 @@ export function useAddComment(recordId: string) {
   });
 }
 
+export function useAddCaseComment(slug: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { body: string; stance?: Stance; handle?: string }) =>
+      api.post<AddCommentResponse>(`/api/cases/${slug}/comments`, vars),
+    onSuccess: (data) => {
+      queryClient.setQueryData<CommentsResponse>(qk.caseComments(slug), (old) => ({
+        comments: [data.comment, ...(old?.comments ?? [])],
+      }));
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: qk.caseComments(slug) });
+    },
+  });
+}
+
 export function useCreateThread() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -156,12 +181,14 @@ export function useCreateThread() {
       stance?: Stance;
       handle?: string;
       source_record_id?: string;
+      case_slug?: string;
     }) => api.post<CreateThreadResponse>("/api/threads", vars),
-    onSettled: (data) => {
+    onSettled: (data, _err, vars) => {
       void queryClient.invalidateQueries({ queryKey: qk.feed });
       if (data) {
         void queryClient.invalidateQueries({ queryKey: qk.boardThreads(data.thread.board_id) });
       }
+      if (vars.case_slug) void queryClient.invalidateQueries({ queryKey: qk.case(vars.case_slug) });
     },
   });
 }

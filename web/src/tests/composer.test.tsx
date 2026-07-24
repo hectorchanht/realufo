@@ -27,6 +27,7 @@ let mockCreateThreadPending = false;
 
 vi.mock("../api/queries", () => ({
   useAddComment: () => ({ mutate: mockAddCommentMutate, isPending: false }),
+  useAddCaseComment: () => ({ mutate: vi.fn(), isPending: false }),
   useReply: () => ({ mutate: mockReplyMutate, isPending: false }),
   useCreateThread: () => ({ mutate: mockCreateThreadMutate, isPending: mockCreateThreadPending }),
 }));

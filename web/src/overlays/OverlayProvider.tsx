@@ -30,6 +30,8 @@ export interface ComposerOpts {
   threadId?: string;
   /** "file a thread about this record" — echoed as source_record_id on submit. */
   sourceRecordId?: string;
+  /** Comment target for a cold case (mode==='comment') / thread back-ref to a case. */
+  caseSlug?: string;
   /** "REFERENCING FILE" chip label (prototype line 421's `composer.refLabel`). */
   refLabel?: string;
   /** Pre-fills the body textarea (the "promote a comment to its own thread" flow). */

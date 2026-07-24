@@ -19,6 +19,7 @@ import { OverlayProvider, OverlayHost, useOverlay } from "../overlays/OverlayPro
 // Mock only the data mutations (no network); react-router navigation is REAL.
 vi.mock("../api/queries", () => ({
   useAddComment: () => ({ mutate: vi.fn(), isPending: false }),
+  useAddCaseComment: () => ({ mutate: vi.fn(), isPending: false }),
   useReply: () => ({ mutate: vi.fn(), isPending: false }),
   useCreateThread: () => ({
     mutate: (_vars: unknown, opts?: { onSuccess?: (d: { thread: { id: string } }) => void }) =>

@@ -43,6 +43,7 @@ export async function createThread(req: Request, env: Env) {
   const boardRow = await env.DB.prepare("SELECT slug, accent FROM boards WHERE id=?").bind(board).first<any>();
   if (!boardRow) return error(400, "unknown board");
   const src = b.source_record_id || null;
+  const caseSlug = b.case_slug || null;
   const title = (String(b.title ?? "").trim() || op_body.split("\n")[0].slice(0, 70) || "Untitled thread").slice(0, 120);
   const id = "ut_" + newId();
   const no = newNo();
@@ -52,8 +53,8 @@ export async function createThread(req: Request, env: Env) {
   const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
   await env.DB.batch([
     env.DB.prepare(
-      `INSERT INTO threads(id,no,board_id,title,stance,op_body,op_handle,op_id,tags,votes,reply_count,img_count,source_record_id,hot,created_at) VALUES(?,?,?,?,?,?,?,?,'[]',0,0,0,?,0,?)`
-    ).bind(id, no, board, title, stance, op_body, handle, opId, src, created_at),
+      `INSERT INTO threads(id,no,board_id,title,stance,op_body,op_handle,op_id,tags,votes,reply_count,img_count,source_record_id,case_slug,hot,created_at) VALUES(?,?,?,?,?,?,?,?,'[]',0,0,0,?,?,0,?)`
+    ).bind(id, no, board, title, stance, op_body, handle, opId, src, caseSlug, created_at),
     env.DB.prepare(
       `INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,source_record_id,is_op,created_at) VALUES(?,?,?,?,?,?,0,?,1,?)`
     ).bind(opId, no, id, op_body, handle, stance, src, created_at),

@@ -5,15 +5,23 @@
 // "Render within providers + MemoryRouter at /case/:slug" and the sibling
 // Thread screen's own test convention).
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import type { CaseDetail } from "../api/types";
 import Case from "../screens/Case";
 
 const useCaseMock = vi.fn();
+const useCaseCommentsMock = vi.fn();
 
 vi.mock("../api/queries", () => ({
   useCase: (slug: string) => useCaseMock(slug),
+  useCaseComments: (slug: string) => useCaseCommentsMock(slug),
+  useVote: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
+const mockOpenComposer = vi.fn();
+vi.mock("../overlays/OverlayProvider", () => ({
+  useOverlay: () => ({ openComposer: mockOpenComposer }),
 }));
 
 // roswell-like fixture (realufo-handoff/data.js's "roswell" cold case),
@@ -73,6 +81,9 @@ function renderCase(path = "/case/roswell") {
 beforeEach(() => {
   useCaseMock.mockReset();
   useCaseMock.mockReturnValue({ data: roswellCase, isLoading: false });
+  useCaseCommentsMock.mockReset();
+  useCaseCommentsMock.mockReturnValue({ data: { comments: [] } });
+  mockOpenComposer.mockReset();
 });
 
 describe("Case", () => {
@@ -128,5 +139,17 @@ describe("Case", () => {
     useCaseMock.mockReturnValue({ data: undefined, isLoading: false });
     renderCase();
     expect(screen.getByText(/case not found/i)).toBeInTheDocument();
+  });
+
+  it('"Add your read on this case" opens the composer in comment mode for this case', () => {
+    renderCase();
+    fireEvent.click(screen.getByRole("button", { name: /Add your read on this case/i }));
+    expect(mockOpenComposer).toHaveBeenCalledWith(expect.objectContaining({ mode: "comment", caseSlug: "roswell" }));
+  });
+
+  it('"Start a board thread about this case" opens the composer in newThread mode with the case reference', () => {
+    renderCase();
+    fireEvent.click(screen.getByRole("button", { name: /Start a board thread about this case/i }));
+    expect(mockOpenComposer).toHaveBeenCalledWith(expect.objectContaining({ mode: "newThread", caseSlug: "roswell" }));
   });
 });
