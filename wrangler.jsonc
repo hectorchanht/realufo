@@ -5,6 +5,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "directory": "web/dist", "binding": "ASSETS", "not_found_handling": "single-page-application" },
   "vars": { "FEATURE_AUTH": "false", "RATE_MAX": "20", "RATE_WINDOW_SEC": "60" },
-  "d1_databases": [{ "binding": "DB", "database_name": "realufo-db", "database_id": "local", "migrations_dir": "db/migrations" }],
-  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "realufo" }]
+  "d1_databases": [{ "binding": "DB", "database_name": "realufo-db", "database_id": "a8836cc9-9f49-42bd-ad99-4162b410bcd9", "migrations_dir": "db/migrations" }],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "realufo" }],
+  "routes": [{ "pattern": "realufo.org/*", "zone_name": "realufo.org" }]
 }
