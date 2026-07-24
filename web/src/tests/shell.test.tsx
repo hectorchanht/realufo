@@ -78,7 +78,12 @@ describe("AppShell", () => {
 
   it("marks Boards active at /board/:slug (curTab mapping: board -> boards tab)", async () => {
     renderAppAt("/board/ufo-sightings");
-    await screen.findByText("Board", { selector: "[data-screen='board']" });
+    // Real Board screen (Task 20) — its api/queries hooks aren't mocked in
+    // this suite, so this only waits for its always-rendered
+    // `data-screen="board"` wrapper (present in every branch: loading,
+    // not-found, or loaded), not for any specific fetched content (same
+    // convention as the /doc/:id case below).
+    await waitFor(() => expect(document.querySelector("[data-screen='board']")).toBeInTheDocument());
     const nav = within(getNavContainer());
     expect(nav.getByRole("link", { name: /Boards/i })).toHaveAttribute("aria-current", "page");
   });
