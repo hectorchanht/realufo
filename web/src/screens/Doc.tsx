@@ -101,7 +101,7 @@ export function Doc() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { openComposer, openViewer } = useOverlay();
+  const { openComposer, openViewer, composer, viewer, login } = useOverlay();
 
   const { data: detail, isLoading } = useRecord(id);
   const { data: commentsData } = useComments(id);
@@ -158,6 +158,30 @@ export function Doc() {
       goTo(dx < 0 ? 1 : -1);
     }
   }
+
+  // Keyboard nav while viewing a file: ← / → flip through the list, Esc leaves.
+  // Ignored while an overlay is open (Esc closes it instead, see OverlayHost)
+  // or while typing in a field.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (composer || viewer || login) return;
+      const el = document.activeElement as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        e.preventDefault();
+        const ni = idx + (e.key === "ArrowRight" ? 1 : -1);
+        if (idx < 0 || ni < 0 || ni >= ids.length) {
+          navigator.vibrate?.(12);
+          return;
+        }
+        navigate(`/doc/${ids[ni]}${restSearch ? `?${restSearch}` : ""}`);
+      } else if (e.key === "Escape") {
+        navigate(-1);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [composer, viewer, login, idx, ids, restSearch, navigate]);
 
   const record = detail?.record;
   const comments = commentsData?.comments ?? [];

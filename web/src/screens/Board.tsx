@@ -94,7 +94,7 @@ export function Board() {
           <div>
             <div className="text-[17px] font-bold text-ink">{board.name}</div>
             <div className="mt-[3px] font-mono text-[10px] text-faint">
-              {board.thread_count.toLocaleString()} threads · {board.desc}
+              {(board.thread_count ?? 0).toLocaleString()} threads · {board.desc}
             </div>
           </div>
         </div>

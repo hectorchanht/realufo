@@ -118,7 +118,7 @@ export function MapScreen() {
         {STAT_TILES.map((tile) => (
           <div key={tile.key} className="rounded-[13px] border border-line bg-surface p-[14px]">
             <div className="font-pixel text-[15px]" style={{ color: tile.color }}>
-              {stats ? stats[tile.key].toLocaleString() : "—"}
+              {stats && stats[tile.key] != null ? stats[tile.key].toLocaleString() : "—"}
             </div>
             <div className="mt-2 font-mono text-[9px] uppercase tracking-[.6px] text-faint">{tile.label}</div>
           </div>

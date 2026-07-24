@@ -33,11 +33,11 @@ import { ThreadRow } from "../components/ThreadRow";
 import { Ticker } from "../components/Ticker";
 import { useSetPageTitle } from "../lib/pageTitle";
 
-// Prototype line 159's literal copy — used until bootstrap's `stats` resolve.
-const FALLBACK_STATS_LINE = "◆ 91,808 FILES · 15 ARCHIVES";
+// Neutral copy shown until bootstrap's `stats` resolve (no fake numbers).
+const FALLBACK_STATS_LINE = "◆ THE DECLASSIFIED ARCHIVE";
 
-function statsLine(stats?: { records: number; archives: number }): string {
-  if (!stats) return FALLBACK_STATS_LINE;
+function statsLine(stats?: { records?: number; archives?: number }): string {
+  if (!stats || stats.records == null || stats.archives == null) return FALLBACK_STATS_LINE;
   return `◆ ${stats.records.toLocaleString()} FILES · ${stats.archives.toLocaleString()} ARCHIVES`;
 }
 

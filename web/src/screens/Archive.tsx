@@ -42,9 +42,6 @@ import { useSetPageTitle } from "../lib/pageTitle";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
-// Prototype line 171's literal placeholder copy.
-const SEARCH_PLACEHOLDER = "search 91,808 records — title, agency, location…";
-
 // "label first segment": bootstrap archive labels pack a short code and a
 // longer aside separated by " · " (e.g. "NARA · Blue Book", "UK · National
 // Archives", "War.gov · PURSUE") — the chip only has room for the short
@@ -132,8 +129,15 @@ function TypeChip({ selected, style, onClick, children }: ChipProps) {
 }
 
 export function Archive() {
-  // AppBar title — prototype's `titles.archive` (RealUFO.dc.html:566).
-  useSetPageTitle("THE ARCHIVE", "91,808 records · 15 sources");
+  const { data: boot } = useBootstrap();
+  const totalRecords = boot?.stats?.records;
+  const totalSources = boot?.stats?.archives;
+  // AppBar title — prototype's `titles.archive` (RealUFO.dc.html:566), with
+  // REAL counts (no fake fillups).
+  useSetPageTitle(
+    "THE ARCHIVE",
+    totalRecords != null ? `${totalRecords.toLocaleString()} records · ${totalSources ?? 0} sources` : "Declassified records",
+  );
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -189,7 +193,6 @@ export function Archive() {
     );
   }
 
-  const { data: boot } = useBootstrap();
   const archives = boot?.archives ?? [];
 
   const { data, isLoading } = useRecords({
@@ -211,7 +214,11 @@ export function Archive() {
         <input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder={SEARCH_PLACEHOLDER}
+          placeholder={
+            totalRecords != null
+              ? `search ${totalRecords.toLocaleString()} records — title, agency, location…`
+              : "search the archive — title, agency, location…"
+          }
           className="flex-1 border-0 bg-transparent font-mono text-[12.5px] text-ink outline-none placeholder:text-faint"
         />
         <span className="rounded-md border border-line px-1.5 py-0.5 font-mono text-[9px] text-faint">
@@ -250,6 +257,9 @@ export function Archive() {
           </TypeChip>
           <TypeChip selected={type === "video"} style={typeChipStyle(type === "video")} onClick={() => setParam("type", "video")}>
             Video
+          </TypeChip>
+          <TypeChip selected={type === "image"} style={typeChipStyle(type === "image")} onClick={() => setParam("type", "image")}>
+            Images
           </TypeChip>
         </div>
 

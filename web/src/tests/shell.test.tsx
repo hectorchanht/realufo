@@ -71,7 +71,7 @@ describe("AppShell", () => {
     // search bar/chip row are always-rendered static markup (not gated on
     // query data), so this resolves synchronously and confirms routing
     // resolved "/archive" before asserting on nav.
-    await screen.findByPlaceholderText(/search 91,808 records/i);
+    await screen.findByPlaceholderText(/search (the archive|[0-9,]+ records)/i);
     const nav = within(getNavContainer());
     expect(nav.getByRole("link", { name: /Archive/i })).toHaveAttribute("aria-current", "page");
   });
@@ -104,7 +104,7 @@ describe("AppShell", () => {
 
   it("hides the AppBar back button on tab-root destinations (/, /archive, /boards, /map)", async () => {
     renderAppAt("/archive");
-    await screen.findByPlaceholderText(/search 91,808 records/i);
+    await screen.findByPlaceholderText(/search (the archive|[0-9,]+ records)/i);
     expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
   });
 

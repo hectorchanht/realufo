@@ -14,7 +14,7 @@
 // state fields `composer`/`viewer`/`login`/`toast`/`me` (lines 472-474), the
 // open/close actions (lines 487-497), and the 1900ms toast auto-dismiss
 // (line 495: `setTimeout(()=>this.setState({toast:null}),1900)`).
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Composer } from "./Composer";
 import { MediaViewer } from "./MediaViewer";
 import { LoginSheet } from "./LoginSheet";
@@ -136,7 +136,21 @@ export function useOverlay(): OverlayContextValue {
  * tree (AppShell) so the Composer's useNavigate() has a <Router> ancestor.
  */
 export function OverlayHost() {
-  const { composer, viewer, login, toastMsg } = useOverlay();
+  const { composer, viewer, login, toastMsg, closeComposer, closeViewer, closeLogin } = useOverlay();
+
+  // Esc closes the open overlay (composer > viewer > login, top-most first).
+  useEffect(() => {
+    if (!composer && !viewer && !login) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (composer) closeComposer();
+      else if (viewer) closeViewer();
+      else if (login) closeLogin();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [composer, viewer, login, closeComposer, closeViewer, closeLogin]);
+
   return (
     <>
       {composer && <Composer />}
