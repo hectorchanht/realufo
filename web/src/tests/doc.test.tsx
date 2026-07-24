@@ -26,6 +26,17 @@ vi.mock("../overlays/OverlayProvider", () => ({
   useOverlay: () => ({ openComposer: mockOpenComposer, openViewer: mockOpenViewer }),
 }));
 
+// Spy on react-router's useNavigate (everything else — MemoryRouter, Routes,
+// Route, Link, useParams, useSearchParams — stays real) so the swipe/
+// prev-next tests below can assert *where* clicking an arrow navigates,
+// without needing to synthesize a pointer-swipe gesture in jsdom (clicking
+// the prev/next arrow buttons exercises the exact same `goTo()` path).
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react-router-dom")>();
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+
 const useRecordMock = vi.fn();
 const useCommentsMock = vi.fn();
 const useRecordsMock = vi.fn();
@@ -97,6 +108,66 @@ const mockComments: CommentsResponse = {
 };
 
 const emptyRecords: RecordsListResponse = { count: 0, records: [] };
+
+// Fixture for the swipe/prev-next tests: an ordered 3-record list ("a",
+// "mid", "c") standing in for the archive-filter list `useRecords` would
+// return, with the record-under-test in the middle.
+const orderedRecords: RecordsListResponse = {
+  count: 3,
+  records: [
+    {
+      id: "a",
+      archive: "wargov",
+      agency: "CIA",
+      title: "a_first_record",
+      summary: "",
+      kind: "pdf",
+      redacted: 0,
+      thumb: null,
+      location: null,
+      incident_date: null,
+      doc_date: null,
+    },
+    {
+      id: "mid",
+      archive: "wargov",
+      agency: "CIA",
+      title: "mid_middle_record",
+      summary: "",
+      kind: "pdf",
+      redacted: 0,
+      thumb: null,
+      location: null,
+      incident_date: null,
+      doc_date: null,
+    },
+    {
+      id: "c",
+      archive: "wargov",
+      agency: "CIA",
+      title: "c_last_record",
+      summary: "",
+      kind: "pdf",
+      redacted: 0,
+      thumb: null,
+      location: null,
+      incident_date: null,
+      doc_date: null,
+    },
+  ],
+};
+
+const midDetail: RecordDetail = {
+  ...mockDetail,
+  record: { ...mockDetail.record, id: "mid" },
+  promotedThreads: [],
+};
+
+const lastDetail: RecordDetail = {
+  ...mockDetail,
+  record: { ...mockDetail.record, id: "c" },
+  promotedThreads: [],
+};
 
 function renderDoc(path = "/doc/rec1") {
   return render(
@@ -177,5 +248,50 @@ describe("Doc", () => {
     useRecordMock.mockReturnValue({ data: undefined, isLoading: false });
     renderDoc();
     expect(screen.getByText(/file not found/i)).toBeInTheDocument();
+  });
+
+  describe("swipe / prev-next navigation", () => {
+    beforeEach(() => {
+      mockNavigate.mockReset();
+      useRecordsMock.mockReturnValue({ data: orderedRecords, isLoading: false });
+    });
+
+    it('shows the "N / M" index pill and renders both prev/next arrows for a record in the middle of the list', () => {
+      useRecordMock.mockReturnValue({ data: midDetail, isLoading: false });
+      renderDoc("/doc/mid");
+
+      expect(screen.getByText("2 / 3")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /previous file/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /next file/i })).toBeInTheDocument();
+    });
+
+    it("clicking the next arrow navigates toward the next id in the list", () => {
+      useRecordMock.mockReturnValue({ data: midDetail, isLoading: false });
+      renderDoc("/doc/mid");
+
+      fireEvent.click(screen.getByRole("button", { name: /next file/i }));
+      expect(mockNavigate).toHaveBeenCalledWith("/doc/c");
+    });
+
+    it("clicking the prev arrow navigates toward the previous id in the list", () => {
+      useRecordMock.mockReturnValue({ data: midDetail, isLoading: false });
+      renderDoc("/doc/mid");
+
+      fireEvent.click(screen.getByRole("button", { name: /previous file/i }));
+      expect(mockNavigate).toHaveBeenCalledWith("/doc/a");
+    });
+
+    it("hides the next arrow at the end of the list — wrap-around never navigates past the end", () => {
+      useRecordMock.mockReturnValue({ data: lastDetail, isLoading: false });
+      renderDoc("/doc/c");
+
+      expect(screen.getByText("3 / 3")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /next file/i })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /previous file/i })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: /previous file/i }));
+      expect(mockNavigate).toHaveBeenCalledWith("/doc/mid");
+      expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining("/doc/d"));
+    });
   });
 });
