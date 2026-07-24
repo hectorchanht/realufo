@@ -25,7 +25,7 @@
 // Loading/not-found: `record` is undefined both while `useRecord` hasn't
 // settled and if the id doesn't resolve to a real record — both cases render
 // the same simple safe states (no attempt to index into `undefined`).
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useBootstrap, useComments, useRecord, useRecords } from "../api/queries";
@@ -106,6 +106,12 @@ export function Doc() {
   const { data: detail, isLoading } = useRecord(id);
   const { data: commentsData } = useComments(id);
   const { data: boot } = useBootstrap();
+
+  // Fall back to the hatch placeholder if the thumbnail 404s / fails to load
+  // (thumbs are generated best-effort, so a record may point at a not-yet-
+  // uploaded key). Reset when navigating to another record.
+  const [thumbFailed, setThumbFailed] = useState(false);
+  useEffect(() => setThumbFailed(false), [id]);
 
   // See file header note — same filter param names Archive.tsx reads off its
   // own URL, read here off THIS route's URL instead.
@@ -246,10 +252,11 @@ export function Doc() {
         className="relative mb-3.5 overflow-hidden rounded-2xl border border-line2 bg-bg2"
         style={{ aspectRatio: "4/3", touchAction: "pan-y" }}
       >
-        {thumbUrl ? (
+        {thumbUrl && !thumbFailed ? (
           <img
             src={thumbUrl}
             alt=""
+            onError={() => setThumbFailed(true)}
             className="h-full w-full object-cover"
             style={{ filter: "contrast(1.05) saturate(.92)" }}
           />

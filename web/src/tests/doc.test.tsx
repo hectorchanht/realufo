@@ -250,6 +250,15 @@ describe("Doc", () => {
     expect(screen.getByText(/file not found/i)).toBeInTheDocument();
   });
 
+  it("falls back to the hatch placeholder when the media thumbnail fails to load", () => {
+    renderDoc();
+    const img = document.querySelector('[data-screen="doc"] img');
+    expect(img).toBeTruthy();
+    fireEvent.error(img!);
+    // img is swapped out for the diagonal-hatch placeholder (no broken-image icon)
+    expect(document.querySelector('[data-screen="doc"] img')).toBeNull();
+  });
+
   it("opening a PDF hands off to a new browser tab, not the in-app iframe viewer", () => {
     // Cross-origin PDF-in-<iframe> renders blank on many browsers, so PDFs open
     // via window.open (native PDF handling) instead of openViewer.
