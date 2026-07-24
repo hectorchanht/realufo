@@ -44,9 +44,11 @@ describe("AppShell", () => {
   it("shows nav labels Feed/Archive/Boards/Map and marks Feed active at /", async () => {
     renderAppAt("/");
 
-    // Placeholder Feed screen (Task 17 replaces it) rendered through the
-    // router Outlet — confirms routing resolved "/" before asserting on nav.
-    await screen.findByText("Feed", { selector: "[data-screen='feed']" });
+    // Real Feed screen (Task 17) rendered through the router Outlet — its
+    // section headers are always-rendered static markup (not gated on query
+    // data), so this resolves synchronously and confirms routing resolved
+    // "/" before asserting on nav.
+    await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
 
     // Scoped to the nav container itself: jsdom's matchMedia is a no-op here
     // (see useMediaQuery.ts), so the mobile layout (AppBar+BottomTab) renders
@@ -80,7 +82,7 @@ describe("AppShell", () => {
   it("renders AppBar unconditionally — alongside TopNav on desktop, not only on mobile", async () => {
     stubDesktopMatchMedia();
     renderAppAt("/");
-    await screen.findByText("Feed", { selector: "[data-screen='feed']" });
+    await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
 
     expect(document.querySelector("[data-topnav]")).toBeTruthy();
     expect(document.querySelector("[data-bottomtab]")).toBeFalsy();
