@@ -28,6 +28,7 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { useTheme } from "../theme/useTheme";
+import { useBootstrap } from "../api/queries";
 import { PageTitleProvider } from "../lib/pageTitle";
 import { OverlayHost } from "../overlays/OverlayProvider";
 import { TopNav } from "./TopNav";
@@ -40,6 +41,8 @@ export function AppShell() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { scanlines } = useTheme();
+  const { data: boot } = useBootstrap();
+  const onlineNow = boot?.stats?.onlineNow ?? 0;
 
   const activeTab = activeTabForPath(pathname);
   // canBack ports the prototype's `hist.length>0` (back only on detail
@@ -48,47 +51,54 @@ export function AppShell() {
   const canBack = canBackForPath(pathname);
 
   return (
-    <div data-app-shell className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-bg">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{
-          background:
-            "radial-gradient(1200px 500px at 78% -8%, var(--signal-dim), transparent 60%), radial-gradient(900px 500px at 10% 108%, rgba(70,223,255,.06), transparent 55%)",
-        }}
-      />
-      <div aria-hidden="true" className="crt-grain" />
-      {scanlines && <div aria-hidden="true" className="crt-scan" />}
+    // PageTitleProvider wraps the WHOLE shell so both the desktop TopNav (which
+    // now shows the contextual title/sub) AND the routed screens (which set it
+    // via useSetPageTitle) are inside it. On desktop the AppBar is not rendered
+    // — TopNav is the single merged bar; on mobile TopNav is absent and the
+    // AppBar is the top bar.
+    <PageTitleProvider>
+      <div data-app-shell className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-bg">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-0"
+          style={{
+            background:
+              "radial-gradient(1200px 500px at 78% -8%, var(--signal-dim), transparent 60%), radial-gradient(900px 500px at 10% 108%, rgba(70,223,255,.06), transparent 55%)",
+          }}
+        />
+        <div aria-hidden="true" className="crt-grain" />
+        {scanlines && <div aria-hidden="true" className="crt-scan" />}
 
-      <div data-shell className="relative z-10 flex min-h-0 flex-1 flex-col">
-        {isDesktop && <TopNav activeTab={activeTab} />}
+        <div data-shell className="relative z-10 flex min-h-0 flex-1 flex-col">
+          {isDesktop && (
+            <TopNav activeTab={activeTab} canBack={canBack} onBack={() => navigate(-1)} onlineNow={onlineNow} />
+          )}
 
-        <main
-          data-scroll
-          className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
-          style={{ WebkitOverflowScrolling: "touch" }}
-        >
-          <PageTitleProvider>
-            <AppBar canBack={canBack} onBack={() => navigate(-1)} showBrand={!canBack} />
+          <main
+            data-scroll
+            className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
+            {!isDesktop && <AppBar canBack={canBack} onBack={() => navigate(-1)} showBrand={!canBack} />}
 
             <div data-screenpad className="relative px-4 pb-10 pt-[18px]">
               <Outlet />
             </div>
-          </PageTitleProvider>
-        </main>
+          </main>
 
-        {!isDesktop && <BottomTab activeTab={activeTab} />}
+          {!isDesktop && <BottomTab activeTab={activeTab} />}
+        </div>
+
+        {/* Overlays (Composer/MediaViewer/LoginSheet/Toast) mount INSIDE the
+            router tree — the Composer calls useNavigate() (to jump to a newly
+            created /thread/:id), which throws without a <Router> ancestor. They
+            are fixed-position (z-70+) so DOM placement here doesn't affect
+            layout; being inside AppShell (a route element) gives them the router
+            context. OverlayProvider still wraps RouterProvider in App.tsx, so the
+            context is available here. */}
+        <OverlayHost />
       </div>
-
-      {/* Overlays (Composer/MediaViewer/LoginSheet/Toast) mount INSIDE the
-          router tree — the Composer calls useNavigate() (to jump to a newly
-          created /thread/:id), which throws without a <Router> ancestor. They
-          are fixed-position (z-70+) so DOM placement here doesn't affect
-          layout; being inside AppShell (a route element) gives them the router
-          context. OverlayProvider still wraps RouterProvider in App.tsx, so the
-          context is available here. */}
-      <OverlayHost />
-    </div>
+    </PageTitleProvider>
   );
 }
 

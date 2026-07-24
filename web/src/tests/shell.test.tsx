@@ -88,16 +88,18 @@ describe("AppShell", () => {
     expect(nav.getByRole("link", { name: /Boards/i })).toHaveAttribute("aria-current", "page");
   });
 
-  it("renders AppBar unconditionally — alongside TopNav on desktop, not only on mobile", async () => {
+  it("desktop shows a single merged bar: TopNav with the contextual title, no separate AppBar", async () => {
     stubDesktopMatchMedia();
-    renderAppAt("/");
-    await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
+    renderAppAt("/archive");
+    await waitFor(() => expect(document.querySelector("[data-screen='archive']")).toBeInTheDocument());
 
     expect(document.querySelector("[data-topnav]")).toBeTruthy();
     expect(document.querySelector("[data-bottomtab]")).toBeFalsy();
-    // The prototype's data-appbar div has no sc-if of its own (RealUFO.dc.html:100)
-    // — it renders on every device size, so it must be present here too.
-    expect(document.querySelector("[data-appbar]")).toBeTruthy();
+    // Merged nav: the separate AppBar is NOT rendered on desktop — its
+    // contextual title/sub is folded into the single TopNav instead.
+    expect(document.querySelector("[data-appbar]")).toBeFalsy();
+    const topnav = document.querySelector("[data-topnav]") as HTMLElement;
+    await waitFor(() => expect(within(topnav).getByText("THE ARCHIVE")).toBeInTheDocument());
   });
 
   it("hides the AppBar back button on tab-root destinations (/, /archive, /boards, /map)", async () => {
