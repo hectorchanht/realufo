@@ -130,6 +130,29 @@ describe("Archive", () => {
     expect(screen.queryByText(/CIA-UAP-017/)).not.toBeInTheDocument();
   });
 
+  it("solid-fills a selected archive chip with the archive's own accent color; leaves others unfilled", async () => {
+    renderAppAt("/archive");
+    await screen.findByText(/CIA-UAP-017/);
+
+    const naraChip = screen.getByRole("button", { name: /NARA/ });
+    const wargovChip = screen.getByRole("button", { name: /War\.gov/ });
+
+    // Unselected: neither chip carries an accent fill yet.
+    expect(naraChip.getAttribute("style")).not.toContain("#c8d0dc");
+    expect(wargovChip.getAttribute("style")).not.toContain("#9184d9");
+
+    fireEvent.click(naraChip);
+    await waitFor(() =>
+      expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ archive: "nara" })),
+    );
+
+    // Selected: solid-filled with the archive's own accent (not a tinted/
+    // translucent version of it) — RealUFO.dc.html:592's `bg:archMap[c.id].accent`.
+    expect(screen.getByRole("button", { name: /NARA/ })).toHaveStyle({ background: "#c8d0dc" });
+    // The other, still-unselected chip stays unfilled.
+    expect(screen.getByRole("button", { name: /War\.gov/ }).getAttribute("style")).not.toContain("#9184d9");
+  });
+
   it('shows "no records match" when the result count is 0', async () => {
     useRecordsMock.mockReturnValue({ data: empty, isLoading: false });
     renderAppAt("/archive");

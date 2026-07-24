@@ -60,28 +60,32 @@ function abbreviateCount(count: number): string {
   return String(count);
 }
 
-// Selected-chip fill for a specific archive: accent-tinted background/border/
-// text using the archive's own accent hex (bootstrap always ships a 6-digit
-// hex like "#9184d9" — `hexAlpha` falls back to the bare color for anything
-// else, e.g. if an accent ever arrived as a CSS var).
-function hexAlpha(hex: string, alpha: number): string {
-  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return hex;
-  const a = Math.round(alpha * 255)
-    .toString(16)
-    .padStart(2, "0");
-  return `${hex}${a}`;
+// Archive-chip styling — ported verbatim from the prototype's `archChips`
+// `.map()` (RealUFO.dc.html:592):
+//   `on = s.fArch===c.id`;
+//   color:  on ? (c.id==='all' ? 'var(--signal)' : '#fff') : 'var(--dim)'
+//   bg:     on ? (archMap[c.id] ? archMap[c.id].accent : 'var(--signal-dim)') : 'transparent'
+//   border: on ? 'transparent' : 'var(--line2)'
+// i.e. a selected *specific* archive chip is a SOLID fill of that archive's
+// own accent color with white text (not an accent-tinted translucent chip);
+// the "All" chip (no accent of its own) falls back to var(--signal-dim)/
+// var(--signal) instead, same as the generic nav-active treatment.
+function archiveChipStyle(selected: boolean, isAll: boolean, accent?: string): CSSProperties {
+  if (!selected) {
+    return { border: "1px solid var(--line2)", background: "transparent", color: "var(--dim)" };
+  }
+  return {
+    border: "1px solid transparent",
+    background: isAll ? "var(--signal-dim)" : (accent ?? "var(--signal-dim)"),
+    color: isAll ? "var(--signal)" : "#fff",
+  };
 }
 
-function archiveChipStyle(selected: boolean, accent: string): CSSProperties {
-  return selected
-    ? { border: `1px solid ${accent}`, background: hexAlpha(accent, 0.16), color: accent }
-    : { border: "1px solid var(--line2)", background: "transparent", color: "var(--dim)" };
-}
-
-// Selected-chip fill for the generic (non-archive-specific) "All" archive
-// chip and the three type chips — same var(--signal) treatment TopNav.tsx
-// already uses for its active nav item.
-function signalChipStyle(selected: boolean): CSSProperties {
+// Type-chip styling — ported verbatim from the prototype's `typeChips`
+// `.map()` (RealUFO.dc.html:594): distinct from archive chips — a selected
+// type chip keeps the var(--signal) OUTLINE (not transparent) plus the
+// var(--signal-dim) fill, it never solid-fills.
+function typeChipStyle(selected: boolean): CSSProperties {
   return selected
     ? { border: "1px solid var(--signal)", background: "var(--signal-dim)", color: "var(--signal)" }
     : { border: "1px solid var(--line2)", background: "transparent", color: "var(--dim)" };
@@ -94,13 +98,31 @@ interface ChipProps {
   children: ReactNode;
 }
 
-function Chip({ selected, style, onClick, children }: ChipProps) {
+// Archive-chip button chrome — prototype line 176: `padding:7px 11px;
+// border-radius:9px; font-size:11px; gap:6px`.
+function ArchiveChip({ selected, style, onClick, children }: ChipProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className="flex flex-none items-center gap-1.5 whitespace-nowrap rounded-[9px] px-2.5 py-[7px] font-mono text-[11px] active:scale-[.96]"
+      className="flex flex-none items-center gap-1.5 whitespace-nowrap rounded-[9px] px-[11px] py-[7px] font-mono text-[11px] active:scale-[.96]"
+      style={style}
+    >
+      {children}
+    </button>
+  );
+}
+
+// Type-chip button chrome — prototype line 182: `padding:5px 10px;
+// border-radius:8px; font-size:10.5px` (no icon/gap — label text only).
+function TypeChip({ selected, style, onClick, children }: ChipProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className="rounded-lg px-[10px] py-[5px] font-mono text-[10.5px] active:scale-[.96]"
       style={style}
     >
       {children}
@@ -195,29 +217,36 @@ export function Archive() {
 
       {/* archive chip row — lines 174-178 */}
       <div data-scroll className="mb-1.5 flex gap-[7px] overflow-x-auto pb-2.5">
-        <Chip selected={archive === ""} style={signalChipStyle(archive === "")} onClick={() => setParam("archive", null)}>
+        <ArchiveChip selected={archive === ""} style={archiveChipStyle(archive === "", true)} onClick={() => setParam("archive", null)}>
+          {/* prototype archChips seeds the "all" entry with flag:'🛰' (RealUFO.dc.html:591) */}
+          <span aria-hidden="true">🛰</span>
           All
-        </Chip>
+        </ArchiveChip>
         {archives.map((a) => (
-          <Chip key={a.id} selected={archive === a.id} style={archiveChipStyle(archive === a.id, a.accent)} onClick={() => setParam("archive", a.id)}>
+          <ArchiveChip
+            key={a.id}
+            selected={archive === a.id}
+            style={archiveChipStyle(archive === a.id, false, a.accent)}
+            onClick={() => setParam("archive", a.id)}
+          >
             <span aria-hidden="true">{a.flag}</span>
             {chipLabel(a.label)} <span className="opacity-60">{abbreviateCount(a.count)}</span>
-          </Chip>
+          </ArchiveChip>
         ))}
       </div>
 
       {/* type chips + redacted toggle — lines 179-186 */}
       <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2.5 px-0.5 py-1">
         <div className="flex gap-1.5">
-          <Chip selected={type === ""} style={signalChipStyle(type === "")} onClick={() => setParam("type", null)}>
+          <TypeChip selected={type === ""} style={typeChipStyle(type === "")} onClick={() => setParam("type", null)}>
             All
-          </Chip>
-          <Chip selected={type === "pdf"} style={signalChipStyle(type === "pdf")} onClick={() => setParam("type", "pdf")}>
+          </TypeChip>
+          <TypeChip selected={type === "pdf"} style={typeChipStyle(type === "pdf")} onClick={() => setParam("type", "pdf")}>
             Docs
-          </Chip>
-          <Chip selected={type === "video"} style={signalChipStyle(type === "video")} onClick={() => setParam("type", "video")}>
+          </TypeChip>
+          <TypeChip selected={type === "video"} style={typeChipStyle(type === "video")} onClick={() => setParam("type", "video")}>
             Video
-          </Chip>
+          </TypeChip>
         </div>
 
         <button
