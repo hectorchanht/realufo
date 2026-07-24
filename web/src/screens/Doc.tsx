@@ -196,7 +196,17 @@ export function Doc() {
   const location = record.location && record.location !== "N/A" ? record.location : "";
 
   function handleOpenOriginal() {
-    openViewer({ kind: isVideo ? "video" : "doc", url: fullUrl, label: title });
+    if (!fullUrl) return;
+    if (isVideo) {
+      openViewer({ kind: "video", url: fullUrl, label: title });
+      return;
+    }
+    // PDFs/docs open in a new tab rather than the in-app <iframe> overlay:
+    // a cross-origin PDF (served from assets.realufo.org) renders blank inside
+    // an iframe on many browsers — mobile Safari/Chrome especially, and the
+    // Cloudflare/headless renderer — so hand the file to the browser's native
+    // PDF handling instead. (The overlay's own "open source" link did the same.)
+    window.open(fullUrl, "_blank", "noopener,noreferrer");
   }
 
   function handleAddComment() {

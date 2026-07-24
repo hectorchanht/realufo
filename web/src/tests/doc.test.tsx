@@ -250,6 +250,36 @@ describe("Doc", () => {
     expect(screen.getByText(/file not found/i)).toBeInTheDocument();
   });
 
+  it("opening a PDF hands off to a new browser tab, not the in-app iframe viewer", () => {
+    // Cross-origin PDF-in-<iframe> renders blank on many browsers, so PDFs open
+    // via window.open (native PDF handling) instead of openViewer.
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderDoc();
+    fireEvent.click(screen.getByRole("button", { name: /OPEN ORIGINAL/i }));
+    expect(openSpy).toHaveBeenCalledWith("https://cdn.example/full.pdf", "_blank", "noopener,noreferrer");
+    expect(mockOpenViewer).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
+
+  it("opening a VIDEO record uses the in-app media viewer (not a new tab)", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "video" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/clip.mp4", mime: "video/mp4", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderDoc();
+    fireEvent.click(screen.getByRole("button", { name: /OPEN ORIGINAL/i }));
+    expect(mockOpenViewer).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "video", url: "https://cdn.example/clip.mp4" }),
+    );
+    expect(openSpy).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
+
   describe("swipe / prev-next navigation", () => {
     beforeEach(() => {
       mockNavigate.mockReset();
