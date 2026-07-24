@@ -2,13 +2,13 @@
 // (doc/video/placeholder full-bleed viewer), LoginSheet (auth stub + theme
 // switcher), and Toast (transient status line). NONE of these are routes —
 // screens (Tasks 17-23) reach them via `useOverlay()`, and `<OverlayHost/>`
-// renders whichever is active as a fixed-position layer above the whole app:
+// renders whichever is active as a fixed-position layer above the whole app.
 //
-//   <OverlayProvider><RouterProvider .../><OverlayHost/></OverlayProvider>
-//
-// (see App.tsx) — context flows through RouterProvider down to every screen,
-// and OverlayHost sits as a *sibling* of the router output so its layers
-// aren't clipped by any individual screen's own layout.
+// Wiring: OverlayProvider wraps RouterProvider (App.tsx), but OverlayHost is
+// mounted INSIDE the router tree (in AppShell), because the Composer calls
+// useNavigate() and therefore needs a <Router> ancestor — hosting the overlays
+// as a RouterProvider *sibling* crashed the app on composer open. The overlays
+// are fixed-position, so being inside AppShell doesn't clip them.
 //
 // Ported from realufo-handoff/RealUFO.dc.html's single-component prototype:
 // state fields `composer`/`viewer`/`login`/`toast`/`me` (lines 472-474), the
@@ -132,8 +132,8 @@ export function useOverlay(): OverlayContextValue {
 /**
  * Renders whichever overlay is currently active (at most one of
  * Composer/MediaViewer/LoginSheet at a time — mirrors the prototype's
- * mutually-exclusive `sc-if`s) plus the Toast. Mount once, as a sibling of
- * `<RouterProvider/>` inside `<OverlayProvider/>` (see App.tsx).
+ * mutually-exclusive `sc-if`s) plus the Toast. Mount once, INSIDE the router
+ * tree (AppShell) so the Composer's useNavigate() has a <Router> ancestor.
  */
 export function OverlayHost() {
   const { composer, viewer, login, toastMsg } = useOverlay();

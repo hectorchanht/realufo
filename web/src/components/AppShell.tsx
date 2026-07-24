@@ -29,6 +29,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { useTheme } from "../theme/useTheme";
 import { PageTitleProvider } from "../lib/pageTitle";
+import { OverlayHost } from "../overlays/OverlayProvider";
 import { TopNav } from "./TopNav";
 import { AppBar } from "./AppBar";
 import { BottomTab } from "./BottomTab";
@@ -78,6 +79,15 @@ export function AppShell() {
 
         {!isDesktop && <BottomTab activeTab={activeTab} />}
       </div>
+
+      {/* Overlays (Composer/MediaViewer/LoginSheet/Toast) mount INSIDE the
+          router tree — the Composer calls useNavigate() (to jump to a newly
+          created /thread/:id), which throws without a <Router> ancestor. They
+          are fixed-position (z-70+) so DOM placement here doesn't affect
+          layout; being inside AppShell (a route element) gives them the router
+          context. OverlayProvider still wraps RouterProvider in App.tsx, so the
+          context is available here. */}
+      <OverlayHost />
     </div>
   );
 }
