@@ -62,6 +62,10 @@ export function Composer() {
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ startY: number; dragging: boolean }>({ startY: 0, dragging: false });
 
+  // In-flight guard: without this, double-tapping POST before onSuccess
+  // closes the sheet fires a second mutation -> duplicate thread/comment/reply.
+  const busy = addComment.isPending || reply.isPending || createThread.isPending;
+
   if (!composer) return null;
 
   function handlePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
@@ -108,6 +112,9 @@ export function Composer() {
   }
 
   function handleSubmit() {
+    // Belt-and-suspenders: the POST button is already `disabled={busy}`, but
+    // guard here too in case a keyboard Enter-to-submit path bypasses that.
+    if (busy) return;
     const trimmedBody = body.trim();
     if (!trimmedBody) {
       toast("Say something first"); // prototype line 499
@@ -279,7 +286,8 @@ export function Composer() {
           <button
             type="button"
             onClick={handleSubmit}
-            className="flex-none rounded-[11px] bg-signal px-[22px] py-[11px] font-mono text-xs font-bold tracking-[.5px] text-[#04140c] active:scale-[.96]"
+            disabled={busy}
+            className="flex-none rounded-[11px] bg-signal px-[22px] py-[11px] font-mono text-xs font-bold tracking-[.5px] text-[#04140c] active:scale-[.96] disabled:pointer-events-none disabled:opacity-60"
           >
             POST →
           </button>

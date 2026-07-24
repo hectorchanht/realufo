@@ -20,11 +20,15 @@ import { OverlayProvider, OverlayHost, useOverlay, type ComposerOpts } from "../
 const mockAddCommentMutate = vi.fn();
 const mockReplyMutate = vi.fn();
 const mockCreateThreadMutate = vi.fn();
+// Mutable per-test pending flag for useCreateThread's `isPending` — toggled by
+// the in-flight-guard test below (same pattern as components.test.tsx's
+// `mockBootstrapArchives`).
+let mockCreateThreadPending = false;
 
 vi.mock("../api/queries", () => ({
   useAddComment: () => ({ mutate: mockAddCommentMutate, isPending: false }),
   useReply: () => ({ mutate: mockReplyMutate, isPending: false }),
-  useCreateThread: () => ({ mutate: mockCreateThreadMutate, isPending: false }),
+  useCreateThread: () => ({ mutate: mockCreateThreadMutate, isPending: mockCreateThreadPending }),
 }));
 
 function Opener({ opts }: { opts: ComposerOpts }) {
@@ -51,6 +55,7 @@ beforeEach(() => {
   mockAddCommentMutate.mockReset();
   mockReplyMutate.mockReset();
   mockCreateThreadMutate.mockReset();
+  mockCreateThreadPending = false;
 });
 
 describe("Composer", () => {
@@ -110,5 +115,20 @@ describe("Composer", () => {
     fireEvent.click(screen.getByRole("button", { name: /post/i }));
 
     expect(screen.getByText(/slow down — too many posts/i)).toBeInTheDocument();
+  });
+
+  it("disables POST and ignores clicks while a mutation is already in flight (no duplicate submit on double-tap)", () => {
+    mockCreateThreadPending = true;
+    renderComposer({ mode: "newThread", boardId: "uap" });
+
+    fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), {
+      target: { value: "Body text here" },
+    });
+
+    const postButton = screen.getByRole("button", { name: /post/i });
+    expect(postButton).toBeDisabled();
+
+    fireEvent.click(postButton);
+    expect(mockCreateThreadMutate).not.toHaveBeenCalled();
   });
 });
