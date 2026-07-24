@@ -31,6 +31,7 @@ import { useBootstrap, useFeed } from "../api/queries";
 import { DocCard } from "../components/DocCard";
 import { ThreadRow } from "../components/ThreadRow";
 import { Ticker } from "../components/Ticker";
+import { useSetPageTitle } from "../lib/pageTitle";
 
 // Prototype line 159's literal copy — used until bootstrap's `stats` resolve.
 const FALLBACK_STATS_LINE = "◆ 91,808 FILES · 15 ARCHIVES";
@@ -41,6 +42,9 @@ function statsLine(stats?: { records: number; archives: number }): string {
 }
 
 export function Feed() {
+  // AppBar title — prototype's `titles.feed` (RealUFO.dc.html:566).
+  useSetPageTitle("REALUFO", "Declassified UAP archive + forum");
+
   const { data: boot } = useBootstrap();
   const { data: feed, isLoading: feedLoading } = useFeed();
 

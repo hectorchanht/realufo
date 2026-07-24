@@ -2,14 +2,18 @@
 // (<900px). Ported from realufo-handoff/RealUFO.dc.html lines 100-108:
 // optional back button, optional brand saucer, title/subtitle block, compact
 // login button.
+//
+// Title/sub (line 104/105's `{{ headerTitle }}`/`{{ headerSub }}`) come from
+// the PageTitleProvider context (Task 23b — lib/pageTitle.tsx), not props:
+// the AppShell-mounted provider is the single source of truth screens push
+// their contextual title into, and AppBar just reads it.
 import { Saucer } from "./Saucer";
+import { usePageTitle } from "../lib/pageTitle";
 
 export interface AppBarProps {
   canBack?: boolean;
   onBack?: () => void;
   showBrand?: boolean;
-  headerTitle: string;
-  headerSub: string;
   onLogin?: () => void;
   /** Compact login label (line 107's `{{ meShort }}`). Real auth wiring lands in Task 16/23. */
   meShort?: string;
@@ -19,11 +23,10 @@ export function AppBar({
   canBack = false,
   onBack,
   showBrand = true,
-  headerTitle,
-  headerSub,
   onLogin,
   meShort = "GUEST",
 }: AppBarProps) {
+  const { title: headerTitle, sub: headerSub } = usePageTitle();
   return (
     <div
       data-appbar

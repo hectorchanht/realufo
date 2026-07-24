@@ -36,6 +36,7 @@ import { useThread } from "../api/queries";
 import type { Post, ThreadSourceRecord } from "../api/types";
 import { VoteButton } from "../components/VoteButton";
 import { useOverlay } from "../overlays/OverlayProvider";
+import { useSetPageTitle } from "../lib/pageTitle";
 
 // Matches Doc.tsx's own local STANCE_COLOR/stanceColor (FRONTEND-CONTEXT.md
 // "Stance colors") — kept duplicated for the same reason Doc.tsx gives for
@@ -167,6 +168,12 @@ export function Thread() {
   const thread = data?.thread;
   const sourceRecord = data?.sourceRecord ?? null;
   const posts = data?.posts ?? [];
+
+  // AppBar title — prototype's thread branch (RealUFO.dc.html:569): called
+  // unconditionally (before the loading/not-found returns below) so hook
+  // order never varies; the "THREAD" fallback matches the old path-based
+  // default while `thread` hasn't loaded yet.
+  useSetPageTitle(thread?.boardSlug || "THREAD", thread?.title || "");
 
   if (isLoading) {
     return (

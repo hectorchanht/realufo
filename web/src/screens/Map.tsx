@@ -24,6 +24,7 @@ import { useNavigate } from "react-router-dom";
 import { useBootstrap } from "../api/queries";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { project } from "../lib/map";
+import { useSetPageTitle } from "../lib/pageTitle";
 import type { Sighting, Stats } from "../api/types";
 
 // prototype line 318: dot diameter in px, `9 + min(15, n/11)` — scales with
@@ -40,6 +41,9 @@ const STAT_TILES: Array<{ key: keyof Pick<Stats, "records" | "videos" | "threads
 ];
 
 export function MapScreen() {
+  // AppBar title — prototype's `titles.map` (RealUFO.dc.html:566).
+  useSetPageTitle("SIGHTING MAP", "Where the files come from");
+
   const { data } = useBootstrap();
   const navigate = useNavigate();
   const { toast } = useOverlay();

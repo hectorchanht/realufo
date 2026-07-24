@@ -33,6 +33,7 @@ import type { RecordsParams } from "../api/queries";
 import type { RecordKind } from "../api/types";
 import { VoteButton } from "../components/VoteButton";
 import { useOverlay } from "../overlays/OverlayProvider";
+import { useSetPageTitle } from "../lib/pageTitle";
 
 // prototype line 522: `if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4)`.
 const SWIPE_MIN_DX = 55;
@@ -155,6 +156,13 @@ export function Doc() {
   const record = detail?.record;
   const comments = commentsData?.comments ?? [];
   const promotedThreads = detail?.promotedThreads ?? [];
+
+  // AppBar title — prototype's doc branch (RealUFO.dc.html:568):
+  // `ht=(r&&r.agency)||'FILE'; hs=r?this._short(r.title):''`. Called
+  // unconditionally (before the loading/not-found returns below) so hook
+  // order never varies; while `record` hasn't loaded yet, the same "FILE"
+  // fallback the prototype uses for its own undefined-record case is fine.
+  useSetPageTitle(record?.agency || "FILE", record ? shortTitle(record.title) : "");
 
   if (isLoading) {
     return (

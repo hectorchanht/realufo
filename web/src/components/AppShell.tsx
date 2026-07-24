@@ -16,14 +16,23 @@
 // desktop it sits as a secondary sticky bar under TopNav carrying the back
 // button + per-screen title (needed since TopNav itself has no back
 // affordance for detail screens like /doc/:id).
-import { useEffect } from "react";
+//
+// `<PageTitleProvider>` (Task 23b — lib/pageTitle.tsx) wraps AppBar + the
+// Outlet screens together, right here, so it's an ancestor of both: AppBar
+// reads the live `{title,sub}` from context, and whichever screen the
+// router mounts into `<Outlet/>` pushes its own contextual value into that
+// same context via `useSetPageTitle`. This replaces the old purely
+// path-based `headerForPath`/`documentTitleForPath` lookup (navItems.ts),
+// which had no way to reflect a detail screen's actually-loaded data (every
+// /doc/:id showed the same generic "FILE", regardless of record).
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { useTheme } from "../theme/useTheme";
+import { PageTitleProvider } from "../lib/pageTitle";
 import { TopNav } from "./TopNav";
 import { AppBar } from "./AppBar";
 import { BottomTab } from "./BottomTab";
-import { activeTabForPath, canBackForPath, documentTitleForPath, headerForPath } from "./navItems";
+import { activeTabForPath, canBackForPath } from "./navItems";
 
 export function AppShell() {
   const isDesktop = useMediaQuery("(min-width:900px)");
@@ -32,15 +41,10 @@ export function AppShell() {
   const { scanlines } = useTheme();
 
   const activeTab = activeTabForPath(pathname);
-  const { title: headerTitle, sub: headerSub } = headerForPath(pathname);
   // canBack ports the prototype's `hist.length>0` (back only on detail
   // screens — switching top-level tabs resets its history) — see
   // navItems.ts's canBackForPath doc comment.
   const canBack = canBackForPath(pathname);
-
-  useEffect(() => {
-    document.title = documentTitleForPath(pathname);
-  }, [pathname]);
 
   return (
     <div data-app-shell className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-bg">
@@ -63,17 +67,13 @@ export function AppShell() {
           className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          <AppBar
-            canBack={canBack}
-            onBack={() => navigate(-1)}
-            showBrand={!canBack}
-            headerTitle={headerTitle}
-            headerSub={headerSub}
-          />
+          <PageTitleProvider>
+            <AppBar canBack={canBack} onBack={() => navigate(-1)} showBrand={!canBack} />
 
-          <div data-screenpad className="relative px-4 pb-10 pt-[18px]">
-            <Outlet />
-          </div>
+            <div data-screenpad className="relative px-4 pb-10 pt-[18px]">
+              <Outlet />
+            </div>
+          </PageTitleProvider>
         </main>
 
         {!isDesktop && <BottomTab activeTab={activeTab} />}

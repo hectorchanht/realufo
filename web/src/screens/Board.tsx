@@ -34,6 +34,7 @@ import { useParams } from "react-router-dom";
 import { useBoardThreads, useBootstrap } from "../api/queries";
 import { ThreadRow } from "../components/ThreadRow";
 import { useOverlay } from "../overlays/OverlayProvider";
+import { useSetPageTitle } from "../lib/pageTitle";
 
 function stripSlashes(s: string): string {
   return s.replace(/^\/+|\/+$/g, "");
@@ -48,6 +49,12 @@ export function Board() {
 
   const { data: threadsData, isLoading: threadsLoading } = useBoardThreads(board?.id ?? "");
   const threads = threadsData?.threads ?? [];
+
+  // AppBar title — prototype's board branch (RealUFO.dc.html:570): called
+  // unconditionally (before the loading/not-found returns below) so hook
+  // order never varies; the "BOARD" fallback matches the old path-based
+  // default while `board` hasn't resolved yet.
+  useSetPageTitle(board?.slug || "BOARD", board?.desc || "");
 
   function handleNewThread() {
     if (!board) return;

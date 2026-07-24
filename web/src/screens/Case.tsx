@@ -8,6 +8,7 @@
 // every other screen task.
 import { Link, useParams } from "react-router-dom";
 import { useCase } from "../api/queries";
+import { useSetPageTitle } from "../lib/pageTitle";
 
 export function Case() {
   const { slug = "" } = useParams();
@@ -15,6 +16,11 @@ export function Case() {
 
   const caseDetail = data?.case;
   const relatedThread = data?.relatedThread ?? null;
+
+  // AppBar title — prototype's case branch (RealUFO.dc.html:571):
+  // `ht='COLD CASE'; hs=c?c.name:''`. Called unconditionally (before the
+  // loading/not-found returns below) so hook order never varies.
+  useSetPageTitle("COLD CASE", caseDetail?.name || "");
 
   if (isLoading) {
     return (

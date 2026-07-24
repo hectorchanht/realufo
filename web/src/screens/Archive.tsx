@@ -38,6 +38,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useBootstrap, useRecords } from "../api/queries";
 import { DocCard } from "../components/DocCard";
+import { useSetPageTitle } from "../lib/pageTitle";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -131,6 +132,9 @@ function TypeChip({ selected, style, onClick, children }: ChipProps) {
 }
 
 export function Archive() {
+  // AppBar title — prototype's `titles.archive` (RealUFO.dc.html:566).
+  useSetPageTitle("THE ARCHIVE", "91,808 records · 15 sources");
+
   const [searchParams, setSearchParams] = useSearchParams();
 
   const q = searchParams.get("q") ?? "";

@@ -23,6 +23,7 @@
 import { useBootstrap } from "../api/queries";
 import { BoardRow } from "../components/BoardRow";
 import { useOverlay } from "../overlays/OverlayProvider";
+import { useSetPageTitle } from "../lib/pageTitle";
 
 // Default board a fresh anon "NEW" thread lands in — prototype line 215
 // wires `onNewThread` with no per-board context (it's from the board LIST
@@ -31,6 +32,9 @@ import { useOverlay } from "../overlays/OverlayProvider";
 const DEFAULT_BOARD = "uap";
 
 export function Boards() {
+  // AppBar title — prototype's `titles.boards` (RealUFO.dc.html:566).
+  useSetPageTitle("THE BOARDS", "Anonymous. Mostly.");
+
   const { openComposer } = useOverlay();
   const { data: boot, isLoading } = useBootstrap();
 
