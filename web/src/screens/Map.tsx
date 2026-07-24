@@ -25,6 +25,7 @@ import { useBootstrap } from "../api/queries";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { project } from "../lib/map";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { WorldMap } from "../components/WorldMap";
 import type { Sighting, Stats } from "../api/types";
 
 // prototype line 318: dot diameter in px, `9 + min(15, n/11)` — scales with
@@ -74,15 +75,17 @@ export function MapScreen() {
         style={{ background: "radial-gradient(120% 120% at 50% 0%, var(--surface), var(--bg2))" }}
       >
         <div
-          className="absolute inset-0 opacity-50"
+          className="absolute inset-0 opacity-30"
           style={{
             backgroundImage:
               "linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px)",
             backgroundSize: "9.09% 12.5%",
           }}
         />
-        <div className="absolute left-0 right-0 top-1/2 h-px" style={{ background: "var(--line2)" }} />
-        <div className="absolute bottom-0 top-0 left-1/2 w-px" style={{ background: "var(--line2)" }} />
+        {/* Pixelated equirectangular world map behind the sighting dots. */}
+        <WorldMap />
+        <div className="absolute left-0 right-0 top-1/2 h-px opacity-60" style={{ background: "var(--line2)" }} />
+        <div className="absolute bottom-0 top-0 left-1/2 w-px opacity-60" style={{ background: "var(--line2)" }} />
         {sightings.map((sighting) => {
           const { x, y } = project(sighting.lat, sighting.lng);
           const size = dotSize(sighting.count);
