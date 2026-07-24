@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, afterEach } from "vitest";
 import { renderAppAt } from "./util";
 
@@ -103,7 +103,11 @@ describe("AppShell", () => {
 
   it("shows the AppBar back button on detail routes (e.g. /doc/:id)", async () => {
     renderAppAt("/doc/abc123");
-    await screen.findByText("Doc", { selector: "[data-screen='doc']" });
+    // Real Doc screen (Task 19) — its api/queries hooks aren't mocked in this
+    // suite, so this only waits for its always-rendered `data-screen="doc"`
+    // wrapper (present in every branch: loading, not-found, or loaded), not
+    // for any specific fetched content.
+    await waitFor(() => expect(document.querySelector("[data-screen='doc']")).toBeInTheDocument());
     expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
   });
 });

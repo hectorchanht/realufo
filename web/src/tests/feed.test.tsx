@@ -83,6 +83,13 @@ vi.mock("../api/queries", () => ({
   useBootstrap: () => ({ data: mockBootstrap, isLoading: false }),
   useFeed: () => ({ data: mockFeed, isLoading: false }),
   useVote: () => ({ mutate: vi.fn(), isPending: false }),
+  // Stubs for the real Doc screen (Task 19) — clicking a featured DocCard
+  // below navigates to /doc/:id, which now calls these for real; `data:
+  // undefined` resolves Doc straight to its "file not found" state, which is
+  // all this suite needs (it only asserts that routing happened).
+  useRecord: () => ({ data: undefined, isLoading: false }),
+  useComments: () => ({ data: undefined, isLoading: false }),
+  useRecords: () => ({ data: undefined, isLoading: false }),
 }));
 
 describe("Feed", () => {
@@ -109,7 +116,10 @@ describe("Feed", () => {
     const card = title.closest("a");
     expect(card).toHaveAttribute("href", "/doc/rec1");
     fireEvent.click(card as HTMLElement);
-    await screen.findByText("Doc", { selector: "[data-screen='doc']" });
+    // Real Doc screen (Task 19) — with useRecord() stubbed to `undefined`
+    // above, it resolves straight to its "file not found" state; this only
+    // needs to prove the click navigated to the /doc/:id route.
+    await screen.findByText(/file not found/i, { selector: "[data-screen='doc']" });
   });
 
   it("links 'all boards ›' to /boards", async () => {
