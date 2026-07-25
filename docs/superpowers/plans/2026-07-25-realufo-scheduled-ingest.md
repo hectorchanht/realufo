@@ -447,7 +447,7 @@ git commit -m "feat(ingest): curl_cffi fetch + idempotent R2 mirror"
 
 **Interfaces:**
 - Consumes: `Candidate`, `mapping.*`, `models.*`.
-- Produces: `wargov.candidates(csv_paths: list[str], dvids_map: dict[str,str], taken: set[str]) -> list[Candidate]`. Each PDF/IMG/VID row → Candidate; `_origin` attr set to the war.gov source URL for mirroring; VID rows unresolved by `dvids_map` are skipped. `wargov.ARCHIVE_ROW` = dict for the archives table.
+- Produces: `wargov.candidates(csv_paths: list[str], dvids_map: dict[str,str], taken: set[str]) -> list[Candidate]`. Each PDF/IMG/VID row → Candidate; `_origin` attr set to the war.gov source URL for mirroring; VID rows unresolved by `dvids_map` are skipped. `wargov.ARCHIVE_ROW` = dict for the archives table. Also `wargov.refresh_csvs(dest_dir: str, fallback_paths: list[str]) -> list[str]` — re-fetches the live war.gov CSVs (so new releases surface as new rows), falling back to committed copies; network wrapper, not unit-tested.
 
 - [ ] **Step 1: Create fixture** — `crawler/ingest/tests/fixtures/wargov_sample.csv`
 
@@ -542,6 +542,31 @@ def candidates(csv_paths, dvids_map, taken):
                           cdn_url=cdn, mime=MIME[kind], thumb_url=thumb)
             c._origin = origin
             out.append(c)
+    return out
+
+
+CSV_URLS = [
+    ("https://www.war.gov/Portals/1/Interactive/2026/UFO/uap-data.csv", "uap-data.csv"),
+    ("https://www.war.gov/Portals/1/Interactive/2026/UFO/uap-release001.csv", "uap-release001.csv"),
+]
+
+def refresh_csvs(dest_dir, fallback_paths):
+    """Re-fetch the war.gov CSVs (curl_cffi) so brand-new releases surface as
+    new rows. Falls back to the committed CSV for any URL that fails. Network
+    wrapper — not unit-tested (like d1/r2 wrappers)."""
+    import os, shutil
+    from ..fetch import download
+    out = []
+    for url, name in CSV_URLS:
+        dest = os.path.join(dest_dir, name)
+        try:
+            download(url, dest)
+        except Exception:
+            fb = next((p for p in fallback_paths if p.endswith(name)), None)
+            if not (fb and os.path.exists(fb)):
+                continue
+            shutil.copy(fb, dest)
+        out.append(dest)
     return out
 ```
 
@@ -720,9 +745,11 @@ def _dvids_map():
         m.update(json.load(open(p)))
     return m
 
-def _load_source(slug, taken):
+def _load_source(slug, taken, work):
     if slug == "wargov":
-        return wargov.candidates(CSV_PATHS, _dvids_map(), taken), wargov.ARCHIVE_ROW
+        # re-fetch live war.gov CSVs so new releases surface as new rows
+        paths = wargov.refresh_csvs(work, CSV_PATHS) or CSV_PATHS
+        return wargov.candidates(paths, _dvids_map(), taken), wargov.ARCHIVE_ROW
     return snapshot.candidates(slug, DATA, taken), snapshot.ARCHIVE_ROWS[slug]
 
 def build_plan(existing_ids, existing_urls, all_candidates):
@@ -734,7 +761,7 @@ def run(sources, dry_run=False, limit=None):
     summary = {}
     with tempfile.TemporaryDirectory() as work:
         for slug in sources:
-            cands, arch_row = _load_source(slug, taken)
+            cands, arch_row = _load_source(slug, taken, work)
             plan = build_plan(existing_ids, existing_urls, cands)
             if limit:
                 plan = plan[:limit]
