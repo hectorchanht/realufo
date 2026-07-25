@@ -1,0 +1,8 @@
+{"v1": {"schemaVersion": 1, "slug": "aaro", "assets": [
+  {"t": "PDF", "ti": "AARO Report A", "ag": "AARO", "de": "d", "date": "", "region": "",
+   "u": "https://assets.realufo.org/pdfs/aaro/report-a.pdf", "th": "https://assets.realufo.org/pdf-thumbs/aaro/report-a.jpg"},
+  {"t": "IMG", "ti": "Go Fast UAP", "ag": "AARO", "de": "", "date": "", "region": "",
+   "u": "https://www.aaro.mil/x.jpg", "th": ""},
+  {"t": "PDF", "ti": "AARO Report A", "ag": "AARO", "de": "d", "date": "", "region": "",
+   "u": "https://assets.realufo.org/pdfs/aaro/report-a.pdf", "th": ""}
+]}}
