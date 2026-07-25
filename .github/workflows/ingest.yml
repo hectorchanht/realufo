@@ -1,0 +1,29 @@
+name: ingest
+on:
+  schedule:
+    - cron: "0 6 * * *"        # daily 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      dry_run: { description: "dry run (no writes)", type: boolean, default: true }
+      sources: { description: "comma sources", default: "wargov,aaro,nasa,nara" }
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: pip install -r crawler/ingest/requirements.txt pytest
+      - run: cd crawler && python -m pytest ingest/tests/ -q
+      - run: npm i -g wrangler
+      - name: ingest
+        working-directory: crawler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python -m ingest \
+            --sources "${{ github.event.inputs.sources || 'wargov,aaro,nasa,nara' }}" \
+            ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false') && ' ' || '--dry-run' }}
