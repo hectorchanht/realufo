@@ -26,7 +26,8 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SOURCES: ${{ github.event.inputs.sources || 'wargov,aaro,nasa,nara' }}
-          LIVE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false' }}
+          # scheduled runs write (auto-update); manual dispatch stays dry-run unless dry_run=false
+          LIVE: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run == 'false' }}
         run: |
           if [ "$LIVE" = "true" ]; then
             python -m ingest --sources "$SOURCES" | tee ingest-summary.txt
