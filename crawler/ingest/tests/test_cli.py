@@ -12,3 +12,21 @@ def test_build_plan_keeps_only_unregistered_urls():
     b = _c("B", f"{R2_BASE}/pdfs/wargov/b.pdf")
     plan = cli.build_plan({"A"}, {a.cdn_url}, [a, b])
     assert [c.id for c in plan] == ["B"]      # a already registered by url
+
+
+def test_run_isolates_source_failure(monkeypatch):
+    monkeypatch.setattr(cli.d1, "load_existing", lambda: (set(), set()))
+
+    def fake_load_source(slug, taken, work):
+        if slug == "aaro":
+            raise RuntimeError("boom")
+        return [], {}
+
+    monkeypatch.setattr(cli, "_load_source", fake_load_source)
+
+    summary = cli.run(["aaro", "nara"], dry_run=True)
+
+    assert "aaro" in summary and "nara" in summary
+    assert summary["aaro"]["failed"] == 1
+    assert "error" in summary["aaro"]
+    assert summary["nara"]["failed"] == 0

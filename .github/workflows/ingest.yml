@@ -1,4 +1,6 @@
 name: ingest
+permissions:
+  contents: read
 on:
   schedule:
     - cron: "0 6 * * *"        # daily 06:00 UTC
@@ -23,7 +25,16 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SOURCES: ${{ github.event.inputs.sources || 'wargov,aaro,nasa,nara' }}
+          LIVE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false' }}
         run: |
-          python -m ingest \
-            --sources "${{ github.event.inputs.sources || 'wargov,aaro,nasa,nara' }}" \
-            ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false') && ' ' || '--dry-run' }}
+          if [ "$LIVE" = "true" ]; then
+            python -m ingest --sources "$SOURCES" | tee ingest-summary.txt
+          else
+            python -m ingest --sources "$SOURCES" --dry-run | tee ingest-summary.txt
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ingest-summary
+          path: crawler/ingest-summary.txt

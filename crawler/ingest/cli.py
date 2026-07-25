@@ -31,24 +31,28 @@ def run(sources, dry_run=False, limit=None):
     summary = {}
     with tempfile.TemporaryDirectory() as work:
         for slug in sources:
-            cands, arch_row = _load_source(slug, taken, work)
-            plan = build_plan(existing_ids, existing_urls, cands)
-            if limit:
-                plan = plan[:limit]
-            mirrored, failed = [], 0
-            for c in plan:
-                if dry_run:
-                    mirrored.append(c); continue
-                if r2.mirror(c, work):
-                    mirrored.append(c); existing_urls.add(c.cdn_url)
-                else:
-                    failed += 1
-            summary[slug] = {"new": len(plan), "mirrored": len(mirrored), "failed": failed}
-            if mirrored and not dry_run:
-                sql = d1.emit_sql(mirrored, {slug: arch_row})
-                p = os.path.join(work, f"{slug}.sql")
-                open(p, "w").write(sql)
-                d1.apply_sql(p)
+            try:
+                cands, arch_row = _load_source(slug, taken, work)
+                plan = build_plan(existing_ids, existing_urls, cands)
+                if limit:
+                    plan = plan[:limit]
+                mirrored, failed = [], 0
+                for c in plan:
+                    if dry_run:
+                        mirrored.append(c); continue
+                    if r2.mirror(c, work):
+                        mirrored.append(c); existing_urls.add(c.cdn_url)
+                    else:
+                        failed += 1
+                summary[slug] = {"new": len(plan), "mirrored": len(mirrored), "failed": failed}
+                if mirrored and not dry_run:
+                    sql = d1.emit_sql(mirrored, {slug: arch_row})
+                    p = os.path.join(work, f"{slug}.sql")
+                    open(p, "w").write(sql)
+                    d1.apply_sql(p)
+            except Exception as e:
+                summary[slug] = {"new": 0, "mirrored": 0, "failed": 1, "error": str(e)}
+                continue
     return summary
 
 def main(argv=None):
@@ -60,4 +64,6 @@ def main(argv=None):
     summary = run([s.strip() for s in args.sources.split(",") if s.strip()], args.dry_run, args.limit)
     for slug, s in summary.items():
         print(f"{slug:8} new={s['new']:4} mirrored={s['mirrored']:4} failed={s['failed']:4}")
+        if s.get("error"):
+            print(f"  ERROR: {s['error']}")
     sys.exit(1 if any(s["failed"] for s in summary.values()) else 0)
