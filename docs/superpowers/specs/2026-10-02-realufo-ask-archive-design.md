@@ -34,7 +34,7 @@ Success looks like:
 | Vector store | **Vectorize** index `realufo-chunks`, cosine; chunk text in vector metadata | Account is on Workers Paid (10M stored dims included). Text in metadata = no extra D1 read on the ask path. |
 | Answer model | **`@cf/qwen/qwen3-30b-a3b-fp8`** via Workers AI | User asked for cheapest. Same price as Llama 3.2 3B ($0.051/M in, $0.335/M out) but a far larger model — best citation quality per dollar on the catalog. |
 | Spend control | **Global `ASK_DAILY_MAX=2000`** + per-browser/IP rate limit + answer cache | Hard ceiling ≈ $16/month; cache makes shared links free. |
-| Rollout | **`FEATURE_ASK` flag**, off until index is built and tuned | Code can deploy before data exists; instant kill switch. |
+| Rollout | **`FEATURE_ASK` = `off` \| `hidden` \| `on`** | `off`: endpoint 503 + UI hidden (kill switch). `hidden`: endpoint live, UI hidden — lets the golden set run against prod before launch. `on`: live. |
 | Deferred | Re-OCR, video transcripts, hybrid keyword+vector, streaming, follow-ups, per-doc ask, OG cards for `?ask=` | Each is additive; none changes this design. |
 
 ## 3. Architecture
@@ -116,7 +116,7 @@ existing `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secrets.
 
 `GET /api/ask?q=<question>`
 
-0. **Flag:** `FEATURE_ASK !== "true"` → 503 "Ask is resting — try again later".
+0. **Flag:** `FEATURE_ASK` not `hidden`/`on` → 503 "Ask is resting — try again later".
 1. **Normalize:** trim, collapse whitespace. Reject with 400 if < 3 or > 300 chars. Cache key = lowercased normalized text.
 2. **Cache:** `SELECT answer FROM ask_cache WHERE key=? AND created_at >= now−7d`. Hit → return it (`cached: true`); no rate-limit or cap charge.
 3. **Guards** (in this order, so a capped request records nothing):
@@ -131,10 +131,10 @@ existing `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secrets.
 7. **Respond** `200 {answer, sources: [{n, record_id, title, page, kind, thumb}], cached: false}` and insert into `ask_cache`.
 8. **Errors:** any Workers AI / Vectorize failure (incl. quota) → 503 "Ask is resting — try again later". Never 500 to the client.
 
-**Bootstrap:** `/api/bootstrap` adds `features: { ask: env.FEATURE_ASK === "true" }`.
+**Bootstrap:** `/api/bootstrap` adds `features: { ask: env.FEATURE_ASK === "on" }`.
 
 **Env / bindings (`wrangler.jsonc`):** `"ai": {"binding": "AI"}`,
-`"vectorize": [{"binding": "VECTORIZE", "index_name": "realufo-chunks"}]`,
+`"vectorize": [{"binding": "VECTORIZE", "index_name": "realufo-chunks"}]` — **no `remote: true`** (verified: it breaks the vitest workers pool),
 vars `FEATURE_ASK`, `ASK_DAILY_MAX` (`"2000"`), `ASK_MIN_SCORE` (`"0.45"`).
 
 ### 4.4 Web
@@ -178,14 +178,14 @@ the included 50M until ~1,000 answers/day; above that < $1/month.
 - **Prompt injection:** the question is delimited and labelled untrusted; the model has no tools and its output is rendered as plain text, so the worst case is a wrong or odd answer, never code execution or data access.
 - **Citation integrity:** out-of-range `[n]` stripped; every displayed source comes from the retrieved set and is hydrated from D1.
 - **Indexer crash safety:** `text_index` written last; `failed` rows retried next run; dry-run writes nothing.
-- **Kill switch:** `FEATURE_ASK=false` hides the UI; the endpoint returns 503 when the flag is off.
+- **Kill switch:** `FEATURE_ASK=off` hides the UI and makes the endpoint return 503.
 
 ## 7. Testing
 
 TDD throughout (red → green per behavior).
 
 - **Python (`crawler/ingest/tests/test_textindex.py`):** chunker splits per page, overlap, sentence-boundary breaks, noise filter, title/page prefix; vector id ≤ 64 bytes for the longest live record id; selection skips `indexed`/`empty`, retries `failed`; `--dry-run` makes no writes; `--limit` honored; re-index deletes old ids; embed batches of 100 (HTTP mocked); `ask_cache` cleared only when ≥ 1 indexed.
-- **Worker (`worker/tests/ask.spec.ts`):** fake `env.AI` / `env.VECTORIZE` injected via env override (Vectorize has no local simulator). 400 short/long; cache hit → zero AI calls; below threshold → no LLM call; invalid `[n]` stripped; sources hydrated from D1; daily cap → 503; limiter → 429; AI throw → 503; flag off → 503; prompt contains numbered sources and delimited question; bootstrap exposes `features.ask`.
+- **Worker (`worker/tests/ask.spec.ts`):** fake `env.AI` / `env.VECTORIZE` injected via env override (Vectorize has no local simulator). 400 short/long; cache hit → zero AI calls; below threshold → no LLM call; invalid `[n]` stripped; sources hydrated from D1; daily cap → 503; limiter → 429; AI throw → 503; flag off → 503; prompt contains numbered sources and delimited question; bootstrap exposes `features.ask` (true only for `on`); `hidden` serves the endpoint.
 - **Web:** typing in ask mode issues no request; Enter/button sets `?ask=`; `?ask=` deep link starts in ask mode; toggle hidden when flag off; `[n]` button highlights its source; every state renders.
 - **Golden set (`crawler/ingest/data/ask_golden.json` + `python -m ingest.ask_eval`):** ~10 real questions, each with expected record ids; reports recall@8 and which questions miss. Run against the deployed endpoint before launch and to tune `ASK_MIN_SCORE`.
 
@@ -197,16 +197,16 @@ TDD throughout (red → green per behavior).
    - GitHub Actions `CLOUDFLARE_API_TOKEN` secret: add **Workers AI Read + Edit** and **Vectorize Edit** to its existing R2 + D1 permissions.
 2. `npx wrangler vectorize create realufo-chunks --dimensions=1024 --metric=cosine`.
 3. Migration `0006_ask.sql`; `pnpm db:migrate` (also applies pending `0005`).
-4. Deploy Worker with bindings and `FEATURE_ASK=false`.
+4. Deploy Worker with bindings and `FEATURE_ASK=hidden`.
 5. `python -m ingest.textindex --limit 20`; inspect `text_index` + a few vectors; then full run (~556 records).
 6. Run golden set; tune `ASK_MIN_SCORE`; spot-check answers.
-7. Set `FEATURE_ASK=true`; deploy.
+7. Set `FEATURE_ASK=on`; deploy.
 
 ## 9. Operations
 
 - Daily GHA indexes new records after ingest/thumbs; new releases answerable next morning.
 - Cache cleared whenever new records are indexed; otherwise 7-day TTL.
-- `wrangler dev` uses **remote** `AI` / `VECTORIZE` bindings — local asks consume real (tiny) quota; noted in README.
+- Local `wrangler dev`: Vectorize has no local simulator, so `/api/ask` returns 503 locally. Ask is exercised by unit tests (fake bindings) and on prod in `hidden` mode.
 - Watch: Workers AI dashboard (neurons/day); `SELECT count(*) FROM rate_events WHERE action='ask' AND created_at >= date('now')`.
 
 ## 10. Out of scope
