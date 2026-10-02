@@ -18,6 +18,9 @@ export interface MetaInput {
   breadcrumbs?: { name: string; href: string }[];
   // e.g. "noindex" for pages whose content (AI answers) must not be indexed.
   robots?: string;
+  // Share-preview text (og:description) when it should differ from the search
+  // snippet; defaults to description. Spec 7: the TL;DR one-liner.
+  ogDescription?: string;
 }
 
 // `<` escaped so user text can't close the script element.
@@ -34,6 +37,7 @@ const ldScript = (o: unknown) => `<script type="application/ld+json">${JSON.stri
 export function injectMeta(html: string, m: MetaInput): string {
   const t = esc(m.title);
   const d = esc(snippet(m.description || DEFAULT_DESCRIPTION));
+  const od = m.ogDescription ? esc(snippet(m.ogDescription)) : d;
   const u = esc(m.url);
   const img = m.image ? esc(m.image) : "";
   const tags = [
@@ -44,7 +48,7 @@ export function injectMeta(html: string, m: MetaInput): string {
     `<meta property="og:site_name" content="RealUFO">`,
     `<meta property="og:type" content="${m.type ?? "article"}">`,
     `<meta property="og:title" content="${t}">`,
-    `<meta property="og:description" content="${d}">`,
+    `<meta property="og:description" content="${od}">`,
     `<meta property="og:url" content="${u}">`,
     img && `<meta property="og:image" content="${img}">`,
     `<meta name="twitter:card" content="${img ? "summary_large_image" : "summary"}">`,

@@ -172,6 +172,7 @@ export type DocData = {
   related: { key: string; label: string; records: RecordLink[] }[];
   fullText?: { pages: { n: number; text: string }[]; truncated: boolean; total_pages: number; aiSummary?: string | null } | null;
   hubs?: Partial<Record<"release" | "agency" | "location" | "decade", string>>;
+  tldr?: { bullets: string[]; oneLiner: string; cardUrl: string | null } | null;
 };
 
 const RELATED_HEADING: Record<string, string> = {
@@ -242,6 +243,12 @@ export function docFooter(d: DocData): Link[] {
   ].filter((l): l is Link => !!l);
 }
 
+function tldrSection(d: DocData): string {
+  const t = d.tldr;
+  if (!t) return "";
+  return `<section><h2>TL;DR</h2><p>${esc(t.oneLiner)}</p><ul>${t.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul></section>`;
+}
+
 export function docBody(d: DocData): string {
   const r = d.record;
   const moments = docMoments(d);
@@ -270,6 +277,7 @@ export function docBody(d: DocData): string {
     paras(moments.prose),
     momentsSection(d, moments),
     `<p>${a({ href: `/api/file/${encodeURIComponent(r.id)}`, text: "Open original file" })}</p>`,
+    tldrSection(d),
     fullTextSection(d),
     series.length ? `<p>${series.join(" · ")}</p>` : "",
     ...d.related.map((g) => section(`${RELATED_HEADING[g.key] ?? "Related"}: ${g.label}`, docLinks(g.records))),
