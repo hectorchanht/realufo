@@ -74,7 +74,7 @@ function fileMd(r: FullRow, origin: string): string {
     `## ${docTitle(r.title, r.id, r.kind)}`, "",
     `- Page: ${origin}/doc/${encodeURIComponent(r.id)}`, `- Original file: ${origin}/api/file/${encodeURIComponent(r.id)}`, ...facts, "",
     ...(r.summary ? ["### Official summary", "", r.summary.trim(), ""] : []),
-    ...(r.ai_summary ? ["### AI summary", "", r.ai_summary.trim(), ""] : []),
+    ...(r.ai_summary ? [r.kind === "image" ? "### AI visual description" : "### AI summary", "", r.ai_summary.trim(), ""] : []),
     ...(pages.length ? ["### Full text", "", ...pages.flatMap((p) => [`#### Page ${p.n}`, "", p.text.trim(), ""])] : []),
     ...(r.truncated ? [`(Text continues in the original file: ${r.total_pages} pages.)`, ""] : []),
     "",

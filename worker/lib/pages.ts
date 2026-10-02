@@ -7,7 +7,7 @@ import { loadHub, listHubsCached } from "../routes/hubs";
 import type { HubKind } from "./hubs";
 import {
   DEFAULT_DESCRIPTION, type DocData, type Link, docBody, docFooter, threadBody, boardBody, caseBody, homeBody, tabBody,
-  section, docLinks, countList, docTitle, docTitleParts, boardHref, docHref, hubBody, browseBody, hubHref,
+  section, docLinks, countList, docTitle, docTitleParts, boardHref, docHref, hubBody, browseBody, hubHref, docMoments,
 } from "./ssr";
 
 // One SPA route's pre-render: <head> meta (url is filled in by serveWithMeta)
@@ -120,6 +120,18 @@ const docPage: Loader = async (env, g, url) => {
     d.assets.find((a) => a.role === "thumb") ?? d.assets.find((a) => a.role === "full" && a.mime?.startsWith("image/"));
   const full = d.assets.find((a) => a.role === "full");
   const dur = full?.duration;
+  // Official key moments → Clips, so search can deep-link into the video (?t=
+  // seeks). AI moments stay on the page, where they carry their disclaimer.
+  const km = docMoments(d);
+  const moments = km.ai ? [] : km.moments;
+  const clips = moments.map((m, i) => {
+    const end = m.end ?? moments[i + 1]?.start ?? dur;
+    return {
+      "@type": "Clip", name: m.text, startOffset: Math.floor(m.start),
+      endOffset: end && end > m.start ? Math.ceil(end) : undefined,
+      url: `${url.origin}${docHref(x.id)}?t=${Math.floor(m.start)}`,
+    };
+  });
   // Video/image types make the file eligible for video and image search results.
   const media =
     x.kind === "video" && full
@@ -128,6 +140,7 @@ const docPage: Loader = async (env, g, url) => {
           // Required by Google; AARO has no release date, so fall back to when we added it.
           uploadDate: isoDate(x.doc_date) || x.created_at?.slice(0, 10),
           duration: dur ? `PT${Math.floor(dur / 60)}M${Math.floor(dur % 60)}S` : undefined,
+          hasPart: clips.length ? clips : undefined,
         }
       : x.kind === "image" && full
         ? { "@type": "ImageObject", contentUrl: full.cdn_url, thumbnailUrl: thumb?.cdn_url, creditText: agency || undefined }

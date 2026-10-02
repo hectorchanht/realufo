@@ -4,6 +4,8 @@
 // things the SPA shows on that URL. Every interpolated value goes through
 // esc(): thread bodies and handles are anonymous user input.
 
+import { parseAiMoments, parseKeyMoments, type KeyMoment } from "../../web/src/lib/keyMoments";
+
 // Same copy as the default block in web/index.html.
 export const DEFAULT_DESCRIPTION =
   "Searchable archive of declassified UAP/UFO records from the Pentagon, CIA, FBI and NASA, with case files, a sighting map and anonymous discussion boards.";
@@ -144,7 +146,7 @@ export type DocData = {
   record: {
     id: string; title: string; summary: string | null; agency: string | null; agency_full: string | null;
     incident_date: string | null; location: string | null; doc_date: string | null; kind: string;
-    created_at?: string | null;
+    created_at?: string | null; ai_moments?: string | null;
   };
   assets: { role: string; cdn_url: string; mime: string | null; duration?: number | null }[];
   promotedThreads: { id: string; title: string }[];
@@ -170,7 +172,9 @@ const textBlock = (t: string) =>
 
 function fullTextSection(d: DocData): string {
   const ft = d.fullText;
-  if (!ft?.pages.length) return "";
+  // Images: no page text, only the AI visual description (crawler ingest.visuals).
+  if (!ft?.pages.length)
+    return ft?.aiSummary ? `<section><h2>${d.record.kind === "image" ? "AI visual description" : "AI summary"}</h2>${textBlock(ft.aiSummary)}</section>` : "";
   const more = ft.truncated
     ? `<p>${a({ href: `/api/file/${encodeURIComponent(d.record.id)}`, text: `Text continues in the original file (${ft.total_pages} pages).` })}</p>`
     : "";
@@ -189,6 +193,26 @@ function media(d: DocData): string {
   return "";
 }
 
+// A video's key moments, as the SPA's KeyMoments shows them: the official
+// time codes from the war.gov description, else the AI ones. `prose` is the
+// summary without those time-coded lines.
+export function docMoments(d: DocData): { moments: KeyMoment[]; ai: boolean; prose: string | null } {
+  const r = d.record;
+  if (r.kind !== "video") return { moments: [], ai: false, prose: r.summary };
+  const official = parseKeyMoments(r.summary);
+  if (official.moments.length) return { ...official, ai: false };
+  return { moments: parseAiMoments(r.ai_moments), ai: true, prose: r.summary };
+}
+
+function momentsSection(d: DocData, m: ReturnType<typeof docMoments>): string {
+  if (!m.moments.length) return "";
+  const note = m.ai ? "<p>AI-generated from video frames · may be inaccurate</p>" : "";
+  const items = m.moments.map(
+    (x) => `<li>${a({ href: `${docHref(d.record.id)}?t=${Math.floor(x.start)}`, text: mmss(x.start) })} ${esc(x.text)}</li>`
+  );
+  return `<section><h2>Key moments</h2>${note}<ul>${items.join("")}</ul></section>`;
+}
+
 // Same "This file" links as the SPA footer (Doc.tsx docFooterLinks).
 export function docFooter(d: DocData): Link[] {
   const h = d.hubs ?? {};
@@ -203,6 +227,7 @@ export function docFooter(d: DocData): Link[] {
 
 export function docBody(d: DocData): string {
   const r = d.record;
+  const moments = docMoments(d);
   const dur = d.assets.find((x) => x.role === "full" && x.duration)?.duration;
   const facts: [string, string | null | undefined][] = [
     ["File", r.id],
@@ -225,7 +250,8 @@ export function docBody(d: DocData): string {
       .filter(([, v]) => v)
       .map(([k, v]) => `<dt>${k}</dt><dd>${esc(String(v))}</dd>`)
       .join("")}</dl>`,
-    paras(r.summary),
+    paras(moments.prose),
+    momentsSection(d, moments),
     `<p>${a({ href: `/api/file/${encodeURIComponent(r.id)}`, text: "Open original file" })}</p>`,
     fullTextSection(d),
     series.length ? `<p>${series.join(" · ")}</p>` : "",

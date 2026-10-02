@@ -5,16 +5,33 @@ import { chip, off, on } from "./ImageTools";
 // PDF text under the doc summary (spec 2026-10-02-realufo-doc-fulltext). With
 // an AI summary (crawler ingest.summaries) an AI SUMMARY | FULL TEXT toggle
 // shows one at a time, summary first. All pages sit in a scroll box so a long
-// document doesn't push the rest of the page away.
+// document doesn't push the rest of the page away. Images have no page text,
+// only an AI visual description (crawler ingest.visuals), shown on its own.
 export default function FullText({
   data,
+  kind,
   onOpenOriginal,
 }: {
   data: FullTextData | null | undefined;
+  kind?: string;
   onOpenOriginal: () => void;
 }) {
   const [view, setView] = useState<"summary" | "text">("summary");
-  if (!data?.pages.length) return null;
+  if (!data?.pages.length) {
+    if (!data?.aiSummary) return null;
+    const label = kind === "image" ? "AI VISUAL DESCRIPTION" : "AI SUMMARY";
+    return (
+      <section aria-label={label} className="mb-[22px]">
+        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 font-mono">
+          <h2 className="text-[11px] font-semibold tracking-[.5px] text-ink">{label}</h2>
+          <span className="text-[10px] text-amber">
+            {kind === "image" ? "AI-generated from the image · may contain errors" : "AI-generated · may contain errors"}
+          </span>
+        </div>
+        <p className="text-[13.5px] leading-[1.65] text-dim">{data.aiSummary}</p>
+      </section>
+    );
+  }
   const showSummary = !!data.aiSummary && view === "summary";
   const tab = (k: "summary" | "text", label: string) => (
     <button

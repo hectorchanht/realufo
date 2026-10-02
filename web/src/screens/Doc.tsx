@@ -691,7 +691,7 @@ export function Doc() {
         ⛶ OPEN ORIGINAL {glyph}
       </button>
 
-      <FullText data={detail.fullText} onOpenOriginal={handleOpenOriginal} />
+      <FullText data={detail.fullText} kind={record.kind} onOpenOriginal={handleOpenOriginal} />
 
       {/* series prev/next — id neighbours (D029 ← D030 → D031), uapbrowser-style */}
       {(detail.series?.prev || detail.series?.next) && (

@@ -78,6 +78,21 @@ describe("parseAiMoments", () => {
   });
 });
 
+describe("parseAiMoments filler", () => {
+  it("drops 'nothing happened' moments unless something appears or moves", () => {
+    const texts = [
+      "No visible change.",
+      "The scene remains static, with no changes to objects, light sources, or sensor behavior observed across the four frames.",
+      "No changes noted between frames; sensor overlays remain static.",
+      "The scene is unchanged. The camera is stable, with no cuts, panning, or zooming.",
+      "The scene is unchanged. A small light source appears at the centre.",
+      "A small bright spot moves right.",
+    ];
+    const raw = JSON.stringify({ moments: texts.map((text, i) => ({ start: i, end: i + 1, text })) });
+    expect(parseAiMoments(raw).map((m) => m.text)).toEqual(texts.slice(4));
+  });
+});
+
 describe("parseAiMoments ordering", () => {
   it("sorts by start so the active-row highlight stays correct", () => {
     const raw = JSON.stringify({ moments: [{ start: 30, end: 40, text: "b" }, { start: 0, end: 30, text: "a" }] });

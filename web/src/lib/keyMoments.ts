@@ -38,7 +38,14 @@ export function parseKeyMoments(summary: string | null | undefined): { prose: st
   return { prose, moments };
 }
 
-/** records.ai_moments JSON → moments; invalid entries dropped, never throws. */
+// The vision model's "nothing happened" filler ("No visible change.", "The
+// scene remains static, …") — ~17% of AI moments. Kept when it still reports
+// something appearing or moving.
+const FILLER = /^(no (visible )?changes?\b|the scene (remains static|is unchanged))/i;
+const EVENT = /\b(appear\w*|mov(e|es|ing))\b/i;
+const isFiller = (text: string) => FILLER.test(text) && !EVENT.test(text);
+
+/** records.ai_moments JSON → moments; invalid entries and filler dropped, never throws. */
 export function parseAiMoments(raw: string | null | undefined): KeyMoment[] {
   if (!raw) return [];
   let doc: unknown;
@@ -54,7 +61,7 @@ export function parseAiMoments(raw: string | null | undefined): KeyMoment[] {
     const ok =
       typeof start === "number" && Number.isFinite(start) && start >= 0 &&
       typeof end === "number" && Number.isFinite(end) && end >= start &&
-      typeof text === "string" && text.trim() !== "";
+      typeof text === "string" && text.trim() !== "" && !isFiller(text.trim());
     return ok ? [{ start, end, text: text.trim() }] : [];
   }).sort((a, b) => a.start - b.start);
 }

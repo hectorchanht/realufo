@@ -51,6 +51,27 @@ describe("docBody", () => {
     );
     expect(docBody(doc({}, { fullText: { ...ft, aiSummary: null } }))).not.toContain("AI summary");
   });
+  it("image with an AI visual description and no page text: own labelled section, no Full text", () => {
+    const ft = { pages: [], truncated: false, total_pages: 0, aiSummary: "A grayscale <IR> frame." };
+    const body = docBody(doc({ kind: "image" }, { fullText: ft }));
+    expect(body).toContain("<section><h2>AI visual description</h2><p>A grayscale &lt;IR&gt; frame.</p></section>");
+    expect(body).not.toContain("Full text");
+    expect(docBody(doc({ kind: "image" }, { fullText: { ...ft, aiSummary: null } }))).not.toContain("AI visual");
+  });
+  it("video: official key moments link ?t= and leave the summary prose; AI moments only as fallback, labelled", () => {
+    const summary = "Intro line.\nVideo Description:\n00:05-00:12: Object enters <frame>.\n01:02: Zoom.";
+    const v = docBody(doc({ kind: "video", summary, ai_moments: JSON.stringify({ moments: [{ start: 0, end: 4, text: "AI says" }] }) }));
+    expect(v).toContain("<p>Intro line.</p><section><h2>Key moments</h2><ul>");
+    expect(v).toContain('<li><a href="/doc/FBI-UAP-D002?t=5">0:05</a> Object enters &lt;frame&gt;.</li><li><a href="/doc/FBI-UAP-D002?t=62">1:02</a> Zoom.</li>');
+    expect(v).not.toContain("AI says");
+    const ai = docBody(doc({ kind: "video", summary: "Short.", ai_moments: JSON.stringify({ moments: [
+      { start: 0, end: 4, text: "No visible change." }, { start: 4, end: 9, text: "A light moves right." },
+    ] }) }));
+    expect(ai).toContain("<h2>Key moments</h2><p>AI-generated from video frames · may be inaccurate</p>");
+    expect(ai).toContain('<a href="/doc/FBI-UAP-D002?t=4">0:04</a> A light moves right.');
+    expect(ai).not.toContain("No visible change");
+    expect(docBody(doc({ summary }))).not.toContain("Key moments"); // pdf
+  });
   it("no Full text section for an empty or missing fullText", () => {
     expect(docBody(doc({}, { fullText: { pages: [], truncated: false, total_pages: 2 } }))).not.toContain("Full text");
     expect(docBody(doc())).not.toContain("Full text");

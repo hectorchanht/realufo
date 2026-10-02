@@ -319,6 +319,24 @@ describe("pre-rendered body", () => {
     expect(html).toMatch(/<video controls preload="none" src="https:/);
   });
 
+  it("video doc: official key moments become Clips; AI-only moments don't", async () => {
+    const ai = JSON.stringify({ moments: [{ start: 0, end: 5, text: "A light moves right." }] });
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO records(id,archive,kind,title,summary,ai_moments,status) VALUES ('XD-V2','wargov','video','XD-V2','Video Description:\n00:05-00:12: Object enters.\n01:02: Zoom.',?,'live')").bind(ai),
+      env.DB.prepare("INSERT INTO assets(record_id,role,cdn_url,mime,duration) VALUES ('XD-V2','full','https://cdn/v.mp4','video/mp4',90.5)"),
+      env.DB.prepare("INSERT INTO records(id,archive,kind,title,summary,ai_moments,status) VALUES ('XD-V3','aaro','video','XD-V3','',?,'live')").bind(ai),
+      env.DB.prepare("INSERT INTO assets(record_id,role,cdn_url,mime) VALUES ('XD-V3','full','https://cdn/w.mp4','video/mp4')"),
+    ]);
+    const j = lds(await get("/doc/XD-V2"))[0];
+    expect(j.hasPart).toEqual([
+      { "@type": "Clip", name: "Object enters.", startOffset: 5, endOffset: 12, url: "https://x/doc/XD-V2?t=5" },
+      { "@type": "Clip", name: "Zoom.", startOffset: 62, endOffset: 91, url: "https://x/doc/XD-V2?t=62" },
+    ]);
+    const html = await get("/doc/XD-V3");
+    expect(lds(html)[0].hasPart).toBeUndefined();
+    expect(html).toContain("A light moves right.");
+  });
+
   it("doc: meta + body even with Accept */* (share scrapers)", async () => {
     const html = await get("/doc/FBI-UAP-D002");
     expect(html).toContain("<title>FBI-UAP-D002 — FD-1057, Unresolved UAP Report, Colorado Springs, 2022 · RealUFO</title>");
