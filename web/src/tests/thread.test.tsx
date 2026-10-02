@@ -142,7 +142,7 @@ describe("Thread", () => {
 
   it('renders the "◂ from record" source back-reference chip linking to /doc/:id', () => {
     renderThread();
-    const link = screen.getByRole("link", { name: /CIA-UAP-017, Odd radar contact near Roswell/ });
+    const link = screen.getByRole("link", { name: /CIA-UAP-017 — Odd radar contact near Roswell/ });
     expect(link).toHaveAttribute("href", "/doc/rec9");
   });
 
@@ -180,9 +180,9 @@ describe("Thread", () => {
 
   it("clicking a post's source-record thumb opens the media viewer for that record", () => {
     renderThread();
-    fireEvent.click(screen.getByRole("button", { name: /open CIA-UAP-017, Odd radar contact near Roswell/i }));
+    fireEvent.click(screen.getByRole("button", { name: /open Odd radar contact near Roswell/i }));
     expect(mockOpenViewer).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: "doc", label: "CIA-UAP-017, Odd radar contact near Roswell" }),
+      expect.objectContaining({ kind: "doc", label: "Odd radar contact near Roswell" }),
     );
   });
 

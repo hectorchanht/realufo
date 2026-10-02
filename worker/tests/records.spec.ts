@@ -56,11 +56,11 @@ describe("records", () => {
       )
     );
     const s = async (id: string) => ((await (await get(`/api/records/${id}`)).json()) as any).series;
-    expect(await s("SERX-UAP-D002")).toEqual({ prev: "SERX-UAP-D001", next: "SERX-UAP-D002A" });
-    expect(await s("SERX-UAP-D001")).toEqual({ prev: null, next: "SERX-UAP-D002" });
-    expect(await s("SERX-UAP-D010")).toEqual({ prev: "SERX-UAP-D002A", next: null });
-    expect(await s("SERX-UAP-PR001")).toEqual({ prev: null, next: null }); // different prefix = own series
-    expect(await s("90001")).toEqual({ prev: null, next: null }); // bare numbers aren't a series
+    expect(await s("SERX-UAP-D002")).toEqual({ prev: "SERX-UAP-D001", next: "SERX-UAP-D002A", prevTitle: "SERX-UAP-D001", nextTitle: "SERX-UAP-D002A" });
+    expect(await s("SERX-UAP-D001")).toMatchObject({ prev: null, next: "SERX-UAP-D002" });
+    expect(await s("SERX-UAP-D010")).toMatchObject({ prev: "SERX-UAP-D002A", next: null });
+    expect(await s("SERX-UAP-PR001")).toMatchObject({ prev: null, next: null }); // different prefix = own series
+    expect(await s("90001")).toMatchObject({ prev: null, next: null }); // bare numbers aren't a series
   });
   it("detail carries the war.gov release number ranked by release date", async () => {
     await env.DB.batch([

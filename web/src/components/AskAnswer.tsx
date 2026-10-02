@@ -4,6 +4,10 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAsk, useHubs, useShareAsk } from "../api/queries";
 import { ApiError } from "../api/client";
+import { docTitleParts } from "../lib/docTitle";
+
+// Same title rule as cards: id prefix stripped, id shown once unless it only respells the title.
+const srcTitle = (s: { record_id: string; title: string }) => docTitleParts(s.record_id, s.title);
 import type { AskResponse, HubKind, HubLinks } from "../api/types";
 
 const CARD = "mb-3.5 rounded-xl border border-line2 bg-surface px-[13px] py-3";
@@ -98,7 +102,8 @@ export function AskAnswer({ question, onPost }: { question: string; onPost?: (da
               {/* title + hub chips stack so chips wrap below instead of squeezing the title on phones */}
               <div className="flex min-w-0 flex-1 flex-col">
                 <Link to={`/doc/${s.record_id}`} className="truncate text-[12px] text-ink hover:text-signal">
-                  {s.title} <span className="font-mono text-[10px] text-faint">· {s.record_id}</span>
+                  {srcTitle(s).title}
+                  {srcTitle(s).showId && <span className="font-mono text-[10px] text-faint"> · {srcTitle(s).id}</span>}
                 </Link>
                 <HubChips hubs={s.hubs} labels={hubLabels} />
               </div>

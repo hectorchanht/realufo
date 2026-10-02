@@ -1,3 +1,4 @@
+import { docTitle } from "./ssr";
 import type { Env } from "../env";
 import { ASK_LLM_MODEL, answerText } from "./ask";
 import { ARCHIVE_NAME, type Candidate } from "./xpick";
@@ -117,7 +118,7 @@ export function template(c: Candidate, rand: () => number = Math.random): string
       .filter((v): v is string => !!v && !NA.test(v)))].join(" · "), 80);
     const foot = pickOne(CLOSERS, rand);
     const room = Math.min(120, 280 - weightedLength(`📼 \n📍 ${meta}\n${foot}\n${c.link}`)); // finalize appends the link
-    const title = room > 10 ? fit(stripLinks(r.title ?? ""), room) : "";
+    const title = room > 10 ? fit(stripLinks(docTitle(r.title ?? "", r.id)), room) : "";
     return `📼 ${title}\n📍 ${meta}\n${foot}`;
   }
   return `🔥 top thread on RealUFO this week (${c.thread.votes} votes): "${fit(stripLinks(c.thread.title), 160)}" thoughts? 👇 #UAP`;

@@ -146,7 +146,7 @@ export type DocData = {
   };
   assets: { role: string; cdn_url: string; mime: string | null; duration?: number | null }[];
   promotedThreads: { id: string; title: string }[];
-  series: { prev: string | null; next: string | null };
+  series: { prev: string | null; next: string | null; prevTitle?: string | null; nextTitle?: string | null };
   release: { no: number; date: string } | null;
   related: { key: string; label: string; records: RecordLink[] }[];
   fullText?: { pages: { n: number; text: string }[]; truncated: boolean; total_pages: number; aiSummary?: string | null } | null;
@@ -181,7 +181,7 @@ function media(d: DocData): string {
   const full = d.assets.find((x) => x.role === "full");
   const thumb = d.assets.find((x) => x.role === "thumb");
   if (!full) return "";
-  if (d.record.kind === "image") return `<p><img src="${esc(full.cdn_url)}" alt="${esc(d.record.title)}" style="max-width:100%"></p>`;
+  if (d.record.kind === "image") return `<p><img src="${esc(full.cdn_url)}" alt="${esc(docTitleParts(d.record.id, d.record.title).title)}" style="max-width:100%"></p>`;
   if (d.record.kind === "video")
     return `<p><video controls preload="none" src="${esc(full.cdn_url)}"${thumb ? ` poster="${esc(thumb.cdn_url)}"` : ""} style="max-width:100%"></video></p>`;
   return "";
@@ -212,8 +212,8 @@ export function docBody(d: DocData): string {
     ["Length", dur ? mmss(dur) : null],
   ];
   const series = [
-    d.series.prev && a({ href: docHref(d.series.prev), text: `Previous: ${d.series.prev}` }),
-    d.series.next && a({ href: docHref(d.series.next), text: `Next: ${d.series.next}` }),
+    d.series.prev && a({ href: docHref(d.series.prev), text: `Previous: ${docTitle(d.series.prevTitle ?? "", d.series.prev)}` }),
+    d.series.next && a({ href: docHref(d.series.next), text: `Next: ${docTitle(d.series.nextTitle ?? "", d.series.next)}` }),
   ].filter(Boolean);
   return [
     `<p>${a({ href: "/", text: "Home" })} › ${a({ href: "/archive", text: "Archive" })}${r.agency ? ` › ${esc(r.agency)}` : ""}</p>`,

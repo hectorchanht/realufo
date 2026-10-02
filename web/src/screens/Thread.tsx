@@ -39,6 +39,7 @@ import { useThread } from "../api/queries";
 import type { Post, ThreadSourceRecord } from "../api/types";
 import { VoteButton } from "../components/VoteButton";
 import { useOverlay } from "../overlays/OverlayProvider";
+import { docPageTitle, docTitleParts } from "../lib/docTitle";
 import { useSetPageTitle } from "../lib/pageTitle";
 
 // Matches Doc.tsx's own local STANCE_COLOR/stanceColor (FRONTEND-CONTEXT.md
@@ -68,7 +69,7 @@ function postImage(post: Post, sourceRecord: ThreadSourceRecord | null): PostIma
     return { kind: "upload", url: post.image_url, label: "attached image" };
   }
   if (post.source_record_id && sourceRecord && post.source_record_id === sourceRecord.id) {
-    return { kind: "record", recordKind: sourceRecord.kind, thumb: sourceRecord.thumb, label: sourceRecord.title };
+    return { kind: "record", recordKind: sourceRecord.kind, thumb: sourceRecord.thumb, label: docTitleParts(sourceRecord.id, sourceRecord.title).title };
   }
   if (post.image_kind === "placeholder") {
     return { kind: "placeholder", label: post.image_label || "image" };
@@ -270,7 +271,7 @@ export function Thread() {
             <div className="font-mono text-[8.5px] uppercase tracking-[.5px] text-faint">
               from record · {sourceRecord.agency}
             </div>
-            <div className="truncate text-xs text-ink">{sourceRecord.title}</div>
+            <div className="truncate text-xs text-ink">{docPageTitle(sourceRecord.id, sourceRecord.title)}</div>
           </div>
         </Link>
       )}

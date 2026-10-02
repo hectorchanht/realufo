@@ -130,7 +130,7 @@ const docPage: Loader = async (env, g, url) => {
     meta: {
       title, description, image: thumb?.cdn_url ?? null,
       jsonLd: {
-        ...media, name: x.title, identifier: x.id, description,
+        ...media, name: title, identifier: x.id, description,
         dateCreated: isoDate(x.doc_date), contentLocation: x.location || undefined,
         publisher: agency ? { "@type": "GovernmentOrganization", name: agency } : undefined,
       },
@@ -240,7 +240,7 @@ const hubPage =
           mainEntity: {
             "@type": "ItemList",
             numberOfItems: h.records.length,
-            itemListElement: h.records.map((r, i) => ({ "@type": "ListItem", position: i + 1, url: `${url.origin}${docHref(r.id)}`, name: r.title })),
+            itemListElement: h.records.map((r, i) => ({ "@type": "ListItem", position: i + 1, url: `${url.origin}${docHref(r.id)}`, name: docTitle(r.title, r.id) })),
           },
         },
         breadcrumbs: [

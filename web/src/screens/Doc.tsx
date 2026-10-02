@@ -43,7 +43,7 @@ import { VoteButton } from "../components/VoteButton";
 import FullText from "../components/FullText";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
-import { docTitleParts } from "../lib/docTitle";
+import { docPageTitle, docTitleParts } from "../lib/docTitle";
 import { useSetFooterLinks, type FooterLinks } from "../lib/footerLinks";
 import { promoteCommentOpts } from "../lib/promoteComment";
 import { useMediaQuery } from "../lib/useMediaQuery";
@@ -425,7 +425,7 @@ export function Doc() {
 
   // The "⤴ to a board" promote flow (prototype lines 631-632's `onPromote`).
   function handlePromote(c: Comment) {
-    openComposer(promoteCommentOpts(c, { title, boardId: DEFAULT_BOARD, recordId: id }));
+    openComposer(promoteCommentOpts(c, { title: docPageTitle(record!.id, record!.title), boardId: DEFAULT_BOARD, recordId: id }));
   }
 
   // "◈ Start a board thread about this file" (prototype line 630's
@@ -697,24 +697,30 @@ export function Doc() {
       {(detail.series?.prev || detail.series?.next) && (
         <div className="mb-[22px] grid grid-cols-2 gap-2 font-mono">
           {[
-            { id: detail.series.prev, label: "← PREVIOUS IN SERIES", align: "text-left" },
-            { id: detail.series.next, label: "NEXT IN SERIES →", align: "text-right" },
-          ].map(({ id: sid, label, align }) =>
-            sid ? (
+            { id: detail.series.prev, t: detail.series.prevTitle, label: "← PREVIOUS IN SERIES", align: "text-left" },
+            { id: detail.series.next, t: detail.series.nextTitle, label: "NEXT IN SERIES →", align: "text-right" },
+          ].map(({ id: sid, t, label, align }) => {
+            const sp = sid ? docTitleParts(sid, t) : null;
+            return sid && sp ? (
               <Link
                 key={label}
                 to={`/doc/${sid}${toolQuery}`}
                 className={`rounded-xl border border-line px-3 py-2.5 ${align} active:scale-[.99]`}
               >
                 <div className="text-[9px] tracking-[.5px] text-faint">{label}</div>
-                <div className="mt-1 text-xs text-ink" style={{ overflowWrap: "anywhere" }}>
-                  {sid}
+                {sp.showId && (
+                  <div className="mt-1 text-[10px] font-semibold" style={{ color: accent, overflowWrap: "anywhere" }}>
+                    {sp.id}
+                  </div>
+                )}
+                <div className="mt-1 line-clamp-2 font-sans text-xs text-ink" style={{ overflowWrap: "anywhere" }}>
+                  {sp.title}
                 </div>
               </Link>
             ) : (
               <div key={label} />
-            ),
-          )}
+            );
+          })}
         </div>
       )}
 

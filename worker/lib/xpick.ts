@@ -1,3 +1,4 @@
+import { docTitle } from "./ssr";
 import type { Env } from "../env";
 import { wargovReleases } from "../routes/records";
 
@@ -68,7 +69,7 @@ async function releaseFrom(env: Env, ref: string, label: string, link: string, r
   let media: Media = null;
   for (const r of [...rows].sort((a, b) => Number(b.kind === "video") - Number(a.kind === "video")).slice(0, 5))
     if ((media = await mediaFor(env, r))) break;
-  return { stream: "release", ref, label, link, kinds, titles: rows.slice(0, 5).map((r) => r.title ?? r.id), media };
+  return { stream: "release", ref, label, link, kinds, titles: rows.slice(0, 5).map((r) => docTitle(r.title ?? "", r.id)), media };
 }
 
 async function releaseCandidate(env: Env, now: Date): Promise<Candidate | null> {
