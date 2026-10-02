@@ -27,6 +27,7 @@ const useThreadMock = vi.fn();
 const mockVoteMutate = vi.fn();
 
 vi.mock("../api/queries", () => ({
+  isVotedLocally: () => false,
   useThread: (id: string) => useThreadMock(id),
   useVote: () => ({ mutate: mockVoteMutate, isPending: false }),
   useRecord: (id: string) => ({
@@ -167,7 +168,7 @@ describe("Thread", () => {
     renderThread();
     const op = screen.getByRole("button", { name: "vote (7)" });
     fireEvent.click(op);
-    expect(mockVoteMutate).toHaveBeenCalledWith({ target_type: "thread", target_id: "th1" });
+    expect(mockVoteMutate).toHaveBeenCalledWith({ target_type: "thread", target_id: "th1" }, expect.anything());
     // replies keep their own per-post counter
     expect(screen.getByRole("button", { name: "vote (2)" })).toBeInTheDocument();
   });

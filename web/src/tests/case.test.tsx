@@ -14,6 +14,7 @@ const useCaseMock = vi.fn();
 const useCaseCommentsMock = vi.fn();
 
 vi.mock("../api/queries", () => ({
+  isVotedLocally: () => false,
   useCase: (slug: string) => useCaseMock(slug),
   useCaseComments: (slug: string) => useCaseCommentsMock(slug),
   useVote: () => ({ mutate: vi.fn(), isPending: false }),
