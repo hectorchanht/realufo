@@ -119,17 +119,26 @@ uploads**. No media if no source record.
 
 ### 4.5 Copy — `worker/lib/xcopy.ts`
 
-- System prompt: describe what the file is and where/when; never claim it proves
-  anything; no hashtags beyond `#UAP`; no @mentions; no URLs.
-- Strip qwen3 `<think>` / use `reasoning_content` fallback (reuse Ask's
-  `answerText`).
-- **Validate** (all must pass, else template):
-  - all URLs stripped from AI text; code appends the link only for `release`
-  - must contain the record id / release number verbatim
-  - weighted length ≤ 280 (URL = 23, CJK/emoji = 2)
-  - banned-phrase list (`confirmed alien`, `proof of`, `cover-up exposed`, …)
-- Templates, one per stream, e.g.
-  `NEW: war.gov Release 07 — 31 files (24 PDF, 5 video, 2 image). <link>`
+**Voice (user, 2026-10-02: "super fun with internet stuff", "even spicier"):** extremely
+online, meme-literate, slang, 1–3 emojis, PG-13. Code picks ONE meme format (POV,
+nobody:/the Pentagon:, rate x/10, "not saying it's aliens but…", X-Files theme, …) and
+ONE reply hook ("drop your theory 👇", "drone, balloon, or 👽?", "wrong answers only")
+at random per post, so posts vary and formats never stack. Temperature 0.8.
+
+- **Facts are sacred:** only agency/place/year/length/summary/official verdict.
+  Alien jokes allowed only as obvious jokes; claims are not.
+- Strip qwen3 `<think>` / `reasoning_content` fallback (reuse Ask's `answerText`).
+- **Validate** (else template):
+  - all URLs/bare domains stripped from AI text; code appends the one link
+    (release, pick)
+  - release text must name the release; pick text needn't repeat the id (the link
+    carries it); if a pick skips the record's place/year, code adds `📍 place · year`
+  - weighted length ≤ 280 (URL = 23, CJK/emoji = 2); no `[placeholder]` leaks
+  - banned: `proof`, `proves`, `confirmed alien`, `non-human`, `cover-up`,
+    `exposed`, "it's (definitely) aliens" (but not "not saying it's aliens"),
+    f-bombs, "baffles experts"
+- Templates carry the voice (`📼 title / 📍 agency · place · date / not saying it's
+  aliens but… 👽 drop your theory 👇`); highlights never use AI.
 
 ### 4.6 X client — `worker/lib/x.ts`
 

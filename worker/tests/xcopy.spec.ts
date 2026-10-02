@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { weightedLength, stripLinks, finalize, template, draft, mustContain } from "../lib/xcopy";
+import { weightedLength, stripLinks, finalize, template, draft, mustContain, FORMATS, HOOKS } from "../lib/xcopy";
 import type { Candidate, PickRecord } from "../lib/xpick";
 
 const record = (over: Partial<PickRecord> = {}): PickRecord => ({
@@ -36,13 +36,13 @@ describe("stripLinks", () => {
 
 describe("finalize", () => {
   it("AI text is stripped of its own URLs/domains, mentions and extra hashtags", () => {
-    const t = finalize(pick(), "Navy FLIR clip DOW-UAP-D012 from realufo.org https://realufo.org/doc/x #UAP #aliens @someone")!;
+    const t = finalize(pick(), "Navy FLIR clip from the Gulf of Mexico via realufo.org https://realufo.org/doc/x #UAP #aliens @someone")!;
     const body = t.slice(0, t.lastIndexOf("\n"));
     expect(body).not.toMatch(/https?:|\.org|@someone|#aliens/);
     expect(t).toContain("#UAP");
   });
   it("pick posts end with exactly one link: their doc page", () => {
-    const t = finalize(pick(), "Navy FLIR clip DOW-UAP-D012 https://evil.example/x")!;
+    const t = finalize(pick(), "Navy FLIR clip, Gulf of Mexico https://evil.example/x")!;
     expect(t.endsWith("\nhttps://realufo.org/doc/DOW-UAP-D012")).toBe(true);
     expect(t.match(/https:\/\//g)).toHaveLength(1);
   });
@@ -55,10 +55,56 @@ describe("finalize", () => {
     expect(t.match(/https:\/\//g)).toHaveLength(1);
   });
   it("rejects AI text missing the required token, over length, or with banned claims", () => {
-    expect(finalize(pick(), "A cool video")).toBeNull();
+    expect(finalize(release, "29 new files just dropped 👀")).toBeNull(); // release must name itself
     expect(finalize(pick(), "DOW-UAP-D012 " + "x".repeat(300))).toBeNull();
     expect(finalize(pick(), "DOW-UAP-D012 is proof of alien craft")).toBeNull();
     expect(finalize(pick(), "DOW-UAP-D012 cover-up exposed")).toBeNull();
+  });
+});
+
+describe("spicy voice guardrails", () => {
+  it("pick copy needn't repeat the long id (the link carries it)", () => {
+    expect(finalize(pick(), "nobody: / the Pentagon: \"unresolved\" 🫠 Gulf of Mexico, 2019 #UAP")).not.toBeNull();
+  });
+  it("pick copy that skips the place/year gets a 📍 line added, so the joke stays tied to the file", () => {
+    const t = finalize(pick(), "rate this footage: 4/10, a blurry star trying to vibe as a UFO 🫠")!;
+    expect(t).toContain("\n📍 Gulf of Mexico · 2019\n");
+    expect(finalize(pick(), "Gulf of Mexico, 2019 🫠")).not.toContain("📍");
+    expect(finalize(pick({ location: null, incident_date: null }), "wild footage, no notes 👀 #UAP")).not.toContain("📍");
+  });
+  it("keeps it PG-13: f-bombs rejected, 'what the hell' fine", () => {
+    expect(finalize(pick(), "what the actual fuck is this, Gulf of Mexico 2019")).toBeNull();
+    expect(finalize(pick(), "what the hell is this, Gulf of Mexico 2019")).not.toBeNull();
+  });
+  it("rejects copy that leaks [template placeholders]", () => {
+    expect(finalize(pick(), "🎶 [infrared footage from the Gulf of Mexico, 2019]")).toBeNull();
+  });
+  it("template info line drops N/A and doesn't double the source", () => {
+    const t = template(pick({ agency: "DoW", incident_date: "N/A", location: "Middle East" }));
+    expect(t).not.toMatch(/N\/A|Dept\. of War · DoW/);
+    expect(t).toContain("📍 DoW · Middle East");
+  });
+  it("joke-framed alien lines pass; stating it's aliens or proof doesn't", () => {
+    expect(finalize(pick(), "not saying it's aliens but… Gulf of Mexico, 2019 👽 #UAP")).not.toBeNull();
+    expect(finalize(pick(), "shocking footage from the Gulf of Mexico, 2019 👀")).not.toBeNull();
+    expect(finalize(pick(), "it's definitely aliens. Gulf of Mexico, 2019")).toBeNull();
+    expect(finalize(pick(), "Gulf of Mexico 2019: 100% aliens")).toBeNull();
+    expect(finalize(pick(), "Gulf of Mexico 2019 is proof")).toBeNull();
+  });
+  it("each draft gets exactly one random meme format and hook in its prompt", async () => {
+    const seen: string[] = [];
+    const env = { AI: { run: async (_m: string, input: any) => (seen.push(input.messages[0].content), { response: "x" }) } } as any;
+    await draft(env, pick(), () => 0);
+    await draft(env, pick(), () => 0.999);
+    expect(seen[0]).toContain(FORMATS[0]);
+    expect(seen[0]).toContain(HOOKS[0]);
+    expect(seen[1]).toContain(FORMATS.at(-1)!);
+    expect(seen[1]).toContain(HOOKS.at(-1)!);
+    expect(seen[0]).not.toContain(FORMATS.at(-1)!);
+  });
+  it("templates carry the voice too", () => {
+    expect(template(pick())).toMatch(/👽|👀|🫠|📼/);
+    expect(template(release)).toContain(release.stream === "release" ? release.label : "");
   });
 });
 
@@ -96,7 +142,7 @@ describe("draft", () => {
     expect(d).toEqual({ text: "Navy FLIR clip DOW-UAP-D012, Gulf of Mexico, 2019. #UAP\nhttps://realufo.org/doc/DOW-UAP-D012", ai: true });
   });
   it("falls back to template on bad AI output or AI error", async () => {
-    expect((await draft(fakeAI({ response: "aliens!" }), pick())).ai).toBe(false);
+    expect((await draft(fakeAI({ response: "it's aliens, Gulf of Mexico 2019!" }), pick())).ai).toBe(false);
     const d = await draft(fakeAI(new Error("AI down")), pick());
     expect(d.ai).toBe(false);
     expect(d.text).toContain("DOW-UAP-D012");
