@@ -181,6 +181,20 @@ describe("Thread", () => {
     );
   });
 
+  it("turns URLs into external links, trimming trailing punctuation; record ids inside URLs stay in the link", () => {
+    const body = "See https://uaplocations.com/uap/NASA-UAP-D030-x/. Also NASA-UAP-D030.";
+    useThreadMock.mockReturnValue({
+      data: { ...mockThreadDetail, posts: [{ ...mockThreadDetail.posts[1], body }] },
+      isLoading: false,
+    });
+    renderThread();
+    const a = screen.getByRole("link", { name: "https://uaplocations.com/uap/NASA-UAP-D030-x/" });
+    expect(a).toHaveAttribute("href", "https://uaplocations.com/uap/NASA-UAP-D030-x/");
+    expect(a).toHaveAttribute("target", "_blank");
+    expect(a.getAttribute("rel")).toContain("nofollow");
+    expect(screen.getAllByRole("link", { name: "NASA-UAP-D030" })).toHaveLength(1);
+  });
+
   it("renders a user-uploaded post image and opens it in the image viewer", () => {
     useThreadMock.mockReturnValue({
       data: { ...mockThreadDetail, posts: [{ ...mockThreadDetail.posts[1], image_kind: "upload", image_url: "/api/u/a.png" }] },

@@ -75,17 +75,29 @@ function postImage(post: Post, sourceRecord: ThreadSourceRecord | null): PostIma
   return null;
 }
 
-// Post body text with each record id ("NASA-UAP-D030") turned into a
-// RecordEmbed. Media shows once per id (first mention).
-function linkifyRecords(body: string): ReactNode[] {
+// Post body text with http(s) URLs turned into external links and each record
+// id ("NASA-UAP-D030") into a RecordEmbed. Media shows once per id (first
+// mention). URLs match first, so an id inside a URL stays part of the link.
+const BODY_TOKEN_RE = new RegExp(`(https?://[^\\s<>"]+)|${RECORD_ID_RE.source}`, "g");
+function linkifyBody(body: string): ReactNode[] {
   const out: ReactNode[] = [];
   const seen = new Set<string>();
   let last = 0;
-  for (const m of body.matchAll(RECORD_ID_RE)) {
+  for (const m of body.matchAll(BODY_TOKEN_RE)) {
     out.push(body.slice(last, m.index));
-    out.push(<RecordEmbed key={m.index} id={m[0]} withMedia={!seen.has(m[0])} />);
-    seen.add(m[0]);
-    last = m.index + m[0].length;
+    let tok = m[0];
+    if (m[1]) {
+      tok = tok.replace(/[.,;:!?)\]'"]+$/, ""); // trailing sentence punctuation isn't part of the URL
+      out.push(
+        <a key={m.index} href={tok} target="_blank" rel="nofollow ugc noopener noreferrer" className="text-cyan underline">
+          {tok}
+        </a>,
+      );
+    } else {
+      out.push(<RecordEmbed key={m.index} id={tok} withMedia={!seen.has(tok)} />);
+      seen.add(tok);
+    }
+    last = m.index + tok.length;
   }
   out.push(body.slice(last));
   return out;
@@ -169,7 +181,7 @@ function PostRow({ post, sourceRecord }: PostRowProps) {
         className="text-[13.5px] leading-[1.55] text-ink"
         style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
       >
-        {linkifyRecords(post.body)}
+        {linkifyBody(post.body)}
       </div>
 
       {/* footer — prototype lines 276-279: VoteButton("credible") + inert "↩ reply" */}
