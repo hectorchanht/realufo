@@ -243,6 +243,11 @@ export interface Hub {
 /** Hub slugs this record's facts link to (only hubs that exist). */
 export type HubLinks = Partial<Record<HubKind, string>>;
 
+/** Spec 6 file verdicts. `tally` is only present once this visitor has voted. */
+export type Verdict = "explained" | "unexplained" | "more_data";
+export interface VerdictTally { explained: number; unexplained: number; more_data: number }
+export interface VerdictState { mine: Verdict | null; total: number; tally?: VerdictTally }
+
 export interface RecordDetail {
   record: RecordFull;
   assets: Asset[];
@@ -256,6 +261,8 @@ export interface RecordDetail {
   /** Null until extracted; empty pages when no page passed the OCR filter. */
   fullText?: FullText | null;
   hubs?: HubLinks;
+  /** Per-visitor verdict state (GET /api/records/:id only, never pre-rendered). */
+  verdicts?: VerdictState;
 }
 
 export interface RelatedGroup {

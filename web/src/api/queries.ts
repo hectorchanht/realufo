@@ -28,6 +28,8 @@ import type {
   VoteTargetType,
   Hub,
   HubSummary,
+  Verdict,
+  VerdictState,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -238,6 +240,32 @@ export function useAddComment(recordId: string) {
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: qk.comments(recordId) });
       void queryClient.invalidateQueries({ queryKey: qk.record(recordId) });
+    },
+  });
+}
+
+// Optimistically flips `mine` (the split stays hidden until the server answers
+// with the tally); rolls back on error. Same verdict again = clear.
+export function useCastVerdict(recordId: string) {
+  const queryClient = useQueryClient();
+  const key = qk.record(recordId);
+  return useMutation({
+    mutationFn: (verdict: Verdict) =>
+      api.post<Required<VerdictState>>(`/api/records/${encodeURIComponent(recordId)}/verdict`, { verdict }),
+    onMutate: async (verdict) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<RecordDetail>(key);
+      if (prev) {
+        const v = prev.verdicts ?? { mine: null, total: 0 };
+        queryClient.setQueryData<RecordDetail>(key, { ...prev, verdicts: { ...v, mine: v.mine === verdict ? null : verdict } });
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(key, ctx.prev);
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData<RecordDetail>(key, (old) => (old ? { ...old, verdicts: data } : old));
     },
   });
 }

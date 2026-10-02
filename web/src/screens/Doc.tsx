@@ -37,6 +37,7 @@ import { DocCard } from "../components/DocCard";
 import { LENS_MAGS, MediaFilters, MediaToolbar, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams } from "../components/ImageTools";
 import type { ImageAdjust } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
+import { VerdictBar } from "../components/VerdictBar";
 import { parseAiMoments, parseKeyMoments } from "../lib/keyMoments";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
@@ -681,6 +682,8 @@ export function Doc() {
       <p className="mb-4 text-[14.5px] leading-[1.65] text-dim" style={{ whiteSpace: "pre-line" }}>
         {media === "video" ? keyMoments.prose : record.summary || ""}
       </p>
+
+      <VerdictBar recordId={record.id} state={detail.verdicts} />
 
       {/* OPEN ORIGINAL — prototype line 367 */}
       <button
