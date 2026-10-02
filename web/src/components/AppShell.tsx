@@ -132,7 +132,7 @@ export function AppShell() {
             {!isDesktop && <BottomTab ref={bnavRef} activeTab={activeTab} hidden={navHidden} />}
           </div>
 
-          {/* Overlays (Composer/MediaViewer/LoginSheet/Toast) mount INSIDE the
+          {/* Overlays (Composer/MediaViewer/Toast) mount INSIDE the
               router tree — the Composer calls useNavigate() (to jump to a newly
               created /thread/:id), which throws without a <Router> ancestor. They
               are fixed-position (z-70+) so DOM placement here doesn't affect

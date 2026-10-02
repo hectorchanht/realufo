@@ -43,7 +43,7 @@ const DRAG_CLOSE_PX = 110; // prototype line 525: `if(d>110){...}`
 const SHEET_TRANSITION = "transform .34s cubic-bezier(.32,.72,0,1)"; // prototype line 525
 
 export function Composer() {
-  const { composer, closeComposer, toast, me } = useOverlay();
+  const { composer, closeComposer, toast } = useOverlay();
   const navigate = useNavigate();
 
   // Always called (never conditionally) so hook order stays stable across
@@ -56,7 +56,7 @@ export function Composer() {
 
   const [body, setBody] = useState(composer?.presetBody ?? "");
   const [stance, setStance] = useState<StanceValue>("neutral");
-  const [handle, setHandle] = useState(me?.handle ?? "");
+  const [handle, setHandle] = useState("");
   const [threadTitle, setThreadTitle] = useState(composer?.presetTitle ?? "");
   const [img, setImg] = useState<File | null>(composer?.presetImage ?? null);
   // A promoted comment's already-uploaded image, sent by name (image_ref) so the server reuses it.

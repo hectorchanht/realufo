@@ -20,6 +20,7 @@ import type { CommentsResponse, RecordDetail, RecordsListResponse } from "../api
 import Doc from "../screens/Doc";
 import SiteFooter from "../components/SiteFooter";
 import { FooterLinksProvider } from "../lib/footerLinks";
+import { ThemeProvider } from "../theme/ThemeProvider";
 
 const mockOpenComposer = vi.fn();
 const mockOpenViewer = vi.fn();
@@ -222,7 +223,9 @@ describe("Doc", () => {
           <Routes>
             <Route path="/doc/:id" element={<Doc />} />
           </Routes>
-          <SiteFooter />
+          <ThemeProvider>
+            <SiteFooter />
+          </ThemeProvider>
         </FooterLinksProvider>
       </MemoryRouter>,
     );

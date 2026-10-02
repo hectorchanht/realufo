@@ -7,6 +7,7 @@ import { useHubs } from "../api/queries";
 import type { HubKind } from "../api/types";
 import { useNavItems } from "./navItems";
 import { useFooterLinks } from "../lib/footerLinks";
+import { AppearanceSwitcher } from "./AppearanceSwitcher";
 
 const GROUPS: [HubKind, string][] = [["release", "Releases"], ["agency", "Agencies"], ["decade", "Decades"]];
 // Plain <a>: served by the Worker, not SPA routes.
@@ -59,6 +60,10 @@ export default function SiteFooter() {
         {col("For AI & developers", FILES.map(([text, href]) => (
           <li key={href}><a className={linkCls} href={href}>{text}</a></li>
         )))}
+        <div className="min-w-[120px]">
+          <h2 className={headCls}>Appearance</h2>
+          <AppearanceSwitcher />
+        </div>
       </nav>
       <p className="mt-6 text-faint">Public-domain U.S. government records, mirrored verbatim.</p>
     </footer>

@@ -13,7 +13,6 @@ import { getThread, createThread, searchThreads } from "./routes/threads";
 import { createPost } from "./routes/posts";
 import { toggleVote } from "./routes/votes";
 import { getCase } from "./routes/cases";
-import { login } from "./routes/auth";
 import { serveWithMeta } from "./lib/meta";
 import { ask, recentAsks, setAskPublic } from "./routes/ask";
 import { sitemap } from "./routes/sitemap";
@@ -46,7 +45,6 @@ on("POST", "/api/votes", toggleVote);
 on("GET", "/api/cases/:slug", getCase);
 on("GET", "/api/cases/:slug/comments", listCaseComments);
 on("POST", "/api/cases/:slug/comments", addCaseComment);
-on("POST", "/api/auth/login", login);
 
 export default {
   async fetch(req: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {

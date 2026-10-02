@@ -3,6 +3,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { ThemeProvider } from "../theme/ThemeProvider";
 import { useTheme } from "../theme/useTheme";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { AppearanceSwitcher } from "../components/AppearanceSwitcher";
 
 afterEach(() => {
   localStorage.clear();
@@ -62,5 +63,23 @@ describe("ThemeToggle", () => {
     expect(document.documentElement.getAttribute("data-theme")).toBe("light");
     act(() => screen.getByRole("button", { name: "Switch to dark mode" }).click());
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+  });
+});
+
+describe("AppearanceSwitcher", () => {
+  it("sets html data-accent and data-scanlines", () => {
+    localStorage.setItem("ufo_theme", JSON.stringify({ theme: "dark", accent: "phosphor", scanlines: true }));
+    render(
+      <ThemeProvider>
+        <AppearanceSwitcher />
+      </ThemeProvider>,
+    );
+    act(() => screen.getByRole("button", { name: "amber" }).click());
+    expect(document.documentElement.getAttribute("data-accent")).toBe("amber");
+    expect(screen.getByRole("button", { name: "amber" })).toHaveAttribute("aria-pressed", "true");
+    const scan = screen.getByRole("button", { name: "Scanlines" });
+    expect(scan).toHaveAttribute("aria-pressed", "true");
+    act(() => scan.click());
+    expect(scan).toHaveAttribute("aria-pressed", "false");
   });
 });

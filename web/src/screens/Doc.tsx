@@ -149,7 +149,7 @@ export function Doc() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { openComposer, openViewer, composer, viewer, login, toast } = useOverlay();
+  const { openComposer, openViewer, composer, viewer, toast } = useOverlay();
 
   const { data: detail, isLoading } = useRecord(id);
   const { data: commentsData } = useComments(id);
@@ -306,7 +306,7 @@ export function Doc() {
   // or while typing in a field.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (composer || viewer || login) return;
+      if (composer || viewer) return;
       const el = document.activeElement as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
@@ -336,7 +336,7 @@ export function Doc() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [composer, viewer, login, prevHref, nextHref, navigate, panelMedia, setAdjust, setLens, setMag]);
+  }, [composer, viewer, prevHref, nextHref, navigate, panelMedia, setAdjust, setLens, setMag]);
 
   const record = detail?.record;
   const comments = commentsData?.comments ?? [];
@@ -608,7 +608,7 @@ export function Doc() {
           filter={adjustFilter(adjust)}
           view={view}
           startAt={startAt}
-          keys={!(composer || viewer || login)}
+          keys={!(composer || viewer)}
           onShare={handleShare}
           onPost={handlePostFrame}
         />

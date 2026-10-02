@@ -1,6 +1,5 @@
 // Global overlay state: Composer (comment/reply/new-thread sheet), MediaViewer
-// (doc/video/placeholder full-bleed viewer), LoginSheet (auth stub + theme
-// switcher), and Toast (transient status line). NONE of these are routes —
+// (doc/video/placeholder full-bleed viewer), and Toast (transient status line). NONE of these are routes —
 // screens (Tasks 17-23) reach them via `useOverlay()`, and `<OverlayHost/>`
 // renders whichever is active as a fixed-position layer above the whole app.
 //
@@ -11,13 +10,12 @@
 // are fixed-position, so being inside AppShell doesn't clip them.
 //
 // Ported from realufo-handoff/RealUFO.dc.html's single-component prototype:
-// state fields `composer`/`viewer`/`login`/`toast`/`me` (lines 472-474), the
+// state fields `composer`/`viewer`/`toast` (lines 472-474), the
 // open/close actions (lines 487-497), and the 1900ms toast auto-dismiss
 // (line 495: `setTimeout(()=>this.setState({toast:null}),1900)`).
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Composer } from "./Composer";
 import { MediaViewer } from "./MediaViewer";
-import { LoginSheet } from "./LoginSheet";
 import { Toast } from "./Toast";
 
 export type ComposerMode = "comment" | "reply" | "newThread";
@@ -58,16 +56,10 @@ export interface ViewerOpts {
   lensMag?: number;
 }
 
-export interface OverlayMe {
-  handle: string;
-}
-
 interface OverlayState {
   composer: ComposerOpts | null;
   viewer: ViewerOpts | null;
-  login: boolean;
   toastMsg: string | null;
-  me: OverlayMe | null;
 }
 
 export interface OverlayContextValue extends OverlayState {
@@ -75,10 +67,7 @@ export interface OverlayContextValue extends OverlayState {
   closeComposer: () => void;
   openViewer: (opts: ViewerOpts) => void;
   closeViewer: () => void;
-  openLogin: () => void;
-  closeLogin: () => void;
   toast: (message: string) => void;
-  setMe: (me: OverlayMe | null) => void;
 }
 
 const OverlayContext = createContext<OverlayContextValue | null>(null);
@@ -102,15 +91,13 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<OverlayState>({
     composer: null,
     viewer: null,
-    login: false,
     toastMsg: null,
-    me: null,
   });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const onPop = () => {
-      if (!window.history.state?.overlay) setState((s) => ({ ...s, composer: null, viewer: null, login: false }));
+      if (!window.history.state?.overlay) setState((s) => ({ ...s, composer: null, viewer: null }));
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -132,15 +119,6 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
     popOverlayEntry();
     setState((s) => ({ ...s, viewer: null }));
   }, []);
-  const openLogin = useCallback(() => {
-    pushOverlayEntry();
-    setState((s) => ({ ...s, login: true }));
-  }, []);
-  const closeLogin = useCallback(() => {
-    popOverlayEntry();
-    setState((s) => ({ ...s, login: false }));
-  }, []);
-  const setMe = useCallback((me: OverlayMe | null) => setState((s) => ({ ...s, me })), []);
   const toast = useCallback((message: string) => {
     setState((s) => ({ ...s, toastMsg: message }));
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -156,12 +134,9 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
       closeComposer,
       openViewer,
       closeViewer,
-      openLogin,
-      closeLogin,
       toast,
-      setMe,
     }),
-    [state, openComposer, closeComposer, openViewer, closeViewer, openLogin, closeLogin, toast, setMe],
+    [state, openComposer, closeComposer, openViewer, closeViewer, toast],
   );
 
   return <OverlayContext.Provider value={value}>{children}</OverlayContext.Provider>;
@@ -177,31 +152,29 @@ export function useOverlay(): OverlayContextValue {
 
 /**
  * Renders whichever overlay is currently active (at most one of
- * Composer/MediaViewer/LoginSheet at a time — mirrors the prototype's
+ * Composer/MediaViewer at a time — mirrors the prototype's
  * mutually-exclusive `sc-if`s) plus the Toast. Mount once, INSIDE the router
  * tree (AppShell) so the Composer's useNavigate() has a <Router> ancestor.
  */
 export function OverlayHost() {
-  const { composer, viewer, login, toastMsg, closeComposer, closeViewer, closeLogin } = useOverlay();
+  const { composer, viewer, toastMsg, closeComposer, closeViewer } = useOverlay();
 
-  // Esc closes the open overlay (composer > viewer > login, top-most first).
+  // Esc closes the open overlay (composer > viewer, top-most first).
   useEffect(() => {
-    if (!composer && !viewer && !login) return;
+    if (!composer && !viewer) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       if (composer) closeComposer();
       else if (viewer) closeViewer();
-      else if (login) closeLogin();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [composer, viewer, login, closeComposer, closeViewer, closeLogin]);
+  }, [composer, viewer, closeComposer, closeViewer]);
 
   return (
     <>
       {composer && <Composer />}
       {viewer && <MediaViewer />}
-      {login && <LoginSheet />}
       {toastMsg && <Toast message={toastMsg} />}
     </>
   );

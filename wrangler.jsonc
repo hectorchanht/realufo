@@ -8,7 +8,7 @@
     // navigations would otherwise skip it (broke window.open('/api/file/:id')), and
     // unknown paths need a real 404 instead of the SPA fallback's 200.
     "run_worker_first": ["/*", "!/assets/*", "!/robots.txt"] },
-  "vars": { "FEATURE_AUTH": "false", "RATE_MAX": "20", "RATE_WINDOW_SEC": "60",
+  "vars": { "RATE_MAX": "20", "RATE_WINDOW_SEC": "60",
     // Cached R2 custom domain: uploads must pass through the CDN cache for the CSAM Scanning Tool.
     "UPLOAD_BASE": "https://assets.realufo.org/uploads/",
     // Ask the Archive: off | hidden (endpoint only, for pre-launch eval) | on
