@@ -48,6 +48,19 @@ beforeEach(() => {
 });
 
 describe("AskAnswer", () => {
+  it("hub chips wrap on their own line under the title (title never squeezed out on phones)", () => {
+    useAskMock.mockReturnValue({
+      ...answered,
+      data: { ...answered.data, sources: [{ ...answered.data.sources[0], hubs: { agency: "fbi", release: "6" } }] },
+    });
+    renderCard();
+    const chips = screen.getByRole("link", { name: "R06" }).parentElement!;
+    expect(chips.className).toContain("flex-wrap");
+    const title = screen.getByRole("link", { name: /Los Alamos Conference/ });
+    expect(title.parentElement).toBe(chips.parentElement); // title + chips stacked in one shrinkable column
+    expect(title.parentElement!.className).toContain("min-w-0");
+  });
+
   it("source rows link their hubs as chips; sources without hubs get none", () => {
     useAskMock.mockReturnValue({
       ...answered,

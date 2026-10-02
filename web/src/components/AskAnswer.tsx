@@ -26,7 +26,7 @@ function HubChips({ hubs, labels }: { hubs?: HubLinks; labels: Map<string, strin
       </Link>
     );
   });
-  return chips.length ? <span className="flex flex-none gap-1">{chips}</span> : null;
+  return chips.length ? <span className="mt-0.5 flex flex-wrap gap-1">{chips}</span> : null;
 }
 
 function errorCopy(e: unknown) {
@@ -95,10 +95,13 @@ export function AskAnswer({ question, onPost }: { question: string; onPost?: (da
             >
               <span className="w-5 flex-none font-mono text-[10px] text-faint">[{s.n}]</span>
               {s.thumb && <img src={s.thumb} alt="" loading="lazy" className="h-8 w-8 flex-none rounded object-cover" />}
-              <Link to={`/doc/${s.record_id}`} className="min-w-0 flex-1 truncate text-[12px] text-ink hover:text-signal">
-                {s.title} <span className="font-mono text-[10px] text-faint">· {s.record_id}</span>
-              </Link>
-              <HubChips hubs={s.hubs} labels={hubLabels} />
+              {/* title + hub chips stack so chips wrap below instead of squeezing the title on phones */}
+              <div className="flex min-w-0 flex-1 flex-col">
+                <Link to={`/doc/${s.record_id}`} className="truncate text-[12px] text-ink hover:text-signal">
+                  {s.title} <span className="font-mono text-[10px] text-faint">· {s.record_id}</span>
+                </Link>
+                <HubChips hubs={s.hubs} labels={hubLabels} />
+              </div>
               {s.kind === "pdf" && s.page > 0 && (
                 <a
                   href={`/api/file/${encodeURIComponent(s.record_id)}#page=${s.page}`}
