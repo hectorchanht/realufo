@@ -34,6 +34,7 @@ import { useBootstrap, useComments, useRecord, useRecords } from "../api/queries
 import type { RecordsParams } from "../api/queries";
 import type { RecordKind, RelatedGroup } from "../api/types";
 import { DocCard } from "../components/DocCard";
+import { DEFAULT_ADJUST, ImageToolbar, ZoomLens, adjustFilter } from "../components/ImageTools";
 import { VoteButton } from "../components/VoteButton";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
@@ -129,6 +130,15 @@ export function Doc() {
   // uploaded key). Reset when navigating to another record.
   const [thumbFailed, setThumbFailed] = useState(false);
   useEffect(() => setThumbFailed(false), [id]);
+
+  // Image tools (adjust filters + zoom lens) start clean on every file.
+  const [adjust, setAdjust] = useState(DEFAULT_ADJUST);
+  const [lens, setLens] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  useEffect(() => {
+    setAdjust(DEFAULT_ADJUST);
+    setLens(false);
+  }, [id]);
 
   // Panel chrome (badge, REDACTED, counter, arrows) fades out after a few
   // idle seconds so it never sits over the picture/video; any pointer
@@ -343,11 +353,18 @@ export function Doc() {
         }}
         onFocus={showChrome}
         data-chrome={chrome ? "on" : "off"}
-        className="relative mb-3.5 overflow-hidden rounded-2xl border border-line2 bg-bg2"
+        // image letterbox is the panel's black, not the <img>'s, so filters (invert) don't recolor it
+        className={`relative mb-3.5 overflow-hidden rounded-2xl border border-line2 ${media === "image" ? "bg-black" : "bg-bg2"}`}
         style={{ aspectRatio: "4/3", maxHeight: "78vh", touchAction: "pan-y" }}
       >
         {media === "image" && (
-          <img src={fullUrl} alt={title} className="h-full w-full bg-black object-contain" />
+          <img
+            ref={imgRef}
+            src={fullUrl}
+            alt={title}
+            className="h-full w-full object-contain"
+            style={{ filter: adjustFilter(adjust) || undefined }}
+          />
         )}
         {media === "video" && (
           <video
@@ -391,7 +408,7 @@ export function Doc() {
           <audio src={fullUrl} controls preload="metadata" className="absolute bottom-3 left-3 right-3 w-[calc(100%-24px)]" />
         )}
         {/* tap-to-open overlay only where the panel isn't itself interactive */}
-        {(media === "thumb" || media === "image") && (
+        {(media === "thumb" || (media === "image" && !lens)) && (
           <button
             type="button"
             onClick={handleOpenOriginal}
@@ -408,6 +425,7 @@ export function Doc() {
             </span>
           </button>
         )}
+        {media === "image" && lens && <ZoomLens src={fullUrl} imgRef={imgRef} filter={adjustFilter(adjust)} />}
         <span
           className={`absolute left-[10px] top-[10px] rounded-md px-2 py-1 font-mono text-[9px] font-bold ${fade}`}
           style={{ background: "rgba(0,0,0,.72)", color: accent }}
@@ -450,6 +468,8 @@ export function Doc() {
           </button>
         )}
       </div>
+
+      {media === "image" && <ImageToolbar adjust={adjust} onAdjust={setAdjust} lens={lens} onLens={setLens} />}
 
       {/* chips row — prototype line 358 */}
       <div className="mb-[10px] flex flex-wrap gap-[7px]">

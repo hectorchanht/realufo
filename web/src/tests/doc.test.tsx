@@ -333,6 +333,35 @@ describe("Doc", () => {
     expect(document.querySelector('[data-screen="doc"] img')).toHaveAttribute("src", "https://cdn.example/photo.jpg");
   });
 
+  it("image tools: presets + sliders filter the image, reset clears, lens overlays the panel", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    const img = () => document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i }));
+    fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
+    expect(img().style.filter).toContain("invert(1)");
+    fireEvent.change(screen.getByLabelText(/brightness/i), { target: { value: "150" } });
+    expect(img().style.filter).toContain("brightness(1.5)");
+    fireEvent.click(screen.getByRole("button", { name: /reset/i }));
+    expect(img().style.filter).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: /lens/i }));
+    expect(document.querySelector("[data-zoom-lens]")).toBeInTheDocument();
+    // lens mode replaces tap-to-open
+    expect(screen.queryByRole("button", { name: /open IMG/i })).toBeNull();
+  });
+
+  it("no image tools on non-image records", () => {
+    renderDoc();
+    expect(screen.queryByRole("button", { name: /adjust/i })).toBeNull();
+  });
+
   it("opening a VIDEO record uses the in-app media viewer (not a new tab)", () => {
     useRecordMock.mockReturnValue({
       data: {
