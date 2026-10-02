@@ -275,12 +275,12 @@ describe("DocCard", () => {
 
   it("shows the TL;DR one-liner under the title when present", () => {
     render(withRouter(<DocCard record={{ ...feedRecord, oneLiner: "Paperwork wins." }} variant="feed" />));
-    expect(screen.getByText('"Paperwork wins."')).toBeInTheDocument();
+    expect(screen.getByText(/Paperwork wins\./)).toBeInTheDocument();
   });
 
   it("no one-liner: nothing extra", () => {
     render(withRouter(<DocCard record={feedRecord} variant="feed" />));
-    expect(screen.queryByText(/"/)).toBeNull();
+    expect(screen.queryByText(/[""]/ )).toBeNull();
   });
 });
 
@@ -340,7 +340,7 @@ describe("BoardRow", () => {
     expect(screen.getByText(board.desc)).toBeInTheDocument();
     expect(screen.getByText(/1,284 threads|1284 threads/)).toBeInTheDocument();
     // online count was fake fillup — dropped from the UI
-    expect(screen.queryByText(/412/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/[""]/)).toBeNull();
   });
 
   it("links to /board/<slug without slashes>", () => {

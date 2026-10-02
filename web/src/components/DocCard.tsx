@@ -197,7 +197,7 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
           {tp.title}
         </div>
         {record.oneLiner && (
-          <div className="line-clamp-2 text-[11.5px] italic leading-[1.35] text-dim">"{record.oneLiner}"</div>
+          <div className="line-clamp-2 text-[11.5px] italic leading-[1.35] text-dim">“{record.oneLiner}”</div>
         )}
         {isFeed && isFeedRecord(record) && (
           <div className="mt-auto flex gap-3 pt-0.5 font-mono text-[10px] text-dim">
