@@ -53,6 +53,33 @@ describe("records", () => {
     expect(await r("REL-EARLY")).toEqual({ no: 1, date: "2020-01-02" });
     expect(await r("REL-NARA")).toBeNull(); // non-wargov dates aren't release dates
   });
+  it("detail carries related groups (location, period, release, agency), deduped, self excluded", async () => {
+    const ins = (id: string, agency: string, loc: string | null, inc: string | null, doc: string | null) =>
+      env.DB.prepare(
+        "INSERT INTO records (id,archive,agency,title,kind,location,incident_date,doc_date) VALUES (?,'wargov',?,?,'pdf',?,?,?)"
+      ).bind(id, agency, id, loc, inc, doc);
+    await env.DB.batch([
+      ins("RELG-A", "RELGAG", "Relgville", "October, 2031", "3/3/31"),
+      ins("RELG-LOC", "OTHER", "Relgville", null, null),
+      ins("RELG-LOCYR", "OTHER", "Relgville", "2031", null), // matches loc + period → only in loc
+      ins("RELG-YR2", "OTHER", "N/A", "9/8/31", null), // m/d/yy form of the same year
+      ins("RELG-REL", "OTHER", null, null, "3/3/31"),
+      ins("RELG-AG", "RELGAG", "N/A", null, null),
+    ]);
+    const rel: any[] = ((await (await get("/api/records/RELG-A")).json()) as any).related;
+    const ids = (k: string) => rel.find((g) => g.key === k)?.records.map((r: any) => r.id).sort();
+    expect(rel.map((g) => g.key)).toEqual(["location", "period", "release", "agency"]);
+    expect(rel.find((g) => g.key === "location").label).toBe("Relgville");
+    expect(ids("location")).toEqual(["RELG-LOC", "RELG-LOCYR"]);
+    expect(ids("period")).toEqual(["RELG-YR2"]);
+    expect(rel.find((g) => g.key === "period").label).toBe("2031");
+    expect(ids("release")).toEqual(["RELG-REL"]);
+    expect(ids("agency")).toEqual(["RELG-AG"]);
+    // a record with no location/date/neighbours gets no empty groups
+    const lone: any[] = ((await (await get("/api/records/RELG-YR2")).json()) as any).related;
+    expect(lone.every((g) => g.records.length > 0)).toBe(true);
+    expect(lone.map((g) => g.key)).not.toContain("location"); // "N/A" isn't a location
+  });
   it("404s unknown id", async () => {
     expect((await get("/api/records/NOPE")).status).toBe(404);
   });

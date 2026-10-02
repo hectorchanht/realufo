@@ -77,12 +77,68 @@ async function releaseOf(env: Env, record: { archive: string; doc_date: string |
   return { no: dates.indexOf(date) + 1, date };
 }
 
+// Related groups shown under a file, uapbrowser-style. Each group is a SQL
+// filter on one field the record shares with others; a record lands in the
+// first group it matches only, so the groups don't repeat each other.
+type RecordRow = {
+  id: string; archive: string; agency: string | null;
+  location: string | null; incident_date: string | null; doc_date: string | null;
+};
+const RELATED_PER_GROUP = 6;
+
+// "October, 2023" / "2023" → "2023"; "9/8/21" → "2021". Null when no year.
+function yearOf(d: string | null): string | null {
+  if (!d) return null;
+  const y4 = /\b(19|20)\d{2}\b/.exec(d);
+  if (y4) return y4[0];
+  const yy = /^\d{1,2}\/\d{1,2}\/(\d{2})$/.exec(d.trim());
+  return yy ? "20" + yy[1] : null;
+}
+
+async function relatedOf(env: Env, r: RecordRow, release: { no: number } | null) {
+  const year = yearOf(r.incident_date);
+  const groups: { key: string; label: string; where: string; bind: unknown[] }[] = [];
+  if (r.location && r.location !== "N/A") groups.push({ key: "location", label: r.location, where: "r.location=?", bind: [r.location] });
+  if (year)
+    groups.push({
+      key: "period", label: year,
+      where: "(r.incident_date LIKE ? OR r.incident_date LIKE ?)", bind: [`%${year}%`, `%/%/${year.slice(2)}`],
+    });
+  if (release)
+    groups.push({
+      key: "release", label: `Release ${String(release.no).padStart(2, "0")}`,
+      where: "r.archive='wargov' AND r.doc_date=?", bind: [r.doc_date],
+    });
+  if (r.agency) groups.push({ key: "agency", label: r.agency, where: "r.agency=?", bind: [r.agency] });
+
+  const rows = await Promise.all(
+    groups.map((g) =>
+      env.DB.prepare(
+        `SELECT r.id,r.archive,r.agency,r.title,r.summary,r.kind,r.redacted,r.location,r.incident_date,r.doc_date,
+          ${thumbSql("r.id")} thumb
+        FROM records r WHERE ${g.where} AND r.id<>? ORDER BY r.featured DESC, r.created_at DESC LIMIT ?`
+      )
+        .bind(...g.bind, r.id, RELATED_PER_GROUP * 4)
+        .all<{ id: string }>()
+    )
+  );
+  const seen = new Set<string>();
+  return groups
+    .map((g, i) => ({
+      key: g.key,
+      label: g.label,
+      records: rows[i].results.filter((x) => !seen.has(x.id) && seen.add(x.id)).slice(0, RELATED_PER_GROUP),
+    }))
+    .filter((g) => g.records.length);
+}
+
 export async function getRecord(_req: Request, env: Env, p: Record<string, string>) {
   const record = await env.DB.prepare("SELECT * FROM records WHERE id=?")
     .bind(p.id)
-    .first<{ archive: string; doc_date: string | null }>();
+    .first<RecordRow>();
   if (!record) return error(404, "record not found");
-  const [assets, promoted, series, release] = await Promise.all([
+  const releaseP = releaseOf(env, record);
+  const [assets, promoted, series, release, related] = await Promise.all([
     env.DB.prepare("SELECT role,cdn_url,mime,width,height FROM assets WHERE record_id=?").bind(p.id).all(),
     env.DB.prepare(
       `SELECT t.id,t.no,t.title,t.stance,t.votes,t.source_record_id,b.slug boardSlug,b.accent accent
@@ -91,7 +147,8 @@ export async function getRecord(_req: Request, env: Env, p: Record<string, strin
       .bind(p.id)
       .all(),
     seriesNav(env, p.id),
-    releaseOf(env, record),
+    releaseP,
+    releaseP.then((rel) => relatedOf(env, record, rel)),
   ]);
-  return json({ record, assets: assets.results, promotedThreads: promoted.results, series, release });
+  return json({ record, assets: assets.results, promotedThreads: promoted.results, series, release, related });
 }

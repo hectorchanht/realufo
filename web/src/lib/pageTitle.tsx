@@ -75,12 +75,14 @@ export function usePageTitle(): PageTitleValue {
  * Also sets `document.title` — the plain RealUFO default on the root/
  * "REALUFO" title (matching index.html's own static `<title>`), else
  * `${title} · RealUFO` (matching the Worker's own per-route `<title>`
- * convention for crawlers, worker/lib/meta.ts's `injectMeta`).
+ * convention for crawlers, worker/lib/meta.ts's `injectMeta`). `docTitle`
+ * overrides the `${title}` part of that tab title when the AppBar's short
+ * title isn't descriptive enough (Doc: "<short title> — UAP file <id>").
  */
-export function useSetPageTitle(title: string, sub: string): void {
+export function useSetPageTitle(title: string, sub: string, docTitle?: string): void {
   const { setValue } = useContext(PageTitleContext);
   useEffect(() => {
     setValue({ title, sub });
-    document.title = title === DEFAULT_PAGE_TITLE.title ? DEFAULT_DOCUMENT_TITLE : `${title} · RealUFO`;
-  }, [title, sub, setValue]);
+    document.title = title === DEFAULT_PAGE_TITLE.title ? DEFAULT_DOCUMENT_TITLE : `${docTitle || title} · RealUFO`;
+  }, [title, sub, docTitle, setValue]);
 }

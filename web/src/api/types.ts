@@ -191,6 +191,14 @@ export interface RecordDetail {
   series?: { prev: string | null; next: string | null };
   /** war.gov release this file came out in (null for other archives). */
   release?: { no: number; date: string } | null;
+  /** Files sharing this one's location / period / release / agency (each file in one group only). */
+  related?: RelatedGroup[];
+}
+
+export interface RelatedGroup {
+  key: "location" | "period" | "release" | "agency";
+  label: string;
+  records: ListRecordCard[];
 }
 
 // ---------------------------------------------------------------------------

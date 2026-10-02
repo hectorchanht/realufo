@@ -32,7 +32,8 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useBootstrap, useComments, useRecord, useRecords } from "../api/queries";
 import type { RecordsParams } from "../api/queries";
-import type { RecordKind } from "../api/types";
+import type { RecordKind, RelatedGroup } from "../api/types";
+import { DocCard } from "../components/DocCard";
 import { VoteButton } from "../components/VoteButton";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
@@ -51,6 +52,13 @@ const CHROME_IDLE_MS = 2500;
 // so hard-coding it here (rather than resolving D.boards[0] via bootstrap)
 // matches that same effective default without an extra bootstrap lookup.
 const DEFAULT_BOARD = "uap";
+
+const RELATED_HEAD: Record<RelatedGroup["key"], string> = {
+  location: "Same location",
+  period: "Same period",
+  release: "Same release",
+  agency: "Same agency",
+};
 
 // Prototype's `_short` (RealUFO.dc.html:530): record titles are seeded as
 // "<ID>, <human title>" — strip that leading id prefix (only when the comma
@@ -241,7 +249,12 @@ export function Doc() {
   // unconditionally (before the loading/not-found returns below) so hook
   // order never varies; while `record` hasn't loaded yet, the same "FILE"
   // fallback the prototype uses for its own undefined-record case is fine.
-  useSetPageTitle(record?.agency || "FILE", record ? shortTitle(record.title) : "");
+  // Tab title is uapbrowser-style "<short title> — UAP file <id>".
+  useSetPageTitle(
+    record?.agency || "FILE",
+    record ? shortTitle(record.title) : "",
+    record ? `${shortTitle(record.title)} — UAP file ${record.id}` : undefined,
+  );
 
   if (isLoading) {
     return (
@@ -608,6 +621,21 @@ export function Doc() {
       >
         ◈ Start a board thread about this file
       </button>
+
+      {/* related files — uapbrowser-style groups by shared location / period /
+          release / agency (worker dedupes, so a file shows in one group only) */}
+      {detail.related?.map((g) => (
+        <section key={g.key} className="mt-[30px]">
+          <div className="mb-2.5 font-mono text-[9px] uppercase tracking-[.6px] text-faint">
+            {RELATED_HEAD[g.key]} · <span className="text-dim">{g.label}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
+            {g.records.map((r) => (
+              <DocCard key={r.id} record={r} />
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

@@ -91,6 +91,18 @@ const mockDetail: RecordDetail = {
   ],
   series: { prev: "rec0", next: null },
   release: { no: 4, date: "2026-07-10" },
+  related: [
+    {
+      key: "agency",
+      label: "FBI",
+      records: [
+        {
+          id: "rec7", archive: "wargov", agency: "FBI", title: "FBI-UAP-007, Roswell teletype", summary: "",
+          kind: "pdf", redacted: 0, thumb: null, location: null, incident_date: null, doc_date: null,
+        },
+      ],
+    },
+  ],
 };
 
 const mockComments: CommentsResponse = {
@@ -231,6 +243,13 @@ describe("Doc", () => {
     expect(screen.getByText("RELEASE 04")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /previous in series.*rec0/i })).toHaveAttribute("href", "/doc/rec0");
     expect(screen.queryByRole("link", { name: /next in series/i })).toBeNull();
+  });
+
+  it("shows related groups as file cards and sets the uapbrowser-style tab title", () => {
+    renderDoc();
+    expect(screen.getByText(/same agency/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /FBI-UAP-007, Roswell teletype/ })).toHaveAttribute("href", "/doc/rec7");
+    expect(document.title).toBe("Placement on High Alert near Roswell — UAP file rec1 · RealUFO");
   });
 
   it("renders a comment with its body", () => {
