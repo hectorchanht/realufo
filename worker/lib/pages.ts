@@ -99,9 +99,12 @@ const docPage: Loader = async (env, g, url) => {
   if (!d) return null;
   const x = d.record;
   const agency = x.agency_full || x.agency;
-  // No summary → build one from the record's facts rather than an empty description.
+  // Official summary unless it's a one-liner (AARO/NARA) and an AI summary exists;
+  // no summary at all → build one from the record's facts.
   const facts = [agency, x.incident_date, x.location].filter(Boolean).join(" · ");
-  const description = x.summary || (facts ? `Declassified UAP record — ${facts}.` : "");
+  const ai = d.fullText?.aiSummary;
+  const description =
+    (ai && (x.summary ?? "").length < 80 ? ai : x.summary) || (facts ? `Declassified UAP record — ${facts}.` : "");
   // Matches the SPA's tab title (Doc.tsx): "<short title> — UAP file <id>".
   const title = `${shortTitle(x.title)} — UAP file ${x.id}`;
   // Same pick as thumbSql, from the assets already loaded.

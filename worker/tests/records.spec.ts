@@ -13,7 +13,7 @@ describe("records", () => {
       .bind(JSON.stringify([{ n: 2, text: "Page two text" }]))
       .run();
     const d: any = await loadRecord(env as any, "FBI-UAP-D003", "https://x");
-    expect(d.fullText).toEqual({ pages: [{ n: 2, text: "Page two text" }], truncated: true, total_pages: 12 });
+    expect(d.fullText).toEqual({ pages: [{ n: 2, text: "Page two text" }], truncated: true, total_pages: 12, aiSummary: null });
     const none: any = await loadRecord(env as any, "FBI-UAP-D002", "https://x");
     expect(none.fullText).toBeNull();
   });

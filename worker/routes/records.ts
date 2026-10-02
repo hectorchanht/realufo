@@ -164,9 +164,9 @@ export async function loadRecord(env: Env, id: string, origin: string) {
     seriesNav(env, id),
     releaseP,
     releaseP.then((rel) => relatedOf(env, record, rel)),
-    env.DB.prepare("SELECT pages,truncated,total_pages FROM record_text WHERE record_id=?")
+    env.DB.prepare("SELECT pages,truncated,total_pages,ai_summary FROM record_text WHERE record_id=?")
       .bind(id)
-      .first<{ pages: string; truncated: number; total_pages: number }>(),
+      .first<{ pages: string; truncated: number; total_pages: number; ai_summary: string | null }>(),
     // Hub links are optional garnish: a failing facet query must not break the doc.
     listHubsCached(env, origin).catch((e) => {
       console.error("hub list failed", e);
@@ -174,8 +174,12 @@ export async function loadRecord(env: Env, id: string, origin: string) {
     }),
   ]);
   // Quality-filtered PDF text (crawler ingest.fulltext); null until extracted.
+  // aiSummary from crawler ingest.summaries; null until generated.
   const fullText = text
-    ? { pages: JSON.parse(text.pages) as { n: number; text: string }[], truncated: !!text.truncated, total_pages: text.total_pages }
+    ? {
+        pages: JSON.parse(text.pages) as { n: number; text: string }[], truncated: !!text.truncated,
+        total_pages: text.total_pages, aiSummary: text.ai_summary ?? null,
+      }
     : null;
   const live = new Set(hubList.map((h) => `${h.kind}/${h.slug}`));
   return {

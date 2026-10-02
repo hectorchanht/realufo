@@ -225,7 +225,7 @@ describe("Doc", () => {
     expect(screen.queryByRole("link", { name: "Central Intelligence Agency" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Roswell, NM" })).toBeNull();
   });
-  it("shows FULL TEXT: first page visible, the rest in a closed <details>, continuation when truncated", () => {
+  it("shows FULL TEXT pages in a scroll box, continuation when truncated", () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     useRecordMock.mockReturnValue({
       data: {
@@ -238,16 +238,36 @@ describe("Doc", () => {
       },
       isLoading: false,
     });
-    const { container } = renderDoc();
+    renderDoc();
     expect(screen.getByText("FULL TEXT")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "AI SUMMARY" })).toBeNull();
     expect(screen.getByText("2 of 9 pages · OCR, may contain errors")).toBeInTheDocument();
-    expect(screen.getByText("First page words <script>x</script>")).toBeVisible();
-    const details = container.querySelector("section[aria-label='Full text'] details")!;
-    expect(details.hasAttribute("open")).toBe(false);
-    expect(details.textContent).toContain("Fourth page words");
+    const box = screen.getByLabelText("Full text pages");
+    expect(box.className).toContain("overflow-y-auto");
+    expect(box.textContent).toContain("First page words <script>x</script>");
+    expect(box.textContent).toContain("Fourth page words");
     fireEvent.click(screen.getByRole("button", { name: "Text continues in the original file →" }));
     expect(openSpy).toHaveBeenCalledWith("/api/file/rec1", "_blank", "noopener,noreferrer");
     openSpy.mockRestore();
+  });
+
+  it("with an AI summary: shows the summary first, FULL TEXT toggle swaps to the pages", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        fullText: { pages: [{ n: 1, text: "Page one words" }], truncated: false, total_pages: 1, aiSummary: "An AI paragraph." },
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    expect(screen.getByText("An AI paragraph.")).toBeInTheDocument();
+    expect(screen.getByText("AI-generated from OCR text · may contain errors")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Full text pages")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "FULL TEXT" }));
+    expect(screen.queryByText("An AI paragraph.")).toBeNull();
+    expect(screen.getByLabelText("Full text pages").textContent).toContain("Page one words");
+    fireEvent.click(screen.getByRole("button", { name: "AI SUMMARY" }));
+    expect(screen.getByText("An AI paragraph.")).toBeInTheDocument();
   });
 
   it("hides FULL TEXT when there is none or no page passed the filter", () => {

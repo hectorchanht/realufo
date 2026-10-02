@@ -106,7 +106,7 @@ export type DocData = {
   series: { prev: string | null; next: string | null };
   release: { no: number; date: string } | null;
   related: { key: string; label: string; records: RecordLink[] }[];
-  fullText?: { pages: { n: number; text: string }[]; truncated: boolean; total_pages: number } | null;
+  fullText?: { pages: { n: number; text: string }[]; truncated: boolean; total_pages: number; aiSummary?: string | null } | null;
   hubs?: Partial<Record<"release" | "agency" | "location" | "decade", string>>;
 };
 
@@ -129,7 +129,8 @@ function fullTextSection(d: DocData): string {
   const more = ft.truncated
     ? `<p>${a({ href: `/api/file/${encodeURIComponent(d.record.id)}`, text: `Text continues in the original file (${ft.total_pages} pages).` })}</p>`
     : "";
-  return `<section><h2>Full text</h2>${ft.pages.map((p) => `<h3>Page ${p.n}</h3>${textBlock(p.text)}`).join("")}${more}</section>`;
+  const ai = ft.aiSummary ? `<section><h2>AI summary</h2>${textBlock(ft.aiSummary)}</section>` : "";
+  return `${ai}<section><h2>Full text</h2>${ft.pages.map((p) => `<h3>Page ${p.n}</h3>${textBlock(p.text)}`).join("")}${more}</section>`;
 }
 
 export function docBody(d: DocData): string {

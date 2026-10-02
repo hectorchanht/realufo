@@ -201,6 +201,8 @@ export interface FullText {
   /** true when readable text continues in the original file */
   truncated: boolean;
   total_pages: number;
+  /** AI paragraph from crawler ingest.summaries; null until generated. */
+  aiSummary?: string | null;
 }
 
 export type HubKind = "release" | "agency" | "location" | "decade";

@@ -115,6 +115,21 @@ jobs:
           else
             python -m ingest.fulltext --dry-run --limit 1 | tee -a ingest-summary.txt
           fi
+      # AI summary of new full text (ingest.summaries); NULL rows retried next run
+      - name: summaries
+        if: ${{ !cancelled() }}
+        working-directory: crawler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          LIVE: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run == 'false' }}
+        run: |
+          set -o pipefail
+          if [ "$LIVE" = "true" ]; then
+            python -m ingest.summaries --limit 50 | tee -a ingest-summary.txt
+          else
+            python -m ingest.summaries --dry-run --limit 1 | tee -a ingest-summary.txt
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

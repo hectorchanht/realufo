@@ -44,6 +44,13 @@ describe("docBody", () => {
     expect(out).toContain('<a href="/api/file/FBI-UAP-D002">Text continues in the original file (40 pages).</a>');
     expect(docBody(doc({}, { fullText: { ...ft, truncated: false } }))).not.toContain("Text continues");
   });
+  it("renders the AI summary escaped before the full text, only when present", () => {
+    const ft = { pages: [{ n: 1, text: "Page." }], truncated: false, total_pages: 1, aiSummary: "A <b>memo</b>." };
+    expect(docBody(doc({}, { fullText: ft }))).toContain(
+      "<section><h2>AI summary</h2><p>A &lt;b&gt;memo&lt;/b&gt;.</p></section><section><h2>Full text</h2>"
+    );
+    expect(docBody(doc({}, { fullText: { ...ft, aiSummary: null } }))).not.toContain("AI summary");
+  });
   it("no Full text section for an empty or missing fullText", () => {
     expect(docBody(doc({}, { fullText: { pages: [], truncated: false, total_pages: 2 } }))).not.toContain("Full text");
     expect(docBody(doc())).not.toContain("Full text");

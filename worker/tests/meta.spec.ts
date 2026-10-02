@@ -256,6 +256,17 @@ describe("pre-rendered body", () => {
     expect(html).toContain("<h3>Page 1</h3><p>Analysts reviewed the Colorado Springs sighting.</p>");
   });
 
+  it("doc: AI summary pre-rendered; meta description uses it only when the official summary is missing", async () => {
+    const ai = "An AI paragraph about the GIMBAL footage released by the Navy.";
+    await env.DB.prepare("INSERT INTO record_text(record_id,pages,truncated,total_pages,ai_summary) VALUES('AARO-956955',?,0,1,?)")
+      .bind(JSON.stringify([{ n: 1, text: "Navy footage text." }]), ai)
+      .run();
+    const html = await get("/doc/AARO-956955");
+    expect(html).toContain(`<section><h2>AI summary</h2><p>${ai}</p></section><section><h2>Full text</h2>`);
+    expect(html).toContain(`<meta name="description" content="${ai}">`);
+    expect(await get("/doc/ICA-UAP-D001")).toContain('<meta name="description" content="This document contains analysis');
+  });
+
   it("doc: meta + body even with Accept */* (share scrapers)", async () => {
     const html = await get("/doc/FBI-UAP-D002");
     expect(html).toContain("— UAP file FBI-UAP-D002 · RealUFO</title>");
