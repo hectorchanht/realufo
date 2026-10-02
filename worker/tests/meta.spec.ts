@@ -120,6 +120,15 @@ describe("serveWithMeta (via worker.fetch)", () => {
     expect(html.toLowerCase()).toContain("<title>");
   });
 
+  it("/doc/:id percent-decodes the id (a live AARO id has a space; it 404'd)", async () => {
+    await env.DB.prepare("INSERT OR IGNORE INTO records(id,archive,agency,title,kind,status) VALUES('SP ACE-1','aaro','AARO','SP ACE-1','pdf','live')").run();
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(new Request("https://x/doc/SP%20ACE-1"), { ...env, ASSETS: fakeAssets } as any, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("SP ACE-1");
+  });
+
   it("bogus /doc/NOPE is a 404 + noindex, SPA shell kept", async () => {
     const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
     const ctx = createExecutionContext();

@@ -2,6 +2,7 @@ import type { Env } from "../env";
 import { esc, injectBody, DEFAULT_DESCRIPTION } from "./ssr";
 import { ROUTES, type Page } from "./pages";
 import { cachedJson } from "./cache";
+import { decodedGroups } from "../router";
 
 export { DEFAULT_DESCRIPTION };
 
@@ -112,11 +113,12 @@ export async function serveWithMeta(req: Request, env: Env): Promise<Response> {
       return Response.redirect(url.origin + url.pathname.replace(/\/+$/, "") + url.search, 301);
     for (const r of ROUTES) {
       const match = r.pattern.exec({ pathname: url.pathname });
-      if (!match) continue;
+      const params = match && decodedGroups(match);
+      if (!params) continue;
       const html = await shell(env, url);
       let page: Page | null = null;
       try {
-        page = await cachedPage(url, () => r.load(env, match.pathname.groups as Record<string, string>, url));
+        page = await cachedPage(url, () => r.load(env, params, url));
       } catch (e) {
         // D1 trouble must not take the SPA shell down; the SPA shows its own errors.
         console.error("pre-render failed", url.pathname, e);

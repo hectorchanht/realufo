@@ -189,6 +189,11 @@ describe("records", () => {
     const d = (k: string) => after.flags[k] - (before.flags?.[k] ?? 0);
     expect([d("redacted"), d("unredacted"), d("text"), d("ai"), d("moments"), d("featured")]).toEqual([2, 2, 2, 1, 1, 1]);
   });
+  it("percent-decodes :id (a live AARO id has a space); malformed escapes 404, not 500", async () => {
+    await env.DB.prepare("INSERT OR IGNORE INTO records(id,archive,agency,title,kind,status) VALUES('SP ACE-1','aaro','AARO','SP ACE-1','pdf','live')").run();
+    expect((await get("/api/records/SP%20ACE-1")).status).toBe(200);
+    expect((await get("/api/records/%E0%A4%A")).status).toBe(404);
+  });
   it("404s unknown id", async () => {
     expect((await get("/api/records/NOPE")).status).toBe(404);
   });
