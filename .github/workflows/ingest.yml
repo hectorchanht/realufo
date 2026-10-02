@@ -145,6 +145,22 @@ jobs:
           else
             python -m ingest.links --dry-run | tee -a ingest-summary.txt
           fi
+      # Ping IndexNow (Bing/Yandex) with pages whose data changed this run; 26 h
+      # window = daily cron + slack. Google reads the sitemap instead.
+      - name: indexnow
+        if: ${{ !cancelled() }}
+        working-directory: crawler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          LIVE: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run == 'false' }}
+        run: |
+          set -o pipefail
+          if [ "$LIVE" = "true" ]; then
+            python indexnow.py --since-hours 26 | tee -a ingest-summary.txt
+          else
+            python indexnow.py --since-hours 26 --dry-run | tee -a ingest-summary.txt
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
