@@ -3,6 +3,7 @@ import { json, error } from "../lib/json";
 import { relAgo, stanceOK } from "../lib/db";
 import { newId, newNo, actorId } from "../lib/anon";
 import { allowWrite } from "../lib/ratelimit";
+import { readBody, putImage, uploadUrl } from "../lib/upload";
 
 export async function getThread(_req: Request, env: Env, p: Record<string, string>) {
   const thread = await env.DB.prepare(
@@ -28,13 +29,14 @@ export async function getThread(_req: Request, env: Env, p: Record<string, strin
     isOp: !!x.is_op,
     ago: relAgo(x.created_at),
     handleShow: x.handle ? "!" + x.handle : null,
+    image_url: uploadUrl(x.image_r2_key),
     reply_to: JSON.parse(x.reply_to || "[]"),
   }));
   return json({ thread, sourceRecord, posts });
 }
 
 export async function createThread(req: Request, env: Env) {
-  const b = await req.json<any>().catch(() => ({}));
+  const { b, image } = await readBody(req);
   const op_body = typeof b.op_body === "string" ? b.op_body.trim() : "";
   if (!op_body) return error(400, "empty body");
   const actor = await actorId(req, env.ANON_SALT);
@@ -42,6 +44,13 @@ export async function createThread(req: Request, env: Env) {
   const board = b.board || "uap";
   const boardRow = await env.DB.prepare("SELECT slug, accent FROM boards WHERE id=?").bind(board).first<any>();
   if (!boardRow) return error(400, "unknown board");
+  let imageKey: string | null = null;
+  if (image) {
+    const r = await putImage(env, image);
+    if (r instanceof Response) return r;
+    imageKey = r;
+  }
+  const imgCount = imageKey ? 1 : 0;
   const src = b.source_record_id || null;
   const caseSlug = b.case_slug || null;
   const title = (String(b.title ?? "").trim() || op_body.split("\n")[0].slice(0, 70) || "Untitled thread").slice(0, 120);
@@ -53,11 +62,11 @@ export async function createThread(req: Request, env: Env) {
   const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
   await env.DB.batch([
     env.DB.prepare(
-      `INSERT INTO threads(id,no,board_id,title,stance,op_body,op_handle,op_id,tags,votes,reply_count,img_count,source_record_id,case_slug,hot,created_at) VALUES(?,?,?,?,?,?,?,?,'[]',0,0,0,?,?,0,?)`
-    ).bind(id, no, board, title, stance, op_body, handle, opId, src, caseSlug, created_at),
+      `INSERT INTO threads(id,no,board_id,title,stance,op_body,op_handle,op_id,tags,votes,reply_count,img_count,source_record_id,case_slug,hot,created_at) VALUES(?,?,?,?,?,?,?,?,'[]',0,0,?,?,?,0,?)`
+    ).bind(id, no, board, title, stance, op_body, handle, opId, imgCount, src, caseSlug, created_at),
     env.DB.prepare(
-      `INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,source_record_id,is_op,created_at) VALUES(?,?,?,?,?,?,0,?,1,?)`
-    ).bind(opId, no, id, op_body, handle, stance, src, created_at),
+      `INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,source_record_id,image_r2_key,image_kind,is_op,created_at) VALUES(?,?,?,?,?,?,0,?,?,?,1,?)`
+    ).bind(opId, no, id, op_body, handle, stance, src, imageKey, imageKey && "upload", created_at),
   ]);
   return json(
     {
@@ -75,7 +84,7 @@ export async function createThread(req: Request, env: Env) {
         tags: [],
         votes: 0,
         reply_count: 0,
-        img_count: 0,
+        img_count: imgCount,
         source_record_id: src,
         created_at,
         ago: "now",

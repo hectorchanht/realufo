@@ -19,13 +19,15 @@ export class ApiError extends Error {
 }
 
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
+  // FormData (image uploads) goes as-is so the browser sets the multipart boundary.
+  const isForm = body instanceof FormData;
   const res = await fetch(base(path), {
     method,
     headers: {
-      "content-type": "application/json",
+      ...(isForm ? {} : { "content-type": "application/json" }),
       "X-Anon-Id": getAnonId(),
     },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
   });
   if (!res.ok) {
     let message = `${method} ${path} → ${res.status}`;

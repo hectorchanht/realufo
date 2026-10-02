@@ -171,6 +171,14 @@ export function useAddCaseComment(slug: string) {
   });
 }
 
+// With an image, send the same fields as multipart form data; otherwise JSON.
+function withImage(vars: { image?: File } & Record<string, unknown>): unknown {
+  if (!vars.image) return vars;
+  const f = new FormData();
+  for (const [k, v] of Object.entries(vars)) if (v !== undefined) f.set(k, v instanceof File ? v : String(v));
+  return f;
+}
+
 export function useCreateThread() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -182,7 +190,8 @@ export function useCreateThread() {
       handle?: string;
       source_record_id?: string;
       case_slug?: string;
-    }) => api.post<CreateThreadResponse>("/api/threads", vars),
+      image?: File;
+    }) => api.post<CreateThreadResponse>("/api/threads", withImage(vars)),
     onSettled: (data, _err, vars) => {
       void queryClient.invalidateQueries({ queryKey: qk.feed });
       if (data) {
@@ -201,8 +210,8 @@ export function useReply(threadId: string) {
       stance?: Stance;
       handle?: string;
       source_record_id?: string;
-      image_label?: string;
-    }) => api.post<CreatePostResponse>(`/api/threads/${threadId}/posts`, vars),
+      image?: File;
+    }) => api.post<CreatePostResponse>(`/api/threads/${threadId}/posts`, withImage(vars)),
     onSuccess: (data) => {
       queryClient.setQueryData<ThreadDetail>(qk.thread(threadId), (old) =>
         old

@@ -42,7 +42,7 @@ export interface ComposerOpts {
   boardId?: string;
 }
 
-export type ViewerKind = "doc" | "video" | "placeholder";
+export type ViewerKind = "doc" | "video" | "image" | "placeholder";
 
 export interface ViewerOpts {
   kind: ViewerKind;

@@ -103,6 +103,16 @@ describe("Composer", () => {
     });
   });
 
+  it("sends a picked image file with the reply", () => {
+    renderComposer({ mode: "reply", threadId: "t1" });
+    const file = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "timeline.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText(/attach image/i), { target: { files: [file] } });
+    expect(screen.getByText("✓ timeline.png")).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "see pic" } });
+    fireEvent.click(screen.getByRole("button", { name: /post/i }));
+    expect(mockReplyMutate.mock.calls[0][0]).toMatchObject({ body: "see pic", image: file });
+  });
+
   it("toasts 'slow down — too many posts' when the mutation rejects with a 429 ApiError", () => {
     mockCreateThreadMutate.mockImplementation((_vars: unknown, opts?: { onError?: (e: unknown) => void }) => {
       opts?.onError?.(new ApiError(429, "rate limited"));

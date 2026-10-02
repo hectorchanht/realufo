@@ -155,6 +155,18 @@ describe("Thread", () => {
     );
   });
 
+  it("renders a user-uploaded post image and opens it in the image viewer", () => {
+    useThreadMock.mockReturnValue({
+      data: { ...mockThreadDetail, posts: [{ ...mockThreadDetail.posts[1], image_kind: "upload", image_url: "/api/u/a.png" }] },
+      isLoading: false,
+    });
+    renderThread();
+    const btn = screen.getByRole("button", { name: "open attached image" });
+    expect(btn.querySelector("img")).toHaveAttribute("src", "/api/u/a.png");
+    fireEvent.click(btn);
+    expect(mockOpenViewer).toHaveBeenCalledWith(expect.objectContaining({ kind: "image", url: "/api/u/a.png" }));
+  });
+
   it("shows a loading state while the thread is loading (never indexes into undefined)", () => {
     useThreadMock.mockReturnValue({ data: undefined, isLoading: true });
     renderThread();

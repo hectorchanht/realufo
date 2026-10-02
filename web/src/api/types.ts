@@ -283,6 +283,7 @@ export interface Post {
   source_record_id: string | null;
   image_kind: string | null;
   image_label: string | null;
+  image_url?: string | null; // same-origin URL of a user-uploaded image
   reply_to?: string[]; // parsed from JSON; present on GET, absent on the POST echo
   is_op?: number; // 0|1 raw column; present on GET, absent on the POST echo
   isOp: boolean; // computed convenience boolean, present on both

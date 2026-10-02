@@ -53,6 +53,7 @@ function stanceColor(stance: string | null): string {
 
 type PostImage =
   | { kind: "record"; recordKind: string; thumb: string | null; label: string }
+  | { kind: "upload"; url: string; label: string }
   | { kind: "placeholder"; label: string };
 
 // See file header note on why `sourceRecord` is the only record data
@@ -61,6 +62,9 @@ type PostImage =
 function postImage(post: Post, sourceRecord: ThreadSourceRecord | null): PostImage | null {
   if (post.source_record_id && sourceRecord && post.source_record_id === sourceRecord.id) {
     return { kind: "record", recordKind: sourceRecord.kind, thumb: sourceRecord.thumb, label: sourceRecord.title };
+  }
+  if (post.image_url) {
+    return { kind: "upload", url: post.image_url, label: "attached image" };
   }
   if (post.image_kind === "placeholder") {
     return { kind: "placeholder", label: post.image_label || "image" };
@@ -82,6 +86,8 @@ function PostRow({ post, sourceRecord }: PostRowProps) {
     if (!img) return;
     if (img.kind === "record") {
       openViewer({ kind: img.recordKind === "video" ? "video" : "doc", url: img.thumb ?? undefined, label: img.label });
+    } else if (img.kind === "upload") {
+      openViewer({ kind: "image", url: img.url, label: img.label });
     } else {
       openViewer({ kind: "placeholder", label: img.label });
     }
@@ -122,8 +128,8 @@ function PostRow({ post, sourceRecord }: PostRowProps) {
           data-post-image
           className="relative float-left mb-2 mr-3 h-24 w-24 flex-none overflow-hidden rounded-[10px] border border-line2 bg-bg2 active:scale-[.96]"
         >
-          {img.kind === "record" && img.thumb ? (
-            <img src={img.thumb} alt="" className="h-full w-full object-cover" />
+          {img.kind === "upload" || (img.kind === "record" && img.thumb) ? (
+            <img src={img.kind === "upload" ? img.url : img.thumb!} alt="" className="h-full w-full object-cover" />
           ) : (
             <div
               className="grid h-full w-full place-items-center px-1.5 text-center font-mono text-[9px]"

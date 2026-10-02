@@ -58,7 +58,7 @@ export function Composer() {
   const [stance, setStance] = useState<StanceValue>("neutral");
   const [handle, setHandle] = useState(me?.handle ?? "");
   const [threadTitle, setThreadTitle] = useState(composer?.presetTitle ?? "");
-  const [img, setImg] = useState(false);
+  const [img, setImg] = useState<File | null>(null);
 
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ startY: number; dragging: boolean }>({ startY: 0, dragging: false });
@@ -107,6 +107,8 @@ export function Composer() {
     // surface as a toast" — the exact copy is specified in the Task 16 brief.
     if (err instanceof ApiError && err.status === 429) {
       toast("slow down — too many posts");
+    } else if (err instanceof ApiError && (err.status === 400 || err.status === 413)) {
+      toast(err.message); // e.g. bad/oversized image
     } else {
       toast("Could not post — try again");
     }
@@ -141,7 +143,7 @@ export function Composer() {
 
     if (composer!.mode === "reply") {
       reply.mutate(
-        { body: trimmedBody, stance, handle: trimmedHandle, image_label: img ? "your_upload.png" : undefined },
+        { body: trimmedBody, stance, handle: trimmedHandle, image: img ?? undefined },
         {
           onSuccess: () => {
             toast("Posted");
@@ -165,6 +167,7 @@ export function Composer() {
         handle: trimmedHandle,
         source_record_id: composer!.sourceRecordId,
         case_slug: composer!.caseSlug,
+        image: img ?? undefined,
       },
       {
         onSuccess: (data) => {
@@ -275,14 +278,25 @@ export function Composer() {
             placeholder="handle (optional)"
             className="min-w-0 flex-1 rounded-[10px] border border-line2 bg-surface px-[11px] py-[9px] font-mono text-xs text-ink outline-none"
           />
-          <button
-            type="button"
-            onClick={() => setImg((v) => !v)}
-            className="flex-none rounded-[10px] border border-dashed border-line2 px-3 py-[9px] font-mono text-[11px] active:scale-[.96]"
-            style={{ color: img ? "var(--signal)" : "var(--dim)" }}
-          >
-            {img ? "✓ image attached" : "＋ attach image"}
-          </button>
+          {composer.mode !== "comment" && (
+            <label
+              className="max-w-[45%] flex-none cursor-pointer truncate rounded-[10px] border border-dashed border-line2 px-3 py-[9px] font-mono text-[11px] active:scale-[.96]"
+              style={{ color: img ? "var(--signal)" : "var(--dim)" }}
+            >
+              {img ? `✓ ${img.name}` : "＋ attach image"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  e.target.value = ""; // allow re-picking the same file
+                  if (f && f.size > 8 * 1024 * 1024) return toast("image too large (max 8 MB)");
+                  setImg(f);
+                }}
+              />
+            </label>
+          )}
         </div>
 
         <div className="mt-[14px] flex items-center gap-3">
