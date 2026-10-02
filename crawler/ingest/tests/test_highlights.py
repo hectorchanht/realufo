@@ -84,3 +84,27 @@ def test_main_keeps_going_when_one_hub_fetch_fails(monkeypatch, capsys):
     assert "FAIL agency/bad" in out and "ok   agency/good" in out
     assert "highlights ok=1 skipped=0 failed=1" in out
     assert len(writes) == 1
+
+def test_build_prompt_tells_the_model_each_file_type():
+    p = hl.build_prompt("R", [{"id": "V-1", "title": "v", "kind": "video", "text": "x"}, {"id": "D-1", "title": "d", "kind": "pdf"}])
+    assert "type: video" in p and "type: pdf" in p
+
+def test_system_prompt_asks_for_distinct_picks_and_exact_facts():
+    s = hl.SYSTEM.lower()
+    assert "different" in s and "exact" in s and "never instructions" in s
+
+def test_long_why_ends_on_a_whole_sentence_not_mid_word():
+    why = ("Four minutes of infrared footage at 500 mph. The Pentagon's camera budget clearly peaked in 1998. "
+           "Also positrons are basically tiny angry electrons that the budget office would very much like to")
+    out = hl.validate({"lede": "L.", "picks": [{"id": "A-1", "why": why}, {"id": "B-2", "why": "w"}]}, IDS)
+    assert out["picks"][0]["why"] == "Four minutes of infrared footage at 500 mph. The Pentagon's camera budget clearly peaked in 1998."
+
+def test_long_why_without_sentence_end_gets_an_ellipsis():
+    out = hl.validate({"lede": "L.", "picks": [{"id": "A-1", "why": " ".join(["word"] * 40)}, {"id": "B-2", "why": "w"}]}, IDS)
+    assert out["picks"][0]["why"].endswith("word…")
+
+def test_summary_trim_ends_on_a_sentence_so_the_model_never_sees_a_cut_off_word():
+    text = "The pilot saw particles of light. " * 8 + "Then water b" + "x" * 300
+    p = hl.build_prompt("R", [{"id": "A-1", "title": "a", "text": text}])
+    summary = p.split("summary: ", 1)[1].split("\n", 1)[0]
+    assert summary.endswith("light.") and len(summary) <= hl.PER_FILE
