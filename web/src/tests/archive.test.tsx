@@ -177,6 +177,21 @@ describe("Archive", () => {
     );
   });
 
+  it("jump-to-page input navigates to the typed page, clamped to the last page", async () => {
+    useRecordsMock.mockImplementation(() => ({ data: { count: 1000, records: [cardWargov] }, isLoading: false }));
+    renderAppAt("/archive");
+    await screen.findByText(/CIA-UAP-017/);
+
+    fireEvent.change(screen.getByLabelText("jump to"), { target: { value: "12" } });
+    fireEvent.click(screen.getByRole("button", { name: "go" }));
+    await waitFor(() => expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 440 })));
+    expect(screen.getByLabelText("jump to")).toHaveValue(12);
+
+    fireEvent.change(screen.getByLabelText("jump to"), { target: { value: "999" } });
+    fireEvent.submit(screen.getByLabelText("jump to").closest("form")!);
+    await waitFor(() => expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 960 })));
+  });
+
   it("doc card links forward the archive's filters and page to /doc", async () => {
     useRecordsMock.mockImplementation(() => ({ data: { count: 1000, records: [cardWargov] }, isLoading: false }));
     renderAppAt("/archive?archive=wargov&page=3");

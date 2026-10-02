@@ -38,7 +38,7 @@
 // the whole query string (filters + page) to /doc so its swipe list is this
 // exact page (Doc.tsx crosses into neighbour pages at the edges).
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useBootstrap, useRecords } from "../api/queries";
 import { DocCard } from "../components/DocCard";
@@ -93,6 +93,38 @@ function Pager({ page, totalPages, onPage }: PagerProps) {
         next ›
       </button>
     </nav>
+  );
+}
+
+// Jump-to-page box: native number input, Enter or "go" submits; out-of-range
+// values clamp to 1..totalPages. Uncontrolled + keyed on `page` so it resets
+// to the current page after every navigation.
+function PageJump({ page, totalPages, onPage }: PagerProps) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const n = Math.floor(Number(new FormData(e.currentTarget).get("page")));
+    if (!n) return;
+    const target = Math.min(totalPages, Math.max(1, n));
+    if (target !== page) onPage(target);
+  }
+  return (
+    <form key={page} onSubmit={handleSubmit} className="mt-2.5 flex items-center justify-center gap-1.5 font-mono text-[11px] text-faint">
+      <label htmlFor="archive-page-jump">jump to</label>
+      <input
+        id="archive-page-jump"
+        name="page"
+        type="number"
+        inputMode="numeric"
+        min={1}
+        max={totalPages}
+        defaultValue={page}
+        className="w-[64px] rounded-lg border border-line2 bg-surface px-2 py-[5px] text-center text-[11px] text-ink outline-none focus:border-signal"
+      />
+      <span>/ {totalPages}</span>
+      <button type="submit" className="rounded-lg px-[9px] py-[5px] text-[11px] active:scale-[.96]" style={typeChipStyle(false)}>
+        go
+      </button>
+    </form>
   );
 }
 
@@ -397,7 +429,12 @@ export function Archive() {
             </div>
           )}
 
-          {totalPages > 1 && <Pager page={page} totalPages={totalPages} onPage={goToPage} />}
+          {totalPages > 1 && (
+            <>
+              <Pager page={page} totalPages={totalPages} onPage={goToPage} />
+              <PageJump page={page} totalPages={totalPages} onPage={goToPage} />
+            </>
+          )}
         </>
       )}
     </div>
