@@ -2,6 +2,7 @@ import type { Env } from "../env";
 import { esc, injectBody, DEFAULT_DESCRIPTION } from "./ssr";
 import { ROUTES, type Page } from "./pages";
 import { cachedJson } from "./cache";
+import { decodeParams } from "../router";
 
 export { DEFAULT_DESCRIPTION };
 
@@ -116,7 +117,7 @@ export async function serveWithMeta(req: Request, env: Env): Promise<Response> {
       const html = await shell(env, url);
       let page: Page | null = null;
       try {
-        page = await cachedPage(url, () => r.load(env, match.pathname.groups as Record<string, string>, url));
+        page = await cachedPage(url, () => r.load(env, decodeParams(match.pathname.groups), url));
       } catch (e) {
         // D1 trouble must not take the SPA shell down; the SPA shows its own errors.
         console.error("pre-render failed", url.pathname, e);
