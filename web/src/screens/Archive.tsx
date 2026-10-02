@@ -398,8 +398,11 @@ export function Archive() {
         Original release archive → release.realufo.org ↗
       </a>
 
-      <Link to="/browse" className="mb-3.5 block font-mono text-[11px] text-dim hover:text-signal">
-        Browse by release · agency · location · decade →
+      <Link
+        to="/browse"
+        className="mb-3.5 inline-flex items-center gap-2 rounded-[9px] border border-signal px-3 py-[7px] font-mono text-[11px] font-semibold tracking-[.4px] text-signal active:scale-[.97]"
+      >
+        ▦ BROWSE BY RELEASE · AGENCY · LOCATION · DECADE →
       </Link>
 
       {/* archive chip row — lines 174-178 */}

@@ -59,6 +59,8 @@ export function canBackForPath(pathname: string): boolean {
 export function activeTabForPath(pathname: string): NavTab {
   if (pathname.startsWith("/doc")) return "archive";
   if (pathname.startsWith("/archive")) return "archive";
+  // Hubs (/browse, /release/6, /agency/fbi…) are ways into the archive.
+  if (/^\/(browse|release|agency|location|decade)(\/|$)/.test(pathname)) return "archive";
   if (pathname.startsWith("/ask")) return "ask";
   if (pathname.startsWith("/board/") || pathname.startsWith("/thread")) return "boards";
   if (pathname === "/boards" || pathname.startsWith("/boards/")) return "boards";

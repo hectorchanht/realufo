@@ -27,7 +27,8 @@
 // classes at the same 900px breakpoint AppShell itself uses, with the
 // `data-grid` attribute kept for markup parity.
 import { Link } from "react-router-dom";
-import { useBootstrap, useFeed } from "../api/queries";
+import { useBootstrap, useFeed, useHubs } from "../api/queries";
+import type { HubSummary } from "../api/types";
 import { DocCard } from "../components/DocCard";
 import { ThreadRow } from "../components/ThreadRow";
 import { useSetPageTitle } from "../lib/pageTitle";
@@ -38,6 +39,40 @@ const FALLBACK_STATS_LINE = "◆ THE DECLASSIFIED ARCHIVE";
 function statsLine(stats?: { records?: number; archives?: number }): string {
   if (!stats || stats.records == null || stats.archives == null) return FALLBACK_STATS_LINE;
   return `◆ ${stats.records.toLocaleString()} FILES · ${stats.archives.toLocaleString()} ARCHIVES`;
+}
+
+// Hub entry points on the home page: every release, then the biggest
+// agencies and locations. Hidden until /api/hubs answers (or if it's empty).
+function BrowseStrip() {
+  const hubs = useHubs().data?.hubs ?? [];
+  const top = (kind: HubSummary["kind"], n: number) =>
+    hubs.filter((h) => h.kind === kind).sort((a, b) => b.count - a.count).slice(0, n);
+  const chips = [...hubs.filter((h) => h.kind === "release"), ...top("agency", 4), ...top("location", 4)];
+  if (!chips.length) return null;
+  return (
+    <section aria-labelledby="feed-browse" className="mb-[26px]">
+      <div className="mx-0.5 mb-3 flex items-baseline justify-between">
+        <h2 id="feed-browse" className="font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
+          ◆ Browse the files
+        </h2>
+        <Link to="/browse" className="font-mono text-[11px] text-signal">
+          see all ›
+        </Link>
+      </div>
+      <div className="flex flex-wrap gap-[7px]">
+        {chips.map((h) => (
+          <Link
+            key={`${h.kind}/${h.slug}`}
+            to={`/${h.kind}/${h.slug}`}
+            className="rounded-[7px] border border-line px-[9px] py-1 font-mono text-[10px] text-dim hover:text-signal"
+          >
+            {/* "Release 06 · 18 Sep 2026" → "Release 06": the date makes six release chips stack one per row on phones */}
+            {h.kind === "release" ? h.label.split(" · ")[0] : h.label} · {h.count}
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 export function Feed() {
@@ -65,6 +100,8 @@ export function Feed() {
           ))}
         </div>
       )}
+
+      <BrowseStrip />
 
       <div className="mx-0.5 mb-3 flex items-baseline justify-between">
         <div className="font-pixel text-[9px] uppercase tracking-[1px] text-faint">◆ Trending threads</div>

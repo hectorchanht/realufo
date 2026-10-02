@@ -82,6 +82,16 @@ const mockFeed: FeedResponse = {
 vi.mock("../api/queries", () => ({
   useBootstrap: () => ({ data: mockBootstrap, isLoading: false }),
   useFeed: () => ({ data: mockFeed, isLoading: false }),
+  useHubs: () => ({
+    data: {
+      hubs: [
+        { kind: "release", slug: "6", label: "Release 06 · 18 Sep 2026", count: 74 },
+        { kind: "agency", slug: "fbi", label: "FBI", count: 104 },
+        { kind: "decade", slug: "1950s", label: "1950s", count: 30 },
+      ],
+    },
+    isLoading: false,
+  }),
   useVote: () => ({ mutate: vi.fn(), isPending: false }),
   // Stubs for the real Doc screen (Task 19) — clicking a featured DocCard
   // below navigates to /doc/:id, which now calls these for real; `data:
@@ -126,6 +136,14 @@ describe("Feed", () => {
     renderAppAt("/");
     const link = await screen.findByRole("link", { name: /all boards/i });
     expect(link).toHaveAttribute("href", "/boards");
+  });
+
+  it("links hub pages from the browse strip (releases + agencies, not decades)", async () => {
+    renderAppAt("/");
+    expect(await screen.findByRole("link", { name: "Release 06 · 74" })).toHaveAttribute("href", "/release/6");
+    expect(screen.getByRole("link", { name: "FBI · 104" })).toHaveAttribute("href", "/agency/fbi");
+    expect(screen.queryByRole("link", { name: "1950s · 30" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /see all/i })).toHaveAttribute("href", "/browse");
   });
 
   it("shows the archive CTA using the bootstrap stats count and links to /archive", async () => {

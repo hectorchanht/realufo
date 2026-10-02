@@ -109,13 +109,13 @@ describe("Archive", () => {
 
   it("no hub link for an unmapped filter value", async () => {
     renderAppAt("/archive?agency=IC");
-    await screen.findByRole("link", { name: "Browse by release · agency · location · decade →" });
+    await screen.findByRole("link", { name: /browse by release · agency · location · decade/i });
     expect(screen.queryByRole("link", { name: /page$/ })).toBeNull();
   });
 
   it("links to the browse hubs page", async () => {
     renderAppAt("/archive");
-    expect(await screen.findByRole("link", { name: "Browse by release · agency · location · decade →" })).toHaveAttribute("href", "/browse");
+    expect(await screen.findByRole("link", { name: /browse by release · agency · location · decade/i })).toHaveAttribute("href", "/browse");
   });
   it("renders records as DocCards", async () => {
     renderAppAt("/archive");

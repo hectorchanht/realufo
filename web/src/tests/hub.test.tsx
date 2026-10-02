@@ -4,6 +4,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import type { Hub as HubData, HubSummary } from "../api/types";
 import Hub from "../screens/Hub";
 import Browse from "../screens/Browse";
+import { activeTabForPath } from "../components/navItems";
 
 const useHubMock = vi.fn();
 const useHubsMock = vi.fn();
@@ -79,5 +80,14 @@ describe("Browse", () => {
     expect(screen.getByRole("heading", { name: "AGENCIES" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "DECADES" })).toBeNull();
     expect(screen.getByRole("link", { name: "Release 06 · 18 Sep 2026 · 74" })).toHaveAttribute("href", "/release/6");
+  });
+});
+
+describe("nav tab for hub routes", () => {
+  it("highlights Archive on /browse and every hub kind", () => {
+    for (const p of ["/browse", "/release/6", "/agency/fbi", "/location/iraq", "/decade/1950s"]) {
+      expect(activeTabForPath(p)).toBe("archive");
+    }
+    expect(activeTabForPath("/releases-notes")).toBe("feed");
   });
 });
