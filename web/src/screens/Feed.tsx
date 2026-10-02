@@ -102,9 +102,10 @@ export function Feed() {
                 <div className="h-[100px]" />
               </div>
             ))
-          : featured.map((record, i) => (
-              // First two rows are above the fold on a phone; the LCP image is among them.
-              <DocCard key={record.id} record={record} variant="feed" priority={i < 4} />
+          : featured.map((record) => (
+              // All six fit in about one phone screen and any of them can be the LCP
+              // image (PageSpeed picked card 5 when only the first four were eager).
+              <DocCard key={record.id} record={record} variant="feed" priority />
             ))}
       </div>
 
