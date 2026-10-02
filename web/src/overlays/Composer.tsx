@@ -15,7 +15,7 @@
 // small grab-bar element is added here purely to host that pointer handling
 // without stealing pointer capture from the header's close button or any
 // input inside the sheet.
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAddComment, useAddCaseComment, useCreateThread, useReply } from "../api/queries";
 import { ApiError } from "../api/client";
@@ -59,6 +59,14 @@ export function Composer() {
   const [handle, setHandle] = useState(me?.handle ?? "");
   const [threadTitle, setThreadTitle] = useState(composer?.presetTitle ?? "");
   const [img, setImg] = useState<File | null>(null);
+  // Blob URL for the thumbnail; revoked when the image changes or the sheet unmounts.
+  const [preview, setPreview] = useState<string | null>(null);
+  useEffect(() => {
+    if (!img) return setPreview(null);
+    const url = URL.createObjectURL(img);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [img]);
 
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ startY: number; dragging: boolean }>({ startY: 0, dragging: false });
@@ -278,25 +286,41 @@ export function Composer() {
             placeholder="handle (optional)"
             className="min-w-0 flex-1 rounded-[10px] border border-line2 bg-surface px-[11px] py-[9px] font-mono text-xs text-ink outline-none"
           />
-          {composer.mode !== "comment" && (
-            <label
-              className="max-w-[45%] flex-none cursor-pointer truncate rounded-[10px] border border-dashed border-line2 px-3 py-[9px] font-mono text-[11px] active:scale-[.96]"
-              style={{ color: img ? "var(--signal)" : "var(--dim)" }}
-            >
-              {img ? `✓ ${img.name}` : "＋ attach image"}
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                className="sr-only"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  e.target.value = ""; // allow re-picking the same file
-                  if (f && f.size > 8 * 1024 * 1024) return toast("image too large (max 8 MB)");
-                  setImg(f);
-                }}
-              />
-            </label>
-          )}
+          {composer.mode !== "comment" &&
+            (img ? (
+              <div className="flex flex-none items-center gap-1.5">
+                {preview && (
+                  <img
+                    src={preview}
+                    alt="attached image preview"
+                    className="h-[38px] w-[38px] rounded-[8px] border border-line2 object-cover"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => setImg(null)}
+                  aria-label="Remove image"
+                  className="flex h-[38px] w-[30px] items-center justify-center rounded-[8px] border border-line2 text-sm text-dim active:scale-[.94]"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <label className="max-w-[45%] flex-none cursor-pointer truncate rounded-[10px] border border-dashed border-line2 px-3 py-[9px] font-mono text-[11px] text-dim active:scale-[.96]">
+                ＋ attach image
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null;
+                    e.target.value = ""; // allow re-picking the same file
+                    if (f && f.size > 8 * 1024 * 1024) return toast("image too large (max 8 MB)");
+                    setImg(f);
+                  }}
+                />
+              </label>
+            ))}
         </div>
 
         <div className="mt-[14px] flex items-center gap-3">

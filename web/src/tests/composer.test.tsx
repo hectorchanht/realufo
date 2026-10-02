@@ -107,10 +107,42 @@ describe("Composer", () => {
     renderComposer({ mode: "reply", threadId: "t1" });
     const file = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "timeline.png", { type: "image/png" });
     fireEvent.change(screen.getByLabelText(/attach image/i), { target: { files: [file] } });
-    expect(screen.getByText("✓ timeline.png")).toBeInTheDocument();
+    expect(screen.getByAltText("attached image preview")).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "see pic" } });
     fireEvent.click(screen.getByRole("button", { name: /post/i }));
     expect(mockReplyMutate.mock.calls[0][0]).toMatchObject({ body: "see pic", image: file });
+  });
+
+  it("previews the picked image; ✕ removes it, frees the blob URL, and posts without it", () => {
+    const create = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:preview-1");
+    const revoke = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    renderComposer({ mode: "reply", threadId: "t1" });
+    const file = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "timeline.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText(/attach image/i), { target: { files: [file] } });
+    expect(create).toHaveBeenCalledWith(file);
+    expect(screen.getByAltText("attached image preview")).toHaveAttribute("src", "blob:preview-1");
+
+    fireEvent.click(screen.getByRole("button", { name: /remove image/i }));
+    expect(screen.queryByAltText("attached image preview")).toBeNull();
+    expect(revoke).toHaveBeenCalledWith("blob:preview-1");
+    expect(screen.getByLabelText(/attach image/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "no pic" } });
+    fireEvent.click(screen.getByRole("button", { name: /post/i }));
+    expect(mockReplyMutate.mock.calls[0][0].image).toBeUndefined();
+    create.mockRestore();
+    revoke.mockRestore();
+  });
+
+  it("frees the preview blob URL when the composer closes", () => {
+    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:preview-2");
+    const revoke = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    renderComposer({ mode: "reply", threadId: "t1" });
+    const file = new File([new Uint8Array([1])], "a.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText(/attach image/i), { target: { files: [file] } });
+    fireEvent.click(screen.getByRole("button", { name: /close composer/i }));
+    expect(revoke).toHaveBeenCalledWith("blob:preview-2");
+    vi.restoreAllMocks();
   });
 
   it("toasts 'slow down — too many posts' when the mutation rejects with a 429 ApiError", () => {
