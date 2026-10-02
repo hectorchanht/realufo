@@ -55,6 +55,7 @@ jobs:
       # AI key moments for videos still without them (spec 2026-10-02-realufo-ai-key-moments)
       - name: moments
         if: ${{ !cancelled() }}
+        timeout-minutes: 60
         working-directory: crawler
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

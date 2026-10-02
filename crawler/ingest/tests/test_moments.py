@@ -114,10 +114,8 @@ def test_moments_for_retries_speculation_once_then_skips():
     assert len(calls) == 2 and calls[1][2] is True   # second try carries the reminder
 
 
-def test_moments_for_empty_when_no_duration_and_skip_when_grid_fails():
+def test_moments_for_skips_when_grid_fails():
     describe, _ = _fakes([])
-    assert moments_for({"id": "V", "cdn_url": "u", "duration": None}, describe,
-                       cuts_fn=lambda u, d: [], grid_fn=None, probe_fn=lambda u: "N/A") == ([], 0)
     def bad_grid(u, t, o):
         raise RuntimeError("ffmpeg died")
     with pytest.raises(Skip):
@@ -179,3 +177,82 @@ def test_no_change_ignores_negated_action_words():
     assert no_change("The scene shows clouds and ground features, with no apparent changes in camera or sensor "
                      "behavior, or new objects or light sources appearing in the frames.")
     assert not no_change("No changes in the overlay, and a light source moves left.")
+
+
+# --- final review fixes ---------------------------------------------------
+
+def test_no_change_keeps_sentences_that_report_something():
+    from ingest.moments import no_change
+    for t in ["No visible change except the light source moves slightly right.",
+              "The scene remains the same, but a light source brightens.",
+              "A light source remains static to the right of the crosshair.",
+              "No significant changes; a dark object rises toward the top.",
+              "The object is unchanged in position as a second light source becomes visible."]:
+        assert not no_change(t), t
+
+
+def test_describe_skips_on_any_transport_error_after_retries(monkeypatch):
+    import http.client
+    from ingest import cfapi, moments as M
+    monkeypatch.setattr(M.time, "sleep", lambda s: None)
+    errs = [ConnectionResetError("reset"), http.client.IncompleteRead(b"x"), ValueError("bad json")]
+    def boom(*a, **k):
+        raise errs.pop(0) if errs else ConnectionResetError("again")
+    monkeypatch.setattr(cfapi, "vision_json", boom)
+    with pytest.raises(Skip):
+        M.describe(b"j", 0.0, 1.0)
+    seq = [ConnectionResetError("reset")]
+    def flaky(*a, **k):
+        if seq:
+            raise seq.pop()
+        return '{"text": "Pan right."}'
+    monkeypatch.setattr(cfapi, "vision_json", flaky)
+    assert M.describe(b"j", 0.0, 1.0) == {"text": "Pan right."}
+
+
+def test_failed_probe_skips_instead_of_writing_empty():
+    describe, _ = _fakes([])
+    for probed in ("", "N/A", "nan", "0"):
+        with pytest.raises(Skip):
+            moments_for({"id": "V", "cdn_url": "u", "duration": None}, describe,
+                        cuts_fn=lambda u, d: [], grid_fn=None, probe_fn=lambda u, p=probed: p)
+
+
+def test_plan_segments_caps_dense_scene_cuts():
+    cuts = [i * 3.1 for i in range(1, 329)]
+    segs = plan_segments(1020.0, cuts)
+    assert len(segs) <= 15
+    assert segs[0][0] == 0.0 and segs[-1][1] == 1020.0
+    assert all(a[1] == b[0] for a, b in zip(segs, segs[1:]))   # contiguous
+
+
+def test_daily_selection_is_shuffled_so_stuck_videos_cannot_block_the_queue():
+    from ingest.moments import SELECT
+    assert "ORDER BY random()" in SELECT
+
+
+def test_main_survives_a_d1_write_failure(monkeypatch, capsys):
+    import subprocess
+    from ingest import d1, moments as M
+    monkeypatch.setattr(d1, "_d1_json", lambda sql: [{"id": "A", "cdn_url": "u", "duration": 5.0},
+                                                    {"id": "B", "cdn_url": "u", "duration": 5.0}])
+    monkeypatch.setattr(M, "moments_for", lambda row: ([{"start": 0.0, "end": 5.0, "text": "Pan."}], 1))
+    def execute(sql):
+        if "'A'" in sql:
+            raise subprocess.CalledProcessError(1, "wrangler")
+    monkeypatch.setattr(d1, "execute", execute)
+    M.main([])
+    out = capsys.readouterr().out
+    assert "moments: done=1 skipped=1" in out
+
+
+def test_scene_cut_timeout_skips_the_video(monkeypatch):
+    import subprocess
+    from ingest import moments as M
+    def slow(*a, **k):
+        assert k.get("timeout"), "ffmpeg must run with a timeout"
+        raise subprocess.TimeoutExpired(a[0], k["timeout"])
+    monkeypatch.setattr(M.subprocess, "run", slow)
+    with pytest.raises(Skip):
+        M.scene_cuts("u", 60.0)
+    assert M._probe_duration("u") == ""

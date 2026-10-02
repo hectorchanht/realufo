@@ -7,7 +7,7 @@ ffmpeg finds scene cuts and frames (timestamps never come from the model); a
 Workers AI vision model describes each segment from a 2x2 frame grid; the
 result is one JSON document in records.ai_moments.
 """
-import argparse, datetime, json, math, os, re, subprocess, tempfile, time, urllib.error
+import argparse, datetime, http.client, json, math, os, re, subprocess, tempfile, time
 from . import cfapi, d1
 
 MIN_SEG = 3.0       # seconds; shorter segments merge into a neighbour
@@ -40,6 +40,11 @@ def plan_segments(duration, cuts):
         n = max(1, math.ceil((b - a) / window - 1e-9))
         step = (b - a) / n
         out += [(round(a + i * step, 3), round(a + (i + 1) * step, 3) if i < n - 1 else b) for i in range(n)]
+    # dense cuts (fast pans, compilations) must not multiply model calls: fold the
+    # shortest adjacent pair until at most MAX_MOMENTS remain
+    while len(out) > MAX_MOMENTS:
+        k = min(range(len(out) - 1), key=lambda i: out[i + 1][1] - out[i][0])
+        out[k:k + 2] = [(out[k][0], out[k + 1][1])]
     return out
 
 
@@ -71,15 +76,23 @@ _ACTION_RE = re.compile(r"\b(appears?|moves?|moving|zoom\w*|pans?|panning|enters
                         r"disappear\w*|transition\w*|changes from|cuts?|while|screen)\b", re.I)
 
 
-_NEGATED_RE = re.compile(r"\b(no|not|without)\b", re.I)
+_NEGATED_RE = re.compile(r"\b(no|not|without|nor)\b", re.I)
+_CONTRAST_RE = re.compile(r";|\b(but|except|however|although|though|whereas|as)\b", re.I)
+_OBJECT_RE = re.compile(r"\b(light sources?|objects?|spots?|dots?|points?|areas? of contrast)\b", re.I)
 
 
 def no_change(text):
-    """Says nothing happened: a no-change phrase, and no action word outside a negated clause."""
-    if not _NO_CHANGE_RE.search(text):
+    """True only when the sentence reports nothing: a no-change phrase, no contrast ("but",
+    "except", ";" ...), and every clause naming an object or an action is negated
+    ("no new objects appear", "... or new light sources appearing")."""
+    if not _NO_CHANGE_RE.search(text) or _CONTRAST_RE.search(text):
         return False
-    clauses = re.split(r"[,.;]| and ", text)
-    return not any(_ACTION_RE.search(c) and not _NEGATED_RE.search(c) for c in clauses)
+    negated = False
+    for c in re.split(r"[,.]| and ", text):
+        negated = bool(_NEGATED_RE.search(c)) or (negated and c.strip().lower().startswith("or "))
+        if (_ACTION_RE.search(c) or _OBJECT_RE.search(c)) and not negated:
+            return False
+    return True
 
 
 def _norm(text):
@@ -127,7 +140,7 @@ SCHEMA = {"type": "object", "additionalProperties": False, "required": ["text"],
 
 SELECT = """SELECT r.id, a.cdn_url, a.duration FROM records r
 JOIN assets a ON a.record_id=r.id AND a.role='full' AND a.mime LIKE 'video/%'
-WHERE r.status='live' {extra} ORDER BY r.id"""
+WHERE r.status='live' {extra} ORDER BY random()"""  # stuck videos can't block the daily --limit
 
 
 class Skip(Exception):
@@ -135,8 +148,11 @@ class Skip(Exception):
 
 
 def _probe_duration(url):
-    return subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
-                           "-of", "csv=p=0", url], capture_output=True, text=True).stdout.strip()
+    try:
+        return subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                               "-of", "csv=p=0", url], capture_output=True, text=True, timeout=60).stdout.strip()
+    except subprocess.TimeoutExpired:
+        return ""
 
 
 def parse_scene_cuts(log):
@@ -145,9 +161,12 @@ def parse_scene_cuts(log):
 
 def scene_cuts(url, duration):
     # keyframes only: fast, coarse cuts are enough because long spans get split anyway
-    p = subprocess.run(["ffmpeg", "-v", "info", "-skip_frame", "nokey", "-i", url, "-an",
-                        "-vf", "scale=320:-2,select='gt(scene,0.3)',showinfo", "-f", "null", "-"],
-                       capture_output=True, text=True)
+    try:
+        p = subprocess.run(["ffmpeg", "-v", "info", "-skip_frame", "nokey", "-i", url, "-an",
+                            "-vf", "scale=320:-2,select='gt(scene,0.3)',showinfo", "-f", "null", "-"],
+                           capture_output=True, text=True, timeout=600)
+    except subprocess.TimeoutExpired:
+        raise Skip("scene detection timed out")
     return parse_scene_cuts(p.stderr)
 
 
@@ -160,7 +179,7 @@ def grid_jpeg(url, times, out):
     fc = ";".join(f"[{i}:v]scale=800:-2,normalize=smoothing=0,setsar=1[f{i}]" for i in range(4)) + \
          ";[f0][f1]hstack[top];[f2][f3]hstack[bot];[top][bot]vstack"
     p = subprocess.run(args + ["-filter_complex", fc, "-frames:v", "1", "-q:v", "4", out],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, timeout=120)
     if p.returncode != 0 or not os.path.exists(out) or not os.path.getsize(out):
         raise RuntimeError(p.stderr.strip()[-300:] or "no frame")
 
@@ -184,7 +203,9 @@ def describe(jpeg, start, end, reminder=False):
     for attempt in range(3):
         try:
             return parse_model_output(cfapi.vision_json(SYSTEM + (REMINDER if reminder else ""), text, jpeg, SCHEMA))
-        except (urllib.error.URLError, TimeoutError, RuntimeError) as e:
+        # URLError/TimeoutError/ConnectionReset are OSError; IncompleteRead etc. are HTTPException;
+        # a non-JSON body is ValueError; Cloudflare success=false is RuntimeError
+        except (OSError, http.client.HTTPException, ValueError, RuntimeError) as e:
             code = getattr(e, "code", None)
             if attempt == 2 or (code is not None and code < 500 and code != 429):
                 raise Skip(f"model call failed: {e}")
@@ -199,7 +220,9 @@ def moments_for(row, describe_fn=describe, cuts_fn=scene_cuts, grid_fn=grid_jpeg
             dur = float(probe_fn(url))
         except ValueError:
             dur = 0.0
-    segs = plan_segments(float(dur), cuts_fn(url, dur) if dur else [])
+        if not (math.isfinite(dur) and dur > 0):  # CDN blip or unreadable: retry next run
+            raise Skip("could not read duration")
+    segs = plan_segments(float(dur), cuts_fn(url, dur))
     if not segs:
         return [], 0
     results, calls = [], 0
@@ -253,7 +276,12 @@ def main(argv=None):
         if args.dry_run:
             print(f"[{i}/{len(rows)}] {row['id']}: {doc}")
         else:
-            d1.execute(update_sql(row["id"], doc))
+            try:
+                d1.execute(update_sql(row["id"], doc))
+            except subprocess.CalledProcessError as e:
+                skipped += 1
+                print(f"[{i}/{len(rows)}] SKIP {row['id']}: D1 write failed ({e})")
+                continue
             print(f"[{i}/{len(rows)}] ok   {row['id']}: {len(moments)} moments")
         empty += not moments
         done += bool(moments)
