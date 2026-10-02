@@ -1,13 +1,21 @@
 import { applyD1Migrations, env } from "cloudflare:test";
 import { beforeAll, describe, it, expect } from "vitest";
 
-const EXPECTED = ["archives","ask_cache","assets","boards","cases","comments","posts","presence","rate_events","records","sightings","stats","text_index","threads","ticker","users","votes"];
+const EXPECTED = ["archives","ask_cache","assets","boards","cases","comments","posts","presence","rate_events","records","sightings","stats","text_index","threads","ticker","users","votes","x_posts"];
 
 beforeAll(async () => {
   await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
 });
 
 describe("schema", () => {
+  it("x_posts dedupes on (stream, ref) and checks status", async () => {
+    const ins = (ref: string, status = "draft") =>
+      env.DB.prepare("INSERT INTO x_posts(stream,ref,text,ai,cost_usd,status) VALUES ('pick',?,'t',0,0.015,?)").bind(ref, status).run();
+    await ins("S-1");
+    await expect(ins("S-1")).rejects.toThrow(/UNIQUE/);
+    await expect(ins("S-2", "bogus")).rejects.toThrow(/CHECK/);
+  });
+
   it("has all tables", async () => {
     // `_cf_%` covers D1's own internal bookkeeping (e.g. KV metadata); `d1_migrations`
     // is applyD1Migrations()'s own tracking table (a real table it creates, not a
