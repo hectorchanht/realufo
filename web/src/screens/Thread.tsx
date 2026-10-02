@@ -63,11 +63,12 @@ type PostImage =
 // available for a post's thumb, and why the id-match guard is defensive
 // rather than assumed.
 function postImage(post: Post, sourceRecord: ThreadSourceRecord | null): PostImage | null {
-  if (post.source_record_id && sourceRecord && post.source_record_id === sourceRecord.id) {
-    return { kind: "record", recordKind: sourceRecord.kind, thumb: sourceRecord.thumb, label: sourceRecord.title };
-  }
+  // The poster's own image wins; the record stays reachable via the "◂ from record" chip.
   if (post.image_url) {
     return { kind: "upload", url: post.image_url, label: "attached image" };
+  }
+  if (post.source_record_id && sourceRecord && post.source_record_id === sourceRecord.id) {
+    return { kind: "record", recordKind: sourceRecord.kind, thumb: sourceRecord.thumb, label: sourceRecord.title };
   }
   if (post.image_kind === "placeholder") {
     return { kind: "placeholder", label: post.image_label || "image" };

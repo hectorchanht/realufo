@@ -240,6 +240,15 @@ describe("Thread", () => {
     expect(mockOpenViewer).toHaveBeenCalledWith(expect.objectContaining({ kind: "image", url: "/api/u/a.png" }));
   });
 
+  it("an OP that references a record AND has an uploaded image shows the uploaded image", () => {
+    useThreadMock.mockReturnValue({
+      data: { ...mockThreadDetail, posts: [{ ...mockThreadDetail.posts[0], image_kind: "upload", image_url: "/api/u/a.png" }] },
+      isLoading: false,
+    });
+    renderThread();
+    expect(screen.getByRole("button", { name: "open attached image" }).querySelector("img")).toHaveAttribute("src", "/api/u/a.png");
+  });
+
   it("shows a loading state while the thread is loading (never indexes into undefined)", () => {
     useThreadMock.mockReturnValue({ data: undefined, isLoading: true });
     renderThread();

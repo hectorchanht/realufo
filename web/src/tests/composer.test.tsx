@@ -103,6 +103,18 @@ describe("Composer", () => {
     });
   });
 
+  it("shows a promoted comment's image and sends it as image_ref; ✕ drops it", () => {
+    renderComposer({ mode: "newThread", boardId: "uap", presetBody: "orb", presetImageUrl: "https://cdn/x/abc.png" });
+    expect(screen.getByAltText("attached image preview")).toHaveAttribute("src", "https://cdn/x/abc.png");
+    fireEvent.click(screen.getByRole("button", { name: /post/i }));
+    expect(mockCreateThreadMutate.mock.calls[0][0]).toMatchObject({ image_ref: "abc.png" });
+
+    mockCreateThreadMutate.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Remove image" }));
+    fireEvent.click(screen.getByRole("button", { name: /post/i }));
+    expect(mockCreateThreadMutate.mock.calls[0][0].image_ref).toBeUndefined();
+  });
+
   it("sends a picked image file with the reply", () => {
     renderComposer({ mode: "reply", threadId: "t1" });
     const file = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "timeline.png", { type: "image/png" });

@@ -170,5 +170,20 @@ describe("Case", () => {
     fireEvent.click(thumbs[0]);
     expect(mockOpenViewer).toHaveBeenCalledWith(expect.objectContaining({ kind: "image", url: "/api/u/a.png" }));
   });
+
+  it("⤴ to a board on a comment with an image carries the image and the comment's own words", () => {
+    useCaseCommentsMock.mockReturnValue({
+      data: {
+        comments: [
+          { id: "C1", no: 1, body: "Orb over the ridge\nshot at dusk", handle: null, stance: "neutral", votes: 0, created_at: "", ago: "1m", handleShow: null, image_url: "/api/u/a.png" },
+        ],
+      },
+    });
+    renderCase();
+    fireEvent.click(screen.getByRole("button", { name: /to a board/i }));
+    const [opts] = mockOpenComposer.mock.calls.at(-1)!;
+    expect(opts).toMatchObject({ mode: "newThread", caseSlug: "roswell", presetTitle: "Orb over the ridge", presetImageUrl: "/api/u/a.png" });
+    expect(opts.presetBody).toMatch(/^Orb over the ridge\nshot at dusk\n\n— from the discussion on /);
+  });
 });
 

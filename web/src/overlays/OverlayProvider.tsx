@@ -38,6 +38,8 @@ export interface ComposerOpts {
   presetBody?: string;
   /** Pre-attaches an image (e.g. a captured video frame). */
   presetImage?: File;
+  /** Pre-attaches an already-uploaded image (a promoted comment's); newThread only. */
+  presetImageUrl?: string;
   /** Pre-fills the thread-title input (mode==='newThread' only). */
   presetTitle?: string;
   /** Target board for mode==='newThread'; Composer falls back to 'uap' on submit. */

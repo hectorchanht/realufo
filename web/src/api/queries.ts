@@ -250,6 +250,8 @@ export function useCreateThread() {
       source_record_id?: string;
       case_slug?: string;
       image?: File;
+      /** Name of an existing upload to reuse (promoted comment's image). */
+      image_ref?: string;
     }) => api.post<CreateThreadResponse>("/api/threads", withImage(vars)),
     onSettled: (data, _err, vars) => {
       void queryClient.invalidateQueries({ queryKey: qk.feed });

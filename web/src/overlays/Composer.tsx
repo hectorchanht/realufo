@@ -59,6 +59,8 @@ export function Composer() {
   const [handle, setHandle] = useState(me?.handle ?? "");
   const [threadTitle, setThreadTitle] = useState(composer?.presetTitle ?? "");
   const [img, setImg] = useState<File | null>(composer?.presetImage ?? null);
+  // A promoted comment's already-uploaded image, sent by name (image_ref) so the server reuses it.
+  const [imgUrl, setImgUrl] = useState<string | null>(composer?.presetImageUrl ?? null);
   // Blob URL for the thumbnail; revoked when the image changes or the sheet unmounts.
   const [preview, setPreview] = useState<string | null>(null);
   useEffect(() => {
@@ -176,6 +178,7 @@ export function Composer() {
         source_record_id: composer!.sourceRecordId,
         case_slug: composer!.caseSlug,
         image: img ?? undefined,
+        image_ref: !img && imgUrl ? imgUrl.split("/").pop() : undefined,
       },
       {
         onSuccess: (data) => {
@@ -286,18 +289,21 @@ export function Composer() {
             placeholder="handle (optional)"
             className="min-w-0 flex-1 rounded-[10px] border border-line2 bg-surface px-[11px] py-[9px] font-mono text-xs text-ink outline-none"
           />
-          {img ? (
+          {img || imgUrl ? (
             <div className="flex flex-none items-center gap-1.5">
-              {preview && (
+              {(preview || imgUrl) && (
                 <img
-                  src={preview}
+                  src={preview ?? imgUrl!}
                   alt="attached image preview"
                   className="h-[38px] w-[38px] rounded-[8px] border border-line2 object-cover"
                 />
               )}
               <button
                 type="button"
-                onClick={() => setImg(null)}
+                onClick={() => {
+                  setImg(null);
+                  setImgUrl(null);
+                }}
                 aria-label="Remove image"
                 className="flex h-[38px] w-[30px] items-center justify-center rounded-[8px] border border-line2 text-sm text-dim active:scale-[.94]"
               >

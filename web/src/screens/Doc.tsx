@@ -32,7 +32,7 @@ import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useBootstrap, useComments, useRecord, useRecords } from "../api/queries";
 import type { RecordsParams } from "../api/queries";
-import type { RecordKind, RelatedGroup } from "../api/types";
+import type { Comment, RecordKind, RelatedGroup } from "../api/types";
 import { DocCard } from "../components/DocCard";
 import { DEFAULT_ADJUST, LENS_MAGS, MediaFilters, MediaToolbar, ZoomLens, adjustFilter } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
@@ -42,6 +42,7 @@ import { VoteButton } from "../components/VoteButton";
 import FullText from "../components/FullText";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { promoteCommentOpts } from "../lib/promoteComment";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { formatMoment, parseMoment, recordMedia } from "../lib/recordMedia";
 import { DEFAULT_VIEW, viewTransform } from "../lib/mediaView";
@@ -394,14 +395,8 @@ export function Doc() {
   }
 
   // The "⤴ to a board" promote flow (prototype lines 631-632's `onPromote`).
-  function handlePromote(commentBody: string) {
-    openComposer({
-      mode: "newThread",
-      sourceRecordId: id,
-      presetTitle: title,
-      presetBody: `Pulling this out of the file discussion:\n\n“${commentBody}”\n\nWorth its own thread?`,
-      boardId: DEFAULT_BOARD,
-    });
+  function handlePromote(c: Comment) {
+    openComposer(promoteCommentOpts(c, { title, boardId: DEFAULT_BOARD, recordId: id }));
   }
 
   // "◈ Start a board thread about this file" (prototype line 630's
@@ -765,7 +760,7 @@ export function Doc() {
               <VoteButton targetType="comment" targetId={c.id} votes={c.votes} />
               <button
                 type="button"
-                onClick={() => handlePromote(c.body)}
+                onClick={() => handlePromote(c)}
                 className="flex items-center gap-[5px] font-mono text-[11px] text-amber active:scale-[.93]"
               >
                 <span aria-hidden="true" className="text-xs">

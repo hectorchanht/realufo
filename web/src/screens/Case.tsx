@@ -12,6 +12,7 @@ import { useOverlay } from "../overlays/OverlayProvider";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { promoteCommentOpts } from "../lib/promoteComment";
 import type { Stance } from "../api/types";
 
 const DEFAULT_CASE_BOARD = "cases";
@@ -178,13 +179,9 @@ export function Case() {
               <button
                 type="button"
                 onClick={() =>
-                  openComposer({
-                    mode: "newThread",
-                    caseSlug: slug,
-                    boardId: DEFAULT_CASE_BOARD,
-                    presetTitle: caseDetail.name,
-                    presetBody: `Pulling this out of the case discussion:\n\n“${c.body}”\n\nWorth its own thread?`,
-                  })
+                  openComposer(
+                    promoteCommentOpts(c, { title: caseDetail.name, boardId: DEFAULT_CASE_BOARD, caseSlug: slug }),
+                  )
                 }
                 className="flex items-center gap-1.5 font-mono text-[11px] text-amber active:scale-[.93]"
               >

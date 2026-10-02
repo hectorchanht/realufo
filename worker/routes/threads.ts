@@ -3,7 +3,7 @@ import { json, error } from "../lib/json";
 import { relAgo, stanceOK, thumbSql } from "../lib/db";
 import { newId, newNo } from "../lib/anon";
 import { allowWrite } from "../lib/ratelimit";
-import { readBody, putImage, uploadUrl } from "../lib/upload";
+import { readBody, putImage, uploadUrl, UPLOAD_NAME_RE } from "../lib/upload";
 
 export async function getThread(_req: Request, env: Env, p: Record<string, string>) {
   const thread = await env.DB.prepare(
@@ -66,6 +66,10 @@ export async function createThread(req: Request, env: Env) {
     const r = await putImage(env, image);
     if (r instanceof Response) return r;
     imageKey = r;
+  } else if (typeof b.image_ref === "string" && UPLOAD_NAME_RE.test(b.image_ref)) {
+    // Promoting a comment: reuse its already-uploaded image instead of re-uploading.
+    const key = "uploads/" + b.image_ref;
+    if (await env.MEDIA.head(key)) imageKey = key;
   }
   const imgCount = imageKey ? 1 : 0;
   const src = b.source_record_id || null;

@@ -109,6 +109,27 @@ describe("threads", () => {
     const r = await post("/api/threads/t1/posts", { body: 123 });
     expect(r.status).toBe(400);
   });
+
+  it("promoting a comment with an image carries the image over (image_ref)", async () => {
+    const f = new FormData();
+    f.set("body", "look at this");
+    f.set("image", new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3])], "x.png"));
+    const c: any = await (
+      await call("/api/records/CIA-UAP-017/comments", { method: "POST", headers: { "X-Anon-Id": "u2" }, body: f })
+    ).json();
+    const ref = c.comment.image_url.split("/").pop();
+    const j: any = await (await post("/api/threads", { board: "uap", op_body: "promoted pic", image_ref: ref })).json();
+    expect(j.thread.img_count).toBe(1);
+    const det: any = await (await call("/api/threads/" + j.thread.id)).json();
+    expect(det.posts[0].image_url).toBe(c.comment.image_url);
+  });
+
+  it("ignores an image_ref that is malformed or not an existing upload", async () => {
+    for (const image_ref of ["../records/x.pdf", "00000000-0000-0000-0000-000000000000.png"]) {
+      const j: any = await (await post("/api/threads", { board: "uap", op_body: "bad ref", image_ref })).json();
+      expect(j.thread.img_count).toBe(0);
+    }
+  });
 });
 
 describe("thread search (GET /api/threads?q=)", () => {
