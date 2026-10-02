@@ -15,3 +15,11 @@ def test_insert_sql_is_idempotent_and_escaped():
     sql = insert_sql({"id": "O'X", "key": "thumbs/aaro/O'X.jpg"})
     assert "'thumb'" in sql and "WHERE NOT EXISTS" in sql and "O''X" in sql
     assert "https://assets.realufo.org/thumbs/aaro/" in sql
+
+def test_crop_filter_keeps_valid_axis_only():
+    from ingest.thumbs import crop_filter
+    log = lambda c: f"[Parsed_cropdetect_0] x1:0 ... crop=999:999:0:0\n... crop={c}\n"
+    assert crop_filter(log("606:-1078:656:1080")) == "crop=606:ih:656:0,"   # pillarbox, dark rows
+    assert crop_filter(log("-1078:-1918:1080:1920")) == ""                 # all-black sample
+    assert crop_filter(log("1280:528:0:96")) == "crop=1280:528:0:96,"      # letterbox, both valid
+    assert crop_filter("no detection") == ""

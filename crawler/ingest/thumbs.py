@@ -35,6 +35,23 @@ def todo(rows, limit=None):
         out.append({**r, "media": k, "key": f"thumbs/{r['archive']}/{r['id']}.jpg"})
     return out
 
+def crop_filter(cropdetect_log: str) -> str:
+    """Last cropdetect result as a `crop=...,` filter prefix, per axis.
+
+    Dark footage can make one axis fail: e.g. a night clip pillarboxed in
+    1920x1080 gives `crop=606:-1078:656:1080` (columns found, no row bright
+    enough once the bars are averaged in). Keep the valid axis, full size on
+    the other; nothing usable -> no crop.
+    """
+    if "crop=" not in cropdetect_log:
+        return ""
+    w, h, x, y = cropdetect_log.rsplit("crop=", 1)[1].split()[0].split(":")
+    wx = (w, x) if int(w) > 0 and int(x) >= 0 else ("iw", "0")
+    hy = (h, y) if int(h) > 0 and int(y) >= 0 else ("ih", "0")
+    if wx == ("iw", "0") and hy == ("ih", "0"):
+        return ""
+    return f"crop={wx[0]}:{hy[0]}:{wx[1]}:{hy[1]},"
+
 def render(row, out, work):
     url = row["cdn_url"]
     if row["media"] == "pdf":
@@ -57,10 +74,7 @@ def render(row, out, work):
         seek = ["-ss", f"{float(dur or 0) * 0.35:.2f}"]
         det = subprocess.run(["ffmpeg", "-v", "info", *seek, "-i", url, "-vf", "cropdetect=24:2:0",
                               "-frames:v", "30", "-f", "null", "-"], capture_output=True, text=True).stderr
-        crop = det.rsplit("crop=", 1)[1].split()[0] if "crop=" in det else ""
-        # all-black sample -> cropdetect emits negative w/h; skip cropping then
-        crop = f"crop={crop}," if crop and "-" not in crop else ""
-        vf = f"{crop}thumbnail=30,{SCALE}"
+        vf = f"{crop_filter(det)}thumbnail=30,{SCALE}"
     for s in (seek, []):  # unreadable duration / seek past end: retry from 0
         p = subprocess.run(["ffmpeg", "-v", "error", "-y", *s, "-i", url, "-vf", vf,
                             "-frames:v", "1", "-q:v", "4", out], capture_output=True, text=True)
