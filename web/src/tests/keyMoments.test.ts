@@ -77,3 +77,10 @@ describe("parseAiMoments", () => {
     expect(parseAiMoments(undefined)).toEqual([]);
   });
 });
+
+describe("parseAiMoments ordering", () => {
+  it("sorts by start so the active-row highlight stays correct", () => {
+    const raw = JSON.stringify({ moments: [{ start: 30, end: 40, text: "b" }, { start: 0, end: 30, text: "a" }] });
+    expect(parseAiMoments(raw).map((m) => m.text)).toEqual(["a", "b"]);
+  });
+});

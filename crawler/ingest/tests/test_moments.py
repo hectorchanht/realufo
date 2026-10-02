@@ -256,3 +256,21 @@ def test_scene_cut_timeout_skips_the_video(monkeypatch):
     with pytest.raises(Skip):
         M.scene_cuts("u", 60.0)
     assert M._probe_duration("u") == ""
+
+
+def test_parse_model_output_accepts_uppercase_fence():
+    assert parse_model_output('```JSON\n{"text": "Pan right."}\n```') == {"text": "Pan right."}
+
+
+def test_plan_only_prints_segments_without_frames_or_model_calls(monkeypatch, capsys):
+    from ingest import d1, moments as M
+    monkeypatch.setattr(d1, "_d1_json", lambda sql: [{"id": "A", "cdn_url": "u", "duration": 50.0}])
+    monkeypatch.setattr(M, "scene_cuts", lambda url, dur: [20.0])
+    def no(*a, **k):
+        raise AssertionError("plan-only must not build frames or call the model")
+    monkeypatch.setattr(M, "grid_jpeg", no)
+    monkeypatch.setattr(M, "describe", no)
+    monkeypatch.setattr(d1, "execute", no)
+    M.main(["--plan-only"])
+    out = capsys.readouterr().out
+    assert "A: 3 segments" in out and "plan-only moments: done=0 skipped=0 empty=0 calls=0" in out

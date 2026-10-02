@@ -63,10 +63,12 @@ jobs:
           LIVE: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run == 'false' }}
         run: |
           set -o pipefail
+          # cost: <= 10 videos x <= 15 segments x <= 2 calls = 300 vision calls/day max (cents)
           if [ "$LIVE" = "true" ]; then
             python -m ingest.moments --limit 10 | tee -a ingest-summary.txt
           else
-            python -m ingest.moments --dry-run --limit 1 | tee -a ingest-summary.txt
+            # manual dry run: segment plan only -- ffmpeg smoke test, no model calls
+            python -m ingest.moments --plan-only --limit 1 | tee -a ingest-summary.txt
           fi
       # Ask the Archive: embed any live record not yet in the Vectorize index
       - name: textindex

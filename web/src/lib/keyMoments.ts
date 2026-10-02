@@ -56,5 +56,5 @@ export function parseAiMoments(raw: string | null | undefined): KeyMoment[] {
       typeof end === "number" && Number.isFinite(end) && end >= start &&
       typeof text === "string" && text.trim() !== "";
     return ok ? [{ start, end, text: text.trim() }] : [];
-  });
+  }).sort((a, b) => a.start - b.start);
 }

@@ -359,9 +359,11 @@ function LensCanvas({ videoRef, hit, filter }: { videoRef: RefObject<HTMLVideoEl
 }
 
 /**
- * Key moments list (from the official time-coded video description): click to
- * seek; the moment under the playhead is highlighted and kept in view while
- * playing. Scrolls inside its own box so long lists don't push the page.
+ * Key moments list: the official time-coded video description and/or the
+ * AI-generated moments (records.ai_moments), with an Official | AI toggle when
+ * both exist (choice remembered per browser). Click to seek; the moment under
+ * the playhead is highlighted and kept in view while playing. Scrolls inside
+ * its own box so long lists don't push the page.
  */
 const SRC_KEY = "ru:moments-src";
 

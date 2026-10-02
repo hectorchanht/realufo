@@ -187,7 +187,7 @@ def grid_jpeg(url, times, out):
 def parse_model_output(resp):
     if isinstance(resp, str):
         s = resp.strip()
-        s = re.sub(r"^```(?:json)?\s*|\s*```$", "", s)
+        s = re.sub(r"^```(?:json)?\s*|\s*```$", "", s, flags=re.I)
         try:
             resp = json.loads(s)
         except ValueError:
@@ -212,17 +212,23 @@ def describe(jpeg, start, end, reminder=False):
             time.sleep(2 * (attempt + 1))
 
 
-def moments_for(row, describe_fn=describe, cuts_fn=scene_cuts, grid_fn=grid_jpeg, probe_fn=_probe_duration):
-    url = row["cdn_url"]
+def video_duration(row, probe_fn=_probe_duration):
+    """assets.duration, else ffprobe; Skip (retry next run) when neither gives a positive number."""
     dur = row.get("duration")
     if not dur:
         try:
-            dur = float(probe_fn(url))
+            dur = float(probe_fn(row["cdn_url"]))
         except ValueError:
             dur = 0.0
         if not (math.isfinite(dur) and dur > 0):  # CDN blip or unreadable: retry next run
             raise Skip("could not read duration")
-    segs = plan_segments(float(dur), cuts_fn(url, dur))
+    return float(dur)
+
+
+def moments_for(row, describe_fn=describe, cuts_fn=scene_cuts, grid_fn=grid_jpeg, probe_fn=_probe_duration):
+    url = row["cdn_url"]
+    dur = video_duration(row, probe_fn)
+    segs = plan_segments(dur, cuts_fn(url, dur))
     if not segs:
         return [], 0
     results, calls = [], 0
@@ -256,6 +262,8 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=None, help="max videos this run")
     ap.add_argument("--ids", default="", help="comma-separated record ids")
     ap.add_argument("--force", action="store_true", help="regenerate even if ai_moments is set")
+    ap.add_argument("--plan-only", action="store_true",
+                    help="print segment plans only: ffmpeg runs, no frames, no model calls, no writes")
     args = ap.parse_args(argv)
     extra = "" if args.force else "AND r.ai_moments IS NULL"
     if args.ids:
@@ -264,6 +272,16 @@ def main(argv=None):
     rows = rows[: args.limit] if args.limit else rows
     done = skipped = empty = calls = 0
     for i, row in enumerate(rows, 1):
+        if args.plan_only:  # free smoke test (used by manual workflow dry runs)
+            try:
+                dur = video_duration(row)
+                segs = plan_segments(dur, scene_cuts(row["cdn_url"], dur))
+            except Skip as e:
+                skipped += 1
+                print(f"[{i}/{len(rows)}] SKIP {row['id']}: {e}")
+                continue
+            print(f"[{i}/{len(rows)}] {row['id']}: {len(segs)} segments {segs}")
+            continue
         try:
             moments, n = moments_for(row)
         except Skip as e:
@@ -285,7 +303,8 @@ def main(argv=None):
             print(f"[{i}/{len(rows)}] ok   {row['id']}: {len(moments)} moments")
         empty += not moments
         done += bool(moments)
-    print(f"{'dry-run ' if args.dry_run else ''}moments: done={done} skipped={skipped} empty={empty} calls={calls}")
+    mode = "plan-only " if args.plan_only else "dry-run " if args.dry_run else ""
+    print(f"{mode}moments: done={done} skipped={skipped} empty={empty} calls={calls}")
 
 
 if __name__ == "__main__":
