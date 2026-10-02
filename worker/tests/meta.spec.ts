@@ -317,3 +317,30 @@ describe("page-data cache", () => {
     expect(await get("/doc/NOPE2?y=2")).toContain("<h1>NOPE2, Late arrival</h1>");
   });
 });
+
+describe("final-review fixes", () => {
+  const SHELL = '<html><head><!--META--></head><body><div id="root"></div></body></html>';
+  const get = async (path: string, over: Record<string, unknown> = {}) => {
+    const ctx = createExecutionContext();
+    const fakeEnv = { ...env, ASSETS: { fetch: async () => new Response(SHELL) }, ...over } as any;
+    const res = await worker.fetch(new Request("https://x" + path), fakeEnv, ctx);
+    await waitOnExecutionContext(ctx);
+    return res;
+  };
+
+  it("a D1 error serves the plain SPA shell instead of a 500", async () => {
+    const res = await get("/board/d1down", { DB: { prepare: () => { throw new Error("D1 down"); } } });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe(SHELL);
+  });
+
+  it("canonical, og:url and JSON-LD url drop the query string", async () => {
+    const tab = await (await get("/archive?fbclid=abc")).text();
+    expect(tab).toContain('<link rel="canonical" href="https://x/archive">');
+    expect(tab).toContain('property="og:url" content="https://x/archive"');
+    const doc = await (await get("/doc/FBI-UAP-D002?archive=wargov")).text();
+    expect(doc).toContain('<link rel="canonical" href="https://x/doc/FBI-UAP-D002">');
+    expect(doc).toContain('"url":"https://x/doc/FBI-UAP-D002"');
+    expect(doc).not.toContain("archive=wargov");
+  });
+});

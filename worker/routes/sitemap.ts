@@ -1,4 +1,5 @@
 import type { Env } from "../env";
+import { boardHref } from "../lib/ssr";
 
 // Every crawlable SPA route. Pages render client-side from /api/*, which is why
 // robots.txt must not disallow /api/. ponytail: single file, split into a
@@ -20,7 +21,7 @@ export async function sitemap(req: Request, env: Env) {
     ...["/", "/archive", "/boards", "/map"].map((p) => loc(p)),
     ...records.results.map((r) => loc(`/doc/${e(r.id)}`, r.d)),
     ...threads.results.map((t) => loc(`/thread/${e(t.id)}`, t.d)),
-    ...boards.results.map((b) => loc(`/board/${e(b.id)}`)),
+    ...boards.results.map((b) => loc(boardHref(b.id))), // slug is "/uap/"; the URL is /board/uap
     ...cases.results.map((c) => loc(`/case/${e(c.id)}`)),
   ];
   return new Response(

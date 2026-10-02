@@ -97,11 +97,19 @@ export async function serveWithMeta(req: Request, env: Env): Promise<Response> {
       const match = r.pattern.exec({ pathname: url.pathname });
       if (!match) continue;
       const html = await (await env.ASSETS.fetch(new Request(new URL("/index.html", url)))).text();
-      const page = await cachedPage(url, () => r.load(env, match.pathname.groups as Record<string, string>, url));
+      let page: Page | null = null;
+      try {
+        page = await cachedPage(url, () => r.load(env, match.pathname.groups as Record<string, string>, url));
+      } catch (e) {
+        // D1 trouble must not take the SPA shell down; the SPA shows its own errors.
+        console.error("pre-render failed", url.pathname, e);
+      }
       if (!page) return htmlResponse(html);
+      // Query strings (archive filters, fbclid) never make a separate canonical page.
+      const canonical = url.origin + url.pathname;
       const image = page.meta.image || shareCard(url);
-      const jsonLd = page.meta.jsonLd && { "@context": "https://schema.org", ...page.meta.jsonLd, url: url.href, image };
-      return htmlResponse(injectBody(injectMeta(html, { ...page.meta, image, url: url.href, jsonLd }), page.body));
+      const jsonLd = page.meta.jsonLd && { "@context": "https://schema.org", ...page.meta.jsonLd, url: canonical, image };
+      return htmlResponse(injectBody(injectMeta(html, { ...page.meta, image, url: canonical, jsonLd }), page.body));
     }
   }
   return env.ASSETS.fetch(req);
