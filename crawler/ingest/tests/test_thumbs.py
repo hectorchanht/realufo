@@ -23,3 +23,8 @@ def test_crop_filter_keeps_valid_axis_only():
     assert crop_filter(log("-1078:-1918:1080:1920")) == ""                 # all-black sample
     assert crop_filter(log("1280:528:0:96")) == "crop=1280:528:0:96,"      # letterbox, both valid
     assert crop_filter("no detection") == ""
+
+def test_duration_sql_parses_ffprobe_or_skips():
+    from ingest.thumbs import duration_sql
+    assert duration_sql(962, "49.375000") == "UPDATE assets SET duration=49.375 WHERE id=962;"
+    assert duration_sql(1, "N/A") is None and duration_sql(1, "") is None and duration_sql(1, "0") is None

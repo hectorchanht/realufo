@@ -7,6 +7,9 @@ video -> ffmpeg picks a representative frame ~35% in, black bars cropped
 (read straight from the CDN, range requests, no full download); image -> ffmpeg downscale;
 pdf -> pdftoppm page 1. Output: 640px-wide JPEG at thumbs/<archive>/<id>.jpg.
 Idempotent: only records without a thumb row are selected.
+
+Also fills assets.duration (card m:ss badge) for video `full` assets still
+NULL, via ffprobe on the CDN url; unprobeable ones stay NULL and retry next run.
 """
 import argparse, os, subprocess, sys, tempfile
 from . import d1, fetch, r2
@@ -20,6 +23,21 @@ JOIN assets a ON a.record_id=r.id AND a.role IN ('full','original')
 WHERE r.status='live'
   AND NOT EXISTS(SELECT 1 FROM assets t WHERE t.record_id=r.id AND t.role='thumb')
 ORDER BY r.kind, r.id, a.role='full' DESC"""
+
+DUR_SELECT = """SELECT a.id, a.cdn_url FROM assets a JOIN records r ON r.id=a.record_id
+WHERE r.status='live' AND a.role='full' AND a.mime LIKE 'video/%' AND a.duration IS NULL"""
+
+def probe_duration(url) -> str:
+    return subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                           "-of", "csv=p=0", url], capture_output=True, text=True).stdout.strip()
+
+def duration_sql(asset_id, probed: str):
+    """UPDATE for a probed duration; None when ffprobe gave nothing usable ('', 'N/A')."""
+    try:
+        dur = float(probed)
+    except ValueError:
+        return None
+    return f"UPDATE assets SET duration={dur:.3f} WHERE id={int(asset_id)};" if dur > 0 else None
 
 def todo(rows, limit=None):
     """One row per record (full beats original); `limit` caps each kind."""
@@ -69,9 +87,8 @@ def render(row, out, work):
         # DoD clips open (and often close) on "Unclassified" slates: sample at
         # 35% of the runtime, crop black letter/pillarbox bars, then let
         # thumbnail= pick the most representative of the next 30 frames.
-        dur = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
-                              "-of", "csv=p=0", url], capture_output=True, text=True).stdout.strip()
-        seek = ["-ss", f"{float(dur or 0) * 0.35:.2f}"]
+        dur = probe_duration(url)
+        seek = ["-ss", f"{float(dur) * 0.35 if duration_sql(0, dur) else 0:.2f}"]
         det = subprocess.run(["ffmpeg", "-v", "info", *seek, "-i", url, "-vf", "cropdetect=24:2:0",
                               "-frames:v", "30", "-f", "null", "-"], capture_output=True, text=True).stderr
         vf = f"{crop_filter(det)}thumbnail=30,{SCALE}"
@@ -113,6 +130,12 @@ def main(argv=None):
         open(os.path.join(args.out, "thumbs.sql"), "w").write(sql)
         if done and not args.dry_run:
             d1.apply_sql(os.path.join(args.out, "thumbs.sql"))
+    dur_rows = d1._d1_json(" ".join(DUR_SELECT.split()))
+    updates = [u for u in (duration_sql(r["id"], probe_duration(r["cdn_url"])) for r in dur_rows) if u]
+    open(os.path.join(args.out, "durations.sql"), "w").write("\n".join(updates) + "\n")
+    if updates and not args.dry_run:
+        d1.apply_sql(os.path.join(args.out, "durations.sql"))
+    print(f"durations: probed={len(updates)}/{len(dur_rows)}")
     print(f"{'dry-run ' if args.dry_run else ''}rendered={len(done)} failed={failed} out={args.out}")
     sys.exit(1 if failed else 0)
 
