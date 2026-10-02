@@ -139,4 +139,12 @@ describe("Archive ASK toggle", () => {
     expect(screen.getByRole("button", { name: "Ask the archive" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.queryByLabelText("archive answer")).toBeNull();
   });
+
+  it("a ?ask= link while the feature is off falls back to keyword search", async () => {
+    askFeature = false;
+    renderAppAt("/archive?ask=los%20alamos%201949");
+    expect(await screen.findByPlaceholderText(/search .*records|search the archive/)).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/ask the archive — e\.g\./)).toBeNull();
+    expect(useAskMock).not.toHaveBeenCalled();
+  });
 });

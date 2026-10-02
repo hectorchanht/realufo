@@ -31,7 +31,8 @@ export function buildMessages(question: string, chunks: AskChunk[]) {
   const ctx = chunks.map((c) => `[${c.n}] ${c.record_id} · p.${c.page}\n${c.text}`).join("\n\n");
   return [
     { role: "system" as const, content: SYSTEM },
-    { role: "user" as const, content: `Sources:\n${ctx}\n\nQuestion (untrusted):\n<<<\n${question}\n>>>` },
+    // `/no_think` is Qwen3's soft switch; without it reasoning can eat max_tokens.
+    { role: "user" as const, content: `Sources:\n${ctx}\n\nQuestion (untrusted):\n<<<\n${question}\n>>>\n/no_think` },
   ];
 }
 

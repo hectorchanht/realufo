@@ -16,7 +16,9 @@ export async function ask(req: Request, env: Env) {
   if (env.FEATURE_ASK !== "on" && env.FEATURE_ASK !== "hidden") return error(503, RESTING);
   const q = normalizeQuestion(new URL(req.url).searchParams.get("q"));
   if (!q) return error(400, "question must be 3–300 characters");
-  const key = cacheKey(q);
+  // Threshold is part of the key so re-tuning ASK_MIN_SCORE never serves stale answers.
+  const min = Number(env.ASK_MIN_SCORE) || 0.45;
+  const key = `${min}|${cacheKey(q)}`;
 
   const hit = await env.DB.prepare("SELECT answer FROM ask_cache WHERE key=? AND created_at >= datetime('now','-7 days')")
     .bind(key)
@@ -32,7 +34,7 @@ export async function ask(req: Request, env: Env) {
 
   let body: { answer: string; sources: unknown[] };
   try {
-    body = await answer(env, q);
+    body = await answer(env, q, min);
   } catch {
     return error(503, RESTING);
   }
@@ -43,10 +45,9 @@ export async function ask(req: Request, env: Env) {
   return json({ ...body, cached: false });
 }
 
-async function answer(env: Env, q: string) {
+async function answer(env: Env, q: string, min: number) {
   const emb = (await env.AI.run(ASK_EMBED_MODEL as any, { text: [q] } as any)) as unknown as { data: number[][] };
   const res = await env.VECTORIZE.query(emb.data[0], { topK: ASK_TOP_K, returnMetadata: "all" });
-  const min = Number(env.ASK_MIN_SCORE) || 0.45;
   const strong = res.matches.filter((m) => m.score >= min && m.metadata?.record_id);
   if (!strong.length) return notCovered();
 

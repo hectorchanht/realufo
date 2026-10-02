@@ -19,4 +19,11 @@ describe("schema", () => {
     ).all<{ name: string }>();
     expect(results.map(r => r.name)).toEqual(EXPECTED);
   });
+
+  it("daily ask-cap query uses an (action, created_at) index", async () => {
+    const plan = await env.DB.prepare(
+      "EXPLAIN QUERY PLAN SELECT count(*) c FROM rate_events WHERE action='ask' AND actor_id NOT LIKE 'ip:%' AND created_at >= date('now')"
+    ).all<{ detail: string }>();
+    expect(plan.results.map((r) => r.detail).join(" ")).toContain("idx_rate_action_time");
+  });
 });

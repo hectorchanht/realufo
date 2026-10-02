@@ -271,8 +271,12 @@ export function Archive() {
 
   // Ask the Archive (Spec 3): `?ask=` is the submitted question; typing never
   // asks (each answer costs money) — only Enter / the ASK button do.
-  const ask = searchParams.get("ask") ?? "";
-  const [askMode, setAskMode] = useState(!!ask);
+  // Only when the server flag is on: an old ?ask= link after a kill switch
+  // falls back to keyword search instead of trapping the user in ask mode.
+  const [askToggle, setAskMode] = useState(!!searchParams.get("ask"));
+  const askOn = !!boot?.features?.ask;
+  const askMode = askOn && askToggle;
+  const ask = askOn ? (searchParams.get("ask") ?? "") : "";
   const [askInput, setAskInput] = useState(ask);
   useEffect(() => {
     if (ask) {

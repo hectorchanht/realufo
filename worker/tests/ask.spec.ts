@@ -62,6 +62,14 @@ describe("GET /api/ask", () => {
     expect(aiCalls).toEqual([]);
   });
 
+  it("changing ASK_MIN_SCORE does not serve answers cached under the old threshold", async () => {
+    await ask("tuning question");
+    aiCalls = [];
+    const b = await body(await ask("tuning question", { ASK_MIN_SCORE: "0.5" }));
+    expect(b.cached).toBe(false);
+    expect(aiCalls.length).toBeGreaterThan(0);
+  });
+
   it("weak retrieval returns not-covered without calling the LLM", async () => {
     matches = [hit("CIA-UAP-017", 1, 0.2)];
     const b = await body(await ask("who built the pyramids?"));
