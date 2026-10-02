@@ -494,6 +494,45 @@ describe("Doc", () => {
     expect(screen.getByRole("slider", { name: "Seek" })).toBeInTheDocument();
   });
 
+  it("video key moments: parsed from the official description, click seeks, summary keeps only prose", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: {
+          ...mockDetail.record,
+          kind: "video",
+          summary: "CENTCOM submitted a report.\n\nVideo Description:\n00:00-00:04: The sensor pans.\n00:51-01:21: The sensor zooms out.",
+        },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/clip.mp4", mime: "video/mp4", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    const list = screen.getByRole("region", { name: "Key moments" });
+    expect(list).toHaveTextContent("The sensor zooms out.");
+    const video = document.querySelector('[data-screen="doc"] video') as HTMLVideoElement;
+    fireEvent.click(screen.getByRole("button", { name: /00:51/ }));
+    expect(video.currentTime).toBe(51);
+    fireEvent(video, new Event("seeked"));
+    expect(screen.getByRole("button", { name: /00:51/ })).toHaveAttribute("aria-current", "true");
+    // summary paragraph no longer repeats the time-coded lines
+    expect(screen.getByText("CENTCOM submitted a report.")).toBeInTheDocument();
+    expect(screen.getAllByText(/The sensor pans\./)).toHaveLength(1);
+  });
+
+  it("no key moments section for videos without a time-coded description", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "video", summary: "Archival 16mm footage." },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/clip.mp4", mime: "video/mp4", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    expect(screen.queryByRole("region", { name: "Key moments" })).toBeNull();
+  });
+
   it("no image tools on non-image records", () => {
     renderDoc();
     expect(screen.queryByRole("button", { name: /adjust/i })).toBeNull();

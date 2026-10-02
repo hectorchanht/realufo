@@ -13,6 +13,7 @@ import { LENS_PX, LensLayer, chip, lensTurn, off, on } from "./ImageTools";
 import type { LensHit } from "./ImageTools";
 import type { MediaView } from "../lib/mediaView";
 import { formatMoment } from "../lib/recordMedia";
+import type { KeyMoment } from "../lib/keyMoments";
 
 // ponytail: fixed 30 fps (the DoD clips are ~29.97/30); read the real rate via
 // requestVideoFrameCallback if frame-exact stepping ever matters.
@@ -354,5 +355,73 @@ function LensCanvas({ videoRef, hit, filter }: { videoRef: RefObject<HTMLVideoEl
       className="h-full w-full"
       style={{ filter: filter || undefined, transform: lensTurn(hit) }}
     />
+  );
+}
+
+/**
+ * Key moments list (from the official time-coded video description): click to
+ * seek; the moment under the playhead is highlighted and kept in view while
+ * playing. Scrolls inside its own box so long lists don't push the page.
+ */
+export function KeyMoments({
+  moments,
+  videoRef,
+  onSeek,
+}: {
+  moments: KeyMoment[];
+  videoRef: RefObject<HTMLVideoElement | null>;
+  onSeek: (t: number) => void;
+}) {
+  const [active, setActive] = useState(-1);
+  const list = useRef<HTMLOListElement>(null);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const onTime = () => {
+      const t = v.currentTime + 0.05;
+      let i = -1;
+      for (let k = 0; k < moments.length && moments[k].start <= t; k++) i = k;
+      setActive(i);
+    };
+    onTime();
+    v.addEventListener("timeupdate", onTime);
+    v.addEventListener("seeked", onTime);
+    return () => {
+      v.removeEventListener("timeupdate", onTime);
+      v.removeEventListener("seeked", onTime);
+    };
+  }, [videoRef, moments]);
+
+  useEffect(() => {
+    const box = list.current;
+    const row = box?.children[active] as HTMLElement | undefined;
+    if (box && row && !videoRef.current?.paused) box.scrollTo({ top: row.offsetTop - box.clientHeight / 3, behavior: "smooth" });
+  }, [active, videoRef]);
+
+  return (
+    <section aria-label="Key moments" className="mb-3.5 rounded-xl border border-line bg-surface">
+      <div className="flex items-baseline justify-between px-3.5 pb-1.5 pt-3">
+        <h2 className="font-mono text-[10px] font-bold tracking-[.6px] text-signal">KEY MOMENTS</h2>
+        <span className="font-mono text-[8.5px] text-faint">from the official video description</span>
+      </div>
+      <ol ref={list} className="relative max-h-[260px] overflow-y-auto px-1.5 pb-1.5">
+        {moments.map((m, i) => (
+          <li key={i}>
+            <button
+              type="button"
+              aria-current={i === active ? "true" : undefined}
+              onClick={() => onSeek(m.start)}
+              className={`flex w-full gap-2.5 rounded-lg px-2 py-1.5 text-left active:scale-[.99] ${i === active ? "bg-[var(--signal-dim)]" : ""}`}
+            >
+              <span className={`flex-none pt-px font-mono text-[10.5px] tabular-nums ${i === active ? "text-signal" : "text-dim"}`}>
+                ▶ {formatMoment(m.start, true).slice(0, 5)}
+              </span>
+              <span className={`text-[12.5px] leading-[1.5] ${i === active ? "text-ink" : "text-dim"}`}>{m.text}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
