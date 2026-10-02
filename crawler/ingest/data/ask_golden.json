@@ -1,0 +1,12 @@
+[
+  {"q": "What was discussed at the 1949 Los Alamos conference on aerial phenomena?", "expect": ["DOE-UAP-D004"]},
+  {"q": "What did NASA's independent UAP study team recommend?", "expect": ["NASA-uap-independent-study-team-final-report"]},
+  {"q": "How did AARO explain the GoFast video?", "expect": ["AARO-AARO_GoFast_Case_Resolution_Card_Methodology_Final.pdf"]},
+  {"q": "What happened at Harare International Airport in July 2008?", "expect": ["CIA-UAP-017"]},
+  {"q": "Did the analysis of flying object incidents consider Soviet aircraft?", "expect": ["DOW-UAP-D094"]},
+  {"q": "What did Captain Edward Ruppelt present in 1952?", "expect": ["DOW-UAP-D154"]},
+  {"q": "What did Project Blue Book conclude about the Tremonton, Utah film?", "expect": ["DOW-UAP-D103"]},
+  {"q": "What was the AAWSAP program solicitation in 2008?", "expect": ["DOW-UAP-D111"]},
+  {"q": "What was reported in the 2022 mission report from Iraq?", "expect": ["DOW-UAP-D106"]},
+  {"q": "What does the 2024 NDAA require for UAP records?", "expect": ["NARA-2024-NDAA-Public-Law-118-31"]}
+]
