@@ -5,6 +5,7 @@
 // CSS + SVG filters and a background-image lens for images, so no canvas
 // (and no CORS dependency on the CDN).
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ReactNode, RefObject } from "react";
 import { Contrast, DropletOff, Droplet, Flame, FlipHorizontal2, Focus, Rainbow, RotateCcw, RotateCw, Shrink, SlidersHorizontal, Sun, SunMoon, WandSparkles, X, ZoomIn } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -261,13 +262,12 @@ export const LENS_PX = 170;
 
 /** Where the pointer sits on the picture, for painting the lens. */
 export interface LensHit {
-  x: number; // pointer, box px
+  x: number; // bubble top-left, viewport px (the bubble is position: fixed)
   y: number;
   u: number; // pointer, 0–1 across the picture's own axes
   v: number;
   rw: number; // picture's on-screen size along its own axes, px
   rh: number;
-  lift: number; // touch: raise the bubble clear of the finger
   mag: number;
   rot: number;
   flip: boolean;
@@ -278,13 +278,31 @@ export const lensTurn = (h: LensHit) => (h.rot || h.flip ? `rotate(${h.rot}deg)$
 
 type PointerLike = { clientX: number; clientY: number; pointerType: string };
 
+const GAP = 8;
+/** Bubble top-left in viewport px (see LensLayer). */
+export function bubbleAt(e: PointerLike, box: { top: number; bottom: number }) {
+  const half = LENS_PX / 2;
+  if (e.pointerType !== "touch") return { x: e.clientX - half, y: e.clientY - half };
+  const x = Math.min(Math.max(GAP, e.clientX - half), window.innerWidth - LENS_PX - GAP);
+  if (box.bottom + GAP + LENS_PX <= window.innerHeight) return { x, y: box.bottom + GAP };
+  if (box.top - GAP - LENS_PX >= 0) return { x, y: box.top - GAP - LENS_PX };
+  // panel fills the screen: sit above the finger, or below it near the top
+  const finger = 64; // clearance, px
+  const above = e.clientY - finger - LENS_PX;
+  return { x, y: above >= 0 ? above : e.clientY + finger };
+}
+
 /**
  * Magnifier bubble over the media panel; `children` paints the zoomed view.
  * `clickThrough` (mouse): the layer ignores clicks so the media's own
  * controls / tap-to-open keep working, and tracks the pointer on the panel
  * underneath. Otherwise (touch) it covers the panel and captures drags.
  * The cursor hides while the bubble shows; `deadBottom` px at the bottom
- * (a video's control bar) get no lens.
+ * (a video's control bar) get no lens. The bubble is portalled to <body>
+ * so the panel's overflow-hidden doesn't clip it at the edges. Mouse: the
+ * bubble centres on the cursor. Touch: it docks just outside the panel
+ * (below, else above) and slides with the finger, so the finger never
+ * covers it.
  */
 export function LensLayer({
   size,
@@ -321,7 +339,7 @@ export function LensLayer({
     if (deadBottom && py > box.height - deadBottom) return show(null);
     const p = pointToUV({ w: box.width, h: box.height }, px, py, s, view);
     if (p.u < 0 || p.u > 1 || p.v < 0 || p.v > 1) return show(null);
-    show({ ...p, x: px, y: py, lift: e.pointerType === "touch" ? LENS_PX * 0.65 : 0, mag, rot: view.rot, flip: view.flip });
+    show({ ...p, ...bubbleAt(e, box), mag, rot: view.rot, flip: view.flip });
   }
   const onPanelMove = useEffectEvent((e: PointerEvent) => move(e));
   const onPanelLeave = useEffectEvent(() => move(null));
@@ -363,15 +381,17 @@ export function LensLayer({
       onPointerMove={(e) => move(e)}
       onPointerLeave={() => move(null)}
     >
-      {hit && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute overflow-hidden rounded-full bg-black shadow-[0_0_0_2px_rgba(255,255,255,.8),0_6px_24px_rgba(0,0,0,.6)]"
-          style={{ width: LENS_PX, height: LENS_PX, left: hit.x - LENS_PX / 2, top: hit.y - LENS_PX / 2 - hit.lift }}
-        >
-          {children(hit)}
-        </div>
-      )}
+      {hit &&
+        createPortal(
+          <div
+            aria-hidden="true"
+            className="pointer-events-none fixed z-50 overflow-hidden rounded-full bg-black shadow-[0_0_0_2px_rgba(255,255,255,.8),0_6px_24px_rgba(0,0,0,.6)]"
+            style={{ width: LENS_PX, height: LENS_PX, left: hit.x, top: hit.y }}
+          >
+            {children(hit)}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

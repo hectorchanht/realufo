@@ -466,6 +466,43 @@ describe("Doc", () => {
     vi.unstubAllGlobals();
   });
 
+  it("lens bubble is portalled out of the panel so its overflow-hidden doesn't clip it", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    const img = document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
+    Object.defineProperty(img, "naturalWidth", { value: 400 });
+    Object.defineProperty(img, "naturalHeight", { value: 300 });
+    fireEvent.click(screen.getByRole("button", { name: /lens/i }));
+    const layer = document.querySelector("[data-zoom-lens]") as HTMLElement;
+    layer.getBoundingClientRect = () => ({ left: 100, top: 50, width: 400, height: 300, right: 500, bottom: 350, x: 100, y: 50, toJSON() {} });
+    // pointer near the panel's top-right corner
+    fireEvent.pointerDown(layer, { clientX: 490, clientY: 60, pointerType: "mouse" });
+    const bubble = document.body.querySelector(":scope > .rounded-full.fixed") as HTMLElement;
+    expect(bubble).toBeInTheDocument();
+    expect(layer.contains(bubble)).toBe(false);
+    expect(bubble.style.left).toBe(`${490 - 85}px`);
+    expect(bubble.style.top).toBe(`${60 - 85}px`);
+    // touch: docks below the panel (clear of the finger), x follows the finger clamped on-screen
+    vi.stubGlobal("innerWidth", 520);
+    vi.stubGlobal("innerHeight", 800);
+    fireEvent.pointerMove(layer, { clientX: 490, clientY: 200, pointerType: "touch" });
+    expect(bubble.style.top).toBe(`${350 + 8}px`);
+    expect(bubble.style.left).toBe(`${520 - 170 - 8}px`);
+    // no room below → docks above
+    layer.getBoundingClientRect = () => ({ left: 100, top: 250, width: 400, height: 300, right: 500, bottom: 550, x: 100, y: 250, toJSON() {} });
+    vi.stubGlobal("innerHeight", 600);
+    fireEvent.pointerMove(layer, { clientX: 300, clientY: 400, pointerType: "touch" });
+    expect(bubble.style.top).toBe(`${250 - 8 - 170}px`);
+    vi.unstubAllGlobals();
+  });
+
   it("palette, sharpen, rotate, flip and keyboard shortcuts drive the media panel", () => {
     useRecordMock.mockReturnValue({
       data: {
