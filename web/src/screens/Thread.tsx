@@ -38,6 +38,7 @@ import { MOMENT_SUFFIX, RECORD_ID_RE, parseMoment } from "../lib/recordMedia";
 import { useThread } from "../api/queries";
 import type { Post, ThreadSourceRecord } from "../api/types";
 import { VoteButton } from "../components/VoteButton";
+import { LoadError } from "../components/LoadError";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { docPageTitle, docTitleParts } from "../lib/docTitle";
 import { useSetPageTitle } from "../lib/pageTitle";
@@ -211,7 +212,7 @@ function PostRow({ post, sourceRecord, thread }: PostRowProps) {
 export function Thread() {
   const { id = "" } = useParams();
   const { openComposer } = useOverlay();
-  const { data, isLoading } = useThread(id);
+  const { data, isLoading, error, refetch } = useThread(id);
 
   const thread = data?.thread;
   const sourceRecord = data?.sourceRecord ?? null;
@@ -234,7 +235,7 @@ export function Thread() {
   if (!thread) {
     return (
       <div data-screen="thread" className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
-        thread not found.
+        <LoadError error={error} onRetry={() => void refetch()} notFound="thread not found." />
       </div>
     );
   }

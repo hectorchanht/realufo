@@ -129,7 +129,7 @@ describe("Feed", () => {
     // Real Doc screen (Task 19) — with useRecord() stubbed to `undefined`
     // above, it resolves straight to its "file not found" state; this only
     // needs to prove the click navigated to the /doc/:id route.
-    await screen.findByText(/file not found/i, { selector: "[data-screen='doc']" });
+    await screen.findByText(/file not found/i, { selector: "[data-screen='doc'] *" });
   });
 
   it("links 'all boards ›' to /boards", async () => {

@@ -11,6 +11,7 @@ import { useCase, useCaseComments } from "../api/queries";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
+import { LoadError } from "../components/LoadError";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { promoteCommentOpts } from "../lib/promoteComment";
 import type { Stance } from "../api/types";
@@ -33,7 +34,7 @@ function stanceColor(stance: Stance | null | undefined): string {
 
 export function Case() {
   const { slug = "" } = useParams();
-  const { data, isLoading } = useCase(slug);
+  const { data, isLoading, error, refetch } = useCase(slug);
   const { data: commentsData } = useCaseComments(slug);
   const { openComposer } = useOverlay();
 
@@ -57,7 +58,7 @@ export function Case() {
   if (!caseDetail) {
     return (
       <div data-screen="case" className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
-        case not found.
+        <LoadError error={error} onRetry={() => void refetch()} notFound="case not found." />
       </div>
     );
   }

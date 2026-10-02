@@ -34,6 +34,7 @@ import { useBootstrap, useComments, useRecord, useRecords } from "../api/queries
 import type { RecordsParams } from "../api/queries";
 import type { Comment, RecordDetail, RecordKind, RelatedGroup } from "../api/types";
 import { DocCard } from "../components/DocCard";
+import { LoadError } from "../components/LoadError";
 import { LENS_MAGS, MediaFilters, MediaToolbar, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams } from "../components/ImageTools";
 import type { ImageAdjust } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
@@ -152,8 +153,8 @@ export function Doc() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { openComposer, openViewer, composer, viewer, toast } = useOverlay();
 
-  const { data: detail, isLoading } = useRecord(id);
-  const { data: commentsData } = useComments(id);
+  const { data: detail, isLoading, error, refetch } = useRecord(id);
+  const { data: commentsData, error: commentsError, refetch: refetchComments } = useComments(id);
   const { data: boot } = useBootstrap();
   // Inline PDF <iframe> only on desktop — it renders blank on mobile browsers,
   // so mobile keeps the thumbnail + tap-to-open-in-new-tab flow.
@@ -367,7 +368,7 @@ export function Doc() {
   if (!record) {
     return (
       <div data-screen="doc" className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
-        file not found.
+        <LoadError error={error} onRetry={() => void refetch()} notFound="file not found." />
       </div>
     );
   }
@@ -754,7 +755,9 @@ export function Doc() {
       {/* Discussion header + count — prototype line 368 */}
       <div className="mb-3 flex items-baseline justify-between">
         <div className="font-pixel text-[9px] tracking-[1px] text-faint">◆ Discussion</div>
-        <span className="font-mono text-[10px] text-signal">{comments.length} comments</span>
+        {!(commentsError && !commentsData) && (
+          <span className="font-mono text-[10px] text-signal">{comments.length} comments</span>
+        )}
       </div>
 
       {/* "Add your read on this file…" — prototype lines 369-373 */}
@@ -775,6 +778,7 @@ export function Doc() {
       </button>
 
       {/* comment list — prototype lines 374-385 */}
+      {commentsError && !commentsData && <LoadError error={commentsError} onRetry={() => void refetchComments()} />}
       <div className="flex flex-col gap-[10px]">
         {comments.map((c) => (
           <div key={c.id} className="rounded-xl border border-line bg-surface p-[13px]">

@@ -30,6 +30,7 @@ import { Link } from "react-router-dom";
 import { useBootstrap, useFeed, useHubs } from "../api/queries";
 import type { HubSummary } from "../api/types";
 import { DocCard } from "../components/DocCard";
+import { LoadError } from "../components/LoadError";
 import { ThreadRow } from "../components/ThreadRow";
 import { useSetPageTitle } from "../lib/pageTitle";
 
@@ -80,7 +81,8 @@ export function Feed() {
   useSetPageTitle("REALUFO", "Declassified UAP archive + forum");
 
   const { data: boot } = useBootstrap();
-  const { data: feed, isLoading: feedLoading } = useFeed();
+  const { data: feed, isLoading: feedLoading, isError, error, refetch } = useFeed();
+  const feedFailed = isError && !feed;
 
   const featured = feed?.featured ?? [];
   const hot = feed?.hot ?? [];
@@ -102,6 +104,8 @@ export function Feed() {
                 <div className="h-[100px]" />
               </div>
             ))
+          : feedFailed
+          ? <div className="col-span-full"><LoadError error={error} onRetry={() => void refetch()} /></div>
           : featured.map((record) => (
               // All six fit in about one phone screen and any of them can be the LCP
               // image (PageSpeed picked card 5 when only the first four were eager).
@@ -119,7 +123,7 @@ export function Feed() {
       </div>
       {feedLoading ? (
         <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>
-      ) : (
+      ) : feedFailed ? null : (
         <div className="flex flex-col gap-[10px]">
           {hot.map((thread) => (
             <ThreadRow key={thread.id} thread={thread} />
