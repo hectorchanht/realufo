@@ -19,6 +19,7 @@ import type {
   RecordDetail,
   RecordsListResponse,
   Stance,
+  ThreadCard,
   ThreadDetail,
   VoteResult,
   VoteTargetType,
@@ -44,6 +45,7 @@ export const qk = {
   record: (id: string) => ["record", id] as const,
   comments: (recordId: string) => ["comments", recordId] as const,
   boardThreads: (boardId: string) => ["boardThreads", boardId] as const,
+  threadSearch: (q: string) => ["threadSearch", q] as const,
   thread: (id: string) => ["thread", id] as const,
   case: (slug: string) => ["case", slug] as const,
   caseComments: (slug: string) => ["caseComments", slug] as const,
@@ -111,6 +113,18 @@ export function useBoardThreads(boardId: string) {
     queryKey: qk.boardThreads(boardId),
     queryFn: () => api.get<BoardThreadsResponse>(`/api/boards/${boardId}/threads`),
     enabled: !!boardId,
+  });
+}
+
+// Global search over thread title/OP/replies; the Worker ignores q < 2 chars,
+// so don't even ask. Previous results stay up while the next query loads.
+export function useSearchThreads(q: string) {
+  const term = q.trim();
+  return useQuery({
+    queryKey: qk.threadSearch(term),
+    queryFn: () => api.get<{ threads: ThreadCard[] }>(`/api/threads?q=${encodeURIComponent(term)}`),
+    enabled: term.length >= 2,
+    placeholderData: keepPreviousData,
   });
 }
 
