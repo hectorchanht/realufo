@@ -272,6 +272,16 @@ describe("DocCard", () => {
     fireEvent.click(screen.getByRole("link"));
     expect(onOpen).toHaveBeenCalledWith("CIA-UAP-017");
   });
+
+  it("shows the TL;DR one-liner under the title when present", () => {
+    render(withRouter(<DocCard record={{ ...feedRecord, oneLiner: "Paperwork wins." }} variant="feed" />));
+    expect(screen.getByText('"Paperwork wins."')).toBeInTheDocument();
+  });
+
+  it("no one-liner: nothing extra", () => {
+    render(withRouter(<DocCard record={feedRecord} variant="feed" />));
+    expect(screen.queryByText(/"/)).toBeNull();
+  });
 });
 
 describe("ThreadRow", () => {
