@@ -43,6 +43,7 @@ import { VoteButton } from "../components/VoteButton";
 import FullText from "../components/FullText";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { docTitleParts } from "../lib/docTitle";
 import { useSetFooterLinks, type FooterLinks } from "../lib/footerLinks";
 import { promoteCommentOpts } from "../lib/promoteComment";
 import { useMediaQuery } from "../lib/useMediaQuery";
@@ -70,18 +71,6 @@ const RELATED_HEAD: Record<RelatedGroup["key"], string> = {
   release: "Same release",
   agency: "Same agency",
 };
-
-// Prototype's `_short` (RealUFO.dc.html:530): record titles are seeded as
-// "<ID>, <human title>" — strip that leading id prefix (only when the comma
-// sits within the first ~34 chars, so a title with no such prefix, or a
-// stray comma deep in the sentence, passes through untouched) and swap
-// underscores for spaces.
-function shortTitle(title: string): string {
-  const t = title || "";
-  const c = t.indexOf(",");
-  const s = c > 0 && c < 34 ? t.slice(c + 1).trim() : t;
-  return s.replace(/_/g, " ");
-}
 
 // Matches DocCard.tsx's local `typeGlyph` (kept duplicated rather than
 // exported/shared — it's a 3-line pure function and the two screens don't
@@ -352,14 +341,17 @@ export function Doc() {
   const comments = commentsData?.comments ?? [];
   const promotedThreads = detail?.promotedThreads ?? [];
 
-  // AppBar title is the record id (e.g. DOE-UAP-D004), subtitle the short
-  // title — agency already shows as a chip below the media. Called
-  // unconditionally (before the loading/not-found returns below) so hook
-  // order never varies; while `record` hasn't loaded yet, the same "FILE"
-  // fallback the prototype uses for its own undefined-record case is fine.
-  // Tab title is "<id> — <short title>", same as the worker's docTitle.
-  const short = record ? shortTitle(record.title) : "";
-  useSetPageTitle(record?.id || "FILE", short, record && `${record.id} — ${short}`);
+  // AppBar title is the record id (e.g. DOE-UAP-D004), subtitle the clean
+  // title; when the id only respells the title (AARO-IMG-Go_Fast_UAP), the
+  // title alone. Called unconditionally (before the loading/not-found returns
+  // below) so hook order never varies; "FILE" while the record loads.
+  // Tab title matches the worker's docTitle.
+  const tp = record ? docTitleParts(record.id, record.title) : null;
+  useSetPageTitle(
+    !tp ? "FILE" : tp.showId ? record!.id : tp.title,
+    tp?.showId ? tp.title : "",
+    tp ? (tp.showId ? `${record!.id} — ${tp.title}` : tp.title) : undefined,
+  );
   useSetFooterLinks(record && detail ? docFooterLinks(record, detail.hubs, detail.release) : null);
 
   if (isLoading) {
@@ -381,7 +373,7 @@ export function Doc() {
   const archive = boot?.archives.find((a) => a.id === record.archive);
   const accent = archive?.accent ?? "var(--signal)";
   const archiveLabel = archive?.label ?? record.archive;
-  const title = shortTitle(record.title);
+  const title = tp!.title;
   const isVideo = record.kind === "video";
   const glyph = typeGlyph(record.kind);
   const { media, fullUrl, thumbUrl } = recordMedia(detail, isDesktop);
@@ -663,14 +655,16 @@ export function Doc() {
         )}
       </div>
 
-      {/* record id kicker — uapbrowser-style accent breadcrumb */}
-      // <div className="mb-1 font-mono text-[11px] font-semibold tracking-[.4px]" style={{ color: accent }}>
-      //   {record.id}
-      // </div>
+      {/* record id kicker (uapbrowser-style) — only when the id isn't just the title respelled */}
+      {tp!.showId && (
+        <div className="mb-1 font-mono text-[11px] font-semibold tracking-[.4px]" style={{ color: accent }}>
+          {record.id}
+        </div>
+      )}
 
-      {/* title — full official title (id prefix kept, it's how the file is cited) */}
+      {/* title — id prefix and underscores stripped (the id is the kicker above) */}
       <h1 className="mb-3.5 text-[19px] font-bold leading-[1.3] text-ink" style={{ overflowWrap: "anywhere" }}>
-        {record.title.replace(/_/g, " ")}
+        {title}
       </h1>
 
       {/* meta grid — prototype lines 360-365 */}

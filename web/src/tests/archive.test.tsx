@@ -102,9 +102,11 @@ beforeEach(() => {
 });
 
 describe("Archive", () => {
-  it("links a single mapped tag filter to its hub page", async () => {
+  it("a single mapped tag filter's hub page is linked from the footer", async () => {
     renderAppAt("/archive?agency=DoW");
-    expect(await screen.findByRole("link", { name: "→ Department of War page" })).toHaveAttribute("href", "/agency/department-of-war");
+    const footer = await screen.findByRole("navigation", { name: "Site" });
+    expect(await within(footer).findByRole("link", { name: "Department of War page" })).toHaveAttribute("href", "/agency/department-of-war");
+    expect(within(footer).getByRole("heading", { name: "This filter" })).toBeInTheDocument();
   });
 
   it("no hub link for an unmapped filter value", async () => {

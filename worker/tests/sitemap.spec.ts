@@ -52,7 +52,7 @@ describe("sitemap", () => {
     expect(md).toContain("### AI summary\n\nAI says hi");
     expect(md).toContain("#### Page 1\n\nHarare tower log");
     expect(md).toContain("(Text continues in the original file: 9 pages.)");
-    const ids = [...md.matchAll(/^## (.+?) — /gm)].map((m) => m[1]);
+    const ids = [...md.matchAll(/^- Page: /gm)];
     const { n } = (await env.DB.prepare("SELECT count(*) n FROM records WHERE status='live'").first<{ n: number }>())!;
     expect(ids.length).toBe(n); // every batch made it
   });

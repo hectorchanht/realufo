@@ -48,7 +48,7 @@ const mockDetail: RecordDetail = {
     archive: "wargov",
     agency: "CIA",
     agency_full: "Central Intelligence Agency",
-    title: "CIA-UAP-017, Placement on High Alert near Roswell",
+    title: "rec1, Placement on High Alert near Roswell",
     summary: "A memo describing an unusual radar contact.",
     incident_date: "1978-03-04",
     location: "Roswell, NM",

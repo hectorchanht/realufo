@@ -59,7 +59,7 @@ const mockDetail: RecordDetail = {
     archive: "wargov",
     agency: "CIA",
     agency_full: "Central Intelligence Agency",
-    title: "CIA-UAP-017, Placement on High Alert near Roswell",
+    title: "rec1, Placement on High Alert near Roswell",
     summary: "A memo describing an unusual radar contact over restricted airspace.",
     incident_date: "1978-03-04",
     location: "Roswell, NM",
@@ -319,10 +319,22 @@ describe("Doc", () => {
     expect(screen.getByText(/unusual radar contact over restricted airspace/)).toBeInTheDocument();
   });
 
-  it("shows the record id kicker and the full official title (id prefix kept)", () => {
+  it("shows the id once as a kicker; the h1 drops the id prefix (no stray // text)", () => {
     renderDoc();
     expect(screen.getByText("rec1")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("CIA-UAP-017, Placement on High Alert near Roswell");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Placement on High Alert near Roswell");
+    expect(document.body.textContent).not.toContain("//");
+  });
+
+  it("hides the kicker when the id only respells the title", () => {
+    useRecordMock.mockReturnValue({
+      data: { ...mockDetail, record: { ...mockDetail.record, id: "AARO-IMG-Go_Fast_UAP", title: "Go Fast UAP" } },
+      isLoading: false,
+    });
+    renderDoc("/doc/AARO-IMG-Go_Fast_UAP");
+    expect(screen.queryByText("AARO-IMG-Go_Fast_UAP")).toBeNull();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Go Fast UAP");
+    expect(document.title).toBe("Go Fast UAP · RealUFO");
   });
 
   it("shows the release badge and series prev link (no next at series end)", () => {

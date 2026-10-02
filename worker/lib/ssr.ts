@@ -12,6 +12,23 @@ export const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 export type Link = { href: string; text: string };
+
+// How a file's id and title are shown together: id prefix and underscores
+// stripped; showId false when the id only respells the title.
+// Same rule as web/src/lib/docTitle.ts — keep them in sync.
+const squash = (s: string) =>
+  s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).map((w) => w.replace(/^0+(?=\d)/, "")).join("");
+
+export function docTitleParts(id: string, raw: string | null | undefined): { title: string; showId: boolean } {
+  let t = raw || "";
+  if (t.startsWith(id) && /^[,_\s:]/.test(t.slice(id.length))) t = t.slice(id.length);
+  t = t.replace(/_/g, " ").replace(/\s+/g, " ").replace(/^[\s,:;]+|[\s,]+$/g, "");
+  if (!t) return { title: id, showId: false };
+  const [a, b] = [squash(t), squash(id)];
+  const [short, long] = a.length < b.length ? [a, b] : [b, a];
+  return { title: t, showId: !(long.includes(short) && short.length >= long.length / 2) };
+}
+
 export type RecordLink = { id: string; title: string };
 
 export const docHref = (id: string) => `/doc/${encodeURIComponent(id)}`;
@@ -184,7 +201,7 @@ export function docBody(d: DocData): string {
   ].filter(Boolean);
   return [
     `<p>${a({ href: "/", text: "Home" })} › ${a({ href: "/archive", text: "Archive" })}${r.agency ? ` › ${esc(r.agency)}` : ""}</p>`,
-    `<h1>${esc(r.title)}</h1>`,
+    `<h1>${esc(docTitleParts(r.id, r.title).title)}</h1>`,
     media(d),
     `<dl>${facts
       .filter(([, v]) => v)

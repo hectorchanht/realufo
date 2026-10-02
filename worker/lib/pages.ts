@@ -7,7 +7,7 @@ import { loadHub, listHubsCached } from "../routes/hubs";
 import type { HubKind } from "./hubs";
 import {
   DEFAULT_DESCRIPTION, type DocData, type Link, docBody, docFooter, threadBody, boardBody, caseBody, homeBody, tabBody,
-  section, docLinks, countList, boardHref, docHref, hubBody, browseBody, hubHref,
+  section, docLinks, countList, docTitleParts, boardHref, docHref, hubBody, browseBody, hubHref,
 } from "./ssr";
 
 // One SPA route's pre-render: <head> meta (url is filled in by serveWithMeta)
@@ -26,13 +26,12 @@ export const isoDate = (d: string | null | undefined) => {
 // D1 "YYYY-MM-DD HH:MM:SS" (UTC) → ISO 8601.
 const iso = (d: string | null) => (d ? d.replace(" ", "T") + "Z" : undefined);
 const person = (handle: string | null) => ({ "@type": "Person", name: handle || "Anonymous" });
-// Same as Doc.tsx's shortTitle: drop a leading "<ID>, " prefix.
-const shortTitle = (t: string) => {
-  const c = t.indexOf(",");
-  return (c > 0 && c < 34 ? t.slice(c + 1).trim() : t).replace(/_/g, " ");
+// Same as web/src/lib/docTitle.ts docPageTitle: "<id> — <title>", or the
+// title alone when the id only respells it.
+export const docTitle = (t: string, id: string) => {
+  const p = docTitleParts(id, t);
+  return p.showId ? `${id} — ${p.title}` : p.title;
 };
-// Same as Doc.tsx's tab title: the file id first, then the short title.
-export const docTitle = (t: string, id: string) => `${id} — ${shortTitle(t)}`;
 
 const latest = async (env: Env) =>
   (

@@ -314,7 +314,7 @@ describe("pre-rendered body", () => {
   it("doc: meta + body even with Accept */* (share scrapers)", async () => {
     const html = await get("/doc/FBI-UAP-D002");
     expect(html).toContain("<title>FBI-UAP-D002 — FD-1057, Unresolved UAP Report, Colorado Springs, 2022 · RealUFO</title>");
-    expect(html).toContain("<h1>FBI-UAP-D002, FD-1057, Unresolved UAP Report, Colorado Springs, 2022</h1>");
+    expect(html).toContain("<h1>FD-1057, Unresolved UAP Report, Colorado Springs, 2022</h1>");
     expect(html).toContain('<a href="/doc/FBI-UAP-D003">');
     const crumbs = lds(html).find((j) => j["@type"] === "BreadcrumbList");
     expect(crumbs.itemListElement.map((i: any) => i.item)).toEqual([
@@ -387,7 +387,7 @@ describe("page-data cache", () => {
     await env.DB.prepare(
       "INSERT INTO records(id,archive,agency,title,kind,status) VALUES('NOPE2','wargov','FBI','NOPE2, Late arrival','pdf','live')"
     ).run();
-    expect(await get("/doc/NOPE2?y=2")).toContain("<h1>NOPE2, Late arrival</h1>");
+    expect(await get("/doc/NOPE2?y=2")).toContain("<h1>Late arrival</h1>");
   });
 });
 

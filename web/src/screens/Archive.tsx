@@ -40,9 +40,10 @@
 // exact page (Doc.tsx crosses into neighbour pages at the edges).
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
-import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useBootstrap, useFacets, useHubs, useRecords } from "../api/queries";
 import { hubForFilters } from "../lib/hubLink";
+import { useSetFooterLinks } from "../lib/footerLinks";
 import { DocCard } from "../components/DocCard";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
@@ -270,6 +271,7 @@ export function Archive() {
     { release: filter.release, agency: filter.agency, location: filter.location, decade: filter.decade },
     hubsData?.hubs ?? []
   );
+  useSetFooterLinks(tagHub && { title: "This filter", links: [{ to: `/${tagHub.kind}/${tagHub.slug}`, text: `${tagHub.label} page` }] });
   // Releases are war.gov-only, so the chips only show for All / War.gov.
   const showReleases = !!facets?.releases.length && (archive === "" || archive === "wargov");
   const hasFilters = FILTER_KEYS.some((k) => searchParams.has(k));
@@ -445,15 +447,6 @@ export function Archive() {
           onChange={(v) => setParam("location", v)}
         />
       </div>
-
-      {tagHub && (
-        <Link
-          to={`/${tagHub.kind}/${tagHub.slug}`}
-          className="mb-3.5 block font-mono text-[11px] text-signal hover:underline"
-        >
-          → {tagHub.label} page
-        </Link>
-      )}
 
       {/* type chips + redacted toggle — lines 179-186 */}
       <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2.5 px-0.5 py-1">
