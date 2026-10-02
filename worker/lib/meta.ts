@@ -54,6 +54,7 @@ export function injectMeta(html: string, m: MetaInput): string {
     `<meta property="og:url" content="${u}">`,
     img && `<meta property="og:image" content="${img}">`,
     `<meta name="twitter:card" content="${img ? "summary_large_image" : "summary"}">`,
+    `<meta name="twitter:site" content="@realufoorg">`,
     m.jsonLd && ldScript(m.jsonLd),
     m.breadcrumbs &&
       ldScript({

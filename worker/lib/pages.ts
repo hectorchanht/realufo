@@ -64,6 +64,7 @@ const homePage: Loader = async (env, _g, url) => ({
     jsonLd: {
       "@type": "WebSite",
       name: "RealUFO",
+      sameAs: ["https://x.com/realufoorg"],
       potentialAction: {
         "@type": "SearchAction",
         target: `${url.origin}/archive?q={search_term_string}`,
