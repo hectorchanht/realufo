@@ -1,4 +1,4 @@
-import csv, posixpath
+import csv, posixpath, re
 from ..models import Candidate, R2_BASE, KIND_FROM_TYPE, MIME
 from ..mapping import short_agency, derive_id
 
@@ -8,6 +8,12 @@ def _pdf_urls(link: str):
     base = posixpath.basename(link.split("?")[0])
     return (f"{R2_BASE}/pdfs/wargov/{base}",
             f"{R2_BASE}/pdf-thumbs/wargov/{posixpath.splitext(base)[0]}.jpg")
+
+def title_location(title: str) -> str:
+    """'DOW-UAP-PR118, Unresolved UAP Report, Gulf of Oman, 2021' -> 'Gulf of Oman'.
+    Used when the CSV leaves Incident Location empty (war.gov then shows N/A)."""
+    m = re.search(r"UAP Report, ([^,]+), \d{4}$", title.strip())
+    return m.group(1).strip() if m else ""
 
 def candidates(csv_paths, dvids_map, taken):
     out, seen = [], set()
@@ -41,7 +47,7 @@ def candidates(csv_paths, dvids_map, taken):
                           agency_full=(r.get("Agency") or "").strip(), title=title,
                           summary=(r.get("Description Blurb") or "").strip(),
                           incident_date=(r.get("Incident Date") or "").strip(),
-                          location=(r.get("Incident Location") or "").strip(),
+                          location=(r.get("Incident Location") or "").strip() or title_location(title),
                           doc_date=(r.get("Release Date") or "").strip(), kind=kind,
                           redacted=1 if (r.get("Redaction") or "").strip() else 0,
                           virin=(r.get("Image VIRIN") or "").strip(), r2_key=cdn[len(R2_BASE) + 1:],

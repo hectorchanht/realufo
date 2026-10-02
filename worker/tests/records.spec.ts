@@ -86,14 +86,18 @@ describe("records", () => {
       ins("RELG-TOP", "OTHER", "N/A", null, null),
       ins("RELG-TOP2", "OTHER", "N/A", null, null),
       // topic links (ingest.links) come first, best score first, and win the dedupe
+      ins("RELG-MED", "OTHER", "N/A", null, null),
       env.DB.prepare("INSERT INTO record_links (record_id,related_id,score) VALUES ('RELG-A','RELG-TOP2',0.2),('RELG-A','RELG-TOP',0.5),('RELG-A','RELG-AG',0.3)"),
+      // war.gov's own pairing (source official) comes before topic
+      env.DB.prepare("INSERT INTO record_links (record_id,related_id,score,source) VALUES ('RELG-A','RELG-MED',1,'official'),('RELG-A','RELG-LOC',1,'official')"),
     ]);
     const rel: any[] = ((await (await get("/api/records/RELG-A")).json()) as any).related;
     const ids = (k: string) => rel.find((g) => g.key === k)?.records.map((r: any) => r.id).sort();
-    expect(rel.map((g) => g.key)).toEqual(["topic", "location", "period", "release"]); // agency emptied by dedupe
-    expect(rel[0].records.map((r: any) => r.id)).toEqual(["RELG-TOP", "RELG-AG", "RELG-TOP2"]);
+    expect(rel.map((g) => g.key)).toEqual(["media", "topic", "location", "period", "release"]); // agency emptied by dedupe
+    expect(rel[0].records.map((r: any) => r.id)).toEqual(["RELG-LOC", "RELG-MED"]);
+    expect(rel[1].records.map((r: any) => r.id)).toEqual(["RELG-TOP", "RELG-AG", "RELG-TOP2"]);
     expect(rel.find((g) => g.key === "location").label).toBe("Relgville");
-    expect(ids("location")).toEqual(["RELG-LOC", "RELG-LOCYR"]);
+    expect(ids("location")).toEqual(["RELG-LOCYR"]); // RELG-LOC already under media
     expect(ids("period")).toEqual(["RELG-YR2"]);
     expect(rel.find((g) => g.key === "period").label).toBe("2031");
     expect(ids("release")).toEqual(["RELG-REL"]);

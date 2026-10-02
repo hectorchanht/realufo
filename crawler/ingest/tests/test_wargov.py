@@ -19,3 +19,8 @@ def test_wargov_candidates_pdf_and_video_skip_aud_and_unresolved():
     # AUD row skipped entirely
     assert all(c.kind != "audio" for c in cands)
     assert len(cands) == 2
+
+def test_title_location_fills_empty_incident_location():
+    assert wargov.title_location("DOW-UAP-PR118, Unresolved UAP Report, Gulf of Oman, 2021") == "Gulf of Oman"
+    assert wargov.title_location("DOW-UAP-D101, Intelligence Information Report, Unresolved UAP Report, Middle East, 2022") == "Middle East"
+    assert wargov.title_location("CIA-UAP-002, Scientific Advisory Panel on Unidentified Flying Objects, Report, 1952-1953") == ""

@@ -89,9 +89,10 @@ async function releaseOf(env: Env, record: { archive: string; doc_date: string |
   return rel ? { no: rel.no, date } : null;
 }
 
-// Related groups shown under a file, uapbrowser-style. "topic" comes from
-// record_links (crawler ingest.links: files sharing rare names/terms in their
-// title + summaries); the rest are a SQL filter on one field the record shares
+// Related groups shown under a file, uapbrowser-style. "media" and "topic"
+// come from record_links (crawler ingest.links): war.gov's own Related Media
+// pairings, then files sharing rare names/terms in their title + summaries;
+// the rest are a SQL filter on one field the record shares
 // with others. A record lands in the first group it matches only, so the
 // groups don't repeat each other.
 type RecordRow = {
@@ -99,13 +100,19 @@ type RecordRow = {
   location: string | null; incident_date: string | null; doc_date: string | null;
 };
 const RELATED_PER_GROUP = 6;
+const RELATED_MEDIA_MAX = 48; // war.gov pairings are shown in full (largest is 43)
 
 async function relatedOf(env: Env, r: RecordRow, release: { no: number } | null) {
   const year = yearOf(r.incident_date);
-  const groups: { key: string; label: string; where: string; bind: unknown[]; from?: string; order?: string }[] = [
+  const links = "record_links l JOIN records r ON r.id=l.related_id";
+  const groups: { key: string; label: string; where: string; bind: unknown[]; from?: string; order?: string; max?: number }[] = [
     {
-      key: "topic", label: "title & summary match", from: "record_links l JOIN records r ON r.id=l.related_id",
-      where: "l.record_id=?", bind: [r.id], order: "l.score DESC",
+      key: "media", label: "war.gov pairing", from: links,
+      where: "l.record_id=? AND l.source='official'", bind: [r.id], order: "r.id", max: RELATED_MEDIA_MAX,
+    },
+    {
+      key: "topic", label: "title & summary match", from: links,
+      where: "l.record_id=? AND l.source='topic'", bind: [r.id], order: "l.score DESC",
     },
   ];
   if (r.location && r.location !== "N/A") groups.push({ key: "location", label: r.location, where: "r.location=?", bind: [r.location] });
@@ -128,7 +135,7 @@ async function relatedOf(env: Env, r: RecordRow, release: { no: number } | null)
         FROM ${g.from ?? "records r"} WHERE ${g.where} AND r.id<>?
         ORDER BY ${g.order ?? "r.featured DESC, r.created_at DESC"} LIMIT ?`
       )
-        .bind(...g.bind, r.id, RELATED_PER_GROUP * 4)
+        .bind(...g.bind, r.id, (g.max ?? RELATED_PER_GROUP) * 4)
         .all<{ id: string }>()
     )
   );
@@ -137,7 +144,7 @@ async function relatedOf(env: Env, r: RecordRow, release: { no: number } | null)
     .map((g, i) => ({
       key: g.key,
       label: g.label,
-      records: rows[i].results.filter((x) => !seen.has(x.id) && seen.add(x.id)).slice(0, RELATED_PER_GROUP),
+      records: rows[i].results.filter((x) => !seen.has(x.id) && seen.add(x.id)).slice(0, g.max ?? RELATED_PER_GROUP),
     }))
     .filter((g) => g.records.length);
 }
