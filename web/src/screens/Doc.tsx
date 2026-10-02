@@ -39,6 +39,7 @@ import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools"
 import { parseAiMoments, parseKeyMoments } from "../lib/keyMoments";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
+import FullText from "../components/FullText";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { useMediaQuery } from "../lib/useMediaQuery";
@@ -662,6 +663,8 @@ export function Doc() {
       >
         ⛶ OPEN ORIGINAL {glyph}
       </button>
+
+      <FullText data={detail.fullText} onOpenOriginal={handleOpenOriginal} />
 
       {/* series prev/next — id neighbours (D029 ← D030 → D031), uapbrowser-style */}
       {(detail.series?.prev || detail.series?.next) && (

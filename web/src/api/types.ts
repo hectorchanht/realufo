@@ -195,6 +195,14 @@ export interface PromotedThread {
   accent: string;
 }
 
+/** Quality-filtered PDF text (crawler ingest.fulltext), capped ~30k chars. */
+export interface FullText {
+  pages: { n: number; text: string }[];
+  /** true when readable text continues in the original file */
+  truncated: boolean;
+  total_pages: number;
+}
+
 export interface RecordDetail {
   record: RecordFull;
   assets: Asset[];
@@ -205,6 +213,8 @@ export interface RecordDetail {
   release?: { no: number; date: string } | null;
   /** Files sharing this one's location / period / release / agency (each file in one group only). */
   related?: RelatedGroup[];
+  /** Null until extracted; empty pages when no page passed the OCR filter. */
+  fullText?: FullText | null;
 }
 
 export interface RelatedGroup {

@@ -208,6 +208,41 @@ beforeEach(() => {
 });
 
 describe("Doc", () => {
+  it("shows FULL TEXT: first page visible, the rest in a closed <details>, continuation when truncated", () => {
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        fullText: {
+          pages: [{ n: 1, text: "First page words <script>x</script>" }, { n: 4, text: "Fourth page words" }],
+          truncated: true,
+          total_pages: 9,
+        },
+      },
+      isLoading: false,
+    });
+    const { container } = renderDoc();
+    expect(screen.getByText("FULL TEXT")).toBeInTheDocument();
+    expect(screen.getByText("2 of 9 pages · OCR, may contain errors")).toBeInTheDocument();
+    expect(screen.getByText("First page words <script>x</script>")).toBeVisible();
+    const details = container.querySelector("section[aria-label='Full text'] details")!;
+    expect(details.hasAttribute("open")).toBe(false);
+    expect(details.textContent).toContain("Fourth page words");
+    fireEvent.click(screen.getByRole("button", { name: "Text continues in the original file →" }));
+    expect(openSpy).toHaveBeenCalledWith("/api/file/rec1", "_blank", "noopener,noreferrer");
+    openSpy.mockRestore();
+  });
+
+  it("hides FULL TEXT when there is none or no page passed the filter", () => {
+    renderDoc();
+    expect(screen.queryByText("FULL TEXT")).toBeNull();
+    useRecordMock.mockReturnValue({
+      data: { ...mockDetail, fullText: { pages: [], truncated: false, total_pages: 3 } },
+      isLoading: false,
+    });
+    renderDoc();
+    expect(screen.queryByText("FULL TEXT")).toBeNull();
+  });
   it("fades the media-panel chrome after idle, brings it back on pointer move", () => {
     vi.useFakeTimers();
     try {
