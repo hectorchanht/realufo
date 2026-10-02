@@ -45,6 +45,7 @@ export default function SiteFooter() {
           // static predecessor archive (war-gov-ufo-release repo)
           <li key="release"><a className={linkCls} href="https://release.realufo.org/" target="_blank" rel="noopener">Original release archive ↗</a></li>,
           <li key="x"><a className={linkCls} href="https://x.com/realufoorg" target="_blank" rel="noopener me">Follow @realufoorg on X ↗</a></li>,
+          <li key="source"><a className={linkCls} href="https://github.com/hectorchanht/realufo" target="_blank" rel="noopener">Source code on GitHub ↗</a></li>,
           <li key="contact"><a className={linkCls} href="mailto:hello@realufo.org">Contact: hello@realufo.org</a></li>,
         ])}
         {GROUPS.map(([kind, title]) => {
