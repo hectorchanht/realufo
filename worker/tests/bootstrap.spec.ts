@@ -40,6 +40,17 @@ describe("bootstrap+feed", () => {
     expect(typeof b.unmappedFiles).toBe("number");
   });
 
+  it("feed counts verdicts and a fresh verdict bumps the file to the top", async () => {
+    const before: any = await get("/api/feed");
+    const target = (await env.DB.prepare("SELECT id FROM records WHERE id != ? ORDER BY id LIMIT 1 OFFSET 10")
+      .bind(before.featured[0].id).first<{ id: string }>())!.id;
+    await env.DB.prepare("INSERT INTO record_verdicts(actor_id,record_id,verdict,updated_at) VALUES('a1',?,'explained',datetime('now','+1 minute'))")
+      .bind(target).run();
+    const f: any = await get("/api/feed");
+    expect(f.featured[0]).toMatchObject({ id: target, verdictN: 1 });
+    expect(f.featured.every((r: any) => typeof r.verdictN === "number")).toBe(true);
+  });
+
   it("feed returns featured records and hot threads with boardSlug", async () => {
     const f: any = await get("/api/feed");
     expect(f.featured.length).toBeGreaterThan(0);
