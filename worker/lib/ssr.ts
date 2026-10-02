@@ -77,16 +77,23 @@ const NAV: Link[] = [
   { href: "/boards", text: "Boards" },
   { href: "/map", text: "Map" },
 ];
+// Same machine-readable links as the SPA's SiteFooter.
+const FOOTER: Link[] = [
+  { href: "/browse", text: "Browse all files" },
+  { href: "/llms.txt", text: "llms.txt" },
+  { href: "/llms-full.txt", text: "llms-full.txt" },
+  { href: "/sitemap.xml", text: "sitemap.xml" },
+];
 const STYLE =
   "<style>#root>.ssr{background:#07080c;color:#e6e6e6;font:16px/1.6 system-ui,sans-serif;max-width:860px;margin:0 auto;padding:24px 16px}" +
-  "#root>.ssr a{color:#9ecbff}#root>.ssr dt{opacity:.7}#root>.ssr blockquote{border-left:3px solid #444;margin:1em 0;padding-left:1em}</style>";
+  "#root>.ssr a{color:#9ecbff}#root>.ssr footer{margin-top:3em;border-top:1px solid #333;padding-top:1em}#root>.ssr dt{opacity:.7}#root>.ssr blockquote{border-left:3px solid #444;margin:1em 0;padding-left:1em}</style>";
 
 // Fills the SPA's empty mount point. Function replacement: a string
 // replacement would expand `$&`/`$'` patterns in user text.
 export function injectBody(html: string, body: string): string {
   return html.replace(
     '<div id="root"></div>',
-    () => `<div id="root">${STYLE}<div class="ssr"><nav>${NAV.map(a).join(" · ")}</nav><main>${body}</main></div></div>`
+    () => `<div id="root">${STYLE}<div class="ssr"><nav>${NAV.map(a).join(" · ")}</nav><main>${body}</main><footer>${FOOTER.map(a).join(" · ")}</footer></div></div>`
   );
 }
 

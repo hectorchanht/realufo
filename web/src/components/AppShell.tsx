@@ -27,6 +27,7 @@
 // /doc/:id showed the same generic "FILE", regardless of record).
 import { useEffect, useRef, type CSSProperties } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import SiteFooter from "./SiteFooter";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { useHideOnScroll } from "../lib/useHideOnScroll";
 import { useScrollMemory } from "../lib/useScrollMemory";
@@ -122,6 +123,7 @@ export function AppShell() {
               style={{ paddingBottom: "calc(2.5rem + var(--bnav-h, 0px))" }}
             >
               <Outlet />
+              <SiteFooter />
             </div>
           </main>
 

@@ -1,0 +1,54 @@
+// Site-wide footer under every screen: the archive's ways in (tabs + hub
+// pages) and the machine-readable files, so they're always one scroll away
+// instead of buried in page content. Same hub list as /browse.
+import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { useHubs } from "../api/queries";
+import type { HubKind } from "../api/types";
+import { useNavItems } from "./navItems";
+
+const GROUPS: [HubKind, string][] = [["release", "Releases"], ["agency", "Agencies"], ["decade", "Decades"]];
+// Plain <a>: served by the Worker, not SPA routes.
+const FILES = [
+  ["llms.txt", "/llms.txt"],
+  ["llms-full.txt", "/llms-full.txt"],
+  ["sitemap.xml", "/sitemap.xml"],
+];
+
+const linkCls = "text-dim hover:text-ink";
+const headCls = "mb-2 font-semibold tracking-[.5px] text-ink";
+
+export default function SiteFooter() {
+  const hubs = useHubs().data?.hubs ?? [];
+  const nav = useNavItems();
+  const col = (title: string, items: ReactNode[]) => (
+    <div key={title} className="min-w-[120px]">
+      <h2 className={headCls}>{title}</h2>
+      <ul className="space-y-1">{items}</ul>
+    </div>
+  );
+  return (
+    <footer data-site-footer className="mt-12 border-t border-line pt-6 font-mono text-[11px]">
+      <nav aria-label="Site" className="flex flex-wrap gap-x-8 gap-y-5">
+        {col("Explore", [
+          ...nav.map((i) => (
+            <li key={i.path}><Link className={linkCls} to={i.path}>{i.label}</Link></li>
+          )),
+          <li key="browse"><Link className={linkCls} to="/browse">Browse all</Link></li>,
+        ])}
+        {GROUPS.map(([kind, title]) => {
+          const group = hubs.filter((h) => h.kind === kind);
+          return group.length
+            ? col(title, group.map((h) => (
+                <li key={h.slug}><Link className={linkCls} to={`/${h.kind}/${h.slug}`}>{h.label}</Link></li>
+              )))
+            : null;
+        })}
+        {col("For AI & developers", FILES.map(([text, href]) => (
+          <li key={href}><a className={linkCls} href={href}>{text}</a></li>
+        )))}
+      </nav>
+      <p className="mt-6 text-faint">Public-domain U.S. government records, mirrored verbatim.</p>
+    </footer>
+  );
+}

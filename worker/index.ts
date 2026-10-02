@@ -17,7 +17,7 @@ import { login } from "./routes/auth";
 import { serveWithMeta } from "./lib/meta";
 import { ask, recentAsks, setAskPublic } from "./routes/ask";
 import { sitemap } from "./routes/sitemap";
-import { llms } from "./routes/llms";
+import { llms, llmsFull } from "./routes/llms";
 import { hubsIndex, getHub } from "./routes/hubs";
 import { tick } from "./lib/xbot";
 
@@ -57,6 +57,7 @@ export default {
     }
     if (url.pathname === "/sitemap.xml") return sitemap(req, env);
     if (url.pathname === "/llms.txt") return llms(req, env);
+    if (url.pathname === "/llms-full.txt") return llmsFull(req, env);
     return serveWithMeta(req, env); // SPA + assets, with per-route meta/OG injection for deep links
   },
   async scheduled(_c: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
