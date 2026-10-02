@@ -238,6 +238,14 @@ describe("pre-rendered body", () => {
     ]);
   });
 
+  it("doc pre-render includes stored full text", async () => {
+    await env.DB.prepare("INSERT INTO record_text(record_id,pages,truncated,total_pages) VALUES('ICA-UAP-D001',?,0,1)")
+      .bind(JSON.stringify([{ n: 1, text: "Analysts reviewed the Colorado Springs sighting." }]))
+      .run();
+    const html = await get("/doc/ICA-UAP-D001");
+    expect(html).toContain("<h3>Page 1</h3><p>Analysts reviewed the Colorado Springs sighting.</p>");
+  });
+
   it("doc: meta + body even with Accept */* (share scrapers)", async () => {
     const html = await get("/doc/FBI-UAP-D002");
     expect(html).toContain("— UAP file FBI-UAP-D002 · RealUFO</title>");

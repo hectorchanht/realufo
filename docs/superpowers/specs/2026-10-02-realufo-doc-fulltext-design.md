@@ -51,7 +51,9 @@ with `pages = '[]'` so it is not retried every day.
     newlines to one blank line, strip.
   - `word_ratio(text) -> float`: share of whitespace tokens that look like
     words or numbers, regex
-    `^[("']?[A-Za-z][a-z]*(?:[-'][a-z]+)?[.,;:)"'?!]*$|^\d[\d,./-]*[.,;:]?$`.
+    `^[("']?(?:[A-Z]+|[A-Za-z][a-z]*)(?:[-'][A-Za-z]+)?[.,;:)"'?!]*$|^\d[\d,./-]*[.,;:]?$`
+    (ALL-CAPS tokens count — teletypes/cables are all caps; amended after
+    final review, fixtures then score p3 0.60 / p20 0.72).
   - `keep_page(text) -> bool`: ≥ 200 alphanumeric chars AND
     `word_ratio ≥ 0.65`.
     Tuned on a 2026-10-02 sample (wargov D129, 1963 SP-16, AARO 2025
