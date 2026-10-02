@@ -89,31 +89,33 @@ export function AskAnswer({ question, onPost }: { question: string; onPost?: (da
           ))}
         </ol>
       )}
-      <div className="mt-2.5 flex items-center gap-3">
-        <span className="flex-1 font-mono text-[9.5px] text-faint">
-          AI answer drawn from archive text &amp; OCR — can be wrong. Check the sources.
-        </span>
-        {data.log_id != null && data.sources.length > 0 && (
-          <button
-            type="button"
-            aria-pressed={shared}
-            disabled={share.isPending}
-            onClick={() => share.mutate({ id: data.log_id!, public: !shared }, { onSuccess: (r) => setShared(r.public) })}
-            className="flex-none rounded-md border border-line2 px-2 py-0.5 font-mono text-[10px] text-signal hover:border-signal disabled:opacity-50"
-          >
-            {shared ? "✓ shared · undo" : "share publicly"}
-          </button>
-        )}
-        {onPost && data.sources.length > 0 && (
-          <button
-            type="button"
-            onClick={() => onPost(data)}
-            className="flex-none rounded-md border border-line2 px-2 py-0.5 font-mono text-[10px] text-signal hover:border-signal"
-          >
-            ⤴ post to a board
-          </button>
-        )}
-      </div>
+      <p className="mt-2.5 font-mono text-[9.5px] text-faint">
+        AI answer drawn from archive text &amp; OCR — can be wrong. Check the sources.
+      </p>
+      {data.sources.length > 0 && (data.log_id != null || onPost) && (
+        <div className="mt-2.5 flex flex-wrap gap-2 border-t border-line pt-2.5">
+          {data.log_id != null && (
+            <button
+              type="button"
+              aria-pressed={shared}
+              disabled={share.isPending}
+              onClick={() => share.mutate({ id: data.log_id!, public: !shared }, { onSuccess: (r) => setShared(r.public) })}
+              className="rounded-md border border-line2 px-2.5 py-1 font-mono text-[10px] text-signal hover:border-signal disabled:opacity-50"
+            >
+              {shared ? "✓ shared · undo" : "share publicly"}
+            </button>
+          )}
+          {onPost && (
+            <button
+              type="button"
+              onClick={() => onPost(data)}
+              className="rounded-md border border-line2 px-2.5 py-1 font-mono text-[10px] text-signal hover:border-signal"
+            >
+              ⤴ post to a board
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 }
