@@ -20,8 +20,11 @@
 // looks structurally empty while boards are loading — only the board-row
 // list itself swaps to a small "◉ loading signal…" line during the initial
 // fetch (`isLoading`).
-import { useBootstrap } from "../api/queries";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useBootstrap, useSearchThreads } from "../api/queries";
 import { BoardRow } from "../components/BoardRow";
+import { ThreadRow } from "../components/ThreadRow";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
 
@@ -30,6 +33,7 @@ import { useSetPageTitle } from "../lib/pageTitle";
 // screen, not inside a specific board), matching Doc.tsx's own
 // `DEFAULT_BOARD` fallback for the same "no board picked yet" case.
 const DEFAULT_BOARD = "uap";
+const SEARCH_DEBOUNCE_MS = 250; // same as Archive
 
 export function Boards() {
   // AppBar title — prototype's `titles.boards` (RealUFO.dc.html:566).
@@ -39,6 +43,34 @@ export function Boards() {
   const { data: boot, isLoading } = useBootstrap();
 
   const boards = boot?.boards ?? [];
+
+  // Global thread search, `?q=` in the URL (shareable, back-button safe).
+  // Local echo keeps typing instant; the debounced value is written to the
+  // param — same pattern as Archive.tsx.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const q = searchParams.get("q") ?? "";
+  const [input, setInput] = useState(q);
+  useEffect(() => setInput(q), [q]);
+  useEffect(() => {
+    if (input === q) return;
+    const t = setTimeout(
+      () =>
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev);
+            if (input) next.set("q", input);
+            else next.delete("q");
+            return next;
+          },
+          { replace: true },
+        ),
+      SEARCH_DEBOUNCE_MS,
+    );
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [input]);
+  const searching = q.trim().length >= 2;
+  const { data: found, isLoading: searchLoading } = useSearchThreads(q);
 
   function handleNewThread() {
     openComposer({ mode: "newThread", boardId: DEFAULT_BOARD });
@@ -66,8 +98,36 @@ export function Boards() {
         </button>
       </div>
 
-      {/* board list — prototype lines 217-229 */}
-      {isLoading ? (
+      <div className="mb-3.5 flex items-center gap-[9px] rounded-xl border border-line2 bg-surface px-[13px] py-2.5">
+        <span aria-hidden="true" className="text-[15px] text-faint">
+          ⌕
+        </span>
+        <input
+          type="search"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="search all threads — titles, posts, replies…"
+          className="flex-1 border-0 bg-transparent font-mono text-[12.5px] text-ink outline-none placeholder:text-faint"
+        />
+      </div>
+
+      {searching ? (
+        searchLoading && !found ? (
+          <div className="font-mono text-[11px] text-faint">◉ scanning threads…</div>
+        ) : found?.threads.length ? (
+          <div className="flex flex-col gap-[10px]">
+            <div className="font-mono text-[10px] text-faint">
+              {found.threads.length === 50 ? "50+" : found.threads.length} threads match
+            </div>
+            {found.threads.map((t) => (
+              <ThreadRow key={t.id} thread={t} />
+            ))}
+          </div>
+        ) : (
+          <div className="font-mono text-[11px] text-faint">no threads match “{q.trim()}”</div>
+        )
+      ) : /* board list — prototype lines 217-229 */
+      isLoading ? (
         <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>
       ) : (
         <div className="flex flex-col gap-[10px]">

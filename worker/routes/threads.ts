@@ -35,6 +35,24 @@ export async function getThread(_req: Request, env: Env, p: Record<string, strin
   return json({ thread, sourceRecord, posts });
 }
 
+// Global search: title/OP or any reply contains q (case-insensitive, LIKE
+// wildcards escaped). ponytail: full LIKE scan, fine at board scale; move to
+// FTS5 if threads/posts grow into the 100k range.
+export async function searchThreads(req: Request, env: Env) {
+  const q = (new URL(req.url).searchParams.get("q") || "").trim().toLowerCase();
+  if (q.length < 2) return json({ threads: [] });
+  const like = "%" + q.replace(/[\\%_]/g, "\\$&") + "%";
+  const t = await env.DB.prepare(
+    `SELECT t.*, b.slug boardSlug, b.accent accent FROM threads t JOIN boards b ON b.id=t.board_id
+     WHERE lower(coalesce(t.title,'')||' '||coalesce(t.op_body,'')) LIKE ?1 ESCAPE '\\'
+        OR EXISTS (SELECT 1 FROM posts p WHERE p.thread_id=t.id AND lower(p.body) LIKE ?1 ESCAPE '\\')
+     ORDER BY t.created_at DESC LIMIT 50`
+  )
+    .bind(like)
+    .all<any>();
+  return json({ threads: t.results.map((x) => ({ ...x, ago: relAgo(x.created_at), tags: JSON.parse(x.tags || "[]") })) });
+}
+
 export async function createThread(req: Request, env: Env) {
   const { b, image } = await readBody(req);
   const op_body = typeof b.op_body === "string" ? b.op_body.trim() : "";

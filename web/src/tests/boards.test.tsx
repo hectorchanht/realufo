@@ -11,7 +11,7 @@
 // AppShell tree tests/util.tsx provides for other screens) — matches the
 // task brief ("Render within providers + MemoryRouter").
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import type { Board, BoardThreadsResponse, Bootstrap, ThreadCard } from "../api/types";
 import Boards from "../screens/Boards";
@@ -25,10 +25,12 @@ vi.mock("../overlays/OverlayProvider", () => ({
 
 const useBootstrapMock = vi.fn();
 const useBoardThreadsMock = vi.fn();
+const useSearchThreadsMock = vi.fn();
 
 vi.mock("../api/queries", () => ({
   useBootstrap: () => useBootstrapMock(),
   useBoardThreads: (id: string) => useBoardThreadsMock(id),
+  useSearchThreads: (q: string) => useSearchThreadsMock(q),
   useVote: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
@@ -103,9 +105,9 @@ const mockBoardThreadsResponse: BoardThreadsResponse = {
   threads: mockThreads,
 };
 
-function renderBoards() {
+function renderBoards(path = "/boards") {
   return render(
-    <MemoryRouter initialEntries={["/boards"]}>
+    <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/boards" element={<Boards />} />
         <Route path="/board/:slug" element={<div data-testid="board-page" />} />
@@ -128,6 +130,8 @@ beforeEach(() => {
   mockOpenComposer.mockReset();
   useBootstrapMock.mockReset();
   useBoardThreadsMock.mockReset();
+  useSearchThreadsMock.mockReset();
+  useSearchThreadsMock.mockReturnValue({ data: undefined, isLoading: false });
   useBootstrapMock.mockReturnValue({ data: mockBootstrap, isLoading: false });
   useBoardThreadsMock.mockReturnValue({ data: mockBoardThreadsResponse, isLoading: false });
 });
@@ -192,3 +196,37 @@ describe("Board", () => {
     expect(screen.queryByText(/board not found/i)).not.toBeInTheDocument();
   });
 });
+
+describe("Boards global thread search", () => {
+  beforeEach(() => useBootstrapMock.mockReturnValue({ data: mockBootstrap, isLoading: false }));
+
+  it("with no query shows the board list and no results", () => {
+    renderBoards();
+    expect(screen.getByPlaceholderText(/search all threads/i)).toHaveValue("");
+    expect(screen.queryByText(mockThreads[0].title)).toBeNull();
+    expect(screen.getAllByRole("link").length).toBeGreaterThanOrEqual(mockBoards.length);
+  });
+
+  it("?q= shows matching threads across boards in place of the board list", () => {
+    useSearchThreadsMock.mockReturnValue({ data: { threads: mockThreads }, isLoading: false });
+    renderBoards("/boards?q=coast");
+    expect(useSearchThreadsMock).toHaveBeenCalledWith("coast");
+    expect(screen.getByPlaceholderText(/search all threads/i)).toHaveValue("coast");
+    expect(screen.getByText(mockThreads[0].title)).toBeInTheDocument();
+    expect(screen.getByText(mockThreads[1].title)).toBeInTheDocument();
+    expect(screen.queryByText(mockBoards[1].name)).toBeNull();
+  });
+
+  it("shows an empty state when nothing matches", () => {
+    useSearchThreadsMock.mockReturnValue({ data: { threads: [] }, isLoading: false });
+    renderBoards("/boards?q=nothinghere");
+    expect(screen.getByText(/no threads match/i)).toBeInTheDocument();
+  });
+
+  it("debounces typing into the search query", async () => {
+    renderBoards();
+    fireEvent.change(screen.getByPlaceholderText(/search all threads/i), { target: { value: "radar" } });
+    await waitFor(() => expect(useSearchThreadsMock).toHaveBeenLastCalledWith("radar"));
+  });
+});
+

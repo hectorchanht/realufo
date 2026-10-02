@@ -110,3 +110,36 @@ describe("threads", () => {
     expect(r.status).toBe(400);
   });
 });
+
+describe("thread search (GET /api/threads?q=)", () => {
+  const search = async (q: string) => ((await (await call("/api/threads?q=" + encodeURIComponent(q))).json()) as any).threads;
+  let uapId: string, govId: string;
+
+  beforeAll(async () => {
+    uapId = ((await (await post("/api/threads", { board: "uap", title: "Glowing Zorblax over pier", op_body: "saw it" })).json()) as any).thread.id;
+    govId = ((await (await post("/api/threads", { board: "gov", title: "FOIA batch", op_body: "the zorblax memo" })).json()) as any).thread.id;
+    await post("/api/threads/t1/posts", { body: "only a reply mentions quuxcraft here" });
+  });
+
+  it("matches title and OP body case-insensitively, across boards, as ThreadCards", async () => {
+    const r = await search("ZORBLAX");
+    expect(r.map((t: any) => t.id).sort()).toEqual([uapId, govId].sort());
+    expect(r[0]).toHaveProperty("boardSlug");
+    expect(r[0]).toHaveProperty("ago");
+    expect(Array.isArray(r[0].tags)).toBe(true);
+  });
+
+  it("matches a thread whose only hit is in a reply", async () => {
+    expect((await search("quuxcraft")).map((t: any) => t.id)).toEqual(["t1"]);
+  });
+
+  it("treats % and _ as literal text, not wildcards", async () => {
+    expect(await search("%%")).toEqual([]);
+    expect(await search("__")).toEqual([]);
+  });
+
+  it("returns nothing for queries under 2 chars", async () => {
+    expect(await search("z")).toEqual([]);
+    expect(await search("")).toEqual([]);
+  });
+});
