@@ -199,23 +199,30 @@ export async function recordFacets(_req: Request, env: Env) {
   });
 }
 
-export async function getRecord(_req: Request, env: Env, p: Record<string, string>) {
+// The doc detail object, shared by GET /api/records/:id and the Worker's
+// pre-render of /doc/:id (lib/pages.ts). Null when the record doesn't exist.
+export async function loadRecord(env: Env, id: string) {
   const record = await env.DB.prepare("SELECT * FROM records WHERE id=?")
-    .bind(p.id)
+    .bind(id)
     .first<RecordRow>();
-  if (!record) return error(404, "record not found");
+  if (!record) return null;
   const releaseP = releaseOf(env, record);
   const [assets, promoted, series, release, related] = await Promise.all([
-    env.DB.prepare("SELECT role,cdn_url,mime,width,height FROM assets WHERE record_id=?").bind(p.id).all(),
+    env.DB.prepare("SELECT role,cdn_url,mime,width,height,duration FROM assets WHERE record_id=?").bind(id).all(),
     env.DB.prepare(
       `SELECT t.id,t.no,t.title,t.stance,t.votes,t.source_record_id,b.slug boardSlug,b.accent accent
                     FROM threads t JOIN boards b ON b.id=t.board_id WHERE t.source_record_id=?`
     )
-      .bind(p.id)
+      .bind(id)
       .all(),
-    seriesNav(env, p.id),
+    seriesNav(env, id),
     releaseP,
     releaseP.then((rel) => relatedOf(env, record, rel)),
   ]);
-  return json({ record, assets: assets.results, promotedThreads: promoted.results, series, release, related });
+  return { record, assets: assets.results, promotedThreads: promoted.results, series, release, related };
+}
+
+export async function getRecord(_req: Request, env: Env, p: Record<string, string>) {
+  const data = await loadRecord(env, p.id);
+  return data ? json(data) : error(404, "record not found");
 }

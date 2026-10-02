@@ -14,7 +14,8 @@ describe("sitemap", () => {
     expect(xml).toContain("<loc>https://realufo.org/archive</loc>");
     expect(xml).toMatch(/<loc>https:\/\/realufo\.org\/doc\/[^<]+<\/loc><lastmod>\d{4}-\d\d-\d\d<\/lastmod>/);
     expect(xml).toContain("/thread/");
-    expect(xml).toContain("/board/");
+    expect(xml).toContain("/board/uap</loc>");
+    expect(xml).not.toContain("%2F");
     expect(xml).toContain("/case/");
   });
 });

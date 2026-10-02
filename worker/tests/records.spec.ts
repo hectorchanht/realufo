@@ -2,11 +2,20 @@ import { env } from "cloudflare:test";
 import { describe, it, expect, beforeAll } from "vitest";
 import worker from "../index";
 import { seedTestDB } from "./helpers";
+import { loadRecord } from "../routes/records";
 
 beforeAll(() => seedTestDB(env.DB));
 const get = (p: string) => worker.fetch(new Request("https://x" + p), env as any, {} as any);
 
 describe("records", () => {
+  it("loadRecord returns the detail object, or null when missing", async () => {
+    expect(await loadRecord(env as any, "NOPE")).toBeNull();
+    const d: any = await loadRecord(env as any, "FBI-UAP-D002");
+    expect(d.record.id).toBe("FBI-UAP-D002");
+    expect(d.series.next).toBe("FBI-UAP-D003");
+    expect(d.related.some((g: any) => g.key === "location")).toBe(true);
+    expect(d.assets.every((a: any) => "duration" in a)).toBe(true);
+  });
   it("filters by archive and returns count", async () => {
     const j: any = await (await get("/api/records?archive=wargov")).json();
     expect(j.count).toBeGreaterThan(0);
