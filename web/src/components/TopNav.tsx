@@ -32,7 +32,7 @@ export function TopNav({ activeTab, canBack = false, onBack, onlineNow = 0, meLa
 
   return (
     <nav data-topnav className="flex flex-none items-center gap-5 border-b border-line bg-bg2 px-[26px] py-3">
-      <div className="flex flex-none items-center gap-[11px] border-r border-line pr-1.5">
+      <a href="/" className="flex flex-none items-center gap-[11px] border-r border-line pr-1.5">
         <div className="flex-none">
           <Saucer />
         </div>
@@ -42,7 +42,7 @@ export function TopNav({ activeTab, canBack = false, onBack, onlineNow = 0, meLa
           </div>
           <div className="mt-[5px] font-mono text-[8.5px] tracking-[1px] text-faint">DECLASSIFIED ARCHIVE</div>
         </div>
-      </div>
+      </a>
 
       <div className="flex flex-none items-center gap-1">
         {NAV_ITEMS.map((item) => {
