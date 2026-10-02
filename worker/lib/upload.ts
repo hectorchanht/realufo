@@ -2,10 +2,12 @@ import type { Env } from "../env";
 import { error } from "./json";
 
 // User-uploaded post images. Stored in R2 under `uploads/<uuid>.<ext>` and
-// served same-origin by GET /api/u/:name (routes/upload.ts).
+// served from UPLOAD_BASE: the cached R2 domain in prod (so Cloudflare's CSAM
+// Scanning Tool sees them), else same-origin GET /api/u/:name (routes/upload.ts).
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 export const UPLOAD_NAME_RE = /^[0-9a-f-]{36}\.(jpg|png|gif|webp)$/;
-export const uploadUrl = (key: string | null) => (key ? "/api/" + key.replace(/^uploads\//, "u/") : null);
+export const uploadUrl = (env: Env, key: string | null) =>
+  key ? (env.UPLOAD_BASE || "/api/u/") + key.replace(/^uploads\//, "") : null;
 
 // Type comes from magic bytes, never the client's Content-Type, so nothing but
 // these four raster formats (no SVG/HTML) can be stored or served.

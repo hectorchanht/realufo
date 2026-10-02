@@ -29,7 +29,7 @@ export async function getThread(_req: Request, env: Env, p: Record<string, strin
     isOp: !!x.is_op,
     ago: relAgo(x.created_at),
     handleShow: x.handle ? "!" + x.handle : null,
-    image_url: uploadUrl(x.image_r2_key),
+    image_url: uploadUrl(env, x.image_r2_key),
     reply_to: JSON.parse(x.reply_to || "[]"),
   }));
   return json({ thread, sourceRecord, posts });

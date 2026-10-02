@@ -33,7 +33,7 @@ export default defineConfig({
         wrangler: { configPath: "./wrangler.jsonc" },
         miniflare: {
           compatibilityFlags: ["nodejs_compat"],
-          bindings: { TEST_MIGRATIONS: migrations, TEST_SEED_SQL: seedStatements },
+          bindings: { TEST_MIGRATIONS: migrations, TEST_SEED_SQL: seedStatements, UPLOAD_BASE: "/api/u/" },
         },
       };
     }),

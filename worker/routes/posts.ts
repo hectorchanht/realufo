@@ -45,7 +45,7 @@ export async function createPost(req: Request, env: Env, p: Record<string, strin
         source_record_id: src,
         image_kind: imgKind,
         image_label: null,
-        image_url: uploadUrl(imageKey),
+        image_url: uploadUrl(env, imageKey),
         isOp: false,
         created_at,
         ago: "now",
