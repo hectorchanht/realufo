@@ -52,7 +52,7 @@ jobs:
           else
             python -m ingest.thumbs --dry-run --limit 1 | tee -a ingest-summary.txt
           fi
-      # X bot clips (Spec 4): 140 s-max MP4s at clips/<archive>/<id>.mp4 for new videos
+      # X bot clips (Spec 4): ≤30 s MP4s at clips/<archive>/<id>.mp4 for new videos
       - name: clips
         if: ${{ !cancelled() }}
         working-directory: crawler

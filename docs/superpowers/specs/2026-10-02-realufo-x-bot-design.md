@@ -148,11 +148,13 @@ uploads**. No media if no source record.
 
 For every live video record with no `clips/<archive>/<id>.mp4` on the CDN:
 
-- duration ≤ 140 s → whole video; else **60 s window starting at 35%** (same
-  offset as thumbs, skips DoD "Unclassified" slates).
+- **≤ 30 s clips** (user, 2026-10-02: short keeps people watching; the post links to
+  the full file): 30 s from 35% in (same offset as thumbs, skips DoD "Unclassified"
+  slates), pulled back to end inside the video; shorter videos go whole.
+  `--force` re-cuts existing clips after a length change.
 - ffmpeg: H.264 Main, `yuv420p`, ≤ 1280 px wide, ≤ 30 fps, `-maxrate 1.5M`,
   AAC 128k (or no audio track if source has none), `+faststart`.
-  ≤ 140 s × 1.5 Mb/s ≈ 26 MB worst case → ≤ 7 append calls.
+  30 s ≈ 6 MB → ≤ 2 append calls.
 - Reuse `thumbs.py` helpers (`probe_duration`, crop detection, R2 put).
 - `--dry-run`, `--limit N`, idempotent. One-time backfill of all 165 videos,
   then runs after `ingest.thumbs` in `.github/workflows/ingest.yml`.

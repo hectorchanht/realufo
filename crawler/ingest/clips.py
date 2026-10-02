@@ -4,16 +4,16 @@
     python3 -m ingest.clips                       # encode + R2 upload
 
 Output: clips/<archive>/<id>.mp4. The Worker bot treats the object's existence
-as "this video has a clip", so there is no D1 row. Videos up to 140 s (X's
-standard limit) go whole; longer ones get 60 s from 35% in (same offset as
-thumbs: skips the DoD "Unclassified" slates). Idempotent: existing clips skipped.
+as "this video has a clip", so there is no D1 row. Clips are ≤30 s (short, loopable;
+the post links to the full video): 30 s from 35% in (same offset as thumbs: skips
+the DoD "Unclassified" slates), pulled back so it ends inside the video.
+Idempotent: existing clips skipped unless --force (re-cut after a length change).
 """
 import argparse, os, subprocess, sys, tempfile
 from . import d1, fetch, r2
 from .models import R2_BASE
 
-MAX_WHOLE = 140.0
-WINDOW = 60.0
+CLIP = 30.0
 
 SELECT = """SELECT r.id, r.archive, a.cdn_url, a.duration FROM records r
 JOIN assets a ON a.record_id=r.id AND a.role='full'
@@ -24,9 +24,9 @@ def key(row) -> str:
 
 def window(duration):
     """(start, length) in seconds."""
-    if not duration or duration <= MAX_WHOLE:
-        return 0.0, MAX_WHOLE
-    return round(duration * 0.35, 2), WINDOW
+    if not duration or duration <= CLIP:
+        return 0.0, CLIP
+    return round(min(duration * 0.35, duration - CLIP), 2), CLIP
 
 def ffmpeg_args(url, start, length, out):
     return ["ffmpeg", "-v", "error", "-y", "-ss", f"{start:.2f}", "-i", url, "-t", f"{length:.2f}",
@@ -36,13 +36,13 @@ def ffmpeg_args(url, start, length, out):
             "-crf", "23", "-maxrate", "1500k", "-bufsize", "3000k",
             "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-movflags", "+faststart", out]
 
-def todo(rows, exists=fetch.head_ok, limit=None):
+def todo(rows, exists=fetch.head_ok, limit=None, force=False):
     seen, out = set(), []
     for r in rows:
         if r["id"] in seen:
             continue
         seen.add(r["id"])
-        if exists(f"{R2_BASE}/{key(r)}"):
+        if not force and exists(f"{R2_BASE}/{key(r)}"):
             continue
         out.append(r)
         if limit and len(out) >= limit:
@@ -53,9 +53,10 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="encode to --out only; no R2 upload")
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--force", action="store_true", help="re-cut clips that already exist")
     ap.add_argument("--out", default=os.path.join(tempfile.gettempdir(), "realufo-clips"))
     args = ap.parse_args(argv)
-    rows = todo(d1._d1_json(" ".join(SELECT.split())), limit=args.limit)
+    rows = todo(d1._d1_json(" ".join(SELECT.split())), limit=args.limit, force=args.force)
     os.makedirs(args.out, exist_ok=True)
     done = failed = 0
     for i, row in enumerate(rows, 1):
