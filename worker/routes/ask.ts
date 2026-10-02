@@ -8,7 +8,7 @@ import { hubsFor } from "../lib/hubs";
 import { listHubsCached } from "./hubs";
 import {
   ASK_EMBED_MODEL, ASK_LLM_MODEL, ASK_TOP_K, NOT_COVERED, RESTING,
-  askHref, normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, type AskChunk,
+  askHref, askIdOf, normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, type AskChunk,
 } from "../lib/ask";
 
 type Hydrated = { id: string; title: string; kind: string; thumb: string | null };
@@ -169,10 +169,44 @@ async function answer(env: Env, q: string, min: number) {
 // one entry per distinct question. Free: no AI, no rate row.
 export async function recentAsks(_req: Request, env: Env) {
   if (env.FEATURE_ASK !== "on" && env.FEATURE_ASK !== "hidden") return error(503, RESTING);
+  // One entry per question, newest share first, pointing at the question's
+  // canonical row: the earliest public row with a stored answer (else the newest).
   const rows = await env.DB.prepare(
-    `SELECT question, sources, created_at asked_at FROM ask_log WHERE id IN (
-       SELECT max(id) FROM ask_log WHERE public=1 GROUP BY lower(question)
-     ) ORDER BY id DESC LIMIT 20`
-  ).all<{ question: string; sources: number; asked_at: string }>();
-  return json({ recent: rows.results });
+    `SELECT a.id, a.question, a.sources, a.created_at asked_at, a.answer IS NOT NULL has_answer
+     FROM (SELECT max(id) last, COALESCE(min(CASE WHEN answer IS NOT NULL THEN id END), max(id)) pick
+           FROM ask_log WHERE public=1 GROUP BY lower(question)) g
+     JOIN ask_log a ON a.id = g.pick
+     ORDER BY g.last DESC LIMIT 20`
+  ).all<{ id: number; question: string; sources: number; asked_at: string; has_answer: number }>();
+  return json({
+    recent: rows.results.map(({ has_answer, ...r }) => ({ ...r, url: has_answer ? askHref(r.id, r.question) : null })),
+  });
+}
+
+export type SharedAskSource = { n: number; record_id: string; title: string; page: number; kind: string; thumb: string | null };
+export type SharedAsk = { id: number; question: string; answer: string; sources: SharedAskSource[]; asked_at: string; url: string };
+
+// A shared answer exactly as frozen in ask_log (Spec 8 §1.5). Private rows, rows
+// from before answers were stored, and unreadable JSON are all "not found".
+export async function loadSharedAsk(env: Env, id: number | null): Promise<SharedAsk | null> {
+  if (!id) return null;
+  const row = await env.DB.prepare("SELECT id, question, answer, created_at FROM ask_log WHERE id=? AND public=1 AND answer IS NOT NULL")
+    .bind(id)
+    .first<{ id: number; question: string; answer: string; created_at: string }>();
+  if (!row) return null;
+  try {
+    const a = JSON.parse(row.answer);
+    if (typeof a?.answer !== "string" || !Array.isArray(a.sources)) return null;
+    return { id: row.id, question: row.question, answer: a.answer, sources: a.sources, asked_at: row.created_at, url: askHref(row.id, row.question) };
+  } catch {
+    return null;
+  }
+}
+
+// GET /api/asks/:id — free (no AI, no rate row) and not behind FEATURE_ASK:
+// indexed pages must not vanish when new asks are paused.
+export async function getSharedAsk(req: Request, env: Env, params: Record<string, string>) {
+  const a = await loadSharedAsk(env, askIdOf(params.id));
+  if (!a) return error(404, "not found");
+  return json({ ...a, sources: await withHubs(env, req, a.sources) }, { headers: { "cache-control": "public, max-age=300" } });
 }

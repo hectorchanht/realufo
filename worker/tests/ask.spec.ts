@@ -251,8 +251,23 @@ const recent = (extra: Record<string, unknown> = {}) =>
   worker.fetch(new Request("https://x/api/ask/recent"), { ...env, FEATURE_ASK: "on", AI, VECTORIZE, ...extra } as any, {} as any);
 
 describe("GET /api/ask/recent", () => {
-  const put = (question: string, pub: number, sources = 1) =>
-    env.DB.prepare("INSERT INTO ask_log(question,actor_id,sources,public) VALUES(?,'a',?,?)").bind(question, sources, pub);
+  const put = (question: string, pub: number, sources = 1, answer: string | null = null) =>
+    env.DB.prepare("INSERT INTO ask_log(question,actor_id,sources,public,answer) VALUES(?,'a',?,?,?)").bind(question, sources, pub, answer);
+
+  it("each entry links the earliest answered public row of its question; unanswered rows get no url", async () => {
+    const a = JSON.stringify({ answer: "x [1]", sources: [] });
+    await env.DB.batch([
+      put("Gimbal video?", 1, 1, a),
+      put("gimbal video?", 1, 1, a),
+      put("Old question", 1, 1, null),
+    ]);
+    const ids = (await env.DB.prepare("SELECT id FROM ask_log ORDER BY id").all<{ id: number }>()).results.map((r) => r.id);
+    const b = await body(await recent());
+    expect(b.recent).toEqual([
+      expect.objectContaining({ id: ids[2], question: "Old question", url: null }),
+      expect.objectContaining({ id: ids[0], question: "Gimbal video?", url: `/ask/${ids[0]}-gimbal-video` }),
+    ]);
+  });
 
   it("lists only shared questions, newest first, one per distinct question, no AI calls", async () => {
     await env.DB.batch([
@@ -283,5 +298,45 @@ describe("GET /api/ask/recent", () => {
   it("returns 503 when FEATURE_ASK is off, serves when hidden", async () => {
     expect((await recent({ FEATURE_ASK: "off" })).status).toBe(503);
     expect((await recent({ FEATURE_ASK: "hidden" })).status).toBe(200);
+  });
+});
+
+const sharedAsk = (id: string, extra: Record<string, unknown> = {}) =>
+  worker.fetch(new Request(`https://x/api/asks/${id}`), { ...env, FEATURE_ASK: "on", AI, VECTORIZE, ...extra } as any, {} as any);
+
+describe("GET /api/asks/:id", () => {
+  const frozen = JSON.stringify({
+    answer: "Radar tracked it [1].",
+    sources: [{ n: 1, record_id: "FBI-UAP-D002", title: "FBI file", page: 1, kind: "pdf", thumb: null }],
+  });
+  const put = (question: string, pub: number, answer: string | null) =>
+    env.DB.prepare("INSERT INTO ask_log(question,actor_id,sources,public,answer) VALUES(?,'a',1,?,?) RETURNING id")
+      .bind(question, pub, answer)
+      .first<{ id: number }>();
+
+  it("returns a shared answer with live hub links and its URL, without AI calls", async () => {
+    const row = await put("What did the FBI report?", 1, frozen);
+    aiCalls = [];
+    const r = await sharedAsk(`${row!.id}-what-did-the-fbi-report`);
+    expect(r.status).toBe(200);
+    expect(r.headers.get("cache-control")).toBe("public, max-age=300");
+    const b = await body(r);
+    expect(b).toMatchObject({ id: row!.id, question: "What did the FBI report?", answer: "Radar tracked it [1].", url: `/ask/${row!.id}-what-did-the-fbi-report` });
+    expect(typeof b.asked_at).toBe("string");
+    expect(b.sources[0]).toMatchObject({ record_id: "FBI-UAP-D002", hubs: { agency: "fbi" } });
+    expect(aiCalls).toEqual([]);
+  });
+
+  it("404s for private, unanswered, corrupt, unknown and non-numeric ids", async () => {
+    const priv = await put("private one", 0, frozen);
+    const old = await put("old one", 1, null);
+    const bad = await put("corrupt one", 1, "{not json");
+    for (const id of [String(priv!.id), String(old!.id), String(bad!.id), "999999", "abc", "x-1"])
+      expect((await sharedAsk(id)).status).toBe(404);
+  });
+
+  it("still serves shared answers when FEATURE_ASK is off", async () => {
+    const row = await put("flag off question", 1, frozen);
+    expect((await sharedAsk(String(row!.id), { FEATURE_ASK: "off" })).status).toBe(200);
   });
 });
