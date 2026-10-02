@@ -8,7 +8,11 @@ export type HubKind = "release" | "agency" | "location" | "decade";
 export const HUB_KINDS: HubKind[] = ["release", "agency", "location", "decade"];
 export const MIN_HUB_FILES = 5;
 
-export interface HubSummary { kind: HubKind; slug: string; label: string; count: number }
+export interface HubSummary {
+  kind: HubKind; slug: string; label: string; count: number;
+  /** Agency/location hubs: the raw D1 values they cover (lets the Archive map a filter to its hub). */
+  values?: string[];
+}
 export interface HubStats { files: number; pdf: number; video: number; image: number; from: string | null; to: string | null }
 export type HubLinks = Partial<Record<HubKind, string>>;
 type Entry = { slug: string; label: string; phrase: string; values: string[] };

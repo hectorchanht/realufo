@@ -3,6 +3,9 @@ import { json, error } from "../lib/json";
 import { thumbSql } from "../lib/db";
 import { allowWrite } from "../lib/ratelimit";
 import { actorId } from "../lib/anon";
+import { isoDate, wargovReleases } from "../lib/facets";
+import { hubsFor } from "../lib/hubs";
+import { listHubsCached } from "./hubs";
 import {
   ASK_EMBED_MODEL, ASK_LLM_MODEL, ASK_TOP_K, NOT_COVERED, RESTING,
   normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, type AskChunk,
@@ -28,7 +31,7 @@ export async function ask(req: Request, env: Env) {
     const b = JSON.parse(hit.answer);
     // Cache hits skip the limiter, so log one only if the browser is under its own limit.
     const log_id = (await allowWrite(env, req, "ask_hit")) ? await logAsk(env, req, q, b.sources?.length ?? 0, true) : null;
-    return json({ ...b, cached: true, log_id });
+    return json({ ...b, sources: await withHubs(env, req, b.sources ?? []), cached: true, log_id });
   }
 
   // allowWrite records a browser row AND an `ip:` row per request; count browser rows only.
@@ -51,7 +54,45 @@ export async function ask(req: Request, env: Env) {
       env.DB.prepare("DELETE FROM ask_cache WHERE created_at < datetime('now','-7 days')"),
       env.DB.prepare("INSERT OR REPLACE INTO ask_cache(key,answer) VALUES(?,?)").bind(key, JSON.stringify(body)),
     ]);
-  return json({ ...body, cached: false, log_id: await logAsk(env, req, q, body.sources.length, false) });
+  return json({
+    ...body,
+    sources: await withHubs(env, req, body.sources),
+    cached: false,
+    log_id: await logAsk(env, req, q, body.sources.length, false),
+  });
+}
+
+// Hub links per source (hub pages Task 5b). Added per response, never stored in
+// ask_cache, so cached answers follow the live hub list. Garnish only: any
+// failure returns the sources unchanged.
+async function withHubs(env: Env, req: Request, sources: unknown[]) {
+  const list = sources as { record_id: string }[];
+  if (!list.length) return sources;
+  try {
+    const ids = [...new Set(list.map((s) => s.record_id))];
+    const [rows, hubList, releases] = await Promise.all([
+      env.DB.prepare(
+        `SELECT id,agency,location,incident_date,archive,doc_date FROM records WHERE id IN (${ids.map(() => "?").join(",")})`
+      )
+        .bind(...ids)
+        .all<{ id: string; agency: string | null; location: string | null; incident_date: string | null; archive: string; doc_date: string | null }>(),
+      listHubsCached(env, new URL(req.url).origin),
+      wargovReleases(env),
+    ]);
+    const live = new Set(hubList.map((h) => `${h.kind}/${h.slug}`));
+    const byId = new Map(rows.results.map((r) => [r.id, r]));
+    return list.map((s) => {
+      const r = byId.get(s.record_id);
+      if (!r) return s;
+      // Same rule as records.ts releaseOf: a war.gov file's doc_date is its release date.
+      const date = r.archive === "wargov" && r.doc_date ? isoDate(r.doc_date) : null;
+      const release = date ? (releases.find((x) => x.date === date)?.no ?? null) : null;
+      return { ...s, hubs: hubsFor(r, release, live) };
+    });
+  } catch (e) {
+    console.error("ask hub links failed", e);
+    return sources;
+  }
 }
 
 async function logAsk(env: Env, req: Request, q: string, sources: number, cached: boolean) {

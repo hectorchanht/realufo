@@ -39,6 +39,17 @@ beforeEach(async () => {
 });
 
 describe("GET /api/ask", () => {
+  it("sources link their live hubs, on fresh answers and on cache hits", async () => {
+    matches = [hit("FBI-UAP-D002", 1)];
+    const fresh = await body(await ask("what did the fbi report?"));
+    expect(fresh.sources[0].hubs).toEqual({ agency: "fbi", release: "2", decade: "2020s" });
+    const row = await env.DB.prepare("SELECT answer FROM ask_cache").first<{ answer: string }>();
+    expect(JSON.parse(row!.answer).sources[0].hubs).toBeUndefined(); // links are not frozen into the cache
+    const again = await body(await ask("what did the fbi report?"));
+    expect(again.cached).toBe(true);
+    expect(again.sources[0].hubs).toEqual({ agency: "fbi", release: "2", decade: "2020s" });
+  });
+
   it("answers with hydrated, cited sources and caches the answer", async () => {
     const r = await ask("what did radar see?");
     expect(r.status).toBe(200);

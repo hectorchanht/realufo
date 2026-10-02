@@ -137,3 +137,11 @@ describe("final-review fixes", () => {
     expect(await (await call("/sitemap.xml")).text()).not.toContain("/agency/nasa<");
   });
 });
+
+describe("hub values for client-side filter mapping (Task 5b)", () => {
+  it("agency and location hubs list their raw values; release/decade don't", async () => {
+    const { hubs } = (await (await call("/api/hubs")).json()) as any;
+    expect(hubs.find((h: any) => h.slug === "department-of-war").values).toEqual(["DoW", "Department of War"]);
+    expect(hubs.find((h: any) => h.kind === "release").values).toBeUndefined();
+  });
+});
