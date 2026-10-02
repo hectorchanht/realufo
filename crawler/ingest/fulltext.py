@@ -22,7 +22,8 @@ CAP = 30000
 MIN_ALNUM = 200
 MIN_RATIO = 0.65  # tuned 2026-10-02: <0.6 unreadable OCR, ~0.7 noisy but readable
 FLUSH_EVERY = 25
-WORD = re.compile(r"""^[("']?[A-Za-z][a-z]*(?:[-'][a-z]+)?[.,;:)"'?!]*$|^\d[\d,./-]*[.,;:]?$""")
+# A word: Capitalized/lowercase or ALL-CAPS (teletypes, cables), optional -/' part.
+WORD = re.compile(r"""^[("']?(?:[A-Z]+|[A-Za-z][a-z]*)(?:[-'][A-Za-z]+)?[.,;:)"'?!]*$|^\d[\d,./-]*[.,;:]?$""")
 
 def clean_page(text: str) -> str:
     t = re.sub(r"[ \t]+", " ", text)

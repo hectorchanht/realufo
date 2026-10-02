@@ -7,7 +7,7 @@ CLEAN = " ".join(f"The witness reported a bright object over the runway at {i} h
 def test_word_ratio_separates_garbled_from_noisy_but_readable_ocr():
     garbled = (FIX / "ocr-1946-p3.txt").read_text(encoding="utf-8")
     readable = (FIX / "ocr-1946-p20.txt").read_text(encoding="utf-8")
-    assert fulltext.word_ratio(garbled) < 0.6
+    assert fulltext.word_ratio(garbled) < fulltext.MIN_RATIO
     assert fulltext.word_ratio(readable) >= 0.65
     assert not fulltext.keep_page(fulltext.clean_page(garbled))
     assert fulltext.keep_page(fulltext.clean_page(readable))
@@ -100,3 +100,11 @@ def test_dry_run_writes_nothing(world):
     world["rows"] = [{"id": "P1", "url": "u1"}]
     assert run("--dry-run") == 0
     assert world["applied"] == []
+
+def test_all_caps_teletype_counts_as_words():
+    tty = " ".join(
+        "URGENT FROM COMMANDER AIR DEFENSE COMMAND TO FBI WASHINGTON. UNIDENTIFIED OBJECT SIGHTED "
+        f"OVER BASE AT {i} HOURS, ROUND, SILVER, NO SOUND. REQUEST INSTRUCTIONS." for i in range(6)
+    )
+    assert fulltext.word_ratio(tty) >= 0.9
+    assert fulltext.keep_page(tty)
