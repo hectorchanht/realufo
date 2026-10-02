@@ -172,6 +172,7 @@ export interface RecordFull {
   status: "pending" | "fetched" | "processed" | "live" | "failed";
   checksum: string | null;
   created_at: string;
+  ai_moments?: string | null; // JSON written by crawler/ingest/moments.py
 }
 
 export interface Asset {

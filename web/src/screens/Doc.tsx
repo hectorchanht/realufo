@@ -36,7 +36,7 @@ import type { RecordKind, RelatedGroup } from "../api/types";
 import { DocCard } from "../components/DocCard";
 import { DEFAULT_ADJUST, LENS_MAGS, MediaFilters, MediaToolbar, ZoomLens, adjustFilter } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
-import { parseKeyMoments } from "../lib/keyMoments";
+import { parseAiMoments, parseKeyMoments } from "../lib/keyMoments";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
 import { useOverlay } from "../overlays/OverlayProvider";
@@ -187,6 +187,7 @@ export function Doc() {
   const startAt = parseMoment(searchParams.get("t")) ?? undefined;
   // Official time-coded "Video Description" lines → key moments (the rest stays as summary prose).
   const keyMoments = useMemo(() => parseKeyMoments(detail?.record.summary), [detail]);
+  const aiMoments = useMemo(() => parseAiMoments(detail?.record.ai_moments), [detail]);
 
   // Panel chrome (badge, REDACTED, counter, arrows) fades out after a few
   // idle seconds so it never sits over the picture/video; any pointer
@@ -588,8 +589,8 @@ export function Doc() {
           (or Shift+wheel) · Ctrl/⌘+wheel or pinch zoom, drag to pan · 0 reset · I invert · R rotate · F flip
         </p>
       )}
-      {media === "video" && keyMoments.moments.length > 0 && (
-        <KeyMoments moments={keyMoments.moments} videoRef={videoRef} onSeek={seekTo} />
+      {media === "video" && (keyMoments.moments.length > 0 || aiMoments.length > 0) && (
+        <KeyMoments official={keyMoments.moments} ai={aiMoments} videoRef={videoRef} onSeek={seekTo} />
       )}
 
       {/* chips row — prototype line 358 */}

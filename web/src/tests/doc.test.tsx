@@ -533,6 +533,66 @@ describe("Doc", () => {
     expect(screen.queryByRole("region", { name: "Key moments" })).toBeNull();
   });
 
+  const AI = JSON.stringify({ model: "m", generated_at: "t", moments: [{ start: 0, end: 30, text: "A light source drifts right." }, { start: 30, end: 60, text: "The sensor zooms out." }] });
+
+  it("AI key moments: Official default, toggle to AI shows AI rows + amber label, choice remembered", () => {
+    localStorage.removeItem?.("ru:moments-src");
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "video", summary: "Report.\n\nVideo Description:\n00:00-00:04: The sensor pans.", ai_moments: AI },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/clip.mp4", mime: "video/mp4", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    const { unmount } = renderDoc();
+    const box = screen.getByRole("region", { name: "Key moments" });
+    expect(box).toHaveTextContent("The sensor pans.");
+    expect(box).toHaveTextContent("from the official video description");
+    fireEvent.click(screen.getByRole("button", { name: "AI" }));
+    expect(box).toHaveTextContent("A light source drifts right.");
+    expect(box).toHaveTextContent("AI-generated from video frames · may be inaccurate");
+    expect(screen.getByRole("button", { name: "AI" })).toHaveAttribute("aria-pressed", "true");
+    unmount();
+    renderDoc();
+    expect(screen.getByRole("region", { name: "Key moments" })).toHaveTextContent("A light source drifts right.");
+    localStorage.removeItem?.("ru:moments-src");
+  });
+
+  it("AI-only video shows the AI list without a toggle", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "video", summary: "Archival footage.", ai_moments: AI },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/clip.mp4", mime: "video/mp4", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    const box = screen.getByRole("region", { name: "Key moments" });
+    expect(box).toHaveTextContent("The sensor zooms out.");
+    expect(box).toHaveTextContent("AI-generated from video frames · may be inaccurate");
+    expect(screen.queryByRole("button", { name: "Official" })).toBeNull();
+  });
+
+  it("toggle still works when localStorage throws", () => {
+    const get = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
+    const set = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "video", summary: "R.\n\nVideo Description:\n00:00-00:04: The sensor pans.", ai_moments: AI },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/clip.mp4", mime: "video/mp4", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    fireEvent.click(screen.getByRole("button", { name: "AI" }));
+    expect(screen.getByRole("region", { name: "Key moments" })).toHaveTextContent("A light source drifts right.");
+    get.mockRestore();
+    set.mockRestore();
+  });
+
   it("no image tools on non-image records", () => {
     renderDoc();
     expect(screen.queryByRole("button", { name: /adjust/i })).toBeNull();

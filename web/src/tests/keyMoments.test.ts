@@ -57,3 +57,23 @@ describe("parseKeyMoments", () => {
     expect(parseKeyMoments(null)).toEqual({ prose: "", moments: [] });
   });
 });
+import { parseAiMoments } from "../lib/keyMoments";
+
+describe("parseAiMoments", () => {
+  it("reads the stored JSON document", () => {
+    const raw = JSON.stringify({ model: "m", generated_at: "t", moments: [{ start: 0, end: 4.5, text: "Pan right." }, { start: 4.5, end: 9, text: "Zoom in." }] });
+    expect(parseAiMoments(raw)).toEqual([
+      { start: 0, end: 4.5, text: "Pan right." },
+      { start: 4.5, end: 9, text: "Zoom in." },
+    ]);
+  });
+
+  it("drops invalid entries and never throws on bad input", () => {
+    const raw = JSON.stringify({ moments: [{ start: "x", end: 2, text: "a" }, { start: 5, end: 3, text: "b" }, { start: 1, end: 2 }, { start: 2, end: 3, text: "ok" }] });
+    expect(parseAiMoments(raw)).toEqual([{ start: 2, end: 3, text: "ok" }]);
+    expect(parseAiMoments("{not json")).toEqual([]);
+    expect(parseAiMoments(JSON.stringify({ moments: "nope" }))).toEqual([]);
+    expect(parseAiMoments(null)).toEqual([]);
+    expect(parseAiMoments(undefined)).toEqual([]);
+  });
+});

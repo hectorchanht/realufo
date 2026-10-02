@@ -37,3 +37,24 @@ export function parseKeyMoments(summary: string | null | undefined): { prose: st
   moments.sort((a, b) => a.start - b.start || (a.end ?? a.start) - (b.end ?? b.start));
   return { prose, moments };
 }
+
+/** records.ai_moments JSON → moments; invalid entries dropped, never throws. */
+export function parseAiMoments(raw: string | null | undefined): KeyMoment[] {
+  if (!raw) return [];
+  let doc: unknown;
+  try {
+    doc = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  const list = (doc as { moments?: unknown } | null)?.moments;
+  if (!Array.isArray(list)) return [];
+  return list.flatMap((m) => {
+    const { start, end, text } = (m ?? {}) as { start?: unknown; end?: unknown; text?: unknown };
+    const ok =
+      typeof start === "number" && Number.isFinite(start) && start >= 0 &&
+      typeof end === "number" && Number.isFinite(end) && end >= start &&
+      typeof text === "string" && text.trim() !== "";
+    return ok ? [{ start, end, text: text.trim() }] : [];
+  });
+}

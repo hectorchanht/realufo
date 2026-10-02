@@ -363,15 +363,37 @@ function LensCanvas({ videoRef, hit, filter }: { videoRef: RefObject<HTMLVideoEl
  * seek; the moment under the playhead is highlighted and kept in view while
  * playing. Scrolls inside its own box so long lists don't push the page.
  */
+const SRC_KEY = "ru:moments-src";
+
 export function KeyMoments({
-  moments,
+  official,
+  ai,
   videoRef,
   onSeek,
 }: {
-  moments: KeyMoment[];
+  official: KeyMoment[];
+  ai: KeyMoment[];
   videoRef: RefObject<HTMLVideoElement | null>;
   onSeek: (t: number) => void;
 }) {
+  const [src, setSrc] = useState<"official" | "ai">(() => {
+    try {
+      return localStorage.getItem(SRC_KEY) === "ai" ? "ai" : "official";
+    } catch {
+      return "official";
+    }
+  });
+  const both = official.length > 0 && ai.length > 0;
+  const isAi = ai.length > 0 && (src === "ai" || official.length === 0);
+  const moments = isAi ? ai : official;
+  function choose(next: "official" | "ai") {
+    setSrc(next);
+    try {
+      localStorage.setItem(SRC_KEY, next);
+    } catch {
+      /* private mode etc.: the choice lasts for this page only */
+    }
+  }
   const [active, setActive] = useState(-1);
   const list = useRef<HTMLOListElement>(null);
 
@@ -401,9 +423,28 @@ export function KeyMoments({
 
   return (
     <section aria-label="Key moments" className="mb-3.5 rounded-xl border border-line bg-surface">
-      <div className="flex items-baseline justify-between px-3.5 pb-1.5 pt-3">
-        <h2 className="font-mono text-[10px] font-bold tracking-[.6px] text-signal">KEY MOMENTS</h2>
-        <span className="font-mono text-[8.5px] text-faint">from the official video description</span>
+      <div className="flex flex-wrap items-baseline justify-between gap-2 px-3.5 pb-1.5 pt-3">
+        <div className="flex items-center gap-2">
+          <h2 className="font-mono text-[10px] font-bold tracking-[.6px] text-signal">KEY MOMENTS</h2>
+          {both && (
+            <span className="flex gap-1">
+              {(["official", "ai"] as const).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  aria-pressed={(k === "ai") === isAi}
+                  onClick={() => choose(k)}
+                  className={`${chip} ${(k === "ai") === isAi ? on : off} px-[7px] py-[2px] text-[9px]`}
+                >
+                  {k === "ai" ? "AI" : "Official"}
+                </button>
+              ))}
+            </span>
+          )}
+        </div>
+        <span className={`font-mono text-[8.5px] ${isAi ? "text-amber" : "text-faint"}`}>
+          {isAi ? "AI-generated from video frames · may be inaccurate" : "from the official video description"}
+        </span>
       </div>
       <ol ref={list} className="relative max-h-[260px] overflow-y-auto px-1.5 pb-1.5">
         {moments.map((m, i) => (
@@ -417,6 +458,11 @@ export function KeyMoments({
               <span className={`flex-none pt-px font-mono text-[10.5px] tabular-nums ${i === active ? "text-signal" : "text-dim"}`}>
                 ▶ {formatMoment(m.start, true).slice(0, 5)}
               </span>
+              {isAi && (
+                <span className="flex-none self-start rounded border border-amber px-1 font-mono text-[8px] leading-[14px] text-amber">
+                  AI
+                </span>
+              )}
               <span className={`text-[12.5px] leading-[1.5] ${i === active ? "text-ink" : "text-dim"}`}>{m.text}</span>
             </button>
           </li>
