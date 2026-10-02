@@ -63,6 +63,23 @@ describe("injectMeta", () => {
   });
 });
 
+describe("injectMeta default block", () => {
+  it("replaces the whole <!--META-->…<!--/META--> default block", () => {
+    const out = injectMeta('<head><!--META--><meta name="description" content="default"><!--/META--></head>', {
+      title: "T",
+      description: "",
+      url: "https://r/archive",
+      type: "website",
+    });
+    expect(out).not.toContain('content="default"');
+    expect(out).not.toContain("META-->");
+    expect(out).toContain('property="og:type" content="website"');
+    expect(out).toContain('<link rel="canonical" href="https://r/archive">');
+    // empty description falls back to the site default, never content=""
+    expect(out).not.toContain('content=""');
+  });
+});
+
 describe("serveWithMeta (via worker.fetch)", () => {
   const fakeAssets = {
     fetch: async () =>
@@ -98,6 +115,27 @@ describe("serveWithMeta (via worker.fetch)", () => {
     await waitOnExecutionContext(ctx);
     const html = await res.text();
     expect(html).toContain("<!--META-->");
+  });
+
+  it("injects fixed meta for a tab screen like /archive", async () => {
+    const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(new Request("https://x/archive", { headers: { accept: "text/html" } }), fakeEnv, ctx);
+    await waitOnExecutionContext(ctx);
+    const html = await res.text();
+    expect(html).toContain("<title>The Archive · RealUFO</title>");
+    expect(html).toContain('property="og:url" content="https://x/archive"');
+    expect(html).toContain('property="og:image" content="https://x/og.png"');
+  });
+
+  it("injects board meta for /board/:slug (bare slug in URL)", async () => {
+    const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(new Request("https://x/board/uap", { headers: { accept: "text/html" } }), fakeEnv, ctx);
+    await waitOnExecutionContext(ctx);
+    const html = await res.text();
+    expect(html).toContain("<title>UAP General · RealUFO</title>");
+    expect(html).toContain("Sightings, encounters, general discussion");
   });
 
   it("passes through non-meta GET routes to ASSETS unchanged", async () => {
