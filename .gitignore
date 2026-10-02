@@ -16,3 +16,7 @@ __pycache__/
 # local CLI credentials (wrangler + ingest indexer) — never commit
 .env
 .env.*
+
+# agent worktrees + SDD scratch
+.claude/worktrees/
+.superpowers/
