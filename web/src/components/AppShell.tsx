@@ -38,7 +38,7 @@ import { OverlayHost } from "../overlays/OverlayProvider";
 import { TopNav } from "./TopNav";
 import { AppBar } from "./AppBar";
 import { BottomTab } from "./BottomTab";
-import { activeTabForPath, canBackForPath, rememberTabUrl } from "./navItems";
+import { activeTabForPath, canBackForPath, goBack, rememberTabUrl } from "./navItems";
 
 export function AppShell() {
   const isDesktop = useMediaQuery("(min-width:900px)");
@@ -106,7 +106,7 @@ export function AppShell() {
             style={{ "--bnav-y": navHidden ? "0px" : "var(--bnav-h, 0px)" } as CSSProperties}
           >
             {isDesktop && (
-              <TopNav activeTab={activeTab} canBack={canBack} onBack={() => navigate(-1)} />
+              <TopNav activeTab={activeTab} canBack={canBack} onBack={() => goBack(navigate, pathname)} />
             )}
 
             <main
@@ -116,7 +116,7 @@ export function AppShell() {
               style={{ WebkitOverflowScrolling: "touch" }}
             >
               {!isDesktop && (
-                <AppBar canBack={canBack} onBack={() => navigate(-1)} showBrand={!canBack} hidden={navHidden} />
+                <AppBar canBack={canBack} onBack={() => goBack(navigate, pathname)} showBrand={!canBack} hidden={navHidden} />
               )}
 
               <div
