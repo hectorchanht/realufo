@@ -179,6 +179,43 @@ describe("Thread", () => {
     expect(mockOpenComposer).toHaveBeenCalledWith({ mode: "reply", threadId: "th1" });
   });
 
+  // Quote links need real-looking Nos (the regex wants 4-10 digits; the fixture's 42/43 are too short).
+  const withNos = (body2: string) => ({
+    ...mockThreadDetail,
+    posts: [
+      { ...mockThreadDetail.posts[0], no: 24420001 },
+      { ...mockThreadDetail.posts[1], no: 24420002, body: body2 },
+    ],
+  });
+
+  it(">>No in a body links to that post and the quoted post lists a backlink", () => {
+    useThreadMock.mockReturnValue({ data: withNos(">>24420001 good point"), isLoading: false });
+    const { container } = renderThread();
+    const links = screen.getAllByRole("link", { name: ">>24420001" });
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute("href", "#p24420001");
+    // OP row (#p24420001) shows "↳ >>24420002" for the reply
+    const op = container.querySelector("#p24420001")!;
+    expect(op.textContent).toContain("↳");
+    expect(op.querySelector('a[href="#p24420002"]')).toHaveTextContent(">>24420002");
+  });
+
+  it(">>No for a post not in the thread stays plain text", () => {
+    useThreadMock.mockReturnValue({ data: withNos("re >>99999999 ok"), isLoading: false });
+    const { container } = renderThread();
+    expect(screen.queryByRole("link", { name: ">>99999999" })).toBeNull();
+    expect(container.textContent).toContain("re >>99999999 ok");
+  });
+
+  it('"↩ reply" on a post opens the composer pre-filled with its >>No', () => {
+    useThreadMock.mockReturnValue({ data: withNos("hi"), isLoading: false });
+    renderThread();
+    fireEvent.click(screen.getAllByRole("button", { name: "↩ reply" })[0]);
+    expect(mockOpenComposer).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: "reply", threadId: "th1", presetBody: ">>24420001\n" }),
+    );
+  });
+
   it("clicking a post's source-record thumb opens the media viewer for that record", () => {
     renderThread();
     fireEvent.click(screen.getByRole("button", { name: /open Odd radar contact near Roswell/i }));
@@ -227,6 +264,30 @@ describe("Thread", () => {
     expect(a).toHaveAttribute("target", "_blank");
     expect(a.getAttribute("rel")).toContain("nofollow");
     expect(screen.getAllByRole("link", { name: "NASA-UAP-D030" })).toHaveLength(1);
+  });
+
+  it("realufo.org/doc URLs become record embeds, not external links", () => {
+    const body = "see https://realufo.org/doc/NARA-Pentagon-Papers-Index and https://realufo.org/doc/AARO-956955.";
+    useThreadMock.mockReturnValue({
+      data: { ...mockThreadDetail, posts: [{ ...mockThreadDetail.posts[1], body }] },
+      isLoading: false,
+    });
+    const { container } = renderThread();
+    // no external link to realufo.org; unresolved ids render as plain id text (the RecordEmbed fallback)
+    expect(container.querySelector('a[target="_blank"][href*="realufo.org"]')).toBeNull();
+    expect(container.textContent).not.toContain("https://realufo.org/doc/");
+    expect(container.textContent).toContain("see NARA-Pentagon-Papers-Index and AARO-956955.");
+  });
+
+  it("a resolvable realufo.org/doc URL (with ?t=) embeds the record at that moment", () => {
+    const body = "watch https://realufo.org/doc/NASA-UAP-D030?t=83.04 now";
+    useThreadMock.mockReturnValue({
+      data: { ...mockThreadDetail, posts: [{ ...mockThreadDetail.posts[1], body }] },
+      isLoading: false,
+    });
+    renderThread();
+    expect(screen.getByRole("link", { name: "NASA-UAP-D030@1:23.04" })).toHaveAttribute("href", "/doc/NASA-UAP-D030?t=83.04");
+    expect(screen.getByRole("button", { name: "open NASA-UAP-D030" })).toBeInTheDocument();
   });
 
   it("renders a user-uploaded post image and opens it in the image viewer", () => {
