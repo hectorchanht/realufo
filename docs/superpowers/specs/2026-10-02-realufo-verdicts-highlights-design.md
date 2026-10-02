@@ -180,6 +180,6 @@ image descriptions feed it), mirroring the existing step's dry-run/live split.
 
 - `crawler/ingest/tests/test_highlights.py`: hash stable under order; validate drops foreign ids,
   dedupes, caps 5, rejects < 2 picks / empty lede; tolerant JSON parse; skip when hash unchanged.
-- `worker/tests/hubs.spec.ts` (or existing hub tests): highlights joined + stale picks dropped;
+- `worker/tests/hubs.spec.ts`: highlights joined + stale picks dropped;
   null when table row missing; `hubBody` renders the section and footnote.
 - Web: Hub renders the section when present, nothing when null.
