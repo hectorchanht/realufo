@@ -104,10 +104,10 @@ describe("Feed", () => {
     expect(await screen.findByText(/Something strange over the coast/)).toBeInTheDocument();
   });
 
-  it("shows the LIVE ticker with bootstrap items", async () => {
+  it("does not show the LIVE ticker", async () => {
     renderAppAt("/");
-    expect(await screen.findByText("LIVE")).toBeInTheDocument();
-    expect(screen.getAllByText(/New sighting reported near Area 51/).length).toBeGreaterThan(0);
+    await screen.findByText(/Something strange over the coast/);
+    expect(screen.queryByText("LIVE")).not.toBeInTheDocument();
   });
 
   it("navigates to /doc/:id when a featured DocCard is clicked", async () => {

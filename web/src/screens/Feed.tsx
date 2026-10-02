@@ -1,5 +1,5 @@
 // Feed screen. Ported from realufo-handoff/RealUFO.dc.html lines 112-164
-// (the `showFeed` branch of `data-screenpad`): LIVE ticker, "◆ Hot right now"
+// (the `showFeed` branch of `data-screenpad`) minus the LIVE ticker: "◆ Hot right now"
 // DocCard grid, "◆ Trending threads" ThreadRow list + "all boards ›", and the
 // "91,808 FILES · 15 ARCHIVES" archive CTA card.
 //
@@ -30,7 +30,6 @@ import { Link } from "react-router-dom";
 import { useBootstrap, useFeed } from "../api/queries";
 import { DocCard } from "../components/DocCard";
 import { ThreadRow } from "../components/ThreadRow";
-import { Ticker } from "../components/Ticker";
 import { useSetPageTitle } from "../lib/pageTitle";
 
 // Neutral copy shown until bootstrap's `stats` resolve (no fake numbers).
@@ -48,14 +47,11 @@ export function Feed() {
   const { data: boot } = useBootstrap();
   const { data: feed, isLoading: feedLoading } = useFeed();
 
-  const ticker = boot?.ticker ?? [];
   const featured = feed?.featured ?? [];
   const hot = feed?.hot ?? [];
 
   return (
     <div data-screen="feed" className="animate-[fadeup_.4s_ease_both]">
-      <Ticker items={ticker} />
-
       <div className="mx-0.5 mb-3 font-pixel text-[9px] uppercase tracking-[1px] text-faint">◆ Hot right now</div>
       {feedLoading ? (
         <div className="mb-[26px] font-mono text-[11px] text-faint">◉ loading signal…</div>
