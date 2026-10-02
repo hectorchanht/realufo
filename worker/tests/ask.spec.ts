@@ -3,6 +3,7 @@ import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import worker from "../index";
 import { seedTestDB } from "./helpers";
 import { NOT_COVERED } from "../lib/ask";
+import { saltedHash } from "../lib/anon";
 
 beforeAll(() => seedTestDB(env.DB));
 
@@ -192,6 +193,22 @@ describe("ask_log", () => {
     ]);
   });
 
+  it("stores the answer and its sources (no hub links) on fresh, cached and not-covered asks", async () => {
+    matches = [hit("FBI-UAP-D002", 1)];
+    await ask("What did the FBI report?");
+    await ask("what did the fbi report?");
+    matches = [];
+    await ask("who built the pyramids?");
+    const rows = (await env.DB.prepare("SELECT answer FROM ask_log ORDER BY id").all<{ answer: string }>()).results.map((r) =>
+      JSON.parse(r.answer)
+    );
+    expect(rows[0].answer).toBe("Radar tracked it [1].");
+    expect(rows[0].sources).toEqual([expect.objectContaining({ n: 1, record_id: "FBI-UAP-D002", page: 1 })]);
+    expect(rows[0].sources[0].hubs).toBeUndefined();
+    expect(rows[1]).toEqual(rows[0]); // cache hit stores the same frozen answer
+    expect(rows[2]).toEqual({ answer: NOT_COVERED, sources: [] });
+  });
+
   it("cache hits over the browser's limit are served but not logged", async () => {
     const lim = { RATE_MAX: "1", ASK_DAILY_MAX: "100000" };
     await ask("hit limit question", lim, "hitter");
@@ -208,9 +225,17 @@ describe("POST /api/ask/:id/public", () => {
     expect((await share(log_id, true, "someone-else")).status).toBe(404);
     expect((await share(log_id, true, null)).status).toBe(404);
     expect((await share(log_id, "yes")).status).toBe(400);
-    expect(await body(await share(log_id, true))).toEqual({ public: true });
+    expect(await body(await share(log_id, true))).toEqual({ public: true, url: `/ask/${log_id}-what-did-radar-see` });
     expect((await env.DB.prepare("SELECT public FROM ask_log WHERE id=?").bind(log_id).first())!.public).toBe(1);
-    expect(await body(await share(log_id, false))).toEqual({ public: false });
+    expect(await body(await share(log_id, false))).toEqual({ public: false, url: `/ask/${log_id}-what-did-radar-see` });
+  });
+
+  it("rows logged before answers were stored (answer NULL) cannot be shared", async () => {
+    const actor = await saltedHash("asker", env.ANON_SALT);
+    const row = await env.DB.prepare("INSERT INTO ask_log(question,actor_id,sources) VALUES('old question',?,2) RETURNING id")
+      .bind(actor)
+      .first<{ id: number }>();
+    expect((await share(row!.id, true)).status).toBe(404);
   });
 
   it("not-covered and unknown questions cannot be shared", async () => {

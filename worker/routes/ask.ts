@@ -8,7 +8,7 @@ import { hubsFor } from "../lib/hubs";
 import { listHubsCached } from "./hubs";
 import {
   ASK_EMBED_MODEL, ASK_LLM_MODEL, ASK_TOP_K, NOT_COVERED, RESTING,
-  normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, type AskChunk,
+  askHref, normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, type AskChunk,
 } from "../lib/ask";
 
 type Hydrated = { id: string; title: string; kind: string; thumb: string | null };
@@ -30,7 +30,9 @@ export async function ask(req: Request, env: Env) {
   if (hit) {
     const b = JSON.parse(hit.answer);
     // Cache hits skip the limiter, so log one only if the browser is under its own limit.
-    const log_id = (await allowWrite(env, req, "ask_hit")) ? await logAsk(env, req, q, b.sources?.length ?? 0, true) : null;
+    const log_id = (await allowWrite(env, req, "ask_hit"))
+      ? await logAsk(env, req, q, { answer: b.answer, sources: b.sources ?? [] }, true)
+      : null;
     return json({ ...b, sources: await withHubs(env, req, b.sources ?? []), cached: true, log_id });
   }
 
@@ -58,7 +60,7 @@ export async function ask(req: Request, env: Env) {
     ...body,
     sources: await withHubs(env, req, body.sources),
     cached: false,
-    log_id: await logAsk(env, req, q, body.sources.length, false),
+    log_id: await logAsk(env, req, q, body, false),
   });
 }
 
@@ -95,9 +97,11 @@ async function withHubs(env: Env, req: Request, sources: unknown[]) {
   }
 }
 
-async function logAsk(env: Env, req: Request, q: string, sources: number, cached: boolean) {
-  const row = await env.DB.prepare("INSERT INTO ask_log(question,actor_id,sources,cached) VALUES(?,?,?,?) RETURNING id")
-    .bind(q, await actorId(req, env.ANON_SALT), sources, cached ? 1 : 0)
+async function logAsk(env: Env, req: Request, q: string, data: { answer: string; sources: unknown[] }, cached: boolean) {
+  // Frozen copy for shared pages; hub links are never stored (they follow the live hub list).
+  const frozen = JSON.stringify({ answer: data.answer, sources: data.sources });
+  const row = await env.DB.prepare("INSERT INTO ask_log(question,actor_id,sources,cached,answer) VALUES(?,?,?,?,?) RETURNING id")
+    .bind(q, await actorId(req, env.ANON_SALT), data.sources.length, cached ? 1 : 0, frozen)
     .first<{ id: number }>();
   return row?.id ?? null;
 }
@@ -110,11 +114,13 @@ export async function setAskPublic(req: Request, env: Env, params: Record<string
   const actor = await actorId(req, env.ANON_SALT);
   if (actor === "anon:none") return error(404, "not found");
   if (!(await allowWrite(env, req, "ask_share"))) return error(429, "slow down");
-  const r = await env.DB.prepare("UPDATE ask_log SET public=? WHERE id=? AND actor_id=? AND sources>0")
+  const r = await env.DB.prepare(
+    "UPDATE ask_log SET public=? WHERE id=? AND actor_id=? AND sources>0 AND answer IS NOT NULL RETURNING id, question"
+  )
     .bind(b.public ? 1 : 0, Number(params.id) || 0, actor)
-    .run();
-  if (!r.meta.changes) return error(404, "not found");
-  return json({ public: b.public });
+    .first<{ id: number; question: string }>();
+  if (!r) return error(404, "not found");
+  return json({ public: b.public, url: askHref(r.id, r.question) });
 }
 
 async function answer(env: Env, q: string, min: number) {
