@@ -387,7 +387,7 @@ export function Doc() {
       return;
     }
     if (media === "image") {
-      openViewer({ kind: "image", url: fullUrl, label: title });
+      openViewer({ kind: "image", url: fullUrl, label: title, filter: adjustFilter(adjust), lensMag: lens ? mag : undefined });
       return;
     }
     // PDFs/docs open in a new tab via the SAME-ORIGIN inline route (worker
@@ -622,13 +622,12 @@ export function Doc() {
           onMag={setMag}
           view={view}
           onView={setView}
+          keysHelp={
+            finePointer
+              ? `${media === "video" ? "Space play · , . frame · [ ] speed\nA loop A–B · M mute · C save frame\n" : ""}L lens · - = lens zoom (or Shift+wheel)\nCtrl/⌘+wheel or pinch zoom, drag to pan\n0 reset · I invert · R rotate · F flip`
+              : undefined
+          }
         />
-      )}
-      {(media === "image" || media === "video") && finePointer && (
-        <p className="-mt-2 mb-3.5 font-mono text-[9px] leading-[1.6] text-faint">
-          {media === "video" && "Space play · , . frame · [ ] speed · A loop A–B · M mute · C save frame · "}L lens · - = lens zoom
-          (or Shift+wheel) · Ctrl/⌘+wheel or pinch zoom, drag to pan · 0 reset · I invert · R rotate · F flip
-        </p>
       )}
       {media === "video" && (keyMoments.moments.length > 0 || aiMoments.length > 0) && (
         <KeyMoments official={keyMoments.moments} ai={aiMoments} videoRef={videoRef} onSeek={seekTo} />
@@ -642,9 +641,11 @@ export function Doc() {
         >
           {record.agency_full || record.agency}
         </span>
-        <span className="rounded-[7px] border border-line px-[9px] py-1 font-mono text-[10px] text-dim">
-          {archiveLabel}
-        </span>
+        {archiveLabel !== (record.agency_full || record.agency) && (
+          <span className="rounded-[7px] border border-line px-[9px] py-1 font-mono text-[10px] text-dim">
+            {archiveLabel}
+          </span>
+        )}
         {detail.release && (
           <span
             className="rounded-[7px] border border-red px-[9px] py-1 font-mono text-[10px] font-semibold text-red"

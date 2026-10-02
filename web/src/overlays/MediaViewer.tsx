@@ -1,10 +1,33 @@
 // Full-bleed doc / video / placeholder viewer. Ported from
 // realufo-handoff/RealUFO.dc.html lines 404-414 (`sc-if value="{{ viewer }}"`).
+import { useRef } from "react";
+import type { MouseEvent } from "react";
 import { useOverlay } from "./OverlayProvider";
+import { ZoomLens } from "../components/ImageTools";
+import { DEFAULT_VIEW, pointToUV } from "../lib/mediaView";
+import { useMediaQuery } from "../lib/useMediaQuery";
 
 export function MediaViewer() {
   const { viewer, closeViewer } = useOverlay();
+  const imgRef = useRef<HTMLImageElement>(null);
+  const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
   if (!viewer) return null;
+
+  // A click on the backdrop, or on the image's letterbox, closes the viewer.
+  function closeOutside(e: MouseEvent<HTMLDivElement>) {
+    if (e.target === e.currentTarget) return closeViewer();
+    const img = imgRef.current;
+    if (!img?.naturalWidth) return;
+    const box = img.getBoundingClientRect();
+    const p = pointToUV(
+      { w: box.width, h: box.height },
+      e.clientX - box.left,
+      e.clientY - box.top,
+      { w: img.naturalWidth, h: img.naturalHeight },
+      DEFAULT_VIEW,
+    );
+    if (p.u < 0 || p.u > 1 || p.v < 0 || p.v > 1) closeViewer();
+  }
 
   return (
     <div
@@ -24,13 +47,32 @@ export function MediaViewer() {
         </button>
       </div>
 
-      <div className="flex min-h-0 flex-1 items-center justify-center px-3 pb-3">
+      <div className="flex min-h-0 flex-1 items-center justify-center px-3 pb-3" onClick={closeOutside}>
         {viewer.kind === "video" && (
           <video src={viewer.url} controls playsInline className="max-h-full max-w-full rounded-[10px] bg-black" />
         )}
 
         {viewer.kind === "image" && (
-          <img src={viewer.url} alt={viewer.label} className="max-h-full max-w-full rounded-[10px] object-contain" />
+          // fills the area object-contain, so the lens geometry matches the doc panel's
+          <div className="relative h-full w-full select-none">
+            <img
+              ref={imgRef}
+              src={viewer.url}
+              alt={viewer.label}
+              className="h-full w-full object-contain"
+              style={{ filter: viewer.filter || undefined }}
+            />
+            {viewer.lensMag && viewer.url && (
+              <ZoomLens
+                src={viewer.url}
+                imgRef={imgRef}
+                filter={viewer.filter ?? ""}
+                view={DEFAULT_VIEW}
+                mag={viewer.lensMag}
+                clickThrough={finePointer}
+              />
+            )}
+          </div>
         )}
 
         {viewer.kind === "doc" && (

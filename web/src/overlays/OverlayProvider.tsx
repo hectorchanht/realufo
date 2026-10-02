@@ -52,6 +52,10 @@ export interface ViewerOpts {
   kind: ViewerKind;
   url?: string;
   label?: string;
+  /** Image: the doc panel's CSS filter, carried into the viewer. */
+  filter?: string;
+  /** Image: lens magnification when the panel's lens is on (keeps it on in the viewer). */
+  lensMag?: number;
 }
 
 export interface OverlayMe {

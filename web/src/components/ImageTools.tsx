@@ -7,7 +7,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode, RefObject } from "react";
-import { Contrast, DropletOff, Droplet, Flame, FlipHorizontal2, Focus, Rainbow, RotateCcw, RotateCw, Shrink, SlidersHorizontal, Sun, SunMoon, WandSparkles, X, ZoomIn } from "lucide-react";
+import { Contrast, DropletOff, Droplet, Flame, FlipHorizontal2, Focus, Keyboard, Rainbow, RotateCcw, RotateCw, Shrink, SlidersHorizontal, Sun, SunMoon, WandSparkles, X, ZoomIn } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { DEFAULT_VIEW, pointToUV } from "../lib/mediaView";
 import type { MediaView } from "../lib/mediaView";
@@ -154,6 +154,7 @@ export function MediaToolbar({
   onMag,
   view,
   onView,
+  keysHelp,
 }: {
   adjust: ImageAdjust;
   onAdjust: (a: ImageAdjust) => void;
@@ -163,6 +164,8 @@ export function MediaToolbar({
   onMag: (m: number) => void;
   view: MediaView;
   onView: (v: MediaView) => void;
+  /** Keyboard/mouse shortcuts, shown as a hover tooltip. */
+  keysHelp?: string;
 }) {
   const [open, setOpen] = useState(true);
   const changed = adjustFilter(adjust) !== "";
@@ -220,6 +223,11 @@ export function MediaToolbar({
             {view.z.toFixed(1)}×
             <X {...ico} size={12} />
           </button>
+        )}
+        {keysHelp && (
+          <span title={keysHelp} aria-label={`Shortcuts: ${keysHelp}`} className={`${chip} ${off} cursor-help`}>
+            <Keyboard {...ico} />
+          </span>
         )}
         {changed && (
           <button type="button" aria-label="Reset filters" title="Reset filters" onClick={() => onAdjust(DEFAULT_ADJUST)} className={`${chip} ${off} ml-auto`}>
