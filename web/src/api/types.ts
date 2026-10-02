@@ -245,7 +245,7 @@ export interface RecordDetail {
 }
 
 export interface RelatedGroup {
-  key: "location" | "period" | "release" | "agency";
+  key: "topic" | "location" | "period" | "release" | "agency";
   label: string;
   records: ListRecordCard[];
 }

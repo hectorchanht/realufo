@@ -83,16 +83,21 @@ describe("records", () => {
       ins("RELG-YR2", "OTHER", "N/A", "9/8/31", null), // m/d/yy form of the same year
       ins("RELG-REL", "OTHER", null, null, "3/3/31"),
       ins("RELG-AG", "RELGAG", "N/A", null, null),
+      ins("RELG-TOP", "OTHER", "N/A", null, null),
+      ins("RELG-TOP2", "OTHER", "N/A", null, null),
+      // topic links (ingest.links) come first, best score first, and win the dedupe
+      env.DB.prepare("INSERT INTO record_links (record_id,related_id,score) VALUES ('RELG-A','RELG-TOP2',0.2),('RELG-A','RELG-TOP',0.5),('RELG-A','RELG-AG',0.3)"),
     ]);
     const rel: any[] = ((await (await get("/api/records/RELG-A")).json()) as any).related;
     const ids = (k: string) => rel.find((g) => g.key === k)?.records.map((r: any) => r.id).sort();
-    expect(rel.map((g) => g.key)).toEqual(["location", "period", "release", "agency"]);
+    expect(rel.map((g) => g.key)).toEqual(["topic", "location", "period", "release"]); // agency emptied by dedupe
+    expect(rel[0].records.map((r: any) => r.id)).toEqual(["RELG-TOP", "RELG-AG", "RELG-TOP2"]);
     expect(rel.find((g) => g.key === "location").label).toBe("Relgville");
     expect(ids("location")).toEqual(["RELG-LOC", "RELG-LOCYR"]);
     expect(ids("period")).toEqual(["RELG-YR2"]);
     expect(rel.find((g) => g.key === "period").label).toBe("2031");
     expect(ids("release")).toEqual(["RELG-REL"]);
-    expect(ids("agency")).toEqual(["RELG-AG"]);
+    expect(ids("agency")).toBeUndefined(); // RELG-AG already shown under topic
     // a record with no location/date/neighbours gets no empty groups
     const lone: any[] = ((await (await get("/api/records/RELG-YR2")).json()) as any).related;
     expect(lone.every((g) => g.records.length > 0)).toBe(true);

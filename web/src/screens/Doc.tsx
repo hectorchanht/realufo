@@ -64,6 +64,7 @@ const CHROME_IDLE_MS = 2500;
 const DEFAULT_BOARD = "uap";
 
 const RELATED_HEAD: Record<RelatedGroup["key"], string> = {
+  topic: "Same topic",
   location: "Same location",
   period: "Same period",
   release: "Same release",
@@ -817,8 +818,8 @@ export function Doc() {
         ◈ Start a board thread about this file
       </button>
 
-      {/* related files — uapbrowser-style groups by shared location / period /
-          release / agency (worker dedupes, so a file shows in one group only) */}
+      {/* related files — uapbrowser-style groups by shared topic / location /
+          period / release / agency (worker dedupes, so a file shows in one group only) */}
       {detail.related?.map((g) => (
         <section key={g.key} className="mt-[30px]">
           <div className="mb-2.5 font-mono text-[9px] uppercase tracking-[.6px] text-faint">

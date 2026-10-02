@@ -89,9 +89,11 @@ async function releaseOf(env: Env, record: { archive: string; doc_date: string |
   return rel ? { no: rel.no, date } : null;
 }
 
-// Related groups shown under a file, uapbrowser-style. Each group is a SQL
-// filter on one field the record shares with others; a record lands in the
-// first group it matches only, so the groups don't repeat each other.
+// Related groups shown under a file, uapbrowser-style. "topic" comes from
+// record_links (crawler ingest.links: files sharing rare names/terms in their
+// title + summaries); the rest are a SQL filter on one field the record shares
+// with others. A record lands in the first group it matches only, so the
+// groups don't repeat each other.
 type RecordRow = {
   id: string; archive: string; agency: string | null;
   location: string | null; incident_date: string | null; doc_date: string | null;
@@ -100,7 +102,12 @@ const RELATED_PER_GROUP = 6;
 
 async function relatedOf(env: Env, r: RecordRow, release: { no: number } | null) {
   const year = yearOf(r.incident_date);
-  const groups: { key: string; label: string; where: string; bind: unknown[] }[] = [];
+  const groups: { key: string; label: string; where: string; bind: unknown[]; from?: string; order?: string }[] = [
+    {
+      key: "topic", label: "title & summary match", from: "record_links l JOIN records r ON r.id=l.related_id",
+      where: "l.record_id=?", bind: [r.id], order: "l.score DESC",
+    },
+  ];
   if (r.location && r.location !== "N/A") groups.push({ key: "location", label: r.location, where: "r.location=?", bind: [r.location] });
   if (year)
     groups.push({
@@ -118,7 +125,8 @@ async function relatedOf(env: Env, r: RecordRow, release: { no: number } | null)
     groups.map((g) =>
       env.DB.prepare(
         `SELECT ${CARD_COLS}
-        FROM records r WHERE ${g.where} AND r.id<>? ORDER BY r.featured DESC, r.created_at DESC LIMIT ?`
+        FROM ${g.from ?? "records r"} WHERE ${g.where} AND r.id<>?
+        ORDER BY ${g.order ?? "r.featured DESC, r.created_at DESC"} LIMIT ?`
       )
         .bind(...g.bind, r.id, RELATED_PER_GROUP * 4)
         .all<{ id: string }>()

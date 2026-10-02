@@ -121,7 +121,7 @@ export type DocData = {
 };
 
 const RELATED_HEADING: Record<string, string> = {
-  location: "Same location", period: "Same period", release: "Same release", agency: "Same agency",
+  topic: "Same topic", location: "Same location", period: "Same period", release: "Same release", agency: "Same agency",
 };
 
 // Blank-line-separated paragraphs; single newlines kept as <br>.
