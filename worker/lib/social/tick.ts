@@ -7,8 +7,9 @@ import { bsky } from "./bsky";
 import { yt } from "./yt";
 import { tiktok } from "./tiktok";
 
-// Social fan-out tick (Spec 5 §3): mirror x_posts to every enabled platform, one new
-// post per platform per tick. Row goes in BEFORE the platform is called:
+// Social fan-out tick (Spec 5 §3): mirror posted x_posts to every enabled platform, one
+// new post per platform per tick. Only status='posted': pending/processing X rows may still
+// be deleted by xbot (401/402/403), which a social_posts FK would block. Row goes in BEFORE the platform is called:
 // UNIQUE(x_post_id, platform) makes a second attempt a no-op.
 
 export const ADAPTERS: Record<Platform, Adapter> = { fb, ig, threads, bsky, yt, tiktok };
@@ -98,12 +99,19 @@ async function resume(env: Env, p: Platform, a: Adapter, ctx: Ctx) {
       if (f !== "processing") {
         log({ platform: p, row: row.id, ...f });
         await env.DB.prepare("UPDATE social_posts SET status='posted', remote_id=?, error=NULL WHERE id=?").bind(f.remoteId, row.id).run();
-      } else if (Date.parse(row.created_at.replace(" ", "T") + "Z") < ctx.now.getTime() - TIMEOUT_MS) {
-        await env.DB.prepare("UPDATE social_posts SET status='failed', error='processing timeout' WHERE id=?").bind(row.id).run();
+        continue;
       }
     } catch (e) {
-      await fail(env, p, row, e);
+      // finish only polls and the post may already be live (TikTok publishes on its own after
+      // init): never fall back to publish() or drop the row. 422 = platform rejected the media.
+      if (e instanceof SocialError && e.status === 422) {
+        await env.DB.prepare("UPDATE social_posts SET status='failed', error=? WHERE id=?").bind(String(e).slice(0, 500), row.id).run();
+        continue;
+      }
+      log({ platform: p, finishError: row.id, error: String(e).slice(0, 200) });
     }
+    if (Date.parse(row.created_at.replace(" ", "T") + "Z") < ctx.now.getTime() - TIMEOUT_MS)
+      await env.DB.prepare("UPDATE social_posts SET status='failed', error='processing timeout' WHERE id=?").bind(row.id).run();
   }
 }
 
@@ -114,7 +122,7 @@ async function runPlatform(env: Env, p: Platform, a: Adapter, mode: string, ctx:
   if (!since) return;
   const x = await env.DB.prepare(
     `SELECT x.id, x.text, x.media FROM x_posts x
-     WHERE x.status IN ('posted','pending','processing') AND x.created_at >= ?
+     WHERE x.status='posted' AND x.created_at >= ?
        AND NOT EXISTS (SELECT 1 FROM social_posts s WHERE s.x_post_id=x.id AND s.platform=?)
      ORDER BY x.created_at, x.id LIMIT 1`
   ).bind(since, p).first<XRow>();

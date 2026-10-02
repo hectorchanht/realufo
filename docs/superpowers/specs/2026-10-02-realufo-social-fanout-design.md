@@ -26,7 +26,7 @@ Success looks like:
 
 | Decision | Choice | Why |
 |---|---|---|
-| Relation to X | **Mirror** — every `x_posts` row (status `posted`/`pending`/`processing`, created ≥ `SOCIAL_SINCE`) fans out to all enabled platforms | One picker, one cadence, one copy. No per-platform scheduling. |
+| Relation to X | **Mirror** — every `x_posts` row with status `posted`, created ≥ `SOCIAL_SINCE`, fans out to all enabled platforms (pending/processing X rows can still be deleted by the X bot, so they are never mirrored) | One picker, one cadence, one copy. No per-platform scheduling. |
 | Storage | **Child table `social_posts`**, X bot untouched | `x_posts` is a live, money-spending bot; don't migrate its UNIQUE/status flow. Platforms fail and retry independently. |
 | Clients | **Own adapter per platform** (`worker/lib/social/<p>.ts`), no aggregator | Free; no third-party dependency. Aggregator (Ayrshare etc.) was rejected; revisit only if YT/TikTok audits stall. |
 | Vertical clips | **Pad + blurred background**, 1080×1920, title band | FLIR objects are often off-centre; centre crop would lose them. |
@@ -46,7 +46,7 @@ Success looks like:
 2. **Resume** (`on` only) its `processing` rows: poll the container/job; finished →
    publish → `posted`; still processing and < 1 h old → leave; else `failed`
    (`error='processing timeout'`). Also retry `pending` rows with `attempts>0`.
-3. **Pick** the oldest `x_posts` row with `status IN ('posted','pending','processing')`,
+3. **Pick** the oldest `x_posts` row with `status='posted'`,
    `created_at >= SOCIAL_SINCE`, and no `social_posts` row for this platform.
 4. **Insert** `social_posts(x_post_id, platform, status)` with `ON CONFLICT DO NOTHING
    RETURNING id` — status `draft` in `dry`, `pending` in `on`. No row returned → stop.
@@ -107,7 +107,7 @@ posts carry one), no link is appended. `ref` → record id comes from `x_posts.r
 | fb | landscape video | photo | text + link |
 | threads | landscape video | image | text |
 | bsky | landscape video | image (thumb ≤1 MB) | text |
-| ig | vertical Reel | photo (JPEG thumb) | `failed` `no media` |
+| ig | vertical Reel | `failed` `no video` (IG takes only 4:5–1.91:1 images; PDF thumbs are portrait) | `failed` `no video` |
 | yt | vertical Short | `failed` `no video` | `failed` `no video` |
 | tiktok | vertical video | `failed` `no video` | `failed` `no video` |
 

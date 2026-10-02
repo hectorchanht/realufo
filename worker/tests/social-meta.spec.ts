@@ -57,9 +57,9 @@ describe("fb", () => {
 });
 
 describe("ig", () => {
-  it("vertical, needs media; finished container publishes in the same call", async () => {
+  it("vertical, video only (IG rejects portrait PDF thumbs); finished container publishes in the same call", async () => {
     expect(ig.vertical).toBe(true);
-    expect(ig.needs).toBe("media");
+    expect(ig.needs).toBe("video");
     expect(await ig.publish(E, P(video), ctx)).toEqual({ remoteId: "PUB1" });
     expect(calls[0].body).toContain("media_type=REELS");
     expect(calls.map((c) => c.url.replace("https://graph.facebook.com/v25.0", ""))).toEqual(["/IG/media", "/C1", "/IG/media_publish"]);

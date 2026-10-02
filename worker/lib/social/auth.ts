@@ -3,12 +3,13 @@ import { sqlTime } from "../xpick";
 import { SocialError, readJson, log } from "./common";
 
 // Rotating tokens (Spec 5 §5). Threads: 60-day token, refresh when < 7 days left.
-// TikTok: 24 h access + 365 d refresh token, refresh when < 1 h left.
+// TikTok: 24 h access + 365 d refresh token, refresh when < 6 h left (> the 3 h cron, so a
+// refresh error is retried while the old token still works).
 
 type Rotating = "threads" | "tiktok";
 type Row = { access_token: string; refresh_token: string | null; expires_at: string | null };
 type Fresh = { access: string; refresh?: string; expiresIn: number };
-const LEAD: Record<Rotating, number> = { threads: 7 * 86400_000, tiktok: 3600_000 };
+const LEAD: Record<Rotating, number> = { threads: 7 * 86400_000, tiktok: 6 * 3600_000 };
 
 async function refreshThreads(access: string): Promise<Fresh> {
   const q = new URLSearchParams({ grant_type: "th_refresh_token", access_token: access });

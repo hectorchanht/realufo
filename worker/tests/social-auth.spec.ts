@@ -49,6 +49,10 @@ describe("token", () => {
     expect(await token(E, "tiktok", NOW)).toBe("TT2");
     expect(await row("tiktok")).toMatchObject({ access_token: "TT2", refresh_token: "RT2", expires_at: "2026-10-11 12:00:00" });
   });
+  it("tiktok refreshes 5 h before expiry (cron runs every 3 h)", async () => {
+    await put("tiktok", "TT1", "2026-10-10 17:00:00", "RT1");
+    expect(await token(E, "tiktok", NOW)).toBe("TT2");
+  });
   it("refresh failure on a still-valid token keeps the old token", async () => {
     await put("threads", "TH1", "2026-10-12 00:00:00");
     refreshStatus = 500;

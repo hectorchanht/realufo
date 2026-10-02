@@ -71,6 +71,39 @@ describe("social tick", () => {
     expect(seen[1].p.text).toContain("🔗 link in bio");
   });
 
+  it("X rows not yet posted (pending/processing) are not mirrored, and X can still delete them", async () => {
+    const pend = await addX("ST-V1", { status: "pending" });
+    await addX("ST-V2", { status: "processing" });
+    await tick(E({ FEATURE_SOCIAL_FB: "on" }), NOW, noSleep, { fb: fake("fb") });
+    expect(await rows()).toEqual([]);
+    // xbot deletes a pending row on 401/402/403; no social_posts row may block that (FK)
+    await env.DB.prepare("DELETE FROM x_posts WHERE id=?").bind(pend).run();
+  });
+
+  it("finish errors never re-publish or delete: 429/auth stay processing, 422 fails, timeout still applies", async () => {
+    await addX("ST-V1");
+    let pubs = 0;
+    let err: unknown = new SocialError(429, "slow");
+    const A = { tiktok: fake("tiktok", { publish: async () => { pubs++; return { containerId: "P1" }; }, finish: async () => { throw err; } }) };
+    const e = E({ FEATURE_SOCIAL_TIKTOK: "on" });
+    await tick(e, NOW, noSleep, A);
+    await tick(e, new Date("2026-10-10T15:10:00Z"), noSleep, A);
+    err = new SocialError(401, "expired");
+    await tick(e, new Date("2026-10-10T15:20:00Z"), noSleep, A);
+    expect(pubs).toBe(1);
+    expect(await rows()).toMatchObject([{ status: "processing", container_id: "P1" }]);
+    await tick(e, new Date("2026-10-10T16:30:00Z"), noSleep, A);
+    expect(await rows()).toMatchObject([{ status: "failed", error: "processing timeout" }]);
+
+    await env.DB.prepare("DELETE FROM social_posts").run();
+    err = new SocialError(422, "tiktok file_format_check_failed");
+    await tick(e, NOW, noSleep, A);
+    await tick(e, new Date("2026-10-10T15:10:00Z"), noSleep, A);
+    expect(pubs).toBe(2);
+    expect((await rows())[0]).toMatchObject({ status: "failed" });
+    expect((await rows())[0].error).toContain("file_format_check_failed");
+  });
+
   it("one per platform per tick, oldest first; failed X rows never mirrored", async () => {
     await addX("ST-BAD", { status: "failed" });
     await addX("ST-V1", { created: "2026-10-10 10:00:00" });

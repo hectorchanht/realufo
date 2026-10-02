@@ -54,8 +54,9 @@ const igBox = (env: Env): Box => ({ base: GRAPH, user: env.IG_USER_ID!, token: e
 const igParams = (p: SocialPost): Record<string, string> =>
   p.media!.kind === "video" ? { media_type: "REELS", video_url: p.media!.url, caption: p.text } : { image_url: p.media!.url, caption: p.text };
 
+// Video only: IG accepts images between 4:5 and 1.91:1, and PDF page thumbs are portrait.
 export const ig: Adapter = {
-  needs: "media",
+  needs: "video",
   vertical: true,
   configured: (env) => !!(env.IG_USER_ID && env.META_PAGE_TOKEN),
   publish: (env, p, ctx) => boxFlow(igBox(env), igParams(p), ctx, "media"),
