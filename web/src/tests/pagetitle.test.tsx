@@ -97,12 +97,13 @@ describe("AppBar contextual title", () => {
     expect(within(getAppBar()).getByText("THE ARCHIVE")).toBeInTheDocument();
   });
 
-  it("shows the record's agency + short title at /doc/:id once the record loads (not the generic 'FILE' fallback)", async () => {
+  it("shows the record's id + short title at /doc/:id once the record loads (not the generic 'FILE' fallback)", async () => {
     renderAppAt("/doc/rec1");
     await screen.findByText(/Placement on High Alert near Roswell/, { selector: "[data-screen='doc'] h1" });
 
     const bar = within(getAppBar());
-    expect(bar.getByText("CIA")).toBeInTheDocument();
+    expect(bar.getByText("rec1")).toBeInTheDocument();
+    expect(bar.queryByText("CIA")).not.toBeInTheDocument();
     expect(bar.getByText("Placement on High Alert near Roswell")).toBeInTheDocument();
     expect(bar.queryByText("FILE")).not.toBeInTheDocument();
   });

@@ -41,7 +41,7 @@ export function AppBar({
           type="button"
           onClick={onBack}
           aria-label="Back"
-          className="grid h-[34px] w-[34px] flex-none place-items-center rounded-[10px] border border-line2 text-[17px] text-ink active:scale-[.94]"
+          className="-mx-[6px] grid h-[34px] w-[22px] flex-none place-items-center rounded-[8px] text-[20px] text-ink active:scale-[.94]"
         >
           ‹
         </button>

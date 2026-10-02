@@ -255,14 +255,14 @@ export function Doc() {
   const comments = commentsData?.comments ?? [];
   const promotedThreads = detail?.promotedThreads ?? [];
 
-  // AppBar title — prototype's doc branch (RealUFO.dc.html:568):
-  // `ht=(r&&r.agency)||'FILE'; hs=r?this._short(r.title):''`. Called
+  // AppBar title is the record id (e.g. DOE-UAP-D004), subtitle the short
+  // title — agency already shows as a chip below the media. Called
   // unconditionally (before the loading/not-found returns below) so hook
   // order never varies; while `record` hasn't loaded yet, the same "FILE"
   // fallback the prototype uses for its own undefined-record case is fine.
   // Tab title is uapbrowser-style "<short title> — UAP file <id>".
   useSetPageTitle(
-    record?.agency || "FILE",
+    record?.id || "FILE",
     record ? shortTitle(record.title) : "",
     record ? `${shortTitle(record.title)} — UAP file ${record.id}` : undefined,
   );
