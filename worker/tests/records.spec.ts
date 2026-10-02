@@ -8,6 +8,25 @@ beforeAll(() => seedTestDB(env.DB));
 const get = (p: string) => worker.fetch(new Request("https://x" + p), env as any, {} as any);
 
 describe("records", () => {
+  it("a failing related-group query drops that group, not the whole doc (incident 2026-10-02)", async () => {
+    // Code shipped before migration 0015: any query on record_links.source threw
+    // "no such column" and took /api/records/:id down with a 500.
+    const DB = new Proxy(env.DB, {
+      get(t, k) {
+        if (k !== "prepare") return Reflect.get(t, k).bind?.(t) ?? Reflect.get(t, k);
+        return (sql: string) =>
+          sql.includes("l.source")
+            ? { bind: () => ({ all: () => Promise.reject(new Error("D1_ERROR: no such column: l.source")) }) }
+            : t.prepare(sql);
+      },
+    });
+    const res = await worker.fetch(new Request("https://x/api/records/FBI-UAP-D002"), { ...env, DB } as any, {} as any);
+    expect(res.status).toBe(200);
+    const d: any = await res.json();
+    expect(d.record.id).toBe("FBI-UAP-D002");
+    expect(d.related.some((g: any) => g.key === "location")).toBe(true);
+    expect(d.related.some((g: any) => g.key === "media" || g.key === "topic")).toBe(false);
+  });
   it("loadRecord parses stored full text; null without a row", async () => {
     await env.DB.prepare("INSERT INTO record_text(record_id,pages,truncated,total_pages) VALUES('FBI-UAP-D003',?,1,12)")
       .bind(JSON.stringify([{ n: 2, text: "Page two text" }]))

@@ -139,6 +139,12 @@ async function relatedOf(env: Env, r: RecordRow, release: { no: number } | null)
       )
         .bind(...g.bind, r.id, (g.max ?? RELATED_PER_GROUP) * 4)
         .all<{ id: string }>()
+        // Related groups are optional: a failing one (e.g. code deployed before its
+        // migration, 2026-10-02) drops that group instead of 500ing the whole doc.
+        .catch((e) => {
+          console.error("related group failed", g.key, r.id, e);
+          return { results: [] as { id: string }[] };
+        })
     )
   );
   const seen = new Set<string>();
