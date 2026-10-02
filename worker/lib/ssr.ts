@@ -19,14 +19,25 @@ export type Link = { href: string; text: string };
 const squash = (s: string) =>
   s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).map((w) => w.replace(/^0+(?=\d)/, "")).join("");
 
-export function docTitleParts(id: string, raw: string | null | undefined): { title: string; showId: boolean } {
+// `id` in the result is the id to display: the record id, or the official
+// code the title leads with when the record id is an internal slug
+// (WARGOV-VID-111688723 / "DOW-UAP-PR019, Unresolved UAP Report…").
+export function docTitleParts(id: string, raw: string | null | undefined): { id: string; title: string; showId: boolean } {
   let t = raw || "";
+  let label = id;
+  const code = t.match(/^([A-Z]{2,6}-UAP-[A-Za-z0-9-]+?)(?=[,_\s:])/)?.[1];
   if (t.startsWith(id) && /^[,_\s:]/.test(t.slice(id.length))) t = t.slice(id.length);
+  else if (code) [label, t] = [code, t.slice(code.length)];
   t = t.replace(/_/g, " ").replace(/\s+/g, " ").replace(/^[\s,:;]+|[\s,]+$/g, "");
-  if (!t) return { title: id, showId: false };
-  const [a, b] = [squash(t), squash(id)];
+  if (!t) return { id: label, title: label, showId: false };
+  const [a, b] = [squash(t), squash(label)];
   const [short, long] = a.length < b.length ? [a, b] : [b, a];
-  return { title: t, showId: !(long.includes(short) && short.length >= long.length / 2) };
+  // Respelled: one squashes into the other, or most of the title's words (3+
+  // chars) sit inside the id (filename ids drift: "Taqaddam_…_Final.pdf").
+  const words = t.toLowerCase().split(/[^a-z0-9]+/).map((w) => w.replace(/^0+(?=\d)/, "")).filter((w) => w.length >= 3);
+  const inId = words.filter((w) => b.includes(w)).length;
+  const respelled = (long.includes(short) && short.length >= long.length / 2) || (words.length > 0 && inId / words.length >= 0.6);
+  return { id: label, title: t, showId: !respelled };
 }
 
 export type RecordLink = { id: string; title: string };
@@ -84,7 +95,7 @@ export const section = (heading: string, items: Link[]) =>
 // "<id> — <title>", or the title alone when the id only respells it (same as the SPA tab title).
 export const docTitle = (t: string, id: string) => {
   const p = docTitleParts(id, t);
-  return p.showId ? `${id} — ${p.title}` : p.title;
+  return p.showId ? `${p.id} — ${p.title}` : p.title;
 };
 export const docLinks = (rs: RecordLink[]): Link[] => rs.map((r) => ({ href: docHref(r.id), text: docTitle(r.title, r.id) }));
 export const countList = (heading: string, items: { name: string; count: number }[]) =>

@@ -175,7 +175,7 @@ export function DocCard({ record, variant = "grid", onOpen, search }: DocCardPro
         )}
         {tp.showId && (
           <div className="truncate font-mono text-[9.5px] font-semibold tracking-[.3px]" style={{ color: accentColor }}>
-            {record.id}
+            {tp.id}
           </div>
         )}
         <div

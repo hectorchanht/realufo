@@ -347,7 +347,7 @@ describe("Doc", () => {
   it("shows related groups as file cards and sets the uapbrowser-style tab title", () => {
     renderDoc();
     expect(screen.getByText(/same agency/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /FBI-UAP-007, Roswell teletype/ })).toHaveAttribute("href", "/doc/rec7");
+    expect(screen.getByRole("link", { name: /FBI-UAP-007.*Roswell teletype/ })).toHaveAttribute("href", "/doc/rec7");
     expect(document.title).toBe("rec1 — Placement on High Alert near Roswell · RealUFO");
   });
 

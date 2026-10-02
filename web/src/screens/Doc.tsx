@@ -348,9 +348,9 @@ export function Doc() {
   // Tab title matches the worker's docTitle.
   const tp = record ? docTitleParts(record.id, record.title) : null;
   useSetPageTitle(
-    !tp ? "FILE" : tp.showId ? record!.id : tp.title,
+    !tp ? "FILE" : tp.showId ? tp.id : tp.title,
     tp?.showId ? tp.title : "",
-    tp ? (tp.showId ? `${record!.id} — ${tp.title}` : tp.title) : undefined,
+    tp ? (tp.showId ? `${tp.id} — ${tp.title}` : tp.title) : undefined,
   );
   useSetFooterLinks(record && detail ? docFooterLinks(record, detail.hubs, detail.release) : null);
 
@@ -659,7 +659,7 @@ export function Doc() {
       {/* record id kicker (uapbrowser-style) — only when the id isn't just the title respelled */}
       {tp!.showId && (
         <div className="mb-1 font-mono text-[11px] font-semibold tracking-[.4px]" style={{ color: accent }}>
-          {record.id}
+          {tp!.id}
         </div>
       )}
 
