@@ -117,6 +117,17 @@ describe("Case", () => {
     expect(link).toHaveAttribute("href", "/thread/t5");
   });
 
+  it("lists every thread from `threads`", () => {
+    const mk = (id: string, title: string) => ({ id, title, boardSlug: "/cases/", accent: "#fff", ago: "1h", replies: 2 });
+    useCaseMock.mockReturnValue({
+      data: { ...roswellCase, threads: [mk("t5", "First thread"), mk("t9", "Second thread")] },
+      isLoading: false,
+    });
+    renderCase();
+    expect(screen.getByRole("link", { name: /First thread/ })).toHaveAttribute("href", "/thread/t5");
+    expect(screen.getByRole("link", { name: /Second thread/ })).toHaveAttribute("href", "/thread/t9");
+  });
+
   it("omits the pull-quote blockquote when pull is empty", () => {
     useCaseMock.mockReturnValue({ data: socorroCase, isLoading: false });
     const { container } = renderCase("/case/socorro");

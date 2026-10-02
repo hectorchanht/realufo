@@ -86,6 +86,7 @@ export function Feed() {
 
   const featured = feed?.featured ?? [];
   const hot = feed?.hot ?? [];
+  const cases = boot?.cases ?? [];
 
   return (
     <div data-screen="feed" className="animate-[fadeup_.4s_ease_both]">
@@ -114,6 +115,30 @@ export function Feed() {
       </div>
 
       <BrowseStrip />
+
+      {cases.length > 0 && (
+        <section aria-labelledby="feed-cases" className="mb-[26px]">
+          <div className="mx-0.5 mb-3 flex items-baseline justify-between">
+            <h2 id="feed-cases" className="font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
+              ◆ Cold cases
+            </h2>
+            <Link to="/cases" className="font-mono text-[11px] text-signal">
+              see all ›
+            </Link>
+          </div>
+          <div className="flex flex-wrap gap-[7px]">
+            {cases.slice(0, 6).map((c) => (
+              <Link
+                key={c.slug}
+                to={`/case/${c.slug}`}
+                className="rounded-[7px] border border-line px-[9px] py-1 font-mono text-[10px] text-dim hover:text-signal"
+              >
+                {c.name}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="mx-0.5 mb-3 flex items-baseline justify-between">
         <div className="font-pixel text-[9px] uppercase tracking-[1px] text-faint">◆ Trending threads</div>

@@ -8,7 +8,8 @@ describe("parentPath", () => {
     expect(parentPath("/doc/X")).toBe("/archive");
     expect(parentPath("/thread/t1")).toBe("/boards");
     expect(parentPath("/board/uap")).toBe("/boards");
-    expect(parentPath("/case/roswell")).toBe("/map");
+    expect(parentPath("/case/roswell")).toBe("/cases");
+    expect(parentPath("/cases")).toBe("/");
     expect(parentPath("/release/6")).toBe("/browse");
     expect(parentPath("/browse")).toBe("/archive");
     expect(parentPath("/whatever")).toBe("/");

@@ -347,6 +347,22 @@ export function Thread() {
         </Link>
       )}
 
+      {data?.sourceCase && (
+        <Link
+          to={`/case/${data.sourceCase.slug}`}
+          data-case-chip
+          className="mb-4 flex items-center gap-[10px] rounded-[10px] border border-line2 bg-surface px-3 py-[9px]"
+        >
+          <span aria-hidden="true" className="flex-none text-sm text-faint">
+            ◂
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="font-mono text-[8.5px] uppercase tracking-[.5px] text-faint">from cold case</div>
+            <div className="truncate text-xs text-ink">{data.sourceCase.name}</div>
+          </div>
+        </Link>
+      )}
+
       {/* post list — prototype lines 262-282 (OP-first ordering from the API) */}
       <div className="flex flex-col gap-[11px]">
         {posts.map((p) => (

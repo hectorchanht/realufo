@@ -147,6 +147,17 @@ describe("Thread", () => {
     expect(link).toHaveAttribute("href", "/doc/rec9");
   });
 
+  it('renders the "from cold case" chip linking to /case/:slug', () => {
+    useThreadMock.mockReturnValue({
+      data: { ...mockThreadDetail, sourceCase: { slug: "roswell", name: "Roswell", accent: "#fff" } },
+      isLoading: false,
+    });
+    renderThread();
+    const chip = screen.getByRole("link", { name: /from cold case/i });
+    expect(chip).toHaveAttribute("href", "/case/roswell");
+    expect(chip).toHaveTextContent(/from cold case/i);
+  });
+
   it("shows the OP badge on the OP post and renders a non-OP post's body", () => {
     renderThread();
     expect(screen.getByText("OP")).toBeInTheDocument();

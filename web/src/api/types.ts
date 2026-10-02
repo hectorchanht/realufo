@@ -86,6 +86,7 @@ export interface CaseLite {
   name: string;
   accent: string;
   coord: string;
+  lede?: string;
 }
 
 export interface Bootstrap {
@@ -384,6 +385,7 @@ export interface Post {
 export interface ThreadDetail {
   thread: ThreadFull;
   sourceRecord: ThreadSourceRecord | null;
+  sourceCase?: { slug: string; name: string; accent: string } | null;
   posts: Post[];
 }
 
@@ -454,8 +456,13 @@ export interface RelatedThread {
   ago: string;
 }
 
+export interface CaseThread extends RelatedThread {
+  replies: number;
+}
+
 export interface CaseDetail {
   case: Case;
+  threads?: CaseThread[];
   relatedThread: RelatedThread | null;
 }
 

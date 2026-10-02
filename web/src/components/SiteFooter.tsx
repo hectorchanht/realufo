@@ -43,6 +43,7 @@ export default function SiteFooter() {
             <li key={i.path}><Link className={linkCls} to={i.path}>{i.label}</Link></li>
           )),
           <li key="browse"><Link className={linkCls} to="/browse">Browse all</Link></li>,
+          <li key="cases"><Link className={linkCls} to="/cases">Cold cases</Link></li>,
           // static predecessor archive (war-gov-ufo-release repo)
           <li key="release"><a className={linkCls} href="https://release.realufo.org/" target="_blank" rel="noopener">Original release archive ↗</a></li>,
           <li key="x"><a className={linkCls} href="https://x.com/realufoorg" target="_blank" rel="noopener me">Follow @realufoorg on X ↗</a></li>,

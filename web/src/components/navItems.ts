@@ -61,7 +61,7 @@ export function canBackForPath(pathname: string): boolean {
 export function parentPath(pathname: string): string {
   if (pathname.startsWith("/doc/")) return "/archive";
   if (pathname.startsWith("/thread/") || pathname.startsWith("/board/")) return "/boards";
-  if (pathname.startsWith("/case/")) return "/map";
+  if (pathname.startsWith("/case/")) return "/cases";
   if (/^\/(release|agency|location|decade)\//.test(pathname)) return "/browse";
   if (pathname === "/browse") return "/archive";
   return "/";
