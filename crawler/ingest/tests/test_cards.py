@@ -1,4 +1,5 @@
 import io
+import pytest
 from PIL import Image, ImageDraw
 from ingest import cards
 
@@ -30,9 +31,37 @@ def test_fit_caps_lines_with_ellipsis():
     f, lines = cards.fit(d, " ".join(["paperwork"] * 60), 300, max_lines=3)
     assert len(lines) == 3 and lines[-1].endswith("…")
 
-def test_fetch_thumb_returns_none_on_error():
-    assert cards.fetch_thumb("http://127.0.0.1:9/nope.jpg") is None
-    assert cards.fetch_thumb(None) is None
+def test_fetch_thumb_none_for_missing_url_but_raises_on_fetch_error():
+    assert cards.fetch_thumb(None) is None and cards.fetch_thumb("") is None
+    with pytest.raises(Exception):  # a transient error must not become a permanent text-only card
+        cards.fetch_thumb("http://127.0.0.1:9/nope.jpg")
+
+def test_fetch_thumb_encodes_spaces_in_url(monkeypatch):
+    buf = io.BytesIO()
+    Image.new("RGB", (2, 2)).save(buf, "PNG")
+    seen = []
+    class Resp(io.BytesIO):
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+    def fake(req, timeout=None):
+        seen.append(req.full_url)
+        return Resp(buf.getvalue())
+    monkeypatch.setattr(cards.urllib.request, "urlopen", fake)
+    img = cards.fetch_thumb("https://assets.realufo.org/thumbs/SP ACE-1%20x.jpg")
+    assert seen == ["https://assets.realufo.org/thumbs/SP%20ACE-1%20x.jpg"] and img.size == (2, 2)
+
+def test_clip_lines_ellipsis_and_width():
+    d = ImageDraw.Draw(Image.new("RGB", (10, 10)))
+    f = cards.font(cards.SANS, 25, 400)
+    lines = cards.wrap(d, " ".join(["paperwork"] * 40), f, 300)
+    out = cards.clip_lines(d, lines, f, 300, 3)
+    assert len(out) == 3 and out[-1].endswith("…") and all(d.textlength(l, font=f) <= 300 for l in out)
+    assert cards.clip_lines(d, lines[:2], f, 300, 3) == lines[:2]
+
+def test_render_long_bullets_and_long_one_liner():
+    t = {"bullets": [" ".join(["classified"] * 40)] * 3, "one_liner": " ".join(["paperwork"] * 40)}
+    for th in (Image.new("RGB", (640, 360)), None):
+        assert cards.render(t, "DOW-UAP-D084", th).size == (1200, 630)
 
 def test_card_key_and_url_encode_ids_with_spaces():
     key = cards.card_key("SP ACE-1", "abcdef0123456789")

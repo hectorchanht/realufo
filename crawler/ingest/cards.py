@@ -50,17 +50,22 @@ def wrap(d, text: str, f, width: int) -> list[str]:
         lines.append(cur)
     return lines
 
-def fit(d, text: str, width: int, max_lines: int = 3, sizes=(58, 50, 44, 38, 32)):
+def clip_lines(d, lines: list[str], f, width: int, max_lines: int) -> list[str]:
+    if len(lines) <= max_lines:
+        return lines
+    lines = lines[:max_lines]
+    while lines[-1] and d.textlength(lines[-1] + "…", font=f) > width:
+        lines[-1] = lines[-1][:-1]
+    lines[-1] = lines[-1].rstrip() + "…"
+    return lines
+
+def fit(d, text: str, width: int, max_lines: int = 3, sizes=(52, 46, 40, 36, 32)):
     for s in sizes:
         f = font(SANS, s, 700)
         lines = wrap(d, text, f, width)
         if len(lines) <= max_lines:
             return f, lines
-    lines = lines[:max_lines]
-    while lines[-1] and d.textlength(lines[-1] + "…", font=f) > width:
-        lines[-1] = lines[-1][:-1]
-    lines[-1] = lines[-1].rstrip() + "…"
-    return f, lines
+    return f, clip_lines(d, lines, f, width, max_lines)
 
 def cover(img, w: int, h: int):
     s = max(w / img.width, h / img.height)
@@ -83,28 +88,28 @@ def render(t: dict, rid: str, thumb) -> Image.Image:
     for line in lines:
         d.text((x0, y), line, font=f, fill=INK)
         y += round(f.size * 1.18)
-    y += 18
-    bf = font(SANS, 25, 400)
+    y += 16
+    bf = font(SANS, 22, 400)
     for b in t["bullets"]:
-        for j, line in enumerate(wrap(d, b, bf, width - 28)[:2]):
+        for j, line in enumerate(clip_lines(d, wrap(d, b, bf, width - 28), bf, width - 28, 3)):
             if j == 0:
                 d.text((x0, y), "•", font=bf, fill=SIGNAL)
             d.text((x0 + 28, y), line, font=bf, fill=DIM)
-            y += 34
-        y += 8
+            y += 28
+        y += 4
     mf = font(MONO, 20, 500)
     d.text((x0, H - 56), f"realufo.org/doc/{rid}", font=mf, fill=DIM)
     d.text((W - 56 - d.textlength("TL;DR", font=mf), H - 56), "TL;DR", font=mf, fill=SIGNAL)
     return img
 
 def fetch_thumb(url):
+    """None only when the record has no thumb; a fetch failure raises so no card is made (retried next run)."""
     if not url:
         return None
-    try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=30) as r:
-            return Image.open(io.BytesIO(r.read())).convert("RGB")
-    except Exception:
-        return None
+    # R2 keys can contain raw spaces (same escaping as fetch.head_ok)
+    req = urllib.request.Request(urllib.parse.quote(url, safe=":/?#[]@!$&'()*+,;=%~"), headers=UA)
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return Image.open(io.BytesIO(r.read())).convert("RGB")
 
 def card_key(rid: str, h: str) -> str:
     return f"cards/{rid}-en-{h[:8]}.png"
@@ -127,8 +132,11 @@ def main(argv=None):
         for i, row in enumerate(rows, 1):
             key = card_key(row["id"], row["input_hash"])
             try:
-                img = render({"bullets": json.loads(row["bullets"]), "one_liner": row["one_liner"]}, row["id"],
-                             fetch_thumb(row.get("thumb")))
+                try:
+                    thumb = fetch_thumb(row.get("thumb"))
+                except Exception as e:
+                    raise RuntimeError(f"thumb fetch failed: {e}") from e
+                img = render({"bullets": json.loads(row["bullets"]), "one_liner": row["one_liner"]}, row["id"], thumb)
                 path = os.path.join(args.out if args.dry_run and args.out else work, os.path.basename(key))
                 os.makedirs(os.path.dirname(path), exist_ok=True)
                 img.save(path, "PNG", optimize=True)
