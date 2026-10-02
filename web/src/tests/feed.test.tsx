@@ -80,6 +80,7 @@ const mockFeed: FeedResponse = {
 };
 
 vi.mock("../api/queries", () => ({
+  isVotedLocally: () => false,
   useBootstrap: () => ({ data: mockBootstrap, isLoading: false }),
   useFeed: () => ({ data: mockFeed, isLoading: false }),
   useHubs: () => ({

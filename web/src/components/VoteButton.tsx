@@ -5,16 +5,15 @@
 //   voted:  border/background var(--signal), text #04140c (dark-on-signal)
 //   unvoted: border var(--line2), background transparent, text var(--dim)
 //
-// `useVote()` (Task 13) already does the *authoritative* optimistic cache
-// patch (keyed off its own localStorage-backed "did I vote" map) once the
-// parent re-renders with fresh `votes`/`voted` props from the query cache.
-// This component additionally keeps a small local overlay so the pillar
-// flips instantly on tap even before that round-trip — the overlay is
-// dropped the moment new `votes`/`voted` props arrive (i.e. once the
-// subscribed parent re-renders from the cache), so the two mechanisms never
-// fight for long.
+// `useVote()` does the *authoritative* optimistic cache patch and records the
+// vote in a localStorage map; `isVotedLocally` reads that map, so it is the
+// truth for "voted" across re-renders and reloads. The local overlay only
+// bridges the gap until the cache patch lands (it is dropped when `votes`
+// changes), so the pillar flips instantly on tap.
 import { useEffect, useState } from "react";
-import { useVote } from "../api/queries";
+import { ApiError } from "../api/client";
+import { isVotedLocally, useVote } from "../api/queries";
+import { useOverlay } from "../overlays/OverlayProvider";
 import type { VoteTargetType } from "../api/types";
 
 export interface VoteButtonProps {
@@ -24,8 +23,9 @@ export interface VoteButtonProps {
   voted?: boolean;
 }
 
-export function VoteButton({ targetType, targetId, votes, voted = false }: VoteButtonProps) {
+export function VoteButton({ targetType, targetId, votes, voted }: VoteButtonProps) {
   const vote = useVote();
+  const { toast } = useOverlay();
   const [overlay, setOverlay] = useState<{ voted: boolean; votes: number } | null>(null);
 
   // Props caught up with our optimistic guess (parent re-rendered from the
@@ -34,14 +34,25 @@ export function VoteButton({ targetType, targetId, votes, voted = false }: VoteB
     setOverlay(null);
   }, [voted, votes]);
 
-  const isVoted = overlay?.voted ?? voted;
+  const baseVoted = voted ?? isVotedLocally(targetType, targetId);
+  const isVoted = overlay?.voted ?? baseVoted;
   const displayVotes = overlay?.votes ?? votes;
 
   function handleClick() {
     const nextVoted = !isVoted;
     setOverlay({ voted: nextVoted, votes: displayVotes + (nextVoted ? 1 : -1) });
     navigator.vibrate?.(5);
-    vote.mutate({ target_type: targetType, target_id: targetId });
+    vote.mutate(
+      { target_type: targetType, target_id: targetId },
+      {
+        onError: (err) =>
+          toast(
+            err instanceof ApiError && err.status === 429
+              ? "slow down — too many votes"
+              : "Vote didn't go through — try again",
+          ),
+      },
+    );
   }
 
   return (

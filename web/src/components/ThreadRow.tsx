@@ -20,13 +20,12 @@ import { StanceTag } from "./StanceTag";
 
 export interface ThreadRowProps {
   thread: ThreadCard;
-  /** "Have I voted on this thread" — no source of truth lives on ThreadCard
-   * itself (see VoteButton's file header); defaults to false until a screen
-   * wires in the client-side voted-map lookup. */
+  /** Override for "have I voted on this thread"; omit to use this browser's
+   * stored vote (see VoteButton's file header). */
   voted?: boolean;
 }
 
-export function ThreadRow({ thread, voted = false }: ThreadRowProps) {
+export function ThreadRow({ thread, voted }: ThreadRowProps) {
   return (
     <div
       data-thread-row

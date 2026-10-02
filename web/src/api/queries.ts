@@ -418,7 +418,7 @@ function patchVotesDeep<T>(
 
 // Only query caches that can plausibly contain a votable node are scanned/patched —
 // keeps the walk cheap and avoids touching unrelated caches like ['bootstrap'].
-const VOTABLE_RESOURCES = new Set(["feed", "record", "comments", "boardThreads", "thread"]);
+const VOTABLE_RESOURCES = new Set(["feed", "record", "comments", "boardThreads", "thread", "caseComments", "threadSearch", "hub"]);
 
 function votableQueries(queryClient: ReturnType<typeof useQueryClient>) {
   return queryClient.getQueriesData<unknown>({
@@ -450,6 +450,11 @@ function votedKey(targetType: VoteTargetType, targetId: string) {
   return `${targetType}:${targetId}`;
 }
 
+/** This browser's own record of whether it voted on a target. */
+export function isVotedLocally(targetType: VoteTargetType, targetId: string): boolean {
+  return !!votedMapGet()[votedKey(targetType, targetId)];
+}
+
 interface VoteMutationVars {
   target_type: VoteTargetType;
   target_id: string;
@@ -471,6 +476,7 @@ export function useVote() {
       const key = votedKey(vars.target_type, vars.target_id);
       const wasVoted = !!votedMapGet()[key];
       const delta = wasVoted ? -1 : 1;
+      votedMapSet(key, !wasVoted);
 
       const previous: Array<[QueryKey, unknown]> = [];
       for (const [queryKey, data] of votableQueries(queryClient)) {
@@ -480,7 +486,6 @@ export function useVote() {
           queryClient.setQueryData(queryKey, patched);
         }
       }
-      votedMapSet(key, !wasVoted);
       return { previous, wasVoted, key };
     },
     onError: (_err, _vars, ctx) => {

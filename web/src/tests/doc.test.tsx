@@ -46,6 +46,7 @@ const useRecordsMock = vi.fn();
 const useBootstrapMock = vi.fn();
 
 vi.mock("../api/queries", () => ({
+  isVotedLocally: () => false,
   useRecord: (id: string) => useRecordMock(id),
   useComments: (id: string) => useCommentsMock(id),
   useRecords: (params: Record<string, unknown>) => useRecordsMock(params),
