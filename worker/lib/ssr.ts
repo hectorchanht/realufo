@@ -19,6 +19,38 @@ export const threadHref = (id: string) => `/thread/${encodeURIComponent(id)}`;
 // boards.slug is slash-wrapped ("/uap/"); the URL uses the bare slug.
 export const boardHref = (slug: string) => `/board/${encodeURIComponent(slug.replace(/^\/|\/$/g, ""))}`;
 
+export const hubHref = (kind: string, slug: string) => `/${kind}/${encodeURIComponent(slug)}`;
+const KIND_HEADING: Record<string, string> = { release: "Releases", agency: "Agencies", location: "Locations", decade: "Decades" };
+type HubLinkData = { kind: string; slug: string; label: string; count: number };
+const hubLinks = (hs: HubLinkData[]) => hs.map((s) => ({ href: hubHref(s.kind, s.slug), text: `${s.label} (${s.count})` }));
+
+export type HubPageData = {
+  kind: string; title: string; intro: string; records: RecordLink[]; siblings: HubLinkData[];
+  prev?: string | null; next?: string | null;
+};
+
+export function hubBody(h: HubPageData): string {
+  const nav = [
+    h.prev && a({ href: hubHref("release", h.prev), text: `← Release ${h.prev.padStart(2, "0")}` }),
+    h.next && a({ href: hubHref("release", h.next), text: `Release ${h.next.padStart(2, "0")} →` }),
+  ].filter(Boolean);
+  return [
+    `<p>${a({ href: "/browse", text: "Browse" })} › ${esc(KIND_HEADING[h.kind] ?? "")}</p>`,
+    `<h1>${esc(h.title)}</h1>`,
+    paras(h.intro),
+    nav.length ? `<p>${nav.join(" · ")}</p>` : "",
+    section(`Files (${h.records.length})`, docLinks(h.records)),
+    section(`More ${(KIND_HEADING[h.kind] ?? "hubs").toLowerCase()}`, hubLinks(h.siblings)),
+  ].join("");
+}
+
+export const browseBody = (hubs: HubLinkData[]) =>
+  tabBody(
+    "Browse the archive",
+    "Every declassified UAP file, grouped by release, agency, location and decade.",
+    ...["release", "agency", "location", "decade"].map((k) => section(KIND_HEADING[k], hubLinks(hubs.filter((h) => h.kind === k))))
+  );
+
 const a = (l: Link) => `<a href="${esc(l.href)}">${esc(l.text)}</a>`;
 const ul = (items: Link[]) => `<ul>${items.map((l) => `<li>${a(l)}</li>`).join("")}</ul>`;
 const paras = (text: string | null | undefined) =>
@@ -41,6 +73,7 @@ export const countList = (heading: string, items: { name: string; count: number 
 const NAV: Link[] = [
   { href: "/", text: "RealUFO" },
   { href: "/archive", text: "Archive" },
+  { href: "/browse", text: "Browse" },
   { href: "/boards", text: "Boards" },
   { href: "/map", text: "Map" },
 ];
@@ -74,6 +107,7 @@ export type DocData = {
   release: { no: number; date: string } | null;
   related: { key: string; label: string; records: RecordLink[] }[];
   fullText?: { pages: { n: number; text: string }[]; truncated: boolean; total_pages: number } | null;
+  hubs?: Partial<Record<"release" | "agency" | "location" | "decade", string>>;
 };
 
 const RELATED_HEADING: Record<string, string> = {
@@ -101,14 +135,15 @@ function fullTextSection(d: DocData): string {
 export function docBody(d: DocData): string {
   const r = d.record;
   const dur = d.assets.find((x) => x.role === "full" && x.duration)?.duration;
-  const facts: [string, string | null | undefined][] = [
-    ["File", r.id],
-    ["Agency", r.agency_full || r.agency],
-    ["Incident date", r.incident_date],
-    ["Location", r.location && r.location !== "N/A" ? r.location : null],
-    ["Released in", d.release && `Release ${String(d.release.no).padStart(2, "0")} (${d.release.date})`],
-    ["File type", r.kind.toUpperCase()],
-    ["Length", dur ? mmss(dur) : null],
+  const h = d.hubs ?? {};
+  const facts: [string, string | null | undefined, string | undefined][] = [
+    ["File", r.id, undefined],
+    ["Agency", r.agency_full || r.agency, h.agency && hubHref("agency", h.agency)],
+    ["Incident date", r.incident_date, h.decade && hubHref("decade", h.decade)],
+    ["Location", r.location && r.location !== "N/A" ? r.location : null, h.location && hubHref("location", h.location)],
+    ["Released in", d.release && `Release ${String(d.release.no).padStart(2, "0")} (${d.release.date})`, h.release && hubHref("release", h.release)],
+    ["File type", r.kind.toUpperCase(), undefined],
+    ["Length", dur ? mmss(dur) : null, undefined],
   ];
   const series = [
     d.series.prev && a({ href: docHref(d.series.prev), text: `Previous: ${d.series.prev}` }),
@@ -117,7 +152,10 @@ export function docBody(d: DocData): string {
   return [
     `<p>${a({ href: "/", text: "Home" })} › ${a({ href: "/archive", text: "Archive" })}${r.agency ? ` › ${esc(r.agency)}` : ""}</p>`,
     `<h1>${esc(r.title)}</h1>`,
-    `<dl>${facts.filter(([, v]) => v).map(([k, v]) => `<dt>${k}</dt><dd>${esc(String(v))}</dd>`).join("")}</dl>`,
+    `<dl>${facts
+      .filter(([, v]) => v)
+      .map(([k, v, href]) => `<dt>${k}</dt><dd>${href ? a({ href, text: String(v) }) : esc(String(v))}</dd>`)
+      .join("")}</dl>`,
     paras(r.summary),
     `<p>${a({ href: `/api/file/${encodeURIComponent(r.id)}`, text: "Open original file" })}</p>`,
     fullTextSection(d),

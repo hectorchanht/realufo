@@ -88,3 +88,39 @@ describe("hub API", () => {
     expect(d.hubs).toEqual({});
   });
 });
+
+describe("hub pages", () => {
+  it("pre-renders /agency/fbi: h1, doc links, canonical, ItemList JSON-LD", async () => {
+    const html = await (await call("/agency/fbi")).text();
+    expect(html).toContain("<h1>FBI UAP files</h1>");
+    expect(html).toContain('<a href="/doc/FBI-UAP-D002">');
+    expect(html).toContain('<link rel="canonical" href="https://x/agency/fbi">');
+    expect(html).toContain('"@type":"ItemList"');
+    expect(html).toContain('"url":"https://x/doc/FBI-UAP-D002"');
+  });
+  it("below-threshold or garbage hub URLs serve the plain shell", async () => {
+    for (const p of ["/agency/cia", "/decade/abc", "/release/99", "/location/atlantis"]) {
+      const res = await call(p);
+      expect(res.status, p).toBe(200);
+      expect(await res.text(), p).toBe(SHELL);
+    }
+  });
+  it("pre-renders /browse", async () => {
+    const html = await (await call("/browse")).text();
+    expect(html).toContain("<h1>Browse the archive</h1>");
+    expect(html).toContain('<a href="/release/2">Release 02 · 12 Jun 2026 (8)</a>');
+    expect(html).not.toContain("/agency/cia");
+  });
+  it("doc pre-render links its facts to hubs", async () => {
+    const html = await (await call("/doc/FBI-UAP-D002")).text();
+    expect(html).toContain('<dt>Agency</dt><dd><a href="/agency/fbi">');
+  });
+  it("sitemap lists /browse and live hub URLs only", async () => {
+    const xml = await (await call("/sitemap.xml")).text();
+    expect(xml).toContain("<loc>https://x/browse</loc>");
+    expect(xml).toContain("<loc>https://x/agency/fbi</loc>");
+    expect(xml).toContain("<loc>https://x/release/2</loc>");
+    expect(xml).toContain("<loc>https://x/decade/1940s</loc>");
+    expect(xml).not.toContain("/agency/cia<");
+  });
+});
