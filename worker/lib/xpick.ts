@@ -79,7 +79,9 @@ async function releaseCandidate(env: Env, now: Date): Promise<Candidate | null> 
       `SELECT ${cols} FROM records WHERE archive='wargov' AND status='live' AND doc_date IN (${rel.raw.map(() => "?").join(",")}) ORDER BY id`
     ).bind(...rel.raw).all<GroupRow>();
     const no = String(rel.no).padStart(2, "0");
-    const c = await releaseFrom(env, `wargov:R${rel.no}`, `${ARCHIVE_NAME.wargov} UAP Release ${no}`, `${SITE}/archive?release=${rel.no}`, rows.results, now);
+    // ref keyed on the release date, not its rank: a late file with an earlier
+    // doc_date would shift every rank and re-announce an old release
+    const c = await releaseFrom(env, `wargov:${rel.date}`, `${ARCHIVE_NAME.wargov} UAP Release ${no}`, `${SITE}/archive?release=${rel.no}`, rows.results, now);
     if (c) return c;
   }
   const groups = await env.DB.prepare(
@@ -123,13 +125,17 @@ async function pickCandidate(env: Env): Promise<Candidate | null> {
 }
 
 async function highlightCandidate(env: Env, now: Date): Promise<Candidate | null> {
+  // Opt-in: votes are cheap to forge (anon ids are client-chosen), so this
+  // stream puts user text on the official account only when the operator sets a bar.
+  const min = Number(env.X_HIGHLIGHT_MIN_VOTES || 0);
+  if (!(min > 0)) return null;
   const t = await env.DB.prepare(
     `SELECT t.id, t.title, t.op_body, t.votes, t.source_record_id, r.archive, r.kind FROM threads t
      LEFT JOIN records r ON r.id=t.source_record_id
      WHERE t.votes>=? AND t.created_at>=datetime(?,'-7 days')
        AND NOT EXISTS (SELECT 1 FROM x_posts p WHERE p.stream='highlight' AND p.ref=t.id)
      ORDER BY t.votes DESC LIMIT 1`
-  ).bind(Number(env.X_HIGHLIGHT_MIN_VOTES ?? 5), sqlTime(now))
+  ).bind(min, sqlTime(now))
     .first<{ id: string; title: string | null; op_body: string | null; votes: number; source_record_id: string | null; archive: string | null; kind: string | null }>();
   if (!t) return null;
   // Never user uploads: media only from the official record the thread is about.

@@ -1,7 +1,7 @@
 import type { Env } from "../env";
 import { createPost, uploadMedia, mediaStatus, XError, type XSecrets, type Source } from "./x";
 import { nextCandidate, withinBudget, costOf, sqlTime, type Media } from "./xpick";
-import { draft } from "./xcopy";
+import { draft, isClean } from "./xcopy";
 
 // One cron tick (Spec 4 §3, §6). Row goes in BEFORE X is called: UNIQUE(stream, ref)
 // makes a second attempt at the same candidate a no-op.
@@ -21,18 +21,32 @@ const r2Source = (env: Env, key: string, size: number): Source => ({
 });
 
 async function post(env: Env, s: XSecrets, row: Row, mediaIds: string[]) {
+  let tweet: string;
   try {
-    const tweet = await createPost(s, row.text, mediaIds);
-    await env.DB.prepare("UPDATE x_posts SET status='posted', tweet_id=?, error=NULL WHERE id=?").bind(tweet, row.id).run();
-    log({ posted: row.id, tweet });
+    tweet = await createPost(s, row.text, mediaIds);
   } catch (e) {
-    const status = e instanceof XError ? e.status : 0; // 0 = network error: X likely created nothing
-    const retry = status === 0 || status === 429 || status >= 500;
+    if (!(e instanceof XError)) {
+      // network error after send: X may have created it → manual check, never auto-retried
+      await env.DB.prepare("UPDATE x_posts SET status='pending', attempts=0, error=? WHERE id=?").bind(String(e).slice(0, 500), row.id).run();
+      return log({ ambiguous: row.id, error: String(e).slice(0, 200) });
+    }
+    if (e.status === 401 || e.status === 402 || (e.status === 403 && !/duplicate/i.test(e.body))) {
+      // auth revoked / out of credits: nothing was posted; drop the row so the
+      // candidate (a release announcement, a clip) isn't burned while we're down
+      await env.DB.prepare("DELETE FROM x_posts WHERE id=?").bind(row.id).run();
+      return log({ halted: row.id, status: e.status, body: e.body.slice(0, 200) });
+    }
     const attempts = row.attempts + 1;
-    const final = !retry || attempts >= MAX_ATTEMPTS;
+    const final = !(e.status === 429 || e.status >= 500) || attempts >= MAX_ATTEMPTS;
     await env.DB.prepare("UPDATE x_posts SET status=?, attempts=?, error=? WHERE id=?")
       .bind(final ? "failed" : "pending", attempts, String(e).slice(0, 500), row.id).run();
-    log({ error: row.id, status, final });
+    return log({ error: row.id, status: e.status, final });
+  }
+  log({ posted: row.id, tweet }); // logged before the D1 write so a failed write is recoverable
+  try {
+    await env.DB.prepare("UPDATE x_posts SET status='posted', tweet_id=?, error=NULL WHERE id=?").bind(tweet, row.id).run();
+  } catch (e) {
+    log({ postedUnrecorded: row.id, tweet, error: String(e).slice(0, 200) }); // stays pending/attempts=0: never re-posted
   }
 }
 
@@ -74,6 +88,12 @@ export async function tick(env: Env, now = new Date(), sleep?: (ms: number) => P
 
   const c = await nextCandidate(env, now);
   if (!c) return log({ idle: true });
+  if (c.stream === "highlight" && !isClean(c.thread.title)) {
+    // never put a "proof of aliens" thread title on the official account; failed row = don't pick again
+    await env.DB.prepare("INSERT INTO x_posts(stream,ref,text,ai,cost_usd,status,error,created_at) VALUES ('highlight',?,?,0,0,'failed','unsafe title',?) ON CONFLICT DO NOTHING")
+      .bind(c.ref, c.thread.title, sqlTime(now)).run();
+    return log({ unsafe: c.ref });
+  }
   const cost = costOf(c);
   if (!(await withinBudget(env, cost, now))) return log({ budget: c.stream, ref: c.ref });
 

@@ -45,7 +45,7 @@ describe("release candidates", () => {
     const c = await nextCandidate(E(), T("2026-10-10T09:00:00"));
     expect(c).toMatchObject({ stream: "release", kinds: { pdf: 1, video: 1 } });
     if (c?.stream !== "release") throw 0;
-    expect(c.ref).toMatch(/^wargov:R\d+$/);
+    expect(c.ref).toBe("wargov:2026-10-08"); // stable: a late file with an earlier date can't renumber it
     expect(c.link).toMatch(/^https:\/\/realufo\.org\/archive\?release=\d+$/);
     expect(c.media).toEqual({ key: "clips/wargov/XT-R2.mp4", mime: "video/mp4", size: 100 });
   });
@@ -94,8 +94,17 @@ describe("highlight", () => {
       "INSERT INTO threads(id,title,op_body,votes,source_record_id,created_at) VALUES ('XT-T1','Odd lights','body text',99999,'XT-V2',?)"
     ).bind(sqlTime(T("2026-10-09T10:00:00"))).run();
     expect(await nextCandidate(E(), T("2026-10-10T19:00:00"))).toBeNull();
-    const c = await nextCandidate(E(), T("2026-10-10T21:00:00"));
+    const c = await nextCandidate(E({ X_HIGHLIGHT_MIN_VOTES: "5" }), T("2026-10-10T21:00:00"));
     expect(c).toMatchObject({ stream: "highlight", ref: "XT-T1", thread: { title: "Odd lights", votes: 99999 }, media: { key: "clips/wargov/XT-V2.mp4" } });
+  });
+});
+
+describe("highlight opt-in", () => {
+  it("is off unless X_HIGHLIGHT_MIN_VOTES is set (votes are forgeable by one person)", async () => {
+    await posted("pick", "already", T("2026-10-10T14:00:00"));
+    await env.DB.prepare("INSERT INTO threads(id,title,op_body,votes,created_at) VALUES ('XT-T2','t','b',99999,?)")
+      .bind(sqlTime(T("2026-10-09T10:00:00"))).run();
+    expect(await nextCandidate(E({ X_HIGHLIGHT_MIN_VOTES: "" }), T("2026-10-10T21:00:00"))).toBeNull();
   });
 });
 

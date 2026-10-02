@@ -9,6 +9,8 @@ const TLD = "com|org|net|gov|mil|edu|io|co|us|uk|info|me|ai|app|dev|tv|ly|xyz";
 const LINK_RE = new RegExp(String.raw`\bhttps?:\/\/\S+|\bwww\.\S+|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:${TLD})\b(?:\/\S*)?`, "gi");
 const BANNED = [/\bconfirmed alien/i, /\bproof\b/i, /\bproves?\b/i, /cover[- ]?up/i, /\bexposed\b/i, /\bshocking\b/i, /\bnon-?human\b/i];
 
+export const isClean = (t: string) => !BANNED.some((re) => re.test(t));
+
 export function weightedLength(text: string): number {
   let n = 0;
   const rest = text.replace(/https?:\/\/\S+/g, () => ((n += 23), ""));
@@ -54,8 +56,8 @@ export function template(c: Candidate): string {
   return `Top thread on RealUFO this week (${c.thread.votes} votes): ${fit(stripLinks(c.thread.title), 160)} #UAP`;
 }
 
-// trusted = template text (metadata verbatim), so skip the banned-claims check:
-// a real file title may contain words like "proof".
+// trusted = template built from official record metadata, so skip the banned-claims
+// check (a real file title may contain words like "proof"). Never for user text.
 export function finalize(c: Candidate, raw: string, trusted = false): string | null {
   let t = stripLinks(raw)
     .replace(/(^|\s)@\w+/g, "$1")
@@ -65,7 +67,7 @@ export function finalize(c: Candidate, raw: string, trusted = false): string | n
     .replace(/ +\n/g, "\n")
     .trim();
   if (!t || !t.includes(mustContain(c))) return null;
-  if (!trusted && BANNED.some((re) => re.test(t))) return null;
+  if (!trusted && !isClean(t)) return null;
   if (c.stream === "release") t += "\n" + c.link;
   return weightedLength(t) <= 280 ? t : null;
 }
@@ -76,17 +78,17 @@ const SYSTEM = (must: string) =>
   `Never claim it proves anything, never speculate about aliens. No URLs, no website names, no @mentions, ` +
   `at most one hashtag: #UAP. It must include this exact text: "${must}". Output only the post text.`;
 
-function facts(c: Candidate) {
+function facts(c: Exclude<Candidate, { stream: "highlight" }>) {
   if (c.stream === "release") return { release: c.label, files: c.kinds, sample_titles: c.titles };
-  if (c.stream === "pick") {
-    const r = c.record;
-    return { id: r.id, title: r.title, source: ARCHIVE_NAME[r.archive] ?? r.archive, agency: r.agency, kind: r.kind,
-      incident_date: r.incident_date, location: r.location, duration_s: r.duration, summary: r.summary?.slice(0, 500) };
-  }
-  return { community_thread_title: c.thread.title, thread_excerpt: c.thread.body, votes: c.thread.votes, site: "RealUFO" };
+  const r = c.record;
+  return { id: r.id, title: r.title, source: ARCHIVE_NAME[r.archive] ?? r.archive, agency: r.agency, kind: r.kind,
+    incident_date: r.incident_date, location: r.location, duration_s: r.duration, summary: r.summary?.slice(0, 500) };
 }
 
 export async function draft(env: Env, c: Candidate): Promise<{ text: string; ai: boolean }> {
+  // Highlights: user-written text is a prompt-injection surface → fixed template,
+  // banned-claims check applied (the caller has already rejected unclean titles).
+  if (c.stream === "highlight") return { text: finalize(c, template(c)) ?? finalize(c, template(c), true)!, ai: false };
   try {
     const out = await env.AI.run(ASK_LLM_MODEL as any, {
       messages: [{ role: "system", content: SYSTEM(mustContain(c)) }, { role: "user", content: JSON.stringify(facts(c)) }],

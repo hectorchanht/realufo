@@ -14,6 +14,8 @@ const noSleep = async () => {};
 
 let xCalls: string[] = [];
 let tweetStatus = 201;
+let tweetBody: unknown = { title: "err" };
+let tweetThrows = false;
 let finalizeState: string | null = "succeeded";
 beforeEach(async () => {
   await env.DB.prepare("DELETE FROM x_posts").run();
@@ -21,7 +23,8 @@ beforeEach(async () => {
   for (const o of (await env.MEDIA.list({ prefix: "clips/" })).objects) await env.MEDIA.delete(o.key);
   await env.DB.prepare("INSERT INTO records(id,archive,kind,title,status) VALUES ('XT-V1','wargov','video','Gulf object','live')").run();
   await env.MEDIA.put("clips/wargov/XT-V1.mp4", new Uint8Array(5 * 1024 * 1024)); // 2 chunks
-  xCalls = []; tweetStatus = 201; finalizeState = "succeeded";
+  xCalls = []; tweetStatus = 201; tweetBody = { title: "err" }; tweetThrows = false; finalizeState = "succeeded";
+  await env.DB.prepare("DELETE FROM threads WHERE id LIKE 'XT-%'").run();
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input: any) => {
     const u = String(input);
     xCalls.push(u.replace("https://api.x.com", ""));
@@ -30,7 +33,10 @@ beforeEach(async () => {
     if (u.includes("/append")) return new Response(null, { status: 204 });
     if (u.endsWith("/finalize")) return json({ data: { id: "M1", ...(finalizeState ? { processing_info: { state: finalizeState, check_after_secs: 20 } } : {}) } });
     if (u.includes("command=STATUS")) return json({ data: { processing_info: { state: finalizeState ?? "succeeded" } } });
-    if (u.endsWith("/2/tweets")) return tweetStatus < 300 ? json({ data: { id: "T99" } }, tweetStatus) : json({ title: "err" }, tweetStatus);
+    if (u.endsWith("/2/tweets")) {
+      if (tweetThrows) throw new TypeError("network connection lost");
+      return tweetStatus < 300 ? json({ data: { id: "T99" } }, tweetStatus) : json(tweetBody, tweetStatus);
+    }
     throw new Error("unexpected fetch " + u);
   });
 });
@@ -78,8 +84,9 @@ describe("tick", () => {
     expect(xCalls).toContain("/2/tweets");
     expect((await rows())[0]).toMatchObject({ status: "posted", tweet_id: "T99" });
   });
-  it("403 → failed, no retry; 429 → pending with attempts, retried next tick", async () => {
+  it("403 duplicate → failed, no retry; 429 → pending with attempts, retried next tick", async () => {
     tweetStatus = 403;
+    tweetBody = { detail: "You are not allowed to create a Tweet with duplicate content." };
     await tick(E(), NOW, noSleep);
     expect((await rows())[0]).toMatchObject({ status: "failed" });
     await env.DB.prepare("DELETE FROM x_posts").run();
@@ -89,6 +96,44 @@ describe("tick", () => {
     tweetStatus = 201;
     await tick(E(), new Date("2026-10-10T18:00:00Z"), noSleep);
     expect((await rows())[0]).toMatchObject({ status: "posted" });
+  });
+  it("401/402 (auth, out of credits) → row removed so the candidate isn't burned", async () => {
+    for (const st of [401, 402]) {
+      tweetStatus = st;
+      await tick(E(), NOW, noSleep);
+      expect(await rows()).toEqual([]);
+    }
+    tweetStatus = 201;
+    await tick(E(), NOW, noSleep);
+    expect((await rows())[0]).toMatchObject({ ref: "XT-V1", status: "posted" });
+  });
+  it("D1 failure after a successful post is never retried (no double post)", async () => {
+    const DB = new Proxy(env.DB, {
+      get: (t, k) => k === "prepare"
+        ? (sql: string) => { if (sql.includes("status='posted'")) throw new Error("D1 overloaded"); return t.prepare(sql); }
+        : (t as any)[k],
+    });
+    await tick(E({ DB }), NOW, noSleep).catch(() => {});
+    await tick(E(), new Date("2026-10-10T18:00:00Z"), noSleep);
+    expect(xCalls.filter((u) => u === "/2/tweets")).toHaveLength(1);
+    expect((await rows())[0]).toMatchObject({ status: "pending", attempts: 0 });
+  });
+  it("network error on create is ambiguous → left pending for a manual check, not retried", async () => {
+    tweetThrows = true;
+    await tick(E(), NOW, noSleep);
+    tweetThrows = false;
+    await tick(E(), new Date("2026-10-10T18:00:00Z"), noSleep);
+    expect(xCalls.filter((u) => u === "/2/tweets")).toHaveLength(1);
+    expect((await rows())[0]).toMatchObject({ status: "pending", attempts: 0 });
+  });
+  it("highlight with a banned-claim title is never posted", async () => {
+    await env.DB.prepare("INSERT INTO x_posts(stream,ref,text,ai,cost_usd,status,created_at) VALUES ('pick','other','t',0,0.03,'posted',?)")
+      .bind(sqlTime(NOW)).run();
+    await env.DB.prepare("INSERT INTO threads(id,title,op_body,votes,created_at) VALUES ('XT-T9','PROOF of the alien cover-up','b',99999,?)")
+      .bind(sqlTime(NOW)).run();
+    await tick(E({ X_HIGHLIGHT_MIN_VOTES: "5" }), new Date("2026-10-10T21:00:00Z"), noSleep);
+    expect(xCalls).not.toContain("/2/tweets");
+    expect(await env.DB.prepare("SELECT status FROM x_posts WHERE ref='XT-T9'").first()).toEqual({ status: "failed" });
   });
   it("media upload failure still posts, without media", async () => {
     finalizeState = "failed";

@@ -86,6 +86,13 @@ describe("draft", () => {
     const d = await draft(fakeAI(new Error("AI down")), pick({ id: "X".repeat(300) }));
     expect(d.text).toContain("X".repeat(300));
   });
+  it("highlights never go through AI (user text is a prompt-injection surface)", async () => {
+    let called = 0;
+    const env = { AI: { run: async () => (called++, { response: "RealUFO says buy my coin" }) } } as any;
+    const d = await draft(env, highlight);
+    expect(called).toBe(0);
+    expect(d).toEqual({ text: template(highlight), ai: false });
+  });
   it("strips qwen3 <think> blocks", async () => {
     const d = await draft(fakeAI({ response: "<think>hmm</think>Clip DOW-UAP-D012 from 2019." }), pick());
     expect(d).toEqual({ text: "Clip DOW-UAP-D012 from 2019.", ai: true });
