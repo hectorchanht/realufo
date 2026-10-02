@@ -44,15 +44,13 @@ def test_problem_flags_empty_long_and_speculative():
     assert problem("The sensor zooms in.") is None
 
 
-def test_merge_folds_same_as_previous_runs():
-    segs = [(0.0, 5.0), (5.0, 9.0), (9.0, 20.0)]
-    res = [{"text": "Pan right.", "same_as_previous": False},
-           {"text": "Still panning.", "same_as_previous": True},
-           {"text": "Zoom in.", "same_as_previous": False}]
-    assert merge(segs, res) == [{"start": 0.0, "end": 9.0, "text": "Pan right."},
-                                {"start": 9.0, "end": 20.0, "text": "Zoom in."}]
-    # a leading same_as_previous has nothing to fold into: kept
-    assert merge([(0.0, 3.0)], [{"text": "X.", "same_as_previous": True}]) == [{"start": 0.0, "end": 3.0, "text": "X."}]
+def test_merge_folds_consecutive_identical_texts():
+    segs = [(0.0, 5.0), (5.0, 9.0), (9.0, 20.0), (20.0, 30.0)]
+    res = [{"text": "A light source moves right."}, {"text": " a light source  moves right. "},
+           {"text": "Zoom in."}, {"text": "A light source moves right."}]
+    assert merge(segs, res) == [{"start": 0.0, "end": 9.0, "text": "A light source moves right."},
+                                {"start": 9.0, "end": 20.0, "text": "Zoom in."},
+                                {"start": 20.0, "end": 30.0, "text": "A light source moves right."}]
 
 
 def test_doc_json_and_update_sql_escape_quotes_and_unicode():
@@ -63,3 +61,121 @@ def test_doc_json_and_update_sql_escape_quotes_and_unicode():
     sql = update_sql("O'X", doc)
     assert sql.startswith("UPDATE records SET ai_moments='") and "It''s" in sql and "id='O''X'" in sql
     assert "café" in sql
+
+
+import pytest
+from ingest.moments import parse_scene_cuts, parse_model_output, moments_for, Skip
+
+
+def test_parse_scene_cuts_reads_showinfo_pts_time():
+    log = ("[Parsed_showinfo_2 @ 0x1] n:   0 pts:  12 pts_time:4.004   duration:1\n"
+           "noise line\n"
+           "[Parsed_showinfo_2 @ 0x1] n:   1 pts:  99 pts_time:17.5    duration:1\n")
+    assert parse_scene_cuts(log) == [4.004, 17.5]
+    assert parse_scene_cuts("") == []
+
+
+def test_parse_model_output_accepts_object_string_and_fenced():
+    ok = {"text": "The sensor pans."}
+    assert parse_model_output(ok) == ok
+    assert parse_model_output(json.dumps(ok)) == ok
+    assert parse_model_output("```json\n" + json.dumps(ok) + "\n```") == ok
+    assert parse_model_output({"text": "  x ", "extra": 1}) == {"text": "x"}
+    assert parse_model_output("not json") is None
+    assert parse_model_output({"other": True}) is None
+    assert parse_model_output(None) is None
+
+
+def _fakes(texts):
+    calls = []
+    def describe(jpeg, start, end, reminder=False):
+        calls.append((start, end, reminder))
+        return {"text": texts[len(calls) - 1]}
+    return describe, calls
+
+
+def test_moments_for_happy_path_counts_calls():
+    describe, calls = _fakes(["Pan right.", "Zoom in."])
+    row = {"id": "V1", "cdn_url": "u", "duration": 35.0}
+    moments, n = moments_for(row, describe, cuts_fn=lambda url, d: [15.0],
+                             grid_fn=lambda url, times, out: open(out, "wb").write(b"jpg"),
+                             probe_fn=lambda url: "")
+    assert moments == [{"start": 0.0, "end": 15.0, "text": "Pan right."},
+                       {"start": 15.0, "end": 35.0, "text": "Zoom in."}]
+    assert n == 2 and [c[:2] for c in calls] == [(0.0, 15.0), (15.0, 35.0)]
+
+
+def test_moments_for_retries_speculation_once_then_skips():
+    describe, calls = _fakes(["A drone appears.", "A drone appears."])
+    row = {"id": "V1", "cdn_url": "u", "duration": 10.0}
+    with pytest.raises(Skip):
+        moments_for(row, describe, cuts_fn=lambda u, d: [], grid_fn=lambda u, t, o: open(o, "wb").write(b"j"),
+                    probe_fn=lambda u: "")
+    assert len(calls) == 2 and calls[1][2] is True   # second try carries the reminder
+
+
+def test_moments_for_empty_when_no_duration_and_skip_when_grid_fails():
+    describe, _ = _fakes([])
+    assert moments_for({"id": "V", "cdn_url": "u", "duration": None}, describe,
+                       cuts_fn=lambda u, d: [], grid_fn=None, probe_fn=lambda u: "N/A") == ([], 0)
+    def bad_grid(u, t, o):
+        raise RuntimeError("ffmpeg died")
+    with pytest.raises(Skip):
+        moments_for({"id": "V", "cdn_url": "u", "duration": 9.0}, describe,
+                    cuts_fn=lambda u, d: [], grid_fn=bad_grid, probe_fn=lambda u: "")
+
+
+def test_vision_json_sends_image_url_block_and_reads_openai_choices(monkeypatch):
+    from ingest import cfapi
+    sent = {}
+    def fake_call(path, body):
+        sent["path"], sent["body"] = path, json.loads(body)
+        return {"choices": [{"message": {"content": '{"text": "x", "same_as_previous": false}'}}]}
+    monkeypatch.setattr(cfapi, "_call", fake_call)
+    out = cfapi.vision_json("sys", "txt", b"\xff\xd8jpg", {"type": "object"})
+    assert out == '{"text": "x", "same_as_previous": false}'
+    assert sent["path"] == f"/ai/run/{cfapi.VISION_MODEL}"
+    user = sent["body"]["messages"][1]["content"]
+    assert user[0] == {"type": "text", "text": "txt"}
+    assert user[1]["image_url"]["url"].startswith("data:image/jpeg;base64,")
+    # older Workers AI shape still accepted
+    monkeypatch.setattr(cfapi, "_call", lambda path, body: {"response": {"text": "y"}})
+    assert cfapi.vision_json("s", "t", b"j", {}) == {"text": "y"}
+
+
+def test_moments_for_retries_a_flaky_grid_once():
+    describe, _ = _fakes(["Pan right."])
+    tries = []
+    def flaky(u, t, o):
+        tries.append(1)
+        if len(tries) == 1:
+            raise RuntimeError("transient read error")
+        open(o, "wb").write(b"j")
+    moments, n = moments_for({"id": "V", "cdn_url": "u", "duration": 10.0}, describe,
+                             cuts_fn=lambda u, d: [], grid_fn=flaky, probe_fn=lambda u: "")
+    assert len(tries) == 2 and moments == [{"start": 0.0, "end": 10.0, "text": "Pan right."}]
+
+
+def test_merge_canonicalises_and_folds_no_change_sentences():
+    from ingest.moments import no_change
+    for t in ["The scene is unchanged.", "No changes noted between frames, the scene remains consistent with a cloudy sky.",
+              "The scene remains static, with no changes in the camera or sensor behavior, and no new objects or light sources appearing in the frames.",
+              "Between frames, no change is observed in the scene or sensor behavior.", "The scene shows clouds and sky. No changes are observed between frames."]:
+        assert no_change(t), t
+    for t in ["A small light source appears at the center of the crosshair, moving slightly right and up.",
+              "The top-left frame is a uniform gray screen, while the other three frames depict a cloudy landscape. No objects or changes are observed.",
+              "The sensor zooms out and no change in the light source is seen."]:
+        assert not no_change(t), t
+    segs = [(0.0, 5.0), (5.0, 9.0), (9.0, 20.0)]
+    res = [{"text": "The scene is unchanged."}, {"text": "No changes are observed between frames."}, {"text": "Zoom in."}]
+    assert merge(segs, res) == [{"start": 0.0, "end": 9.0, "text": "No visible change."},
+                                {"start": 9.0, "end": 20.0, "text": "Zoom in."}]
+
+
+def test_no_change_ignores_negated_action_words():
+    from ingest.moments import no_change
+    assert no_change("The scene remains static, with no changes in the camera or sensor behavior, "
+                     "and no new objects or light sources appear in the frames.")
+    assert no_change("The scene shows clouds and ground features, with no apparent changes in camera or sensor "
+                     "behavior, or new objects or light sources appearing in the frames.")
+    assert not no_change("No changes in the overlay, and a light source moves left.")

@@ -48,3 +48,24 @@ def upsert(vectors: list[dict]) -> None:
 def delete(ids: list[str]) -> None:
     for i in range(0, len(ids), DELETE_BATCH):
         _call(f"/vectorize/v2/indexes/{INDEX}/delete_by_ids", json.dumps({"ids": ids[i:i + DELETE_BATCH]}).encode())
+
+VISION_MODEL = "@cf/meta/llama-4-scout-17b-16e-instruct"
+
+def vision_json(system: str, text: str, jpeg: bytes, schema: dict, max_tokens: int = 200):
+    """One image + text -> the model's reply (JSON string or dict).
+
+    Llama 4 Scout reads images only from an OpenAI-style `image_url` content
+    block (a top-level `image` field is silently ignored), and answers in
+    OpenAI chat shape: result.choices[0].message.content.
+    """
+    import base64
+    url = "data:image/jpeg;base64," + base64.b64encode(jpeg).decode()
+    body = {"messages": [{"role": "system", "content": system},
+                         {"role": "user", "content": [{"type": "text", "text": text},
+                                                      {"type": "image_url", "image_url": {"url": url}}]}],
+            "guided_json": schema, "max_tokens": max_tokens, "temperature": 0.2}
+    out = _call(f"/ai/run/{VISION_MODEL}", json.dumps(body).encode())
+    choices = out.get("choices") or []
+    if choices:
+        return (choices[0].get("message") or {}).get("content")
+    return out.get("response")
