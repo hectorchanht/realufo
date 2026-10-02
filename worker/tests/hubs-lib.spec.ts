@@ -28,7 +28,7 @@ describe("hub registry", () => {
 describe("titles, stats, intros", () => {
   it("titles per kind", () => {
     expect(releaseLabel(6, "2026-09-18")).toBe("Release 06 · 18 Sep 2026");
-    expect(hubTitle({ kind: "release", slug: "6", label: "Release 06 · 18 Sep 2026", count: 74 })).toBe("Release 06 · 18 Sep 2026");
+    expect(hubTitle({ kind: "release", slug: "6", label: "Release 06 · 18 Sep 2026", count: 74 })).toBe("Pentagon UAP Release 06 · 18 Sep 2026");
     expect(hubTitle({ kind: "agency", slug: "fbi", label: "FBI", count: 5 })).toBe("FBI UAP files");
     expect(hubTitle({ kind: "location", slug: "las-vegas-nevada", label: "Las Vegas, Nevada", count: 37 })).toBe("UAP files: Las Vegas, Nevada");
     expect(hubTitle({ kind: "decade", slug: "1950s", label: "1950s", count: 29 })).toBe("1950s UAP files");

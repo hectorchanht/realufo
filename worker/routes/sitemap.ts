@@ -1,6 +1,6 @@
 import type { Env } from "../env";
 import { boardHref, hubHref } from "../lib/ssr";
-import { listHubs } from "./hubs";
+import { listHubsCached } from "./hubs";
 
 // Every crawlable SPA route. Pages render client-side from /api/*, which is why
 // robots.txt must not disallow /api/. ponytail: single file, split into a
@@ -14,7 +14,8 @@ export async function sitemap(req: Request, env: Env) {
     ).all<{ id: string; d: string }>(),
     env.DB.prepare("SELECT slug id FROM boards").all<{ id: string }>(),
     env.DB.prepare("SELECT slug id FROM cases").all<{ id: string }>(),
-    listHubs(env),
+    // Same cached list hub pages use, so no hub is listed before its page exists.
+    listHubsCached(env, origin),
   ]);
   const loc = (path: string, d?: string) =>
     `<url><loc>${origin}${path}</loc>${d ? `<lastmod>${d}</lastmod>` : ""}</url>`;

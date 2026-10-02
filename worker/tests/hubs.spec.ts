@@ -55,7 +55,7 @@ describe("hub API", () => {
 
   it("release hub: title, prev/next, its files", async () => {
     const h: any = await (await call("/api/hubs/release/2")).json();
-    expect(h.title).toBe("Release 02 · 12 Jun 2026");
+    expect(h.title).toBe("Pentagon UAP Release 02 · 12 Jun 2026");
     expect(h.prev).toBe("1");
     expect(h.next).toBeNull();
     expect(h.records.length).toBe(8);
@@ -122,5 +122,18 @@ describe("hub pages", () => {
     expect(xml).toContain("<loc>https://x/release/2</loc>");
     expect(xml).toContain("<loc>https://x/decade/1940s</loc>");
     expect(xml).not.toContain("/agency/cia<");
+  });
+});
+
+describe("final-review fixes", () => {
+  it("sitemap agrees with the cached hub list (no hub advertised before its page exists)", async () => {
+    await call("/api/hubs"); // hub list now cached without a NASA hub (1 seeded file)
+    await env.DB.batch(
+      [1, 2, 3, 4].map((i) =>
+        env.DB.prepare("INSERT INTO records(id,archive,agency,title,kind,status) VALUES(?, 'nasa', 'NASA', ?, 'pdf', 'live')").bind(`NASA-FR-${i}`, `NASA-FR-${i}, test`)
+      )
+    );
+    expect((await call("/api/hubs/agency/nasa")).status).toBe(404); // page reads the cached list
+    expect(await (await call("/sitemap.xml")).text()).not.toContain("/agency/nasa<");
   });
 });

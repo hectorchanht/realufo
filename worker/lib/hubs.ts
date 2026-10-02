@@ -65,7 +65,7 @@ export function releaseLabel(no: number, iso: string): string {
 }
 
 export function hubTitle(h: HubSummary): string {
-  if (h.kind === "release") return h.label;
+  if (h.kind === "release") return `Pentagon UAP ${h.label}`; // label stays short for chips
   if (h.kind === "location") return `UAP files: ${h.label}`;
   return `${h.label} UAP files`;
 }
