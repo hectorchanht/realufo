@@ -41,6 +41,23 @@ function Opener({ opts }: { opts: ComposerOpts }) {
   return null;
 }
 
+// Re-openable: drafts are kept per composer target until the post goes through.
+function OpenButton({ opts }: { opts: ComposerOpts }) {
+  const { openComposer } = useOverlay();
+  return <button onClick={() => openComposer(opts)}>open composer</button>;
+}
+
+function renderReopenable(opts: ComposerOpts) {
+  return render(
+    <MemoryRouter>
+      <OverlayProvider>
+        <OpenButton opts={opts} />
+        <OverlayHost />
+      </OverlayProvider>
+    </MemoryRouter>,
+  );
+}
+
 function renderComposer(opts: ComposerOpts) {
   return render(
     <MemoryRouter>
@@ -194,5 +211,47 @@ describe("Composer", () => {
 
     fireEvent.click(postButton);
     expect(mockCreateThreadMutate).not.toHaveBeenCalled();
+  });
+
+  it("keeps the draft when dismissed and restores it when the same composer reopens", () => {
+    renderReopenable({ mode: "comment", recordId: "draft-1" });
+    fireEvent.click(screen.getByText("open composer"));
+    fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "half-written read" } });
+    fireEvent.click(screen.getByRole("button", { name: /close composer/i }));
+    expect(screen.queryByPlaceholderText(/Say your piece/i)).toBeNull();
+
+    fireEvent.click(screen.getByText("open composer"));
+    expect(screen.getByPlaceholderText(/Say your piece/i)).toHaveValue("half-written read");
+  });
+
+  it("a submitted post clears its draft", () => {
+    mockAddCommentMutate.mockImplementation((_v: unknown, o?: { onSuccess?: () => void }) => o?.onSuccess?.());
+    renderReopenable({ mode: "comment", recordId: "draft-2" });
+    fireEvent.click(screen.getByText("open composer"));
+    fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "sent read" } });
+    fireEvent.click(screen.getByRole("button", { name: /post/i }));
+    expect(mockAddCommentMutate).toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText("open composer"));
+    expect(screen.getByPlaceholderText(/Say your piece/i)).toHaveValue("");
+  });
+
+  it("a failed post keeps the draft", () => {
+    mockAddCommentMutate.mockImplementation((_v: unknown, o?: { onError?: (e: unknown) => void }) => o?.onError?.(new Error("net")));
+    renderReopenable({ mode: "comment", recordId: "draft-3" });
+    fireEvent.click(screen.getByText("open composer"));
+    fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "unsent read" } });
+    fireEvent.click(screen.getByRole("button", { name: /post/i }));
+    fireEvent.click(screen.getByRole("button", { name: /close composer/i }));
+
+    fireEvent.click(screen.getByText("open composer"));
+    expect(screen.getByPlaceholderText(/Say your piece/i)).toHaveValue("unsent read");
+  });
+
+  it("can't be dismissed while a post is sending", () => {
+    mockCreateThreadPending = true;
+    renderComposer({ mode: "newThread", boardId: "uap" });
+    fireEvent.click(screen.getByRole("button", { name: /close composer/i }));
+    expect(screen.getByPlaceholderText(/Say your piece/i)).toBeInTheDocument();
   });
 });

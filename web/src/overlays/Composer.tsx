@@ -43,7 +43,7 @@ const DRAG_CLOSE_PX = 110; // prototype line 525: `if(d>110){...}`
 const SHEET_TRANSITION = "transform .34s cubic-bezier(.32,.72,0,1)"; // prototype line 525
 
 export function Composer() {
-  const { composer, closeComposer, toast } = useOverlay();
+  const { composer, closeComposer: closeSheet, toast, drafts } = useOverlay();
   const navigate = useNavigate();
 
   // Always called (never conditionally) so hook order stays stable across
@@ -54,10 +54,21 @@ export function Composer() {
   const reply = useReply(composer?.threadId ?? "");
   const createThread = useCreateThread();
 
-  const [body, setBody] = useState(composer?.presetBody ?? "");
+  // Dismissing keeps the text: reopening the same composer (same target and
+  // preset) restores it until the post goes through.
+  const draftKey = composer
+    ? [composer.mode, composer.recordId ?? composer.caseSlug ?? composer.threadId ?? composer.sourceRecordId ?? composer.boardId ?? "", composer.presetBody ?? ""].join("|")
+    : "";
+  const saved = drafts.get(draftKey);
+  const [body, setBody] = useState(saved?.body ?? composer?.presetBody ?? "");
   const [stance, setStance] = useState<StanceValue>("neutral");
   const [handle, setHandle] = useState("");
-  const [threadTitle, setThreadTitle] = useState(composer?.presetTitle ?? "");
+  const [threadTitle, setThreadTitle] = useState(saved?.title ?? composer?.presetTitle ?? "");
+  useEffect(() => {
+    if (!draftKey) return;
+    if (body.trim() || threadTitle.trim()) drafts.set(draftKey, { body, title: threadTitle });
+    else drafts.delete(draftKey);
+  }, [body, threadTitle, draftKey, drafts]);
   const [img, setImg] = useState<File | null>(composer?.presetImage ?? null);
   // A promoted comment's already-uploaded image, sent by name (image_ref) so the server reuses it.
   const [imgUrl, setImgUrl] = useState<string | null>(composer?.presetImageUrl ?? null);
@@ -76,6 +87,10 @@ export function Composer() {
   // In-flight guard: without this, double-tapping POST before onSuccess
   // closes the sheet fires a second mutation -> duplicate thread/comment/reply.
   const busy = addComment.isPending || addCaseComment.isPending || reply.isPending || createThread.isPending;
+  // No dismissing mid-send: the result toast (and a failed post's draft) would be lost.
+  const closeComposer = () => {
+    if (!busy) closeSheet();
+  };
 
   if (!composer) return null;
 
@@ -104,7 +119,7 @@ export function Composer() {
     const el = sheetRef.current;
     if (!el) return;
     el.style.transition = SHEET_TRANSITION;
-    if (d > DRAG_CLOSE_PX) {
+    if (d > DRAG_CLOSE_PX && !busy) {
       el.style.transform = "translateY(100%)";
       setTimeout(() => closeComposer(), 200);
     } else {
@@ -113,6 +128,7 @@ export function Composer() {
   }
 
   function handleMutationError(err: unknown) {
+    drafts.set(draftKey, { body, title: threadTitle }); // not sent: keep it
     // FRONTEND-CONTEXT.md: "write endpoints may return 429 (rate limit) —
     // surface as a toast" — the exact copy is specified in the Task 16 brief.
     if (err instanceof ApiError && err.status === 429) {
@@ -134,6 +150,7 @@ export function Composer() {
       return;
     }
     const trimmedHandle = handle.trim() || undefined;
+    drafts.delete(draftKey); // sent (a failure puts it back in handleMutationError)
 
     if (composer!.mode === "comment") {
       // A comment targets either a cold case or a record.

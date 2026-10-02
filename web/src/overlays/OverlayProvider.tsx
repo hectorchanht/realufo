@@ -44,6 +44,12 @@ export interface ComposerOpts {
   boardId?: string;
 }
 
+/** Unsent composer text, kept per composer target for the app session. */
+export interface ComposerDraft {
+  body: string;
+  title: string;
+}
+
 export type ViewerKind = "doc" | "video" | "image" | "placeholder";
 
 export interface ViewerOpts {
@@ -68,6 +74,7 @@ export interface OverlayContextValue extends OverlayState {
   openViewer: (opts: ViewerOpts) => void;
   closeViewer: () => void;
   toast: (message: string) => void;
+  drafts: Map<string, ComposerDraft>;
 }
 
 const OverlayContext = createContext<OverlayContextValue | null>(null);
@@ -94,6 +101,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
     toastMsg: null,
   });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const drafts = useRef(new Map<string, ComposerDraft>()).current;
 
   useEffect(() => {
     const onPop = () => {
@@ -135,8 +143,9 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
       openViewer,
       closeViewer,
       toast,
+      drafts,
     }),
-    [state, openComposer, closeComposer, openViewer, closeViewer, toast],
+    [state, openComposer, closeComposer, openViewer, closeViewer, toast, drafts],
   );
 
   return <OverlayContext.Provider value={value}>{children}</OverlayContext.Provider>;
