@@ -57,7 +57,7 @@ export function Case() {
 
   if (!caseDetail) {
     return (
-      <div data-screen="case" className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
+      <div data-screen="case">
         <LoadError error={error} onRetry={() => void refetch()} notFound="case not found." />
       </div>
     );

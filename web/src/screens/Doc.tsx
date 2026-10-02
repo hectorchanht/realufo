@@ -367,7 +367,7 @@ export function Doc() {
 
   if (!record) {
     return (
-      <div data-screen="doc" className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
+      <div data-screen="doc">
         <LoadError error={error} onRetry={() => void refetch()} notFound="file not found." />
       </div>
     );

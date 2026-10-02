@@ -234,7 +234,7 @@ export function Thread() {
 
   if (!thread) {
     return (
-      <div data-screen="thread" className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
+      <div data-screen="thread">
         <LoadError error={error} onRetry={() => void refetch()} notFound="thread not found." />
       </div>
     );
