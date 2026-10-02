@@ -8,6 +8,7 @@ export type Media = { key: string; mime: string; size: number } | null;
 export type PickRecord = {
   id: string; archive: string; kind: string; title: string | null; agency: string | null;
   incident_date: string | null; location: string | null; summary: string | null; duration: number | null;
+  tldr_bullets?: string | null; tldr_joke?: string | null;
 };
 export type Candidate =
   | { stream: "release"; ref: string; label: string; link: string; kinds: Record<string, number>; titles: string[]; media: Media }
@@ -100,7 +101,9 @@ async function releaseCandidate(env: Env, now: Date): Promise<Candidate | null> 
 }
 
 const PICK_COLS = `r.id, r.archive, r.kind, r.title, r.agency, r.incident_date, r.location, r.summary,
-  (SELECT duration FROM assets d WHERE d.record_id=r.id AND d.role='full' AND d.duration IS NOT NULL LIMIT 1) duration`;
+  (SELECT duration FROM assets d WHERE d.record_id=r.id AND d.role='full' AND d.duration IS NOT NULL LIMIT 1) duration,
+  (SELECT bullets FROM record_tldr x WHERE x.record_id=r.id AND x.lang='en') tldr_bullets,
+  (SELECT one_liner FROM record_tldr x WHERE x.record_id=r.id AND x.lang='en') tldr_joke`;
 // placeholder-titled records (no published title/metadata) make weak posts: skip
 const UNPOSTED = `r.status='live' AND coalesce(r.title,'') NOT LIKE '%original title not published%'
   AND NOT EXISTS (SELECT 1 FROM x_posts p WHERE p.stream='pick' AND p.ref=r.id)`;
