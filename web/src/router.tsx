@@ -5,6 +5,7 @@ import { createBrowserRouter, type RouteObject } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import Feed from "./screens/Feed";
 import Archive from "./screens/Archive";
+import Ask from "./screens/Ask";
 import Doc from "./screens/Doc";
 import Boards from "./screens/Boards";
 import Board from "./screens/Board";
@@ -20,6 +21,7 @@ export const routes: RouteObject[] = [
     children: [
       { path: "/", element: <Feed /> },
       { path: "/archive", element: <Archive /> },
+      { path: "/ask", element: <Ask /> },
       { path: "/doc/:id", element: <Doc /> },
       { path: "/boards", element: <Boards /> },
       { path: "/board/:slug", element: <Board /> },

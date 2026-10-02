@@ -7,7 +7,7 @@
     // Browser navigations (Sec-Fetch-Mode: navigate) otherwise skip the Worker and get
     // index.html, which broke window.open('/api/file/:id'). Deep-link routes listed so
     // OG meta injection keeps running once the list disables navigate auto-detection.
-    "run_worker_first": ["/", "/api/*", "/doc/*", "/case/*", "/thread/*", "/board/*", "/archive", "/boards", "/map", "/sitemap.xml", "/browse", "/release/*", "/agency/*", "/location/*", "/decade/*"] },
+    "run_worker_first": ["/", "/api/*", "/doc/*", "/case/*", "/thread/*", "/board/*", "/archive", "/boards", "/map", "/ask", "/sitemap.xml", "/browse", "/release/*", "/agency/*", "/location/*", "/decade/*"] },
   "vars": { "FEATURE_AUTH": "false", "RATE_MAX": "20", "RATE_WINDOW_SEC": "60",
     // Cached R2 custom domain: uploads must pass through the CDN cache for the CSAM Scanning Tool.
     "UPLOAD_BASE": "https://assets.realufo.org/uploads/",

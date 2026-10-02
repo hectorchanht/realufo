@@ -148,7 +148,7 @@ function memoryStorage() {
   };
 }
 
-describe("Archive ASK toggle", () => {
+describe("Ask screen", () => {
   beforeEach(() => {
     askFeature = true;
     useAskMock.mockReturnValue({ data: undefined, isLoading: false, error: null, refetch: vi.fn() });
@@ -156,48 +156,50 @@ describe("Archive ASK toggle", () => {
     vi.stubGlobal("localStorage", memoryStorage());
   });
   afterEach(() => vi.unstubAllGlobals());
+  const box = () => screen.findByPlaceholderText(/ask the archive — e\.g\./);
 
-  it("ask mode with no question shows your questions and recently asked; tapping one asks it", async () => {
+  it("with no question shows your questions and shared questions; tapping one asks it", async () => {
     localStorage.setItem(ASK_HISTORY_KEY, JSON.stringify(["Earlier question one"]));
     useAskRecentMock.mockReturnValue({
       data: { recent: [{ question: "What about Gimbal?", sources: 2, asked_at: "2026-10-02 08:00:00" }] },
     });
     useAskMock.mockReturnValue({ data: undefined, isLoading: true, error: null, refetch: vi.fn() });
-    renderAppAt("/archive");
-    fireEvent.click(await screen.findByRole("button", { name: "Ask the archive" }));
-    expect(screen.getByText("YOUR QUESTIONS")).toBeInTheDocument();
+    renderAppAt("/ask");
+    expect(await screen.findByText("YOUR QUESTIONS")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Earlier question one" })).toBeInTheDocument();
-    expect(screen.getByText("RECENTLY ASKED")).toBeInTheDocument();
+    expect(screen.getByText("SHARED QUESTIONS")).toBeInTheDocument();
     expect(screen.getByText("2 sources")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /What about Gimbal\?/ }));
     expect(await screen.findByText("◉ consulting the archive…")).toBeInTheDocument();
     expect(useAskMock).toHaveBeenLastCalledWith("What about Gimbal?");
-    expect(screen.queryByText("RECENTLY ASKED")).toBeNull(); // lists hide while an answer is open
+    expect(screen.queryByText("SHARED QUESTIONS")).toBeNull(); // lists hide while an answer is open
     expect(JSON.parse(localStorage.getItem(ASK_HISTORY_KEY)!)[0]).toBe("What about Gimbal?");
   });
 
-  it("submitting a question saves it to your questions", async () => {
-    renderAppAt("/archive");
-    fireEvent.click(await screen.findByRole("button", { name: "Ask the archive" }));
-    const box = screen.getByPlaceholderText(/ask the archive — e\.g\./);
-    fireEvent.change(box, { target: { value: "  what did radar see?  " } });
-    fireEvent.submit(box.closest("form")!);
-    await waitFor(() => expect(JSON.parse(localStorage.getItem(ASK_HISTORY_KEY)!)).toEqual(["what did radar see?"]));
+  it("typing sends nothing; Enter asks, saves it to your questions and shows the card", async () => {
+    useAskMock.mockReturnValue({ data: undefined, isLoading: true, error: null, refetch: vi.fn() });
+    renderAppAt("/ask");
+    const input = await box();
+    fireEvent.change(input, { target: { value: "  what did radar see?  " } });
+    expect(useAskMock).not.toHaveBeenCalledWith(expect.stringContaining("radar"));
+    fireEvent.submit(input.closest("form")!);
+    expect(await screen.findByText("◉ consulting the archive…")).toBeInTheDocument();
+    expect(useAskMock).toHaveBeenLastCalledWith("what did radar see?");
+    expect(JSON.parse(localStorage.getItem(ASK_HISTORY_KEY)!)).toEqual(["what did radar see?"]);
   });
 
   it("clear button empties your questions", async () => {
     localStorage.setItem(ASK_HISTORY_KEY, JSON.stringify(["Old one"]));
-    renderAppAt("/archive");
-    fireEvent.click(await screen.findByRole("button", { name: "Ask the archive" }));
-    fireEvent.click(screen.getByRole("button", { name: "clear your questions" }));
+    renderAppAt("/ask");
+    fireEvent.click(await screen.findByRole("button", { name: "clear your questions" }));
     expect(screen.queryByRole("button", { name: "Old one" })).toBeNull();
     expect(localStorage.getItem(ASK_HISTORY_KEY)).toBeNull();
   });
 
   it("post to a board opens the new-thread composer pre-filled from the answer", async () => {
     useAskMock.mockReturnValue(answered);
-    renderAppAt("/archive?ask=what%20did%20radar%20see%3F");
+    renderAppAt("/ask?q=what%20did%20radar%20see%3F");
     fireEvent.click(await screen.findByRole("button", { name: "⤴ post to a board" }));
     expect(await screen.findByPlaceholderText("Thread title")).toHaveValue("what did radar see?");
     const bodyBox = screen.getByPlaceholderText("Say your piece. Keep it sourced.") as HTMLTextAreaElement;
@@ -206,65 +208,46 @@ describe("Archive ASK toggle", () => {
     expect(screen.getByText("REFERENCING FILE")).toBeInTheDocument();
   });
 
-  it("ask mode tells the asker questions are logged and listed only when shared", async () => {
-    renderAppAt("/archive");
-    expect(screen.queryByText(/Questions are logged/)).toBeNull();
-    fireEvent.click(await screen.findByRole("button", { name: "Ask the archive" }));
-    expect(screen.getByText(/Questions are logged\. Tap “share publicly”/)).toBeInTheDocument();
+  it("tells the asker questions are logged and listed only when shared", async () => {
+    renderAppAt("/ask");
+    expect(await screen.findByText(/Questions are logged\. Tap “share publicly”/)).toBeInTheDocument();
   });
 
   it("shows nothing extra when both lists are empty", async () => {
-    renderAppAt("/archive");
-    fireEvent.click(await screen.findByRole("button", { name: "Ask the archive" }));
+    renderAppAt("/ask");
+    await box();
     expect(screen.queryByText("YOUR QUESTIONS")).toBeNull();
-    expect(screen.queryByText("RECENTLY ASKED")).toBeNull();
+    expect(screen.queryByText("SHARED QUESTIONS")).toBeNull();
   });
 
-  it("is hidden when the ask feature is off", async () => {
-    askFeature = false;
-    renderAppAt("/archive");
-    await screen.findByPlaceholderText(/search/i);
-    expect(screen.queryByRole("button", { name: "Ask the archive" })).toBeNull();
-    expect(screen.queryByText("AI-RAG soon")).toBeNull();
-  });
-
-  it("typing in ask mode sends nothing; Enter submits ?ask= and shows the card", async () => {
-    useAskMock.mockReturnValue({ data: undefined, isLoading: true, error: null, refetch: vi.fn() });
-    renderAppAt("/archive");
-    fireEvent.click(await screen.findByRole("button", { name: "Ask the archive" }));
-    const box = screen.getByPlaceholderText(/ask the archive — e\.g\./);
-    fireEvent.change(box, { target: { value: "  what did radar see?  " } });
-    expect(useAskMock).not.toHaveBeenCalledWith(expect.stringContaining("radar"));
-    fireEvent.submit(box.closest("form")!);
-    expect(await screen.findByText("◉ consulting the archive…")).toBeInTheDocument();
-    expect(useAskMock).toHaveBeenLastCalledWith("what did radar see?");
-  });
-
-  it("a ?ask= link opens in ask mode with the question filled in", async () => {
-    renderAppAt("/archive?ask=los%20alamos%201949");
-    const toggle = await screen.findByRole("button", { name: "Ask the archive" });
-    expect(toggle).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByDisplayValue("los alamos 1949")).toBeInTheDocument();
+  it("a ?q= link opens with the question filled in and asked", async () => {
+    renderAppAt("/ask?q=los%20alamos%201949");
+    expect(await screen.findByDisplayValue("los alamos 1949")).toBeInTheDocument();
     expect(useAskMock).toHaveBeenCalledWith("los alamos 1949");
   });
 
-  it("turning ask mode off clears the answer", async () => {
-    useAskMock.mockReturnValue({
-      data: { answer: "Discussed green fireballs [1].", cached: false,
-              sources: [{ n: 1, record_id: "DOE-UAP-D004", title: "Los Alamos", page: 2, kind: "pdf", thumb: null }] },
-      isLoading: false, error: null, refetch: vi.fn(),
-    });
+  it("an old /archive?ask= link redirects to /ask?q=", async () => {
     renderAppAt("/archive?ask=los%20alamos%201949");
-    expect(await screen.findByLabelText("archive answer")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Ask the archive" }));
-    expect(screen.getByRole("button", { name: "Ask the archive" })).toHaveAttribute("aria-pressed", "false");
-    expect(screen.queryByLabelText("archive answer")).toBeNull();
+    expect(await screen.findByDisplayValue("los alamos 1949")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/ask the archive — e\.g\./)).toBeInTheDocument();
+    expect(useAskMock).toHaveBeenCalledWith("los alamos 1949");
   });
 
-  it("a ?ask= link while the feature is off falls back to keyword search", async () => {
+  it("Ask tab and Archive link show only while the feature is on", async () => {
+    renderAppAt("/archive");
+    expect((await screen.findAllByRole("link", { name: /^◉\s*Ask$/ })).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: /Ask the archive — AI answers/ })).toHaveAttribute("href", "/ask");
+  });
+
+  it("feature off: no tab, no link, /ask rests, old ?ask= links fall back to keyword search", async () => {
     askFeature = false;
-    renderAppAt("/archive?ask=los%20alamos%201949");
+    const { unmount } = renderAppAt("/archive?ask=los%20alamos%201949");
     expect(await screen.findByPlaceholderText(/search .*records|search the archive/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^◉\s*Ask$/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Ask the archive — AI answers/ })).toBeNull();
+    unmount();
+    renderAppAt("/ask");
+    expect(await screen.findByText(/Ask is resting/)).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/ask the archive — e\.g\./)).toBeNull();
     expect(useAskMock).not.toHaveBeenCalled();
   });

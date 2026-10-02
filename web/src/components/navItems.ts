@@ -12,7 +12,9 @@
 // value instead of a purely path-based lookup (which had no way to reflect a
 // detail screen's actually-loaded data).
 
-export type NavTab = "feed" | "archive" | "boards" | "map";
+import { useBootstrap } from "../api/queries";
+
+export type NavTab = "feed" | "archive" | "ask" | "boards" | "map";
 
 export interface NavItem {
   tab: NavTab;
@@ -24,9 +26,16 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { tab: "feed", glyph: "◎", label: "Feed", path: "/" },
   { tab: "archive", glyph: "▦", label: "Archive", path: "/archive" },
+  { tab: "ask", glyph: "◉", label: "Ask", path: "/ask" },
   { tab: "boards", glyph: "◈", label: "Boards", path: "/boards" },
   { tab: "map", glyph: "◐", label: "Map", path: "/map" },
 ];
+
+// The Ask tab only shows while the server's ask flag is on.
+export function useNavItems(): NavItem[] {
+  const askOn = !!useBootstrap().data?.features?.ask;
+  return askOn ? NAV_ITEMS : NAV_ITEMS.filter((i) => i.tab !== "ask");
+}
 
 /**
  * Route -> active nav tab. Mirrors the prototype's `curTab` logic exactly:
@@ -38,7 +47,7 @@ export const NAV_ITEMS: NavItem[] = [
  * Whether AppBar's back chevron should show for a path. Ported from the
  * prototype's `canBack = hist.length>0` combined with the fact that
  * switching top-level tabs resets its navigation history — net effect: back
- * is absent on the four tab-root destinations (`/`, `/archive`, `/boards`,
+ * is absent on the tab-root destinations (`/`, `/archive`, `/ask`, `/boards`,
  * `/map`) and present on every detail screen (`/doc/:id`, `/thread/:id`,
  * `/board/:slug`, `/case/:slug`). Any path that isn't one of the nav roots is
  * a detail screen.
@@ -50,6 +59,7 @@ export function canBackForPath(pathname: string): boolean {
 export function activeTabForPath(pathname: string): NavTab {
   if (pathname.startsWith("/doc")) return "archive";
   if (pathname.startsWith("/archive")) return "archive";
+  if (pathname.startsWith("/ask")) return "ask";
   if (pathname.startsWith("/board/") || pathname.startsWith("/thread")) return "boards";
   if (pathname === "/boards" || pathname.startsWith("/boards/")) return "boards";
   if (pathname.startsWith("/case")) return "feed";

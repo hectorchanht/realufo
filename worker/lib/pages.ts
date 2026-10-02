@@ -44,6 +44,13 @@ const TAB = {
     type: "website" as const,
   },
   map: { title: "Sighting Map", description: "Map of where the declassified UAP files come from.", type: "website" as const },
+  // AI answers can be wrong: never indexed.
+  ask: {
+    title: "Ask the Archive",
+    description: "Ask a question and get an AI answer drawn from the declassified UAP files, with sources.",
+    type: "website" as const,
+    robots: "noindex",
+  },
 };
 
 const homePage: Loader = async (env, _g, url) => ({
@@ -85,6 +92,7 @@ const boardsPage: Loader = async (env) => {
 };
 
 const mapPage: Loader = async () => ({ meta: TAB.map, body: tabBody(TAB.map.title, TAB.map.description) });
+const askPage: Loader = async () => ({ meta: TAB.ask, body: tabBody(TAB.ask.title, TAB.ask.description) });
 
 const docPage: Loader = async (env, g, url) => {
   const d = (await loadRecord(env, g.id, url.origin)) as DocData | null;
@@ -238,6 +246,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/archive" }), load: archivePage },
   { pattern: new URLPattern({ pathname: "/boards" }), load: boardsPage },
   { pattern: new URLPattern({ pathname: "/map" }), load: mapPage },
+  { pattern: new URLPattern({ pathname: "/ask" }), load: askPage },
   { pattern: new URLPattern({ pathname: "/browse" }), load: browsePage },
   { pattern: new URLPattern({ pathname: "/release/:slug" }), load: hubPage("release") },
   { pattern: new URLPattern({ pathname: "/agency/:slug" }), load: hubPage("agency") },

@@ -40,13 +40,8 @@
 // exact page (Doc.tsx crosses into neighbour pages at the edges).
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { useBootstrap, useFacets, useRecords } from "../api/queries";
-import { AskAnswer } from "../components/AskAnswer";
-import { AskHistory } from "../components/AskHistory";
-import { addAskHistory } from "../lib/askHistory";
-import { askComposerOpts } from "../lib/askThread";
-import { useOverlay } from "../overlays/OverlayProvider";
 import { DocCard } from "../components/DocCard";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
@@ -268,64 +263,14 @@ export function Archive() {
   const redacted = !!filter.redacted;
   const release = filter.release ?? "";
   const { data: facets } = useFacets();
-  const { openComposer } = useOverlay();
   // Releases are war.gov-only, so the chips only show for All / War.gov.
   const showReleases = !!facets?.releases.length && (archive === "" || archive === "wargov");
   const hasFilters = FILTER_KEYS.some((k) => searchParams.has(k));
   const page = recordsPage(searchParams);
 
-  // Ask the Archive (Spec 3): `?ask=` is the submitted question; typing never
-  // asks (each answer costs money) — only Enter / the ASK button do.
-  // Only when the server flag is on: an old ?ask= link after a kill switch
-  // falls back to keyword search instead of trapping the user in ask mode.
-  const [askToggle, setAskMode] = useState(!!searchParams.get("ask"));
-  const askOn = !!boot?.features?.ask;
-  const askMode = askOn && askToggle;
-  const ask = askOn ? (searchParams.get("ask") ?? "") : "";
-  const [askInput, setAskInput] = useState(ask);
-  useEffect(() => {
-    if (ask) {
-      setAskMode(true);
-      setAskInput(ask);
-    }
-  }, [ask]);
-
-  // Ask one question: echo it in the box, remember it in this browser, and
-  // write ?ask= (a history entry, so back returns to the lists).
-  function openAsk(q: string) {
-    setAskInput(q);
-    addAskHistory(q);
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.set("ask", q);
-        return next;
-      },
-      { replace: false },
-    );
-  }
-
-  function submitAsk(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!askMode) return;
-    const q = askInput.replace(/\s+/g, " ").trim();
-    if (q.length < 3) return;
-    openAsk(q);
-  }
-
-  function toggleAsk() {
-    if (askMode) {
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          next.delete("ask");
-          return next;
-        },
-        { replace: true },
-      );
-    }
-    setAskMode(!askMode);
-  }
+  // Ask moved to its own tab: old /archive?ask= links land on /ask?q=. With
+  // the flag off they fall back to keyword search (the ask param is ignored).
+  const legacyAsk = boot?.features?.ask ? searchParams.get("ask") : null;
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Local echo of the search box so every keystroke feels instant; only the
@@ -405,55 +350,36 @@ export function Archive() {
   const count = data?.count ?? 0;
   const totalPages = Math.ceil(count / RECORDS_PAGE_SIZE);
 
+  if (legacyAsk) return <Navigate to={`/ask?q=${encodeURIComponent(legacyAsk)}`} replace />;
+
   return (
     <div ref={rootRef} data-screen="archive" className="animate-[fadeup_.35s_ease_both]">
-      {/* search bar — lines 169-173; ASK toggle replaces the "AI-RAG soon" chip */}
+      {/* search bar — lines 169-173 */}
       <form
-        onSubmit={submitAsk}
+        onSubmit={(e) => e.preventDefault()}
         className="mb-3.5 flex items-center gap-[9px] rounded-xl border border-line2 bg-surface px-[13px] py-2.5"
       >
         <span aria-hidden="true" className="text-[15px] text-faint">
-          {askMode ? "◉" : "⌕"}
+          ⌕
         </span>
         <input
-          value={askMode ? askInput : inputValue}
-          onChange={(e) => (askMode ? setAskInput(e.target.value) : setInputValue(e.target.value))}
-          enterKeyHint={askMode ? "go" : "search"}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          enterKeyHint="search"
           placeholder={
-            askMode
-              ? "ask the archive — e.g. what did the 1949 Los Alamos conference conclude?"
-              : totalRecords != null
-                ? `search ${totalRecords.toLocaleString()} records — title, agency, location…`
-                : "search the archive — title, agency, location…"
+            totalRecords != null
+              ? `search ${totalRecords.toLocaleString()} records — title, agency, location…`
+              : "search the archive — title, agency, location…"
           }
           className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[12.5px] text-ink outline-none placeholder:text-faint"
         />
-        {askMode && (
-          <button type="submit" className="flex-none rounded-md bg-signal px-2 py-0.5 font-mono text-[10px] font-bold text-[#04140c]">
-            ↵ ASK
-          </button>
-        )}
-        {boot?.features?.ask && (
-          <button
-            type="button"
-            onClick={toggleAsk}
-            aria-label="Ask the archive"
-            aria-pressed={askMode}
-            className="flex-none rounded-md border px-1.5 py-0.5 font-mono text-[9px]"
-            style={{ borderColor: askMode ? "var(--signal)" : "var(--line)", color: askMode ? "var(--signal)" : "var(--faint)" }}
-          >
-            ASK
-          </button>
-        )}
       </form>
 
-      {askMode && (
-        <p className="-mt-2 mb-3 px-0.5 font-mono text-[9.5px] text-faint">
-          Questions are logged. Tap “share publicly” on an answer to list it under “Recently asked” — don’t include personal details.
-        </p>
+      {boot?.features?.ask && (
+        <Link to="/ask" className="mb-3.5 block font-mono text-[11px] text-signal hover:underline">
+          ◉ Ask the archive — AI answers with sources →
+        </Link>
       )}
-      {askMode && ask && <AskAnswer question={ask} onPost={(d) => openComposer(askComposerOpts(ask, d))} />}
-      {askMode && !ask && <AskHistory onPick={openAsk} />}
 
       {/* static predecessor archive (war-gov-ufo-release repo) */}
       <a

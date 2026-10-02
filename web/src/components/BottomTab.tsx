@@ -4,7 +4,7 @@
 // why). Each tab has a 44px min-height tap target per the task requirement.
 import type { Ref } from "react";
 import { Link } from "react-router-dom";
-import { NAV_ITEMS, tabHref, type NavTab } from "./navItems";
+import { tabHref, useNavItems, type NavTab } from "./navItems";
 
 export interface BottomTabProps {
   activeTab: NavTab;
@@ -17,6 +17,7 @@ export interface BottomTabProps {
 // Overlays the bottom of the shell (absolute) rather than sitting in flow, so
 // sliding it out never resizes the scroll container — see AppShell.
 export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
+  const navItems = useNavItems();
   return (
     <div
       ref={ref}
@@ -31,7 +32,7 @@ export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
         className="relative z-30 flex flex-none justify-around border-t border-line px-2 pb-1 pt-2 backdrop-blur-[22px] backdrop-saturate-[1.6]"
         style={{ background: "color-mix(in srgb, var(--bg) 78%, transparent)" }}
       >
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const active = activeTab === item.tab;
           return (
             <Link
