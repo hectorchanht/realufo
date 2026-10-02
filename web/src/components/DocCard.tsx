@@ -33,6 +33,7 @@ import type { MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import { useBootstrap } from "../api/queries";
 import { docTitleParts } from "../lib/docTitle";
+import { smallThumb } from "../lib/recordMedia";
 import type { FeedRecordCard, ListRecordCard, RecordCard } from "../api/types";
 
 export type DocCardVariant = "feed" | "grid";
@@ -82,9 +83,14 @@ function locOrDate(r: ListRecordCard): string {
 }
 
 export function DocCard({ record, variant = "grid", onOpen, search, priority }: DocCardProps) {
-  const [imgFailed, setImgFailed] = useState(false);
+  // 0 = try the 400px WebP srcset, 1 = it failed: plain JPEG, then the type glyph.
+  const [imgFails, setImgFails] = useState(0);
   const { data: boot } = useBootstrap();
-  const showImg = !!record.thumb && !imgFailed;
+  const small = record.thumb ? smallThumb(record.thumb) : null;
+  const showImg = !!record.thumb && imgFails < (small ? 2 : 1);
+  // srcset splits on whitespace, and R2 keys can contain raw spaces.
+  const srcSet =
+    small && imgFails === 0 ? `${small.replace(/ /g, "%20")} 400w, ${record.thumb!.replace(/ /g, "%20")} 640w` : undefined;
   const badge = record.agency || "DOC";
   // see file header note — resolved from the shared bootstrap cache; falls
   // back to var(--signal) until bootstrap loads or for an unknown archive id.
@@ -115,10 +121,12 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
         {showImg ? (
           <img
             src={record.thumb ?? undefined}
+            srcSet={srcSet}
+            sizes={srcSet && "(min-width: 900px) 260px, 50vw"}
             alt=""
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : undefined}
-            onError={() => setImgFailed(true)}
+            onError={() => setImgFails((n) => n + 1)}
             className="block h-full w-full object-cover"
             style={{ filter: "contrast(1.05) saturate(.92)" }}
           />

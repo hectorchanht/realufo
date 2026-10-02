@@ -51,3 +51,11 @@ export function parseMoment(s: string | null | undefined): number | null {
 
 // A moment on a record as users write it in posts: DOW-UAP-PR133@1:23.04
 export const MOMENT_SUFFIX = "@(\\d+:\\d{2}(?:\\.\\d{1,2})?)";
+
+const CDN = "https://assets.realufo.org/";
+
+/** The 400px WebP sibling ingest writes next to each card image (`x.jpg` -> `x-400.webp`);
+ *  same rule as crawler/ingest/thumbs.py small_key(). Null when the URL isn't a CDN JPEG/PNG. */
+export function smallThumb(url: string): string | null {
+  return url.startsWith(CDN) && /\.(jpe?g|png)$/i.test(url) ? url.replace(/\.(jpe?g|png)$/i, "-400.webp") : null;
+}

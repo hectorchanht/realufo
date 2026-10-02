@@ -144,6 +144,34 @@ describe("DocCard", () => {
     expect(screen.getByText("REDACTED")).toBeInTheDocument();
   });
 
+  it("offers the 400px WebP sibling via srcset for CDN thumbs (spaces escaped)", () => {
+    const thumb = "https://assets.realufo.org/thumbs/aaro/A B.jpg";
+    const { container } = render(withRouter(<DocCard record={{ ...feedRecord, thumb }} variant="feed" />));
+    const img = container.querySelector("img")!;
+    expect(img.getAttribute("src")).toBe(thumb);
+    expect(img.getAttribute("srcset")).toBe(
+      "https://assets.realufo.org/thumbs/aaro/A%20B-400.webp 400w, https://assets.realufo.org/thumbs/aaro/A%20B.jpg 640w",
+    );
+    expect(img.getAttribute("sizes")).toBeTruthy();
+  });
+
+  it("drops the srcset and retries the JPEG when the small image fails, then shows the glyph", () => {
+    const thumb = "https://assets.realufo.org/thumbs/wargov/X.jpg";
+    const { container } = render(withRouter(<DocCard record={{ ...feedRecord, thumb }} variant="feed" />));
+    fireEvent.error(container.querySelector("img")!);
+    const retry = container.querySelector("img")!;
+    expect(retry.getAttribute("srcset")).toBeNull();
+    expect(retry.getAttribute("src")).toBe(thumb);
+    fireEvent.error(retry);
+    expect(container.querySelector("img")).toBeNull();
+    expect(screen.getByText("PDF")).toBeInTheDocument();
+  });
+
+  it("leaves non-CDN thumbs without a srcset", () => {
+    const { container } = render(withRouter(<DocCard record={{ ...feedRecord, thumb: "https://example.com/x.jpg" }} variant="feed" />));
+    expect(container.querySelector("img")!.getAttribute("srcset")).toBeNull();
+  });
+
   it("shows the video play glyph when kind is 'video'", () => {
     render(withRouter(<DocCard record={{ ...feedRecord, kind: "video" }} variant="feed" />));
     expect(screen.getByText("▶")).toBeInTheDocument();

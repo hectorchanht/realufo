@@ -11,18 +11,54 @@ Idempotent: only records without a thumb row are selected.
 Also fills assets.duration (card m:ss badge) for video `full` assets still
 NULL, via ffprobe on the CDN url; unprobeable ones stay NULL and retry next run.
 """
-import argparse, os, subprocess, sys, tempfile
+import argparse, os, re, subprocess, sys, tempfile
 from . import d1, fetch, r2
 from .models import R2_BASE
 
 WIDTH = 640
 SCALE = f"scale='min({WIDTH},iw)':-2"
+SMALL = 400  # cards show ~180-260 CSS px; DocCard's srcset picks this on phones
+
+def small_key(url: str):
+    """R2 key of a card image's 400px WebP sibling (`x.jpg` -> `x-400.webp`).
+
+    Same rule as web/src/lib/recordMedia.ts smallThumb(); None when the URL
+    isn't a JPEG/PNG on our CDN."""
+    m = re.fullmatch(re.escape(R2_BASE) + r"/(.+)\.(?:jpe?g|png)", url, re.I)
+    return f"{m.group(1)}-{SMALL}.webp" if m else None
+
+def small_pass(urls, exists, make):
+    """Make the missing 400px siblings of `urls` -> (made, failed).
+
+    exists(url) says whether a sibling is already on the CDN; make(url, key)
+    renders + stores one. A failure is counted and the pass moves on."""
+    made = failed = 0
+    for url in dict.fromkeys(urls):
+        key = small_key(url)
+        if not key or exists(f"{R2_BASE}/{key}"):
+            continue
+        try:
+            make(url, key)
+            made += 1
+        except Exception as e:
+            failed += 1
+            print(f"small FAIL {url}: {e}")
+    return made, failed
+
+def render_small(src, out):
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-vf", f"scale='min({SMALL},iw)':-2",
+                    "-c:v", "libwebp", "-quality", "75", out], check=True, capture_output=True)
 
 SELECT = """SELECT r.id, r.archive, r.kind, a.cdn_url, a.mime FROM records r
 JOIN assets a ON a.record_id=r.id AND a.role IN ('full','original')
 WHERE r.status='live'
   AND NOT EXISTS(SELECT 1 FROM assets t WHERE t.record_id=r.id AND t.role='thumb')
 ORDER BY r.kind, r.id, a.role='full' DESC"""
+
+# Every image a card can show (thumbSql in worker/lib/db.ts): thumbs, plus
+# image `full` assets used when a record has no thumb.
+SMALL_SELECT = """SELECT DISTINCT a.cdn_url FROM assets a JOIN records r ON r.id=a.record_id
+WHERE r.status='live' AND (a.role='thumb' OR (a.role='full' AND a.mime LIKE 'image/%'))"""
 
 DUR_SELECT = """SELECT a.id, a.cdn_url FROM assets a JOIN records r ON r.id=a.record_id
 WHERE r.status='live' AND a.role='full' AND a.mime LIKE 'video/%' AND a.duration IS NULL"""
@@ -130,6 +166,21 @@ def main(argv=None):
         open(os.path.join(args.out, "thumbs.sql"), "w").write(sql)
         if done and not args.dry_run:
             d1.apply_sql(os.path.join(args.out, "thumbs.sql"))
+    # 400px WebP siblings for every card image still missing one: this run's new
+    # thumbs (inserted above) and the backfill of older ones. Idempotent.
+    def make(url, key):
+        with tempfile.TemporaryDirectory() as w:
+            src, out = os.path.join(w, "src"), os.path.join(args.out, key.replace("/", "_"))
+            fetch.download(url, src)
+            render_small(src, out)
+            if not args.dry_run:
+                r2.put(key, out, "image/webp")
+    small_urls = [r["cdn_url"] for r in d1._d1_json(" ".join(SMALL_SELECT.split()))]
+    if args.limit:  # CI's manual dry run (--limit 1): one real libwebp render as a smoke test
+        small_urls = [u for u in small_urls if small_key(u)][:args.limit]
+    small_made, small_failed = small_pass(small_urls, fetch.head_ok, make)
+    failed += small_failed
+    print(f"small {SMALL}px: made={small_made} failed={small_failed} of {len(set(small_urls))}")
     dur_rows = d1._d1_json(" ".join(DUR_SELECT.split()))
     updates = [u for u in (duration_sql(r["id"], probe_duration(r["cdn_url"])) for r in dur_rows) if u]
     open(os.path.join(args.out, "durations.sql"), "w").write("\n".join(updates) + "\n")
