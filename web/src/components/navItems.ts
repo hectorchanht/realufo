@@ -70,7 +70,8 @@ export function activeTabForPath(pathname: string): NavTab {
 
 // Last URL seen per tab, this session only (gone on reload): tapping a tab
 // returns to where the user left it — detail screen, filters and all — and
-// tapping the tab you're already in pops back to its root list, filters kept.
+// tapping the tab you're already in pops back to its root list, filters kept
+// (Ask drops its ?q=, which is the question, not a filter).
 // Scroll position is restored separately (lib/useScrollMemory.ts).
 const lastUrl = new Map<NavTab, string>();
 const lastRootUrl = new Map<NavTab, string>();
@@ -78,7 +79,8 @@ const lastRootUrl = new Map<NavTab, string>();
 export function rememberTabUrl(pathname: string, search: string): void {
   const tab = activeTabForPath(pathname);
   lastUrl.set(tab, pathname + search);
-  if (!canBackForPath(pathname)) lastRootUrl.set(tab, pathname + search);
+  // Ask's ?q= is the answer itself, not a filter — its root is the bare lists page.
+  if (!canBackForPath(pathname)) lastRootUrl.set(tab, tab === "ask" ? pathname : pathname + search);
 }
 
 export function tabHref(item: NavItem, activeTab: NavTab): string {
