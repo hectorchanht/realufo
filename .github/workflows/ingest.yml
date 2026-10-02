@@ -34,7 +34,7 @@ jobs:
           else
             python -m ingest --sources "$SOURCES" --dry-run | tee ingest-summary.txt
           fi
-      - run: sudo apt-get update -q && sudo apt-get install -yq ffmpeg poppler-utils
+      - run: sudo apt-get update -q && sudo apt-get install -yq ffmpeg poppler-utils fonts-dejavu-core
         if: ${{ !cancelled() }}
       # card thumbs for any live record still missing one (new releases ship none);
       # runs even if ingest partly failed so the records it did add get thumbs
@@ -52,7 +52,7 @@ jobs:
           else
             python -m ingest.thumbs --dry-run --limit 1 | tee -a ingest-summary.txt
           fi
-      # X bot clips (Spec 4): ≤30 s MP4s at clips/<archive>/<id>.mp4 for new videos
+      # X bot + social clips (Spec 4/5): ≤30 s MP4s at clips/ and 9:16 twins at clips-v/
       - name: clips
         if: ${{ !cancelled() }}
         working-directory: crawler
@@ -64,8 +64,10 @@ jobs:
           set -o pipefail
           if [ "$LIVE" = "true" ]; then
             python -m ingest.clips | tee -a ingest-summary.txt
+            python -m ingest.clips --vertical | tee -a ingest-summary.txt
           else
             python -m ingest.clips --dry-run --limit 1 | tee -a ingest-summary.txt
+            python -m ingest.clips --vertical --dry-run --limit 1 | tee -a ingest-summary.txt
           fi
       # AI key moments for videos still without them (spec 2026-10-02-realufo-ai-key-moments)
       - name: moments
