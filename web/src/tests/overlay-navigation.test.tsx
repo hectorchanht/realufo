@@ -68,3 +68,38 @@ describe("overlay navigation — Composer must render inside the router", () => 
     await waitFor(() => expect(screen.getByTestId("path").textContent).toBe("/thread/ut_TEST"));
   });
 });
+
+describe("overlay navigation — browser Back closes the open overlay", () => {
+  function renderAt(path: string) {
+    render(
+      <OverlayProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <Opener />
+          <LocationProbe />
+          <OverlayHost />
+        </MemoryRouter>
+      </OverlayProvider>,
+    );
+  }
+
+  it("Back closes the composer instead of leaving the page", async () => {
+    renderAt("/board/uap");
+    fireEvent.click(screen.getByText("open composer"));
+    expect(screen.getByText("NEW THREAD")).toBeInTheDocument();
+
+    window.history.back();
+
+    await waitFor(() => expect(screen.queryByText("NEW THREAD")).not.toBeInTheDocument());
+    expect(screen.getByTestId("path").textContent).toBe("/board/uap");
+  });
+
+  it("closing via ✕ pops the overlay's history entry", async () => {
+    renderAt("/board/uap");
+    fireEvent.click(screen.getByText("open composer"));
+    expect(window.history.state?.overlay).toBe(true);
+
+    fireEvent.click(screen.getByLabelText("Close composer"));
+
+    await waitFor(() => expect(window.history.state?.overlay).toBeFalsy());
+  });
+});

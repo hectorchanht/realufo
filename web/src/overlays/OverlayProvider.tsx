@@ -82,6 +82,18 @@ const OverlayContext = createContext<OverlayContextValue | null>(null);
 // prototype line 495: `setTimeout(()=>this.setState({toast:null}),1900)`.
 const TOAST_MS = 1900;
 
+// Browser/OS Back closes the open overlay instead of leaving the page: opening
+// pushes a same-URL history entry flagged `overlay`, Back pops it (popstate ->
+// close), and closing from the UI pops it ourselves. At most one overlay is open
+// at a time, so one entry is enough. Composer's new-thread submit REPLACES this
+// entry with the new thread (navigate replace) so Back from there skips it.
+function pushOverlayEntry() {
+  if (!window.history.state?.overlay) window.history.pushState({ ...window.history.state, overlay: true }, "");
+}
+function popOverlayEntry() {
+  if (window.history.state?.overlay) window.history.back();
+}
+
 export function OverlayProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<OverlayState>({
     composer: null,
@@ -92,14 +104,38 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
   });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => {
+    const onPop = () => {
+      if (!window.history.state?.overlay) setState((s) => ({ ...s, composer: null, viewer: null, login: false }));
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   const openComposer = useCallback((opts: ComposerOpts) => {
+    pushOverlayEntry();
     setState((s) => ({ ...s, composer: opts }));
   }, []);
-  const closeComposer = useCallback(() => setState((s) => ({ ...s, composer: null })), []);
-  const openViewer = useCallback((opts: ViewerOpts) => setState((s) => ({ ...s, viewer: opts })), []);
-  const closeViewer = useCallback(() => setState((s) => ({ ...s, viewer: null })), []);
-  const openLogin = useCallback(() => setState((s) => ({ ...s, login: true })), []);
-  const closeLogin = useCallback(() => setState((s) => ({ ...s, login: false })), []);
+  const closeComposer = useCallback(() => {
+    popOverlayEntry();
+    setState((s) => ({ ...s, composer: null }));
+  }, []);
+  const openViewer = useCallback((opts: ViewerOpts) => {
+    pushOverlayEntry();
+    setState((s) => ({ ...s, viewer: opts }));
+  }, []);
+  const closeViewer = useCallback(() => {
+    popOverlayEntry();
+    setState((s) => ({ ...s, viewer: null }));
+  }, []);
+  const openLogin = useCallback(() => {
+    pushOverlayEntry();
+    setState((s) => ({ ...s, login: true }));
+  }, []);
+  const closeLogin = useCallback(() => {
+    popOverlayEntry();
+    setState((s) => ({ ...s, login: false }));
+  }, []);
   const setMe = useCallback((me: OverlayMe | null) => setState((s) => ({ ...s, me })), []);
   const toast = useCallback((message: string) => {
     setState((s) => ({ ...s, toastMsg: message }));

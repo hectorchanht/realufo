@@ -181,10 +181,13 @@ export function Composer() {
         image_ref: !img && imgUrl ? imgUrl.split("/").pop() : undefined,
       },
       {
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
           toast("Posted");
+          // Replace the composer's history entry (see OverlayProvider) and close
+          // only after the router has written it, so closeComposer finds no
+          // overlay entry left to pop.
+          await navigate(`/thread/${data.thread.id}`, { replace: true });
           closeComposer();
-          navigate(`/thread/${data.thread.id}`);
         },
         onError: handleMutationError,
       },
