@@ -21,6 +21,7 @@ describe("bootstrap+feed", () => {
     expect(b.sightings.length).toBeGreaterThan(0);
     expect(b.sightings.every((s: any) => s.case_slug && !("count" in s))).toBe(true);
     expect(b.cases[0]).toHaveProperty("slug");
+    expect(b.cases[0]).toHaveProperty("lede");
   });
 
   it("postsToday counts only today's posts; yearsCovered spans first to last decade", async () => {

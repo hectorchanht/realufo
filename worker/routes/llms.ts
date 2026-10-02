@@ -39,6 +39,7 @@ export async function llms(req: Request, env: Env) {
     link("Archive", "/archive", "search and filter every file"),
     link("Browse", "/browse", "files grouped by release, agency, location and decade"),
     link("Sighting map", "/map"),
+    link("Cold cases", "/cases", "famous cases and their records"),
     link("Boards", "/boards", "anonymous discussion; user posts, not official records"),
     link("Sitemap", "/sitemap.xml", "every file page"),
     link("Full text of every file", "/llms-full.txt", "llms-full.txt, about 6 MB of Markdown"),

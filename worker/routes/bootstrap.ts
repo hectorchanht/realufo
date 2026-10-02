@@ -41,7 +41,7 @@ export async function bootstrap(req: Request, env: Env) {
     env.DB.prepare("SELECT kind,board,text,ago FROM ticker ORDER BY sort").all(),
     // Curated case pins only; the prototype's per-pin counts were fake, so they're dropped.
     env.DB.prepare("SELECT id,name,lat,lng,accent,case_slug FROM sightings WHERE case_slug IS NOT NULL").all(),
-    env.DB.prepare("SELECT slug,name,accent,coord FROM cases").all(),
+    env.DB.prepare("SELECT slug,name,accent,coord,substr(coalesce(lede,''),1,160) lede FROM cases ORDER BY name").all(),
     env.DB
       .prepare(
         `SELECT (SELECT count(*) FROM records) records,
