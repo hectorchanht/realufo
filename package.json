@@ -8,7 +8,7 @@
     "dev:web": "pnpm -C web dev",
     "build:web": "pnpm -C web build",
     "dev": "pnpm build:web && wrangler dev --local",
-    "deploy": "pnpm build:web && wrangler deploy",
+    "deploy": "pnpm build:web && wrangler deploy --env-file /dev/null",
     "db:migrate:local": "wrangler d1 migrations apply realufo-db --local",
     "db:migrate": "wrangler d1 migrations apply realufo-db --remote",
     "db:seed:local": "tsx db/seed.ts --local",
