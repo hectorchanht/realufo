@@ -79,12 +79,14 @@ export function useFeed() {
   });
 }
 
-export function useRecords(params: RecordsParams = {}) {
+// `keepPrevious`: keep the old page visible until the new one lands (Archive
+// paging/filtering). `enabled`: Doc only fetches a neighbour page on demand.
+export function useRecords(params: RecordsParams = {}, { enabled = true, keepPrevious = false } = {}) {
   return useQuery({
     queryKey: qk.records(params),
     queryFn: () => api.get<RecordsListResponse>(recordsPath(params)),
-    // Archive paging/filtering: keep the old page visible until the new one lands.
-    placeholderData: keepPreviousData,
+    enabled,
+    placeholderData: keepPrevious ? keepPreviousData : undefined,
   });
 }
 

@@ -30,20 +30,22 @@
 // convention as Feed.tsx) so a filter change never flashes an empty state.
 //
 // Pagination: a 1-based `page` URL param -> useRecords({limit, offset}),
-// PAGE_SIZE matching the Worker's default limit. Any filter change drops
+// RECORDS_PAGE_SIZE matching the Worker's default limit. Any filter change drops
 // `page` (back to 1). Page clicks push a history entry (unlike filters) so
 // back steps through pages, and scroll the shell's `[data-scroll]` main back
 // to the top. useRecords keeps the previous page on screen while the next
-// one loads (dimmed) instead of flashing the loading line.
+// one loads (dimmed) instead of flashing the loading line. DocCards carry
+// the whole query string (filters + page) to /doc so its swipe list is this
+// exact page (Doc.tsx crosses into neighbour pages at the edges).
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useBootstrap, useRecords } from "../api/queries";
 import { DocCard } from "../components/DocCard";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { RECORDS_PAGE_SIZE, recordsPage } from "../lib/recordsPage";
 
 const SEARCH_DEBOUNCE_MS = 250;
-const PAGE_SIZE = 40;
 
 // First, last, and current±1, with "…" for each skipped run:
 // (5, 20) -> [1, "…", 4, 5, 6, "…", 20].
@@ -197,7 +199,7 @@ export function Archive() {
   const archive = searchParams.get("archive") ?? "";
   const type = searchParams.get("type") ?? "";
   const redacted = searchParams.get("redacted") === "1";
-  const page = Math.max(1, Math.floor(Number(searchParams.get("page")))) || 1;
+  const page = recordsPage(searchParams);
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Local echo of the search box so every keystroke feels instant; only the
@@ -261,17 +263,20 @@ export function Archive() {
 
   const archives = boot?.archives ?? [];
 
-  const { data, isLoading, isPlaceholderData } = useRecords({
-    q: q || undefined,
-    archive: archive || undefined,
-    type: type || undefined,
-    redacted: redacted || undefined,
-    limit: PAGE_SIZE,
-    offset: (page - 1) * PAGE_SIZE,
-  });
+  const { data, isLoading, isPlaceholderData } = useRecords(
+    {
+      q: q || undefined,
+      archive: archive || undefined,
+      type: type || undefined,
+      redacted: redacted || undefined,
+      limit: RECORDS_PAGE_SIZE,
+      offset: (page - 1) * RECORDS_PAGE_SIZE,
+    },
+    { keepPrevious: true },
+  );
   const records = data?.records ?? [];
   const count = data?.count ?? 0;
-  const totalPages = Math.ceil(count / PAGE_SIZE);
+  const totalPages = Math.ceil(count / RECORDS_PAGE_SIZE);
 
   return (
     <div ref={rootRef} data-screen="archive" className="animate-[fadeup_.35s_ease_both]">
@@ -379,7 +384,7 @@ export function Archive() {
             className={`transition-opacity ${isPlaceholderData ? "opacity-50" : ""} grid grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]`}
           >
             {records.map((record) => (
-              <DocCard key={record.id} record={record} variant="grid" />
+              <DocCard key={record.id} record={record} variant="grid" search={searchParams.toString()} />
             ))}
           </div>
 

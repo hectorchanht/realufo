@@ -16,8 +16,10 @@
 // caller that forwards its current filters when linking here (e.g.
 // `/doc/:id?archive=nara`) keeps swiping inside that filtered set; with no
 // forwarded params this resolves to the full unfiltered order (same as
-// Archive with no filters applied) — the simplest correct approach the task
-// brief calls out, and it needs no change to DocCard/Archive's own links.
+// Archive with no filters applied). Archive's DocCards forward their whole
+// query string, `page` included, so the list is that exact 40-record page;
+// on its first/last item Doc fetches the neighbour page and prev/next cross
+// into it (rewriting `page`), so swiping runs through the whole result set.
 // If the current id isn't found in that list (unknown list, or navigated
 // here directly with a filter that excludes this record), `idx` is -1 and
 // prev/next both come back disabled/no-op — the brief's explicit fallback.
@@ -36,6 +38,7 @@ import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { recordMedia } from "../lib/recordMedia";
+import { RECORDS_PAGE_SIZE, recordsPage } from "../lib/recordsPage";
 
 // prototype line 522: `if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4)`.
 const SWIPE_MIN_DX = 55;
@@ -120,30 +123,51 @@ export function Doc() {
 
   // See file header note — same filter param names Archive.tsx reads off its
   // own URL, read here off THIS route's URL instead.
+  const page = recordsPage(searchParams);
+  const offset = (page - 1) * RECORDS_PAGE_SIZE;
   const listParams: RecordsParams = {
     q: searchParams.get("q") || undefined,
     archive: searchParams.get("archive") || undefined,
     type: searchParams.get("type") || undefined,
     redacted: searchParams.get("redacted") === "1" || undefined,
+    limit: RECORDS_PAGE_SIZE,
   };
-  const { data: listData } = useRecords(listParams);
+  const { data: listData } = useRecords({ ...listParams, offset });
   const ids = useMemo(() => (listData?.records ?? []).map((r) => r.id), [listData]);
   const idx = ids.indexOf(id);
-  const prevOk = idx > 0;
-  const nextOk = idx >= 0 && idx < ids.length - 1;
-  const docIdx = idx >= 0 ? `${idx + 1} / ${ids.length}` : "";
-  const restSearch = searchParams.toString();
+  const total = listData?.count ?? 0;
+  // On the page's first/last item, fetch the neighbour page so prev/next can cross into it.
+  const atFirst = idx === 0 && page > 1;
+  const atLast = idx >= 0 && idx === ids.length - 1 && offset + ids.length < total;
+  const { data: prevPage } = useRecords({ ...listParams, offset: offset - RECORDS_PAGE_SIZE }, { enabled: atFirst });
+  const { data: nextPage } = useRecords({ ...listParams, offset: offset + RECORDS_PAGE_SIZE }, { enabled: atLast });
+
+  // Neighbour href, keeping the forwarded filters and rewriting `page`.
+  function docHref(target: string | undefined, targetPage: number): string | null {
+    if (!target) return null;
+    const sp = new URLSearchParams(searchParams);
+    if (targetPage > 1) sp.set("page", String(targetPage));
+    else sp.delete("page");
+    const qs = sp.toString();
+    return `/doc/${target}${qs ? `?${qs}` : ""}`;
+  }
+  const prevHref =
+    idx > 0 ? docHref(ids[idx - 1], page) : atFirst ? docHref(prevPage?.records.at(-1)?.id, page - 1) : null;
+  const nextHref =
+    idx >= 0 && idx < ids.length - 1 ? docHref(ids[idx + 1], page) : atLast ? docHref(nextPage?.records[0]?.id, page + 1) : null;
+  const prevOk = !!prevHref;
+  const nextOk = !!nextHref;
+  const docIdx = idx >= 0 ? `${offset + idx + 1} / ${total}` : "";
 
   // prototype line 522's `swipeDoc`: wrap-around vibrates and does not move;
-  // otherwise navigates to the neighbor id, preserving the forwarded filter
-  // query string so continued swiping/prev-next stays inside the same list.
+  // otherwise navigates to the neighbor id (see docHref).
   function goTo(dir: 1 | -1) {
-    const ni = idx + dir;
-    if (idx < 0 || ni < 0 || ni >= ids.length) {
+    const href = dir === 1 ? nextHref : prevHref;
+    if (!href) {
       navigator.vibrate?.(12);
       return;
     }
-    navigate(`/doc/${ids[ni]}${restSearch ? `?${restSearch}` : ""}`);
+    navigate(href);
     navigator.vibrate?.(4);
   }
 
@@ -176,19 +200,19 @@ export function Doc() {
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
         e.preventDefault();
-        const ni = idx + (e.key === "ArrowRight" ? 1 : -1);
-        if (idx < 0 || ni < 0 || ni >= ids.length) {
+        const href = e.key === "ArrowRight" ? nextHref : prevHref;
+        if (!href) {
           navigator.vibrate?.(12);
           return;
         }
-        navigate(`/doc/${ids[ni]}${restSearch ? `?${restSearch}` : ""}`);
+        navigate(href);
       } else if (e.key === "Escape") {
         navigate(-1);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [composer, viewer, login, idx, ids, restSearch, navigate]);
+  }, [composer, viewer, login, prevHref, nextHref, navigate]);
 
   const record = detail?.record;
   const comments = commentsData?.comments ?? [];

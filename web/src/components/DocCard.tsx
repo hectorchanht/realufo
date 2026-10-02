@@ -40,6 +40,8 @@ export interface DocCardProps {
   record: RecordCard;
   variant?: DocCardVariant;
   onOpen?: (id: string) => void;
+  /** Query string forwarded to /doc/:id (Archive's filters + page) so Doc swipes the same list. */
+  search?: string;
 }
 
 function isFeedRecord(r: RecordCard): r is FeedRecordCard {
@@ -67,7 +69,7 @@ function locOrDate(r: ListRecordCard): string {
   return r.incident_date || r.doc_date || "—";
 }
 
-export function DocCard({ record, variant = "grid", onOpen }: DocCardProps) {
+export function DocCard({ record, variant = "grid", onOpen, search }: DocCardProps) {
   const [imgFailed, setImgFailed] = useState(false);
   const { data: boot } = useBootstrap();
   const showImg = !!record.thumb && !imgFailed;
@@ -86,7 +88,7 @@ export function DocCard({ record, variant = "grid", onOpen }: DocCardProps) {
 
   return (
     <Link
-      to={`/doc/${record.id}`}
+      to={`/doc/${record.id}${search ? `?${search}` : ""}`}
       onClick={handleClick}
       data-doc-card
       data-variant={variant}

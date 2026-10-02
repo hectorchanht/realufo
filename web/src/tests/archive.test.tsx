@@ -177,6 +177,13 @@ describe("Archive", () => {
     );
   });
 
+  it("doc card links forward the archive's filters and page to /doc", async () => {
+    useRecordsMock.mockImplementation(() => ({ data: { count: 1000, records: [cardWargov] }, isLoading: false }));
+    renderAppAt("/archive?archive=wargov&page=3");
+    const card = (await screen.findByText(/CIA-UAP-017/)).closest("a");
+    expect(card).toHaveAttribute("href", "/doc/rec1?archive=wargov&page=3");
+  });
+
   it("hides the pager when everything fits on one page", async () => {
     renderAppAt("/archive");
     await screen.findByText(/CIA-UAP-017/);

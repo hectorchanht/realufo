@@ -346,5 +346,36 @@ describe("Doc", () => {
       expect(mockNavigate).toHaveBeenCalledWith("/doc/mid");
       expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining("/doc/d"));
     });
+
+    it("reads the forwarded archive page and crosses into neighbour pages at its edges", () => {
+      const one = (id: string) => ({ ...orderedRecords.records[0], id });
+      useRecordsMock.mockImplementation((params: { offset?: number; archive?: string }) => {
+        const records =
+          params.offset === 40 ? orderedRecords.records : params.offset === 0 ? [one("p1a"), one("p1z")] : [one("p3a")];
+        return { data: { count: 83, records }, isLoading: false };
+      });
+
+      // middle of page 2: global index, same-page neighbours keep page=2
+      useRecordMock.mockReturnValue({ data: midDetail, isLoading: false });
+      const { unmount } = renderDoc("/doc/mid?archive=nara&page=2");
+      expect(useRecordsMock).toHaveBeenCalledWith(expect.objectContaining({ archive: "nara", limit: 40, offset: 40 }));
+      expect(screen.getByText("42 / 83")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: /next file/i }));
+      expect(mockNavigate).toHaveBeenLastCalledWith("/doc/c?archive=nara&page=2");
+      unmount();
+
+      // last item of page 2 -> first item of page 3
+      useRecordMock.mockReturnValue({ data: lastDetail, isLoading: false });
+      const r2 = renderDoc("/doc/c?archive=nara&page=2");
+      fireEvent.click(screen.getByRole("button", { name: /next file/i }));
+      expect(mockNavigate).toHaveBeenLastCalledWith("/doc/p3a?archive=nara&page=3");
+      r2.unmount();
+
+      // first item of page 2 -> last item of page 1 (page param dropped)
+      useRecordMock.mockReturnValue({ data: { ...midDetail, record: { ...midDetail.record, id: "a" } }, isLoading: false });
+      renderDoc("/doc/a?archive=nara&page=2");
+      fireEvent.click(screen.getByRole("button", { name: /previous file/i }));
+      expect(mockNavigate).toHaveBeenLastCalledWith("/doc/p1z?archive=nara");
+    });
   });
 });
