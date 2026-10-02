@@ -141,6 +141,9 @@ at random per post, so posts vary and formats never stack. Temperature 0.8.
   (1 of 10); the AI sees the bot's last 5 posts; copy sharing any 4-word phrase with
   them is a repeat → up to 3 tries (fresh format/hook each), then template; template
   closers rotate; copy echoing instructions ("with a joke", "two-line format") rejected.
+- **Object counts** in pick copy ("two objects", "3 lights") must be counts the official
+  title/summary uses; durations don't qualify (2026-10-02 incident: "two minutes and 57
+  seconds" became "two objects" — post deleted, guard added).
 - Templates carry the voice (`📼 title / 📍 agency · place · date / not saying it's
   aliens but… 👽 drop your theory 👇`); highlights never use AI.
 

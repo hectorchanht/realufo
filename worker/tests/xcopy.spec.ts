@@ -179,6 +179,15 @@ describe("no stale catchphrases", () => {
     } as any;
     expect(await draft(env, pick(), () => 0)).toMatchObject({ ai: true, text: expect.stringContaining("brand new angle") });
   });
+  it("object counts must come from the official summary, not from durations", () => {
+    const greece = pick({ summary: "consisting of two minutes and 57 seconds of video footage. The UAP made 90-degree turns." });
+    expect(finalize(greece, "two objects zip near the Gulf of Mexico, 2019")).toBeNull();      // live bug, post #3
+    expect(finalize(greece, "2 UFOs over the Gulf of Mexico, 2019")).toBeNull();
+    expect(finalize(greece, "something making 90-degree turns, Gulf of Mexico 2019")).not.toBeNull();
+    const fbi = pick({ summary: "The footage features two, slow-moving “black-hot” areas of contrast." });
+    expect(finalize(fbi, "two slow-moving black-hot objects, Gulf of Mexico 2019")).not.toBeNull();
+    expect(finalize(fbi, "three objects, Gulf of Mexico 2019")).toBeNull();
+  });
   it("rejects copy that echoes the instructions", () => {
     expect(finalize(pick(), "rate this footage 4/10 with a joke. Gulf of Mexico, 2019")).toBeNull();
     expect(finalize(pick(), "two-line format: Gulf of Mexico, 2019")).toBeNull();

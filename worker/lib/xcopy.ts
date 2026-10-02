@@ -64,6 +64,26 @@ export const mustContain = (c: Candidate) =>
 
 const yearOf = (d: string | null) => /\b(?:19|20)\d{2}\b/.exec(d ?? "")?.[0] ?? null;
 
+// Object counts ("two objects", "3 lights") must be counts the official summary uses.
+// Durations don't count: "two minutes and 57 seconds" once became "two objects".
+const NUM: Record<string, string> = { "1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine" };
+const COUNT = String.raw`\b(one|two|three|four|five|six|seven|eight|nine|[1-9])\b`;
+const THINGS = /^[\s,]*(?:[\w“”"'-]+\s+){0,2}(objects?|uaps?|ufos?|craft|lights?|orbs?|things|targets|contacts|areas?|shapes?|dots?)\b/i;
+const TIME = /^[\s,-]*(?:minutes?|seconds?|hours?|days?|years?|months?|weeks?)\b/i;
+function counts(text: string, keep: (rest: string) => boolean) {
+  const out = new Set<string>();
+  for (const m of text.matchAll(new RegExp(COUNT, "gi")))
+    if (keep(text.slice(m.index! + m[0].length))) out.add(NUM[m[1]] ?? m[1].toLowerCase());
+  return out;
+}
+function countsOk(c: Candidate, t: string) {
+  if (c.stream !== "pick") return true;
+  const said = counts(t, (rest) => THINGS.test(rest));
+  if (!said.size) return true;
+  const official = counts(`${c.record.title ?? ""} ${c.record.summary ?? ""}`, (rest) => !TIME.test(rest));
+  return [...said].every((n) => official.has(n));
+}
+
 // A pick post should name the record's place/year so the joke stays tied to the real
 // file; when the AI skipped them (often its funniest lines), code adds a 📍 line.
 const NA = /^(n\/?a|unknown|none|-)$/i;
@@ -115,7 +135,7 @@ export function finalize(c: Candidate, raw: string, trusted = false): string | n
     .trim();
   if (!t || !t.includes(mustContain(c))) return null;
   // [..] / "with a joke" / "two-line format" = the model echoing its instructions
-  if (!trusted && (!isClean(t) || /[[\]]|\bwith a joke\b|\btwo-line format\b|\breply hook\b/i.test(t))) return null;
+  if (!trusted && (!isClean(t) || /[[\]]|\bwith a joke\b|\btwo-line format\b|\breply hook\b/i.test(t) || !countsOk(c, t))) return null;
   const anchor = anchorLine(c, t);
   if (anchor) t += "\n" + anchor;
   if (c.stream !== "highlight") t += "\n" + c.link; // ours, after stripping any the AI wrote
