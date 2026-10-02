@@ -115,11 +115,23 @@ status stays 200 (SPA renders its own 404; changing status is out of scope).
 
 ## Performance
 
-Doc pages now run the full record load (series, release, related ≈ 6 D1
-queries) per HTML request instead of 1. Acceptable at current traffic; D1
-reads are cheap and these are the same queries the SPA triggers right after
-load anyway. ponytail note in code: add `caches.default` / Cache-Control
-s-maxage on these HTML responses if D1 read volume matters.
+A doc page's full load (record, assets, promoted threads, series, releases,
+4 related groups) is ~9 D1 queries. To keep D1 reads per HTML request near
+zero (user requirement):
+
+- The loaded **page data** (`{ meta, body }` JSON, not the final HTML) is
+  stored in the Workers Cache API (`caches.default`) under the key
+  `<origin>/__page<pathname>` with `cache-control: max-age=3600`. A hit costs
+  0 D1 queries; D1 runs at most once per path per colo per hour.
+- Caching the data rather than the HTML means a deploy (new JS bundle hash in
+  index.html) never serves stale HTML; index.html is still fetched from
+  ASSETS each request (no D1).
+- Key uses pathname only, so query strings can't bust the cache.
+- `null` (entity not found) is not cached.
+- 1h staleness only affects what crawlers see: humans get fresh data from the
+  SPA's API calls after mount.
+- The doc thumbnail is picked from the already-loaded `assets` in JS instead
+  of a separate `thumbSql` query.
 
 ## Testing
 
@@ -131,6 +143,8 @@ Extend `worker/tests/meta.spec.ts` (seeded D1 via `seedTestDB`):
 3. `/` → canonical link, `WebSite` JSON-LD, at least one `/doc/` link.
 4. Unknown `/doc/nope` → body has empty `<div id="root"></div>`.
 5. Non-matched path (e.g. `/favicon.svg`) still served by ASSETS untouched.
+6. Page cache: render a board, delete its row, render again → still served
+   (from cache, no D1).
 
 Manual after deploy: `curl -A facebookexternalhit/1.1 https://realufo.org/doc/CIA-UAP-017`
 shows the record title; Google Rich Results test on one doc URL; load page in
