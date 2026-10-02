@@ -1254,6 +1254,31 @@ git commit -m "feat(hubs): Hub + Browse screens, doc facts link to hubs, Archive
 
 ---
 
+### Task 5b: More tag→hub entry points (Archive hub link, Ask source chips)
+
+Requested from the "ask history" chat. Doc-page fact→hub links stay as in Task 5 Step 5.
+
+**Precondition:** merge `build/app-foundation` into `feat/hub-pages` first. It carries 244fe31 (ask_log + share endpoint) and 30108a9 (answer-card footer moved to its own row), both touching `ask.ts` / `AskAnswer.tsx`.
+
+- [ ] **Step 1: Archive "open the hub" link** (`web/src/screens/Archive.tsx`). When exactly one of the release / agency / location / decade filters is active and its value maps to a live hub in `/api/hubs`, show one link under the filters: `→ <hub label> page` pointing at `/release/N`, `/agency/<slug>`, etc. The filter chips stay as in-place filters, not links. Resolve values through the registry mapping (`AGENCY_HUBS` / `LOCATION_HUBS` values, so `DoW` → `department-of-war`). If needed, expose a `values` list per hub in `/api/hubs` instead of duplicating the alias table in web. Hide the link when the value has no hub (below `MIN_HUB_FILES`).
+
+- [ ] **Step 2: Ask sources carry `hubs`** (`worker/routes/ask.ts` `answer()`). Add `agency, location, incident_date, archive, doc_date` to the hydrate SELECT. Fetch `listHubsCached(env, origin)` with a `.catch(() => [])` (same pattern as `records.ts`) plus `wargovReleases(env)` once per answer, compute the release no per source (same rule as `releaseOf`: wargov + `isoDate(doc_date)` matched against the releases), and return `hubs: hubsFor(row, releaseNo, live)` on each source. Thread `origin` from `req` into `answer()`.
+
+- [ ] **Step 3: Source chips** (`web/src/components/AskAnswer.tsx`). In each source row, render small chips (`R06`, `FBI`, …) linking to the hubs. `hubs` stays optional in the type, because answers cached in `ask_cache` before this change lack it.
+
+- [ ] **Step 4: Tests.**
+  - `web/src/tests/archive.test.tsx`: hub link shows for a single mapped filter, hides for two filters and for an unmapped value.
+  - `worker/tests/ask.spec.ts`: a seeded FBI record's source carries `hubs.agency === "fbi"`.
+  - `web/src/tests/ask.test.tsx`: the chip links to `/agency/fbi`, and a source without `hubs` renders with no chips.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat(hubs): Archive hub link for single tag filter; Ask sources link their hubs"
+```
+
+---
+
 ### Task 6: Merge, deploy, verify (needs user go-ahead)
 
 - [ ] **Step 1: STOP — ask the user** to merge + deploy, reporting: branch test totals, what else is on `build/app-foundation` since the branch point, the latest `wrangler deployments list` entry, and whether another chat's deploy worktree is ahead of the merge (`git merge-base --is-ancestor`).
