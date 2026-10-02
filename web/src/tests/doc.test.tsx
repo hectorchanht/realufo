@@ -749,6 +749,49 @@ describe("Doc", () => {
       expect(mockNavigate).toHaveBeenCalledWith("/doc/c");
     });
 
+    it("media tool filters + lens live in the URL and carry to the next file", () => {
+      const image = (d: RecordDetail): RecordDetail => ({
+        ...d,
+        record: { ...d.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      });
+      useRecordMock.mockReturnValue({ data: image(midDetail), isLoading: false });
+      const { unmount } = renderDoc("/doc/mid");
+      fireEvent.click(screen.getByRole("button", { name: "Ironbow" }));
+      fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
+      fireEvent.click(screen.getByRole("button", { name: "Lens" }));
+      fireEvent.click(screen.getByRole("button", { name: /lens magnification 3×/i }));
+      fireEvent.click(screen.getByRole("button", { name: /rotate 90/i }));
+      fireEvent.click(screen.getByRole("button", { name: /next file/i }));
+      const href = mockNavigate.mock.lastCall![0] as string;
+      expect(href.split("?")[0]).toBe("/doc/c");
+      expect(Object.fromEntries(new URLSearchParams(href.split("?")[1]))).toEqual({ pal: "ironbow", inv: "1", lens: "1", mag: "5" });
+      unmount();
+
+      // landing on the next file with those params: same filters, lens still on at 5×, rotation not carried
+      useRecordMock.mockReturnValue({ data: image(lastDetail), isLoading: false });
+      renderDoc(href);
+      const img = document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
+      expect(img.style.filter).toContain("invert(1)");
+      expect(img.style.filter).toContain("#ru-ironbow");
+      expect(img.style.transform).not.toContain("rotate");
+      expect(document.querySelector("[data-zoom-lens]")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /lens magnification 5×/i })).toBeInTheDocument();
+      // series links keep the tool params (not the list filters)
+      expect(screen.getByRole("link", { name: /previous in series/i })).toHaveAttribute("href", "/doc/rec0?inv=1&pal=ironbow&lens=1&mag=5");
+    });
+
+    it("bad media tool params fall back to defaults", () => {
+      useRecordMock.mockReturnValue({
+        data: { ...midDetail, record: { ...midDetail.record, kind: "image" }, assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }] },
+        isLoading: false,
+      });
+      renderDoc("/doc/mid?br=999&pal=evil&mag=7&lens=1");
+      const img = document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
+      expect(img.style.filter).toBe("brightness(2)");
+      expect(screen.getByRole("button", { name: /lens magnification 3×/i })).toBeInTheDocument();
+    });
+
     it("clicking the prev arrow navigates toward the previous id in the list", () => {
       useRecordMock.mockReturnValue({ data: midDetail, isLoading: false });
       renderDoc("/doc/mid");

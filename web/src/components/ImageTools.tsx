@@ -34,6 +34,43 @@ export const DEFAULT_ADJUST: ImageAdjust = {
   sharpen: false,
 };
 
+// URL form of an adjustment (Doc keeps it in the query so it carries to the
+// next file and survives a share): only non-defaults are written.
+const ADJUST_PARAMS = ["br", "ct", "sat", "inv", "bw", "pal", "sharp"];
+/** Every media-tool query param (adjust + lens), for carrying them onto other links. */
+export const TOOL_PARAMS = [...ADJUST_PARAMS, "lens", "mag"];
+
+/** Parse an adjustment off the URL; bad values fall back to the default. */
+export function adjustFromParams(sp: URLSearchParams): ImageAdjust {
+  const pct = (k: string) => {
+    const s = sp.get(k);
+    const n = Number(s);
+    return s && Number.isFinite(n) ? Math.min(200, Math.max(0, Math.round(n))) : 100;
+  };
+  const pal = sp.get("pal");
+  return {
+    brightness: pct("br"),
+    contrast: pct("ct"),
+    saturate: pct("sat"),
+    invert: sp.get("inv") === "1",
+    gray: sp.get("bw") === "1",
+    palette: pal === "ironbow" || pal === "rainbow" ? pal : "none",
+    sharpen: sp.get("sharp") === "1",
+  };
+}
+
+/** Write an adjustment into `sp` (in place). */
+export function adjustToParams(sp: URLSearchParams, a: ImageAdjust) {
+  for (const k of ADJUST_PARAMS) sp.delete(k);
+  if (a.brightness !== 100) sp.set("br", String(a.brightness));
+  if (a.contrast !== 100) sp.set("ct", String(a.contrast));
+  if (a.saturate !== 100) sp.set("sat", String(a.saturate));
+  if (a.invert) sp.set("inv", "1");
+  if (a.gray) sp.set("bw", "1");
+  if (a.palette !== "none") sp.set("pal", a.palette);
+  if (a.sharpen) sp.set("sharp", "1");
+}
+
 // Presets set the tone controls only; palette + sharpen stay as they are.
 const PRESETS: { label: string; Icon: LucideIcon; adj: Partial<ImageAdjust> }[] = [
   { label: "Enhance", Icon: WandSparkles, adj: { brightness: 110, contrast: 140, saturate: 120 } },

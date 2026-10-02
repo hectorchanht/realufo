@@ -34,7 +34,8 @@ import { useBootstrap, useComments, useRecord, useRecords } from "../api/queries
 import type { RecordsParams } from "../api/queries";
 import type { Comment, RecordKind, RelatedGroup } from "../api/types";
 import { DocCard } from "../components/DocCard";
-import { DEFAULT_ADJUST, LENS_MAGS, MediaFilters, MediaToolbar, ZoomLens, adjustFilter } from "../components/ImageTools";
+import { LENS_MAGS, MediaFilters, MediaToolbar, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams } from "../components/ImageTools";
+import type { ImageAdjust } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
 import { parseAiMoments, parseKeyMoments } from "../lib/keyMoments";
 import { UploadThumb } from "../components/UploadThumb";
@@ -150,7 +151,7 @@ function MetaCell({ label, value, to }: MetaCellProps) {
 export function Doc() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { openComposer, openViewer, composer, viewer, login, toast } = useOverlay();
 
   const { data: detail, isLoading } = useRecord(id);
@@ -166,25 +167,44 @@ export function Doc() {
   const [thumbFailed, setThumbFailed] = useState(false);
   useEffect(() => setThumbFailed(false), [id]);
 
-  // Image/video tools (adjust filters + zoom lens) start clean on every file.
+  // Image/video tools: adjust filters + zoom lens live in the URL (see
+  // TOOL_PARAMS), so prev/next (docHref keeps the query) and series links
+  // land on the next file with the same look; the frame view (zoom / pan /
+  // rotate / flip) is per picture and starts clean on every file.
   // With a mouse the lens is on by default and click-through (follows the
   // pointer, media stays clickable); on touch it would block scrolling the
-  // panel, so it stays an opt-in drag mode there.
+  // panel, so it stays an opt-in drag mode there. `lens=1|0` is written only
+  // when it differs from that device default.
   const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
-  const [adjust, setAdjust] = useState(DEFAULT_ADJUST);
-  const [lens, setLens] = useState(finePointer);
-  const [mag, setMag] = useState(3);
+  const lensOf = (sp: URLSearchParams) => (sp.get("lens") === "1" ? true : sp.get("lens") === "0" ? false : finePointer);
+  const magOf = (sp: URLSearchParams) => (LENS_MAGS.includes(Number(sp.get("mag"))) ? Number(sp.get("mag")) : 3);
+  const adjust = useMemo(() => adjustFromParams(searchParams), [searchParams]);
+  const lens = lensOf(searchParams);
+  const mag = magOf(searchParams);
+  // Latest params via a ref so back-to-back updates before a re-render
+  // build on each other instead of on this render's params.
+  const paramsRef = useRef(searchParams);
+  paramsRef.current = searchParams;
+  function tool<T>(read: (sp: URLSearchParams) => T, write: (sp: URLSearchParams, v: T) => void) {
+    return (u: T | ((cur: T) => T)) => {
+      const sp = new URLSearchParams(paramsRef.current);
+      write(sp, typeof u === "function" ? (u as (cur: T) => T)(read(sp)) : u);
+      paramsRef.current = sp;
+      setSearchParams(sp, { replace: true }); // replace: slider drags don't flood history
+    };
+  }
+  const setAdjust = tool<ImageAdjust>(adjustFromParams, adjustToParams);
+  const setLens = tool<boolean>(lensOf, (sp, v) => (v === finePointer ? sp.delete("lens") : sp.set("lens", v ? "1" : "0")));
+  const setMag = tool<number>(magOf, (sp, v) => (v === 3 ? sp.delete("mag") : sp.set("mag", String(v))));
   const [view, setView] = useState(DEFAULT_VIEW); // frame zoom / pan / rotate / flip
   const [pic, setPic] = useState<{ w: number; h: number } | null>(null); // natural media size
   const [panel, setPanel] = useState<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
-    setAdjust(DEFAULT_ADJUST);
-    setLens(finePointer);
     setView(DEFAULT_VIEW);
     setPic(null);
-  }, [id, finePointer]);
+  }, [id]);
   const panelMedia = recordMedia(detail, isDesktop).media;
   // A transformed <video> would zoom/rotate its native controls too, so they
   // hide then (VideoTransport has its own seek bar).
@@ -248,6 +268,9 @@ export function Doc() {
   const prevOk = !!prevHref;
   const nextOk = !!nextHref;
   const docIdx = idx >= 0 ? `${offset + idx + 1} / ${total}` : "";
+  // Series links leave the list, so they keep only the media-tool params.
+  const toolSp = new URLSearchParams([...searchParams].filter(([k]) => TOOL_PARAMS.includes(k)));
+  const toolQuery = toolSp.size ? `?${toolSp}` : "";
 
   // prototype line 522's `swipeDoc`: wrap-around vibrates and does not move;
   // otherwise navigates to the neighbor id (see docHref).
@@ -316,7 +339,7 @@ export function Doc() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [composer, viewer, login, prevHref, nextHref, navigate, panelMedia]);
+  }, [composer, viewer, login, prevHref, nextHref, navigate, panelMedia, setAdjust, setLens, setMag]);
 
   const record = detail?.record;
   const comments = commentsData?.comments ?? [];
@@ -689,7 +712,7 @@ export function Doc() {
             sid ? (
               <Link
                 key={label}
-                to={`/doc/${sid}`}
+                to={`/doc/${sid}${toolQuery}`}
                 className={`rounded-xl border border-line px-3 py-2.5 ${align} active:scale-[.99]`}
               >
                 <div className="text-[9px] tracking-[.5px] text-faint">{label}</div>
