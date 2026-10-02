@@ -106,10 +106,13 @@ function linkifyBody(body: string): ReactNode[] {
 interface PostRowProps {
   post: Post;
   sourceRecord: ThreadSourceRecord | null;
+  /** Set on the OP row only: the OP *is* the thread, so it votes the thread's
+   * counter (the one board rows show) instead of its own post row. */
+  thread?: { id: string; votes: number };
 }
 
 // One post row — prototype lines 264-280.
-function PostRow({ post, sourceRecord }: PostRowProps) {
+function PostRow({ post, sourceRecord, thread }: PostRowProps) {
   const { openViewer } = useOverlay();
   const img = postImage(post, sourceRecord);
 
@@ -186,7 +189,11 @@ function PostRow({ post, sourceRecord }: PostRowProps) {
 
       {/* footer — prototype lines 276-279: VoteButton("credible") + inert "↩ reply" */}
       <div className="mt-[10px] flex items-center gap-4 font-mono text-[11px]" style={{ clear: "both" }}>
-        <VoteButton targetType="post" targetId={post.id} votes={post.votes} />
+        {thread ? (
+          <VoteButton targetType="thread" targetId={thread.id} votes={thread.votes} />
+        ) : (
+          <VoteButton targetType="post" targetId={post.id} votes={post.votes} />
+        )}
         <span className="text-dim">credible</span>
         {/* prototype line 278 is a bare, unwired `<span>` — no onClick in the
             authoritative markup. The real reply affordance is the sticky
@@ -268,7 +275,7 @@ export function Thread() {
       {/* post list — prototype lines 262-282 (OP-first ordering from the API) */}
       <div className="flex flex-col gap-[11px]">
         {posts.map((p) => (
-          <PostRow key={p.id} post={p} sourceRecord={sourceRecord} />
+          <PostRow key={p.id} post={p} sourceRecord={sourceRecord} thread={p.isOp ? thread : undefined} />
         ))}
       </div>
 

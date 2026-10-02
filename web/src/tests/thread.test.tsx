@@ -24,10 +24,11 @@ vi.mock("../overlays/OverlayProvider", () => ({
 }));
 
 const useThreadMock = vi.fn();
+const mockVoteMutate = vi.fn();
 
 vi.mock("../api/queries", () => ({
   useThread: (id: string) => useThreadMock(id),
-  useVote: () => ({ mutate: vi.fn(), isPending: false }),
+  useVote: () => ({ mutate: mockVoteMutate, isPending: false }),
   useRecord: (id: string) => ({
     data:
       id === "NASA-UAP-D030"
@@ -127,6 +128,7 @@ beforeEach(() => {
   mockOpenComposer.mockReset();
   mockOpenViewer.mockReset();
   useThreadMock.mockReset();
+  mockVoteMutate.mockReset();
   useThreadMock.mockReturnValue({ data: mockThreadDetail, isLoading: false });
 });
 
@@ -151,6 +153,23 @@ describe("Thread", () => {
       screen.getByText(/I saw the same radar anomaly reported in a different FOIA batch/),
     ).toBeInTheDocument();
     expect(screen.getByText("!watcher")).toBeInTheDocument();
+  });
+
+  it("OP vote shows + toggles the thread's vote count (same counter as the board row)", () => {
+    useThreadMock.mockReturnValue({
+      data: {
+        ...mockThreadDetail,
+        thread: { ...mockThreadDetail.thread, votes: 7 },
+        posts: mockThreadDetail.posts.map((p) => (p.isOp ? { ...p, votes: 1 } : p)),
+      },
+      isLoading: false,
+    });
+    renderThread();
+    const op = screen.getByRole("button", { name: "vote (7)" });
+    fireEvent.click(op);
+    expect(mockVoteMutate).toHaveBeenCalledWith({ target_type: "thread", target_id: "th1" });
+    // replies keep their own per-post counter
+    expect(screen.getByRole("button", { name: "vote (2)" })).toBeInTheDocument();
   });
 
   it('clicking the sticky "Post a reply" bar opens the composer in reply mode for this thread', () => {
