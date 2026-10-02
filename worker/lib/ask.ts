@@ -39,8 +39,14 @@ export function buildMessages(question: string, chunks: AskChunk[]) {
 // Workers AI LLMs answer as {response} (classic) or chat-completions {choices};
 // Qwen3 may emit a <think> block even with thinking disabled — never show it.
 export function answerText(out: unknown): string {
-  const o = out as { response?: unknown; choices?: { message?: { content?: unknown } }[] } | null;
-  const raw = typeof o?.response === "string" ? o.response : o?.choices?.[0]?.message?.content;
+  const o = out as {
+    response?: unknown;
+    choices?: { message?: { content?: unknown; reasoning_content?: unknown; reasoning?: unknown } }[];
+  } | null;
+  const msg = o?.choices?.[0]?.message;
+  // Qwen3 on Workers AI sometimes puts the whole answer in reasoning_content
+  // (content: null) even with thinking disabled.
+  const raw = typeof o?.response === "string" ? o.response : (msg?.content ?? msg?.reasoning_content ?? msg?.reasoning);
   return String(raw ?? "").replace(/<think>[\s\S]*?(<\/think>|$)/g, "").trim();
 }
 

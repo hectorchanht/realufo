@@ -38,10 +38,13 @@ export async function ask(req: Request, env: Env) {
   } catch {
     return error(503, RESTING);
   }
-  await env.DB.batch([
-    env.DB.prepare("DELETE FROM ask_cache WHERE created_at < datetime('now','-7 days')"),
-    env.DB.prepare("INSERT OR REPLACE INTO ask_cache(key,answer) VALUES(?,?)").bind(key, JSON.stringify(body)),
-  ]);
+  // Only real answers are cached: a not-covered reply (e.g. asked mid-indexing)
+  // must not stick for 7 days.
+  if (body.sources.length)
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM ask_cache WHERE created_at < datetime('now','-7 days')"),
+      env.DB.prepare("INSERT OR REPLACE INTO ask_cache(key,answer) VALUES(?,?)").bind(key, JSON.stringify(body)),
+    ]);
   return json({ ...body, cached: false });
 }
 

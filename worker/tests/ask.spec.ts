@@ -77,6 +77,15 @@ describe("GET /api/ask", () => {
     expect(aiCalls.map((c) => c.model)).toEqual(["@cf/baai/bge-m3"]);
   });
 
+  it("not-covered answers are not cached, so they recover once the index fills in", async () => {
+    matches = [];
+    expect((await body(await ask("gulf of oman orbs"))).answer).toBe(NOT_COVERED);
+    matches = [hit("CIA-UAP-017", 2)];
+    const b = await body(await ask("gulf of oman orbs"));
+    expect(b.cached).toBe(false);
+    expect(b.answer).toBe("Radar tracked it [1].");
+  });
+
   it("drops sources whose record no longer exists; none left -> not covered", async () => {
     matches = [hit("DELETED-RECORD", 1)];
     const b = await body(await ask("ghost record question"));

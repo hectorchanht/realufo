@@ -29,6 +29,9 @@ describe("ask helpers", () => {
     expect(answerText({ choices: [{ message: { content: "<think>hmm</think>\nB [2]" } }] })).toBe("B [2]");
     expect(answerText({ response: "<think>never closed" })).toBe("");
     expect(answerText(null)).toBe("");
+    // Workers AI's Qwen3 can return the answer in reasoning_content with content: null.
+    expect(answerText({ response: null, choices: [{ message: { content: null, reasoning_content: "C [1]" } }] })).toBe("C [1]");
+    expect(answerText({ choices: [{ message: { content: null, reasoning: "D [1]" } }] })).toBe("D [1]");
   });
 
   it("strips out-of-range citations and reports cited sources", () => {
