@@ -89,6 +89,8 @@ const mockDetail: RecordDetail = {
       accent: "#9184d9",
     },
   ],
+  series: { prev: "rec0", next: null },
+  release: { no: 4, date: "2026-07-10" },
 };
 
 const mockComments: CommentsResponse = {
@@ -216,6 +218,19 @@ describe("Doc", () => {
     expect(screen.getByText("1978-04-01")).toBeInTheDocument();
     expect(screen.getByText("DOD-1978-00417")).toBeInTheDocument();
     expect(screen.getByText(/unusual radar contact over restricted airspace/)).toBeInTheDocument();
+  });
+
+  it("shows the record id kicker and the full official title (id prefix kept)", () => {
+    renderDoc();
+    expect(screen.getByText("rec1")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("CIA-UAP-017, Placement on High Alert near Roswell");
+  });
+
+  it("shows the release badge and series prev link (no next at series end)", () => {
+    renderDoc();
+    expect(screen.getByText("RELEASE 04")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /previous in series.*rec0/i })).toHaveAttribute("href", "/doc/rec0");
+    expect(screen.queryByRole("link", { name: /next in series/i })).toBeNull();
   });
 
   it("renders a comment with its body", () => {

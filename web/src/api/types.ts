@@ -187,6 +187,10 @@ export interface RecordDetail {
   record: RecordFull;
   assets: Asset[];
   promotedThreads: PromotedThread[];
+  /** Neighbours in the id series (NASA-UAP-D029 ← D030 → D031). */
+  series?: { prev: string | null; next: string | null };
+  /** war.gov release this file came out in (null for other archives). */
+  release?: { no: number; date: string } | null;
 }
 
 // ---------------------------------------------------------------------------

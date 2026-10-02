@@ -449,11 +449,24 @@ export function Doc() {
         <span className="rounded-[7px] border border-line px-[9px] py-1 font-mono text-[10px] text-dim">
           {archiveLabel}
         </span>
+        {detail.release && (
+          <span
+            className="rounded-[7px] border border-red px-[9px] py-1 font-mono text-[10px] font-semibold text-red"
+            title={`war.gov release ${detail.release.no} · ${detail.release.date}`}
+          >
+            RELEASE {String(detail.release.no).padStart(2, "0")}
+          </span>
+        )}
       </div>
 
-      {/* title — prototype line 359 */}
+      {/* record id kicker — uapbrowser-style accent breadcrumb */}
+      <div className="mb-1 font-mono text-[11px] font-semibold tracking-[.4px]" style={{ color: accent }}>
+        {record.id}
+      </div>
+
+      {/* title — full official title (id prefix kept, it's how the file is cited) */}
       <h1 className="mb-3.5 text-[19px] font-bold leading-[1.3] text-ink" style={{ overflowWrap: "anywhere" }}>
-        {title}
+        {record.title.replace(/_/g, " ")}
       </h1>
 
       {/* meta grid — prototype lines 360-365 */}
@@ -475,6 +488,31 @@ export function Doc() {
       >
         ⛶ OPEN ORIGINAL {glyph}
       </button>
+
+      {/* series prev/next — id neighbours (D029 ← D030 → D031), uapbrowser-style */}
+      {(detail.series?.prev || detail.series?.next) && (
+        <div className="mb-[22px] grid grid-cols-2 gap-2 font-mono">
+          {[
+            { id: detail.series.prev, label: "← PREVIOUS IN SERIES", align: "text-left" },
+            { id: detail.series.next, label: "NEXT IN SERIES →", align: "text-right" },
+          ].map(({ id: sid, label, align }) =>
+            sid ? (
+              <Link
+                key={label}
+                to={`/doc/${sid}`}
+                className={`rounded-xl border border-line px-3 py-2.5 ${align} active:scale-[.99]`}
+              >
+                <div className="text-[9px] tracking-[.5px] text-faint">{label}</div>
+                <div className="mt-1 text-xs text-ink" style={{ overflowWrap: "anywhere" }}>
+                  {sid}
+                </div>
+              </Link>
+            ) : (
+              <div key={label} />
+            ),
+          )}
+        </div>
+      )}
 
       {/* promotedThreads back-references — not in the prototype's doc markup
           (RealUFO.dc.html has no such strip), but required by the data model:
