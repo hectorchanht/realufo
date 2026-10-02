@@ -315,6 +315,24 @@ describe("Doc", () => {
     }
   });
 
+  it("puts the TL;DR card and the WTF-meter under the title, above the meta grid", () => {
+    useRecordMock.mockReturnValue({
+      data: { ...mockDetail, tldr: { bullets: ["a", "b", "c"], oneLiner: "Paperwork wins.", cardUrl: null } },
+      isLoading: false,
+    });
+    renderDoc();
+    const html = document.body.innerHTML;
+    const h1 = html.indexOf("<h1"), card = html.indexOf("Paperwork wins."), meter = html.indexOf('aria-label="Your verdict"'), meta = html.indexOf("Incident");
+    expect(h1).toBeLessThan(card);
+    expect(card).toBeLessThan(meter);
+    expect(meter).toBeLessThan(meta);
+  });
+
+  it("no TL;DR: no card", () => {
+    renderDoc();
+    expect(screen.queryByText(/TL;DR/)).toBeNull();
+  });
+
   it("renders the meta grid fields and the summary", () => {
     renderDoc();
     expect(screen.getByText("1978-03-04")).toBeInTheDocument();
