@@ -7,7 +7,11 @@ beforeAll(() => seedTestDB(env.DB));
 
 const T = (iso: string) => new Date(iso + "Z");
 const NOW = T("2026-10-10T15:00:00"); // pick slot open, highlight slot closed
-const E = (extra: Record<string, unknown> = {}) => ({ ...env, X_SINCE: "2026-10-01", ...extra }) as any;
+// Pin the bot schedule/budget these tests were written for: the cloudflare:test env
+// carries wrangler.jsonc's production vars (X_PICK_HOURS="15,18,21", X_DAILY_MAX="4"
+// since bfa2884), which would turn "later the same day" into a fresh pick slot.
+const BOT = { X_PICK_HOURS: "14", X_DAILY_MAX: "3", X_MONTHLY_USD_CAP: "10" };
+const E = (extra: Record<string, unknown> = {}) => ({ ...env, ...BOT, X_SINCE: "2026-10-01", ...extra }) as any;
 
 async function rec(id: string, kind: string, opts: { archive?: string; doc_date?: string; created?: string; thumb?: boolean } = {}) {
   const archive = opts.archive ?? "wargov";

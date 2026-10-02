@@ -9,7 +9,11 @@ beforeAll(() => seedTestDB(env.DB));
 const NOW = new Date("2026-10-10T15:00:00Z"); // pick slot
 const SECRETS = { X_API_KEY: "k", X_API_SECRET: "s", X_ACCESS_TOKEN: "t", X_ACCESS_SECRET: "ts" };
 const AI = { run: async () => ({ response: "Clip XT-V1 from the Gulf. #UAP" }) };
-const E = (extra: Record<string, unknown> = {}) => ({ ...env, ...SECRETS, AI, FEATURE_X: "on", X_SINCE: "", ...extra }) as any;
+// Pin the bot schedule/budget these tests were written for: the cloudflare:test env
+// carries wrangler.jsonc's production vars (X_PICK_HOURS="15,18,21", X_DAILY_MAX="4"
+// since bfa2884), which would turn "later the same day" into a fresh pick slot.
+const BOT = { X_PICK_HOURS: "14", X_DAILY_MAX: "3", X_MONTHLY_USD_CAP: "10" };
+const E = (extra: Record<string, unknown> = {}) => ({ ...env, ...BOT, ...SECRETS, AI, FEATURE_X: "on", X_SINCE: "", ...extra }) as any;
 const noSleep = async () => {};
 
 let xCalls: string[] = [];
