@@ -21,7 +21,7 @@ Return JSON only, nothing around it:
 {"lede": "<exactly 2 sentences: what this group contains and what is notable about it>",
  "picks": [{"id": "<file id copied exactly from the list>", "why": "<max 25 words, two short sentences: first the concrete fact, then the joke>"}]}
 Voice: sarcastic, irreverent, fourth-wall-breaking, like a wisecracking antihero narrating a government document dump. Roast the bureaucracy, the redactions, the grainy footage, the sensors and the paperwork. PG-13, no slurs.
-Never joke about the person who filed, filmed or reported it (no "someone really wanted…", no jabs at their phone, camera or motives).
+Never mock or second-guess the people who filed, filmed or reported anything.
 Never guess what the object was (drone, balloon, bird, star, plane, aliens) unless the summary itself says so.
 Facts stay exact: every date, place, rank, number and quote comes from the summaries; add no facts of your own. Jokes wrap around the facts, never replace them. Aliens only as an obvious joke; never claim or imply what any object actually was.
 Pick the 3 to 5 files a curious reader should open first. Each pick must add something different (place, type of file or era); never pick two files that say the same thing. If a document (pdf) stands out, include at least one.
@@ -63,17 +63,37 @@ def parse_reply(raw):
     except ValueError:
         return None
 
+_INITIALISM = re.compile(r"(^|[ .])[A-Z]\.[A-Z]$")
+_END = re.compile(r"[.?!][”\"']?(?= )")
+
+def _ends(text: str) -> list[int]:
+    """Indexes just past each sentence end, skipping initialisms like "U.S." / "D.C."."""
+    return [m.end() for m in _END.finditer(text) if not _INITIALISM.search(text[: m.start()])]
+
+def sentences(text: str) -> list[str]:
+    cuts = [0, *_ends(text), len(text)]
+    return [t for t in (text[i:j].strip() for i, j in zip(cuts, cuts[1:])) if t]
+
+# The model ignores "don't" lines often enough that we enforce them here: a
+# sentence that jabs at whoever filed the report, or guesses what the object
+# was, is dropped (picks are "fact. joke." so the fact survives).
+_BANNED = re.compile(
+    r"\bsomeone (really )?(wanted|needed)\b|\bcop'?s? with\b"
+    r"|\b(probably|definitely|clearly|obviously|just|likely|maybe)\b[^.?!]{0,25}?\b(drone|balloon|bird|star|plane|satellite|alien|spaceship)s?\b",
+    re.I)
+
+def scrub(text: str) -> str:
+    return " ".join(t for t in sentences(" ".join(text.split())) if not _BANNED.search(t))
+
 def clip(text: str, max_words: int) -> str:
     """Cap at max_words, ending on the last whole sentence (else an ellipsis), never mid-thought."""
     words = text.split()
     if len(words) <= max_words:
         return " ".join(words)
     head = " ".join(words[:max_words])
-    # Sentence ends, skipping initialisms like "U.S." / "D.C." (a ".X" right before the dot).
-    initialism = lambda before: re.search(r"(^|[ .])[A-Z]\.[A-Z]$", before)
-    ends = [m.end() for m in re.finditer(r"[.?!][”\"']?(?= )", head) if not initialism(head[: m.start()])]
-    if head[-1] in ".?!" and not initialism(head[:-1]):
+    if head[-1] in ".?!" and not _INITIALISM.search(head[:-1]):
         return head
+    ends = _ends(head)
     return head[: ends[-1]] if ends else head.rstrip(",;:—-") + "…"
 
 def validate(obj, member_ids):
@@ -82,7 +102,9 @@ def validate(obj, member_ids):
     lede = obj.get("lede")
     if not isinstance(lede, str) or not lede.strip():
         return None
-    lede = clip(lede, LEDE_WORDS)
+    lede = clip(scrub(lede), LEDE_WORDS)
+    if not lede:
+        return None
     picks, seen = [], set()
     for p in obj.get("picks") or []:
         if not isinstance(p, dict):
@@ -90,7 +112,7 @@ def validate(obj, member_ids):
         pid, why = p.get("id"), p.get("why")
         if not isinstance(pid, str) or not isinstance(why, str):
             continue
-        pid, why = pid.strip(), clip(why, WHY_WORDS)
+        pid, why = pid.strip(), clip(scrub(why), WHY_WORDS)
         if pid not in member_ids or pid in seen or not why:
             continue
         seen.add(pid)

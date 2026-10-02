@@ -116,3 +116,17 @@ def test_clip_does_not_treat_us_abbreviation_as_a_sentence_end():
 def test_clip_keeps_a_closing_quote():
     t = "He said “stop.” Then the tape ran out and nobody filed anything at all for forty years apparently ok"
     assert hl.clip(t, 12) == "He said “stop.”"
+
+def test_scrub_drops_reporter_jabs_and_object_guesses_but_keeps_facts():
+    assert hl.scrub("26 seconds of infrared footage from a gunship. Someone really wanted to prove they saw something.") == \
+        "26 seconds of infrared footage from a gunship."
+    assert hl.scrub("Five bright spots in the sky. Maybe aliens, maybe just stars. Probably stars.") == "Five bright spots in the sky."
+    assert hl.scrub("A 'bogey' was spotted. No one knew what it was. Probably a bird.") == "A 'bogey' was spotted. No one knew what it was."
+    assert hl.scrub("15 minutes of video from a cop's phone. Just a cop with a phone.") == "15 minutes of video from a cop's phone."
+    kept = "What stands out is the obsession with bird identification in the U.S. Air Force files."
+    assert hl.scrub(kept) == kept
+
+def test_validate_drops_a_pick_that_is_all_jab():
+    obj = {"lede": "L.", "picks": [{"id": "A-1", "why": "Someone really wanted attention."},
+                                   {"id": "B-2", "why": "Radar track."}, {"id": "C-3", "why": "Film."}]}
+    assert [p["id"] for p in hl.validate(obj, IDS)["picks"]] == ["B-2", "C-3"]
