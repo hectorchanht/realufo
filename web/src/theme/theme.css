@@ -102,7 +102,7 @@ a:hover {
 button {
   font-family: inherit;
   cursor: pointer;
-  border: 0;
+  border-width: 0; /* width only: keeps preflight's solid style so `border` utilities work */
   background: none;
   color: inherit;
 }

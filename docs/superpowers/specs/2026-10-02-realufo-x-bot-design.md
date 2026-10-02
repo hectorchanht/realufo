@@ -88,7 +88,7 @@ No column for clips: clip existence = `MEDIA.head('clips/<archive>/<id>.mp4')`.
 
 ### 4.2 Release grouping
 
-- **wargov:** key `wargov:R<no>`; release number + its raw `doc_date` strings
+- **wargov:** key `wargov:<ISO release date>` (not the rank: a late file with an earlier date would renumber every release); release number + its raw `doc_date` strings
   come from the existing `wargovReleases(env)` in `worker/routes/records.ts`
   (export it; one release can have several raw date spellings).
   Link: `https://realufo.org/archive?release=<no>`.
@@ -108,8 +108,11 @@ duration, summary (≤500 chars). Copy ends with "Full file on RealUFO: <id>",
 
 ### 4.4 Community highlight
 
-Thread with `votes ≥ X_HIGHLIGHT_MIN_VOTES` (default 5), created in last 7 days,
-not posted. AI input: title + first 500 chars of `op_body` only. Media: clip or
+**Off by default** (`X_HIGHLIGHT_MIN_VOTES=""`): anon ids are client-chosen, so one
+person can forge votes. When enabled: thread with `votes ≥ X_HIGHLIGHT_MIN_VOTES`,
+created in last 7 days, not posted. **No AI** (user text is a prompt-injection
+surface): fixed template with the banned-claims check; a title that fails it gets a
+`failed` row (`unsafe title`) and is never posted. Media: clip or
 thumb of the thread's `source_record_id` (official footage) — **never user
 uploads**. No media if no source record.
 
@@ -176,8 +179,12 @@ For every live video record with no `clips/<archive>/<id>.mp4` on the CDN:
 - Row inserted as `pending` **before** calling X. Crash mid-call leaves
   `pending`: never auto-retried (could double-post), counts toward budget,
   surfaced in logs for manual check.
-- X 4xx (401 auth, 403 duplicate/forbidden, 402 no credits) → `failed` + error
-  text, no retry. 429 / 5xx → stays `pending` with `attempts+1`, retried next
+- X 401 / 402 / non-duplicate 403 (auth revoked, out of credits) → row **deleted**
+  so the candidate isn't burned; retried naturally on a later tick. Other 4xx
+  (incl. 403 duplicate) → `failed`, no retry.
+- Network error on create, or D1 failure after a successful create → ambiguous:
+  row stays `pending`, `attempts=0` (manual check, never auto-retried); tweet id is
+  logged before the D1 write. 429 / 5xx → stays `pending` with `attempts+1`, retried next
   tick up to 3 attempts. *(This is the only case a `pending` row is retried,
   because X didn't create anything.)*
 - Media upload/processing failure → post without media (still no URL, same cost).
