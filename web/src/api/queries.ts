@@ -37,7 +37,12 @@ import type {
 export interface RecordsParams {
   archive?: string;
   type?: string;
-  redacted?: boolean;
+  /** "1" redacted, "0" unredacted. */
+  redacted?: string;
+  /** Comma list of record flags that must all hold: ai,text,moments,featured. */
+  has?: string;
+  /** new | old | recent | az; unset = featured first. */
+  sort?: string;
   q?: string;
   release?: string;
   agency?: string;
@@ -70,9 +75,8 @@ function recordsPath(params: RecordsParams): string {
   const usp = new URLSearchParams();
   if (params.archive) usp.set("archive", params.archive);
   if (params.type) usp.set("type", params.type);
-  if (params.redacted) usp.set("redacted", "1");
   if (params.q) usp.set("q", params.q);
-  for (const k of ["release", "agency", "decade"] as const) if (params[k]) usp.set(k, params[k]);
+  for (const k of ["redacted", "has", "sort", "release", "agency", "decade"] as const) if (params[k]) usp.set(k, params[k]);
   for (const v of [params.location ?? []].flat()) if (v) usp.append("location", v);
   if (params.limit != null) usp.set("limit", String(params.limit));
   if (params.offset != null) usp.set("offset", String(params.offset));

@@ -158,6 +158,7 @@ export interface RecordFacets {
   agencies: { name: string; count: number }[];
   decades: { decade: number; count: number }[];
   locations: { name: string; count: number }[];
+  flags: Record<"redacted" | "unredacted" | "ai" | "text" | "moments" | "featured", number>;
 }
 
 // ---------------------------------------------------------------------------

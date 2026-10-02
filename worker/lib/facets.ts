@@ -50,11 +50,16 @@ export async function facetCounts(env: Env) {
       `SELECT ${col} name, count(*) count FROM records WHERE ${col} IS NOT NULL AND trim(${col}) NOT IN ('','N/A')
        GROUP BY ${col} ORDER BY count DESC, name`
     ).all<{ name: string; count: number }>();
-  const [releases, agencies, locations, dates] = await Promise.all([
+  const [releases, agencies, locations, dates, flags] = await Promise.all([
     wargovReleases(env),
     groupBy("agency"),
     groupBy("location"),
     env.DB.prepare("SELECT incident_date d, count(*) n FROM records GROUP BY incident_date").all<{ d: string | null; n: number }>(),
+    env.DB.prepare(
+      `SELECT sum(redacted=1) redacted, sum(redacted=0) unredacted, sum(ai_moments IS NOT NULL) moments, sum(featured=1) featured,
+         (SELECT count(*) FROM record_text) text, (SELECT count(*) FROM record_text WHERE ai_summary IS NOT NULL) ai
+       FROM records`
+    ).first<Record<"redacted" | "unredacted" | "moments" | "featured" | "text" | "ai", number>>(),
   ]);
   const decades = new Map<number, number>();
   for (const r of dates.results) {
@@ -66,5 +71,6 @@ export async function facetCounts(env: Env) {
     agencies: agencies.results,
     locations: locations.results,
     decades: [...decades].sort(([a], [b]) => a - b).map(([decade, count]) => ({ decade, count })),
+    flags: flags ?? { redacted: 0, unredacted: 0, moments: 0, featured: 0, text: 0, ai: 0 },
   };
 }

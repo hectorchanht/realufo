@@ -80,6 +80,7 @@ const mockFacets: RecordFacets = {
   agencies: [{ name: "FBI", count: 11 }],
   decades: [{ decade: 1950, count: 40 }],
   locations: [{ name: "Harare, Zimbabwe", count: 1 }],
+  flags: { redacted: 282, unredacted: 312, ai: 370, text: 429, moments: 165, featured: 14 },
 };
 
 const useRecordsMock = vi.fn();
@@ -154,7 +155,7 @@ describe("Archive", () => {
     // (a plain <span>) on the "Blue Book" DocCard once it renders, which
     // would make an unscoped text query ambiguous; scoping to role="button"
     // uniquely picks the archive chip.
-    const chip = screen.getByRole("button", { name: /NARA/ });
+    const chip = screen.getByRole("button", { name: /^NARA/ });
     fireEvent.click(chip);
 
     await waitFor(() =>
@@ -168,8 +169,8 @@ describe("Archive", () => {
     renderAppAt("/archive");
     await screen.findByText(/CIA-UAP-017/);
 
-    const naraChip = screen.getByRole("button", { name: /NARA/ });
-    const wargovChip = screen.getByRole("button", { name: /War\.gov/ });
+    const naraChip = screen.getByRole("button", { name: /^NARA/ });
+    const wargovChip = screen.getByRole("button", { name: /^War\.gov/ });
 
     // Unselected: neither chip carries an accent fill yet.
     expect(naraChip.getAttribute("style")).not.toContain("#c8d0dc");
@@ -182,9 +183,9 @@ describe("Archive", () => {
 
     // Selected: solid-filled with the archive's own accent (not a tinted/
     // translucent version of it) — RealUFO.dc.html:592's `bg:archMap[c.id].accent`.
-    expect(screen.getByRole("button", { name: /NARA/ })).toHaveStyle({ background: "#c8d0dc" });
+    expect(screen.getByRole("button", { name: /^NARA/ })).toHaveStyle({ background: "#c8d0dc" });
     // The other, still-unselected chip stays unfilled.
-    expect(screen.getByRole("button", { name: /War\.gov/ }).getAttribute("style")).not.toContain("#9184d9");
+    expect(screen.getByRole("button", { name: /^War\.gov/ }).getAttribute("style")).not.toContain("#9184d9");
   });
 
   it("pages through results: next/number buttons set offset, filter change resets to page 1", async () => {
@@ -237,11 +238,11 @@ describe("Archive", () => {
     renderAppAt("/archive?page=2");
     await screen.findByText(/CIA-UAP-017/);
 
-    fireEvent.click(screen.getByRole("button", { name: /R02/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^R02/ }));
     await waitFor(() =>
       expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ release: "2", offset: 0 })),
     );
-    expect(screen.getByRole("button", { name: /R02/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /^R02/ })).toHaveAttribute("aria-pressed", "true");
 
     fireEvent.change(screen.getByLabelText("Agency"), { target: { value: "FBI" } });
     fireEvent.change(screen.getByLabelText("Decade"), { target: { value: "1950" } });
@@ -254,7 +255,7 @@ describe("Archive", () => {
     const card = (await screen.findByText(/CIA-UAP-017/)).closest("a");
     expect(card?.getAttribute("href")).toContain("release=2");
 
-    fireEvent.click(screen.getByRole("button", { name: /clear filters/ }));
+    fireEvent.click(screen.getByRole("button", { name: /clear all/ }));
     await waitFor(() =>
       expect(useRecordsMock).toHaveBeenLastCalledWith(
         expect.objectContaining({ release: undefined, agency: undefined, decade: undefined, location: undefined }),
@@ -262,14 +263,45 @@ describe("Archive", () => {
     );
   });
 
+  it("redaction chips are exclusive; has-chips combine; pills remove one filter; sort survives clear all", async () => {
+    renderAppAt("/archive");
+    await screen.findByText(/CIA-UAP-017/);
+    const last = () => useRecordsMock.mock.lastCall![0];
+
+    fireEvent.click(screen.getByRole("button", { name: "Redacted 282" }));
+    await waitFor(() => expect(last().redacted).toBe("1"));
+    fireEvent.click(screen.getByRole("button", { name: "Unredacted 312" }));
+    await waitFor(() => expect(last().redacted).toBe("0"));
+    expect(screen.getByRole("button", { name: "Redacted 282" })).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(screen.getByRole("button", { name: "Unredacted 312" }));
+    await waitFor(() => expect(last().redacted).toBeUndefined());
+
+    fireEvent.click(screen.getByRole("button", { name: "AI summary 370" }));
+    fireEvent.click(screen.getByRole("button", { name: "Featured 14" }));
+    await waitFor(() => expect(last().has).toBe("ai,featured"));
+    fireEvent.change(screen.getByLabelText("Agency"), { target: { value: "FBI" } });
+    fireEvent.change(screen.getByLabelText("Sort"), { target: { value: "old" } });
+    await waitFor(() => expect(last()).toEqual(expect.objectContaining({ agency: "FBI", sort: "old" })));
+
+    // one pill per active filter (sort is an order, not a filter)
+    const pills = screen.getByRole("list", { name: "Active filters" });
+    expect(within(pills).getAllByRole("button").map((b) => b.textContent)).toEqual(["FBI ✕", "AI summary ✕", "Featured ✕", "✕ clear all"]);
+    fireEvent.click(within(pills).getByRole("button", { name: "Remove AI summary" }));
+    await waitFor(() => expect(last().has).toBe("featured"));
+
+    fireEvent.click(within(pills).getByRole("button", { name: /clear all/ }));
+    await waitFor(() => expect(last()).toEqual(expect.objectContaining({ agency: undefined, has: undefined, sort: "old" })));
+    expect(screen.queryByRole("list", { name: "Active filters" })).not.toBeInTheDocument();
+  });
+
   it("picking a non-war.gov archive drops the release filter and hides release chips", async () => {
     renderAppAt("/archive?release=1");
     await screen.findByText(/CIA-UAP-017/);
-    fireEvent.click(screen.getByRole("button", { name: /NARA/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^NARA/ }));
     await waitFor(() =>
       expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ archive: "nara", release: undefined })),
     );
-    expect(screen.queryByRole("button", { name: /R01/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^R01/ })).not.toBeInTheDocument();
   });
 
   it("hides the pager when everything fits on one page", async () => {

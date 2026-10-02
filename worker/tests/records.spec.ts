@@ -154,6 +154,41 @@ describe("records", () => {
     expect(facets.locations.some((l: any) => l.name === "N/A" || l.name === "")).toBe(false);
     expect(facets.decades.find((d: any) => d.decade === 1940).count).toBeGreaterThanOrEqual(2);
   });
+  it("filters by redaction (1/0) and has= flags; sorts; facets count the flags", async () => {
+    const ins = (id: string, title: string, red: number, feat: number, moments: string | null, inc: string | null, created: string) =>
+      env.DB.prepare(
+        "INSERT INTO records (id,archive,agency,title,kind,redacted,featured,ai_moments,incident_date,created_at) VALUES (?,'nara','FLGAG',?,'pdf',?,?,?,?,?)"
+      ).bind(id, title, red, feat, moments, inc, created);
+    const txt = (id: string, ai: string | null) =>
+      env.DB.prepare("INSERT INTO record_text (record_id,pages,total_pages,ai_summary) VALUES (?,'[]',1,?)").bind(id, ai);
+    const before: any = await (await get("/api/records/facets")).json();
+    await env.DB.batch([
+      ins("FLG-1", "flgz charlie", 1, 0, "[]", "12/30/47", "2001-01-03"), // 1947
+      ins("FLG-2", "flgz alpha", 0, 1, null, "October, 2023", "2001-01-01"),
+      ins("FLG-3", "flgz bravo", 0, 0, null, null, "2001-01-02"), // no year → last for incident sorts
+      ins("FLG-4", "flgz delta", 1, 0, null, "1965", "2001-01-04"),
+      txt("FLG-1", "summary"),
+      txt("FLG-2", null), // full text, no AI summary
+    ]);
+    const ids = async (qs: string) =>
+      ((await (await get(`/api/records?q=flgz&${qs}&limit=100`)).json()) as any).records.map((r: any) => r.id);
+    const set = async (qs: string) => (await ids(qs)).sort();
+    expect(await set("redacted=1")).toEqual(["FLG-1", "FLG-4"]);
+    expect(await set("redacted=0")).toEqual(["FLG-2", "FLG-3"]);
+    expect(await set("has=text")).toEqual(["FLG-1", "FLG-2"]);
+    expect(await set("has=ai")).toEqual(["FLG-1"]);
+    expect(await set("has=moments")).toEqual(["FLG-1"]);
+    expect(await set("has=featured")).toEqual(["FLG-2"]);
+    expect(await set("has=text,featured")).toEqual(["FLG-2"]); // AND
+    expect(await set("has=bogus")).toEqual(["FLG-1", "FLG-2", "FLG-3", "FLG-4"]); // unknown flags ignored
+    expect(await ids("sort=az")).toEqual(["FLG-2", "FLG-3", "FLG-1", "FLG-4"]);
+    expect(await ids("sort=new")).toEqual(["FLG-4", "FLG-1", "FLG-3", "FLG-2"]);
+    expect(await ids("sort=old")).toEqual(["FLG-1", "FLG-4", "FLG-2", "FLG-3"]);
+    expect(await ids("sort=recent")).toEqual(["FLG-2", "FLG-4", "FLG-1", "FLG-3"]);
+    const after: any = await (await get("/api/records/facets")).json();
+    const d = (k: string) => after.flags[k] - (before.flags?.[k] ?? 0);
+    expect([d("redacted"), d("unredacted"), d("text"), d("ai"), d("moments"), d("featured")]).toEqual([2, 2, 2, 1, 1, 1]);
+  });
   it("404s unknown id", async () => {
     expect((await get("/api/records/NOPE")).status).toBe(404);
   });

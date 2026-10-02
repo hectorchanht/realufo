@@ -7,6 +7,14 @@ import { isoDate, yearOf, decadeOf, wargovReleases, facetCounts } from "../lib/f
 // Re-exported for callers that predate lib/facets (lib/xpick.ts).
 export { wargovReleases };
 
+// `has=` flags (comma list, all must hold); unknown names are ignored.
+const HAS: Record<string, string> = {
+  text: "EXISTS (SELECT 1 FROM record_text t WHERE t.record_id=r.id)",
+  ai: "EXISTS (SELECT 1 FROM record_text t WHERE t.record_id=r.id AND t.ai_summary IS NOT NULL)",
+  moments: "r.ai_moments IS NOT NULL",
+  featured: "r.featured=1",
+};
+
 export async function listRecords(req: Request, env: Env) {
   const u = new URL(req.url);
   const where: string[] = [];
@@ -21,7 +29,9 @@ export async function listRecords(req: Request, env: Env) {
     where.push("r.kind=?");
     bind.push(type.toLowerCase());
   }
-  if (u.searchParams.get("redacted") === "1") where.push("r.redacted=1");
+  const redacted = u.searchParams.get("redacted");
+  if (redacted === "1" || redacted === "0") where.push(`r.redacted=${redacted}`);
+  for (const f of (u.searchParams.get("has") || "").split(",")) if (HAS[f]) where.push(HAS[f]);
   const release = u.searchParams.get("release");
   if (release) {
     where.push("r.archive='wargov' AND r.doc_date IN (SELECT value FROM json_each(?))");
@@ -51,15 +61,28 @@ export async function listRecords(req: Request, env: Env) {
     bind.push("%" + q.toLowerCase() + "%");
   }
   const w = where.length ? "WHERE " + where.join(" AND ") : "";
+  const sort = u.searchParams.get("sort");
+  let order = "r.featured DESC, r.created_at DESC";
+  let join = "";
+  const joinBind: unknown[] = [];
+  if (sort === "new") order = "r.created_at DESC";
+  else if (sort === "az") order = "lower(r.title), r.id";
+  else if (sort === "old" || sort === "recent") {
+    // Free-text incident dates → a {date: year} map; undated records go last.
+    const rows = await env.DB.prepare("SELECT DISTINCT incident_date d FROM records WHERE incident_date IS NOT NULL").all<{ d: string }>();
+    join = "LEFT JOIN json_each(?) y ON y.key = r.incident_date";
+    joinBind.push(JSON.stringify(Object.fromEntries(rows.results.map((r) => [r.d, Number(yearOf(r.d))]).filter(([, y]) => y))));
+    order = `y.value IS NULL, y.value ${sort === "old" ? "ASC" : "DESC"}, r.created_at DESC`;
+  }
   const limit = Math.max(1, Math.min(100, Number(u.searchParams.get("limit")) || 40));
   const offset = Math.max(0, Number(u.searchParams.get("offset")) || 0);
   const total = await env.DB.prepare(`SELECT count(*) c FROM records r ${w}`).bind(...bind).first<{ c: number }>();
   const rows = await env.DB.prepare(
     `
     SELECT ${CARD_COLS}
-    FROM records r ${w} ORDER BY r.featured DESC, r.created_at DESC LIMIT ? OFFSET ?`
+    FROM records r ${join} ${w} ORDER BY ${order} LIMIT ? OFFSET ?`
   )
-    .bind(...bind, limit, offset)
+    .bind(...joinBind, ...bind, limit, offset)
     .all();
   return json({ count: total?.c ?? 0, records: rows.results });
 }
@@ -172,6 +195,7 @@ export async function recordFacets(_req: Request, env: Env) {
     agencies: f.agencies,
     decades: f.decades,
     locations: f.locations,
+    flags: f.flags,
   });
 }
 

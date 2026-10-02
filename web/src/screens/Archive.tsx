@@ -2,8 +2,9 @@
 // realufo-handoff/RealUFO.dc.html lines 167-205 (the `showArchive` branch of
 // `data-screenpad`): search input + "AI-RAG soon" chip, a horizontally
 // scrolling archive-chip row (All + one per bootstrap archive), type chips
-// (All/Docs/Video), a "redacted only" toggle, a result-count line, the
-// DocCard grid, and the "no records match" empty state.
+// (All/Docs/Video/Images), redaction + has-flag chips, removable pills for
+// the active filters, a result-count line, the DocCard grid, and the
+// "no records match" empty state.
 //
 // This component renders ONLY that screen content — AppShell (Task 14) owns
 // the app frame, AppBar, and nav, and mounts this inside its `<Outlet/>`
@@ -11,7 +12,7 @@
 // (router.tsx).
 //
 // Filters are modeled as URL search params (`q`, `archive`, `type`,
-// `redacted`, plus `release`/`agency`/`decade`/`location` whose options come
+// `redacted` (1|0), `has` (comma list), `sort`, plus `release`/`agency`/`decade`/`location` whose options come
 // from useFacets(); recordsFilter() maps them to useRecords params) via react-router's `useSearchParams`, so a filtered view is
 // shareable/back-button-friendly (the task brief's explicit requirement).
 // All four are read fresh from the URL on every render EXCEPT the search
@@ -243,7 +244,21 @@ function FacetSelect({ label, value, all, options, onChange }: {
   );
 }
 
-const FILTER_KEYS = ["archive", "type", "redacted", "release", "agency", "decade", "location"];
+const FILTER_KEYS = ["q", "archive", "type", "redacted", "has", "release", "agency", "decade", "location"];
+const TYPE_LABELS: Record<string, string> = { pdf: "Docs", video: "Video", image: "Images" };
+// `has=` flags, in the order they're written to the URL.
+const HAS_FLAGS = [
+  ["ai", "AI summary"],
+  ["text", "Full text"],
+  ["moments", "Video moments"],
+  ["featured", "Featured"],
+] as const;
+const SORTS = [
+  { value: "new", label: "Newest added" },
+  { value: "old", label: "Oldest incident" },
+  { value: "recent", label: "Newest incident" },
+  { value: "az", label: "Title A–Z" },
+];
 
 export function Archive() {
   const { data: boot } = useBootstrap();
@@ -264,7 +279,9 @@ export function Archive() {
   const q = filter.q ?? "";
   const archive = filter.archive ?? "";
   const type = filter.type ?? "";
-  const redacted = !!filter.redacted;
+  const redacted = filter.redacted ?? "";
+  const has = (filter.has ?? "").split(",").filter(Boolean);
+  const hasParam = (next: string[]) => HAS_FLAGS.map(([k]) => k).filter((k) => next.includes(k)).join(",") || null;
   const release = filter.release ?? "";
   const { data: facets } = useFacets();
   // One active tag filter that belongs to a hub → offer its landing page.
@@ -276,7 +293,6 @@ export function Archive() {
   useSetFooterLinks(tagHub && { title: "This filter", links: [{ to: `/${tagHub.kind}/${tagHub.slug}`, text: `${tagHub.label} page` }] });
   // Releases are war.gov-only, so the chips only show for All / War.gov.
   const showReleases = !!facets?.releases.length && (archive === "" || archive === "wargov");
-  const hasFilters = FILTER_KEYS.some((k) => searchParams.has(k));
   const page = recordsPage(searchParams);
 
   // Ask moved to its own tab: old /archive?ask= links land on /ask?q=. With
@@ -348,6 +364,21 @@ export function Archive() {
   }
 
   const archives = boot?.archives ?? [];
+  const flags = facets?.flags;
+
+  // One removable pill per active filter, in the order the controls appear.
+  type Pill = { label: string; remove: Record<string, string | null> };
+  const pills = ([
+    q && { label: `“${q}”`, remove: { q: null } },
+    archive && { label: chipLabel(archives.find((a) => a.id === archive)?.label ?? archive), remove: { archive: null, release: null } },
+    release && { label: `R${release.padStart(2, "0")}`, remove: { release: null } },
+    filter.agency && { label: filter.agency, remove: { agency: null } },
+    filter.decade && { label: `${filter.decade}s`, remove: { decade: null } },
+    location && { label: location, remove: { location: null } },
+    type && { label: TYPE_LABELS[type] ?? type, remove: { type: null } },
+    redacted && { label: redacted === "1" ? "Redacted" : "Unredacted", remove: { redacted: null } },
+    ...HAS_FLAGS.filter(([k]) => has.includes(k)).map(([k, label]) => ({ label, remove: { has: hasParam(has.filter((h) => h !== k)) } })),
+  ] as (Pill | "" | undefined)[]).filter((p): p is Pill => !!p);
 
   const { data, isLoading, isPlaceholderData } = useRecords(
     {
@@ -426,7 +457,7 @@ export function Archive() {
       )}
 
       {/* agency / decade / location */}
-      <div className="mb-1.5 flex gap-1.5">
+      <div className="mb-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
         <FacetSelect
           label="Agency"
           all="All agencies"
@@ -448,10 +479,11 @@ export function Archive() {
           options={(facets?.locations ?? []).map((l) => ({ value: l.name, label: `${l.name} (${l.count})` }))}
           onChange={(v) => setParam("location", v)}
         />
+        <FacetSelect label="Sort" all="Featured first" value={filter.sort ?? ""} options={SORTS} onChange={(v) => setParam("sort", v)} />
       </div>
 
-      {/* type chips + redacted toggle — lines 179-186 */}
-      <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2.5 px-0.5 py-1">
+      {/* type chips */}
+      <div className="mb-1.5 px-0.5 py-1">
         <div className="flex gap-1.5">
           <TypeChip selected={type === ""} style={typeChipStyle(type === "")} onClick={() => setParam("type", null)}>
             All
@@ -466,36 +498,60 @@ export function Archive() {
             Images
           </TypeChip>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setParam("redacted", redacted ? null : "1")}
-          aria-pressed={redacted}
-          className="flex items-center gap-[7px] font-mono text-[10.5px]"
-          style={{ color: redacted ? "var(--red)" : "var(--dim)" }}
-        >
-          <span
-            aria-hidden="true"
-            className="grid h-[15px] w-[15px] place-items-center rounded-[4px] text-[10px] text-white"
-            style={{
-              border: `1px solid ${redacted ? "var(--red)" : "var(--line)"}`,
-              background: redacted ? "var(--red)" : "transparent",
-            }}
-          >
-            {redacted ? "✓" : ""}
-          </span>
-          redacted only
-        </button>
       </div>
 
-      {hasFilters && (
-        <button
-          type="button"
-          onClick={() => setParams(Object.fromEntries(FILTER_KEYS.map((k) => [k, null])))}
-          className="mx-0.5 mb-2.5 font-mono text-[10.5px] text-dim hover:text-signal"
-        >
-          ✕ clear filters
-        </button>
+      {/* redaction (exclusive pair) + has-flags (combine) */}
+      <div data-scroll className="mb-3 flex items-center gap-1.5 overflow-x-auto pb-1.5">
+        {(
+          [
+            ["1", "Redacted", flags?.redacted],
+            ["0", "Unredacted", flags?.unredacted],
+          ] as const
+        ).map(([v, label, n]) => (
+          <TypeChip key={v} selected={redacted === v} style={typeChipStyle(redacted === v)} onClick={() => setParam("redacted", redacted === v ? null : v)}>
+            {label} {n != null && <span className="opacity-60">{abbreviateCount(n)}</span>}
+          </TypeChip>
+        ))}
+        <span aria-hidden="true" className="mx-0.5 h-4 w-px flex-none bg-line2" />
+        {HAS_FLAGS.map(([k, label]) => {
+          const on = has.includes(k);
+          return (
+            <TypeChip
+              key={k}
+              selected={on}
+              style={typeChipStyle(on)}
+              onClick={() => setParam("has", hasParam(on ? has.filter((h) => h !== k) : [...has, k]))}
+            >
+              {label} {flags && <span className="opacity-60">{abbreviateCount(flags[k])}</span>}
+            </TypeChip>
+          );
+        })}
+      </div>
+
+      {pills.length > 0 && (
+        <ul aria-label="Active filters" className="mx-0.5 mb-2.5 flex flex-wrap items-center gap-1.5">
+          {pills.map((p) => (
+            <li key={p.label}>
+              <button
+                type="button"
+                aria-label={`Remove ${p.label}`}
+                onClick={() => setParams(p.remove)}
+                className="rounded-full border border-signal px-2 py-[3px] font-mono text-[10px] text-signal hover:bg-signal hover:text-bg"
+              >
+                {p.label} ✕
+              </button>
+            </li>
+          ))}
+          <li>
+            <button
+              type="button"
+              onClick={() => setParams(Object.fromEntries(FILTER_KEYS.map((k) => [k, null])))}
+              className="px-1 font-mono text-[10.5px] text-dim hover:text-signal"
+            >
+              ✕ clear all
+            </button>
+          </li>
+        </ul>
       )}
 
       {isLoading ? (
