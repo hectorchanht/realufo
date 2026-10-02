@@ -59,7 +59,15 @@ const hubLinks = (hs: HubLinkData[]) => hs.map((s) => ({ href: hubHref(s.kind, s
 export type HubPageData = {
   kind: string; title: string; intro: string; records: RecordLink[]; siblings: HubLinkData[];
   prev?: string | null; next?: string | null;
+  highlights?: { lede: string; picks: { id: string; why: string; title: string; kind?: string }[] } | null;
 };
+
+const highlightsHtml = (h: HubPageData["highlights"]) =>
+  h
+    ? `<section><h2>What stands out</h2>${paras(h.lede)}<ol>${h.picks
+        .map((p) => `<li>${a({ href: docHref(p.id), text: docTitle(p.title, p.id, p.kind) })} — ${esc(p.why)}</li>`)
+        .join("")}</ol><p><small>AI-written from the file summaries</small></p></section>`
+    : "";
 
 export function hubBody(h: HubPageData): string {
   const nav = [
@@ -70,6 +78,7 @@ export function hubBody(h: HubPageData): string {
     `<p>${a({ href: "/browse", text: "Browse" })} › ${esc(KIND_HEADING[h.kind] ?? "")}</p>`,
     `<h1>${esc(h.title)}</h1>`,
     paras(h.intro),
+    highlightsHtml(h.highlights),
     nav.length ? `<p>${nav.join(" · ")}</p>` : "",
     section(`Files (${h.records.length})`, docLinks(h.records)),
     section(`More ${(KIND_HEADING[h.kind] ?? "hubs").toLowerCase()}`, hubLinks(h.siblings)),
