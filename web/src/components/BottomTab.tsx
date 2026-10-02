@@ -4,7 +4,7 @@
 // why). Each tab has a 44px min-height tap target per the task requirement.
 import type { Ref } from "react";
 import { Link } from "react-router-dom";
-import { NAV_ITEMS, RELEASE_LINK, type NavTab } from "./navItems";
+import { NAV_ITEMS, type NavTab } from "./navItems";
 
 export interface BottomTabProps {
   activeTab: NavTab;
@@ -48,15 +48,6 @@ export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
             </Link>
           );
         })}
-        <a
-          href={RELEASE_LINK.href}
-          target="_blank"
-          rel="noopener"
-          className="flex min-h-[44px] flex-1 flex-col items-center gap-1 px-0.5 py-[5px] text-dim active:scale-90"
-        >
-          <span className="text-[19px] leading-none">{RELEASE_LINK.glyph}</span>
-          <span className="font-mono text-[8.5px] font-medium tracking-[.3px]">{RELEASE_LINK.label}</span>
-        </a>
       </div>
       <div
         data-homeind

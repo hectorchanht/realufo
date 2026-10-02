@@ -1,7 +1,7 @@
 // Sticky compact header shown at the top of the scroll area on mobile
 // (<900px). Ported from realufo-handoff/RealUFO.dc.html lines 100-108:
-// optional back button, optional brand saucer, title/subtitle block, compact
-// login button.
+// optional back button, optional brand saucer, title/subtitle block, theme
+// toggle (in place of the prototype's dead login button).
 //
 // Title/sub (line 104/105's `{{ headerTitle }}`/`{{ headerSub }}`) come from
 // the PageTitleProvider context (Task 23b — lib/pageTitle.tsx), not props:
@@ -9,14 +9,12 @@
 // their contextual title into, and AppBar just reads it.
 import { Saucer } from "./Saucer";
 import { usePageTitle } from "../lib/pageTitle";
+import { ThemeToggle } from "./ThemeToggle";
 
 export interface AppBarProps {
   canBack?: boolean;
   onBack?: () => void;
   showBrand?: boolean;
-  onLogin?: () => void;
-  /** Compact login label (line 107's `{{ meShort }}`). Real auth wiring lands in Task 16/23. */
-  meShort?: string;
   /** Slid up out of view (AppShell's scroll-down auto-hide). Keyboard focus brings it back. */
   hidden?: boolean;
 }
@@ -25,8 +23,6 @@ export function AppBar({
   canBack = false,
   onBack,
   showBrand = true,
-  onLogin,
-  meShort = "GUEST",
   hidden = false,
 }: AppBarProps) {
   const { title: headerTitle, sub: headerSub } = usePageTitle();
@@ -63,14 +59,7 @@ export function AppBar({
           {headerSub}
         </div>
       </div>
-      <button
-        type="button"
-        onClick={onLogin}
-        className="flex flex-none items-center gap-1.5 rounded-[9px] border border-line2 px-2.5 py-1.5 font-mono text-[11px] text-ink active:scale-[.96]"
-      >
-        <span className="h-1.5 w-1.5 rounded-full bg-signal" />
-        {meShort}
-      </button>
+      <ThemeToggle className="h-[34px] w-[34px]" />
     </div>
   );
 }

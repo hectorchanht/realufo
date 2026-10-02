@@ -2,6 +2,7 @@ import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, afterEach } from "vitest";
 import { ThemeProvider } from "../theme/ThemeProvider";
 import { useTheme } from "../theme/useTheme";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 afterEach(() => {
   localStorage.clear();
@@ -45,5 +46,21 @@ describe("ThemeProvider", () => {
     );
     act(() => screen.getByRole("button", { name: "set-light" }).click());
     expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+  });
+});
+
+describe("ThemeToggle", () => {
+  it("flips html data-theme between dark and light", () => {
+    localStorage.setItem("ufo_theme", JSON.stringify({ theme: "dark", accent: "phosphor", scanlines: true }));
+    render(
+      <ThemeProvider>
+        <ThemeToggle />
+      </ThemeProvider>,
+    );
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+    act(() => screen.getByRole("button", { name: "Switch to light mode" }).click());
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    act(() => screen.getByRole("button", { name: "Switch to dark mode" }).click());
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
   });
 });

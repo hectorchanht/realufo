@@ -30,7 +30,6 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { useHideOnScroll } from "../lib/useHideOnScroll";
 import { useTheme } from "../theme/useTheme";
-import { useBootstrap } from "../api/queries";
 import { PageTitleProvider } from "../lib/pageTitle";
 import { OverlayHost } from "../overlays/OverlayProvider";
 import { TopNav } from "./TopNav";
@@ -43,8 +42,6 @@ export function AppShell() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { scanlines } = useTheme();
-  const { data: boot } = useBootstrap();
-  const onlineNow = boot?.stats?.onlineNow ?? 0;
 
   const activeTab = activeTabForPath(pathname);
   // canBack ports the prototype's `hist.length>0` (back only on detail
@@ -101,7 +98,7 @@ export function AppShell() {
           style={{ "--bnav-y": navHidden ? "0px" : "var(--bnav-h, 0px)" } as CSSProperties}
         >
           {isDesktop && (
-            <TopNav activeTab={activeTab} canBack={canBack} onBack={() => navigate(-1)} onlineNow={onlineNow} />
+            <TopNav activeTab={activeTab} canBack={canBack} onBack={() => navigate(-1)} />
           )}
 
           <main

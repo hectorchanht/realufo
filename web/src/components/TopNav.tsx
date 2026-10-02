@@ -1,6 +1,6 @@
 // Desktop (>=900px) top nav bar. Ported from realufo-handoff/RealUFO.dc.html
-// lines 80-96: brand block (saucer + REALUFO wordmark) | nav items | online
-// indicator + login button. Nav buttons are react-router `Link`s (not the
+// lines 80-96: brand block (saucer + REALUFO wordmark) | nav items | theme
+// toggle (the prototype's online count + dead GUEST button were dropped). Nav buttons are react-router `Link`s (not the
 // prototype's onClick handlers) so the URL bar / back-forward / open-in-tab
 // all work for free.
 //
@@ -9,7 +9,8 @@
 // folded into this single bar instead, so desktop shows one nav, not two.
 import { Link } from "react-router-dom";
 import { Saucer } from "./Saucer";
-import { NAV_ITEMS, RELEASE_LINK, type NavTab } from "./navItems";
+import { NAV_ITEMS, type NavTab } from "./navItems";
+import { ThemeToggle } from "./ThemeToggle";
 import { usePageTitle, DEFAULT_PAGE_TITLE } from "../lib/pageTitle";
 
 export interface TopNavProps {
@@ -17,14 +18,9 @@ export interface TopNavProps {
   /** Show the back affordance (detail screens only — canBackForPath). */
   canBack?: boolean;
   onBack?: () => void;
-  /** Online-visitor count (line 93), wired from bootstrap stats in AppShell. */
-  onlineNow?: number;
-  /** Login/account button label (line 94). Real auth wiring lands in Task 16/23. */
-  meLabel?: string;
-  onLogin?: () => void;
 }
 
-export function TopNav({ activeTab, canBack = false, onBack, onlineNow = 0, meLabel = "GUEST", onLogin }: TopNavProps) {
+export function TopNav({ activeTab, canBack = false, onBack }: TopNavProps) {
   const { title, sub } = usePageTitle();
   // Suppress the contextual block on the root/Feed tab — its title is
   // "REALUFO", which the brand wordmark already shows (avoids a dupe).
@@ -36,11 +32,8 @@ export function TopNav({ activeTab, canBack = false, onBack, onlineNow = 0, meLa
         <div className="flex-none">
           <Saucer />
         </div>
-        <div className="pr-3.5 leading-[1.1]">
-          <div className="font-pixel text-[11px] text-ink">
-            REAL<span className="text-signal">UFO</span>
-          </div>
-          <div className="mt-[5px] font-mono text-[8.5px] tracking-[1px] text-faint">DECLASSIFIED ARCHIVE</div>
+        <div className="pr-3.5 font-pixel text-[11px] text-ink">
+          REAL<span className="text-signal">UFO</span>
         </div>
       </a>
 
@@ -66,15 +59,6 @@ export function TopNav({ activeTab, canBack = false, onBack, onlineNow = 0, meLa
             </Link>
           );
         })}
-        <a
-          href={RELEASE_LINK.href}
-          target="_blank"
-          rel="noopener"
-          className="flex min-h-[44px] flex-none items-center gap-[9px] rounded-[11px] px-3.5 py-2 font-mono text-[13px] font-medium text-dim hover:bg-surface"
-        >
-          <span className="text-center text-[15px]">{RELEASE_LINK.glyph}</span>
-          <span>{RELEASE_LINK.label}</span>
-        </a>
       </div>
 
       {/* Contextual page title/sub — the "bottom bar" description, folded in.
@@ -98,19 +82,7 @@ export function TopNav({ activeTab, canBack = false, onBack, onlineNow = 0, meLa
         )}
       </div>
 
-      <div className="flex flex-none items-center gap-4">
-        <div className="flex items-center gap-2 whitespace-nowrap font-mono text-[11px] text-dim">
-          <span className="h-[7px] w-[7px] animate-[blink_1.6s_infinite] rounded-full bg-signal" />
-          {onlineNow.toLocaleString()} online
-        </div>
-        <button
-          type="button"
-          onClick={onLogin}
-          className="flex-none whitespace-nowrap rounded-[10px] border border-line2 px-4 py-2 font-mono text-xs text-ink hover:border-signal hover:text-signal"
-        >
-          {meLabel}
-        </button>
-      </div>
+      <ThemeToggle className="h-9 w-9" />
     </nav>
   );
 }
