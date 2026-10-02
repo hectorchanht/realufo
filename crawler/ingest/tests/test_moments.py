@@ -274,3 +274,25 @@ def test_plan_only_prints_segments_without_frames_or_model_calls(monkeypatch, ca
     M.main(["--plan-only"])
     out = capsys.readouterr().out
     assert "A: 3 segments" in out and "plan-only moments: done=0 skipped=0 empty=0 calls=0" in out
+
+
+def test_tidy_trims_long_answers_to_leading_sentences():
+    from ingest.moments import tidy
+    long = ("The scene is a body of water. A black rectangular redaction appears in the bottom-left frame. "
+            "A crosshair is visible in the top frames, and a black cross appears in the bottom frames. "
+            "The crosshair and black cross move with the camera. The camera pans right and tilts down. "
+            "Small white objects are visible on the water's surface. One moves from left to right, exiting the frame.")
+    out = tidy(long)
+    assert out.startswith("The scene is a body of water.") and out.endswith(".")
+    assert len(out.split()) <= 40 and problem(out) is None
+    assert tidy("Pan right.") == "Pan right."
+    one_huge = "word " * 70 + "end."
+    assert problem(tidy(one_huge)) == "too long"   # a single run-on sentence can't be trimmed
+
+
+def test_moments_for_accepts_a_long_answer_after_trimming():
+    long = " ".join(["A light source moves right."] * 15)   # 75 words
+    describe, calls = _fakes([long])
+    moments, n = moments_for({"id": "V", "cdn_url": "u", "duration": 10.0}, describe,
+                             cuts_fn=lambda u, d: [], grid_fn=lambda u, t, o: open(o, "wb").write(b"j"), probe_fn=lambda u: "")
+    assert n == 1 and len(moments) == 1 and len(moments[0]["text"].split()) <= 40

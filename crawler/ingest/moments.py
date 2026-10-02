@@ -57,6 +57,23 @@ def speculative(text):
     return bool(_SPEC_RE.search(text or ""))
 
 
+TRIM_WORDS = 40
+
+
+def tidy(text):
+    """Model ignores "one sentence" sometimes: keep leading sentences up to TRIM_WORDS words
+    (always at least the first). A single over-long sentence is left for problem() to reject."""
+    t = (text or "").strip()
+    if len(t.split()) <= TRIM_WORDS:
+        return t
+    out = []
+    for s in re.split(r"(?<=[.!?])\s+", t):
+        if out and len(" ".join(out + [s]).split()) > TRIM_WORDS:
+            break
+        out.append(s)
+    return " ".join(out)
+
+
 def problem(text):
     t = (text or "").strip()
     if not t:
@@ -247,6 +264,8 @@ def moments_for(row, describe_fn=describe, cuts_fn=scene_cuts, grid_fn=grid_jpeg
             for retry in (False, True):
                 calls += 1
                 r = describe_fn(jpeg, a, b, reminder=retry)
+                if r:
+                    r = {"text": tidy(r["text"])}
                 if r and not problem(r["text"]):
                     got = r
                     break
