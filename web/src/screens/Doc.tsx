@@ -35,6 +35,7 @@ import type { RecordsParams } from "../api/queries";
 import type { Comment, RecordDetail, RecordKind, RelatedGroup } from "../api/types";
 import { DocCard } from "../components/DocCard";
 import { LoadError } from "../components/LoadError";
+import { goBack } from "../components/navItems";
 import { LENS_MAGS, MediaFilters, MediaToolbar, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams } from "../components/ImageTools";
 import type { ImageAdjust } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
@@ -320,7 +321,7 @@ export function Doc() {
         }
         navigate(href);
       } else if (e.key === "Escape") {
-        navigate(-1);
+        goBack(navigate, `/doc/${id}`);
       } else if ((panelMedia === "image" || panelMedia === "video") && !e.ctrlKey && !e.metaKey && !e.altKey) {
         // media tool shortcuts (transport keys live in VideoTransport)
         const k = e.key.toLowerCase();
@@ -338,7 +339,7 @@ export function Doc() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [composer, viewer, prevHref, nextHref, navigate, panelMedia, setAdjust, setLens, setMag]);
+  }, [composer, viewer, prevHref, nextHref, navigate, id, panelMedia, setAdjust, setLens, setMag]);
 
   const record = detail?.record;
   const comments = commentsData?.comments ?? [];
