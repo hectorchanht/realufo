@@ -17,6 +17,7 @@ import { login } from "./routes/auth";
 import { serveWithMeta } from "./lib/meta";
 import { ask, recentAsks } from "./routes/ask";
 import { sitemap } from "./routes/sitemap";
+import { tick } from "./lib/xbot";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -50,5 +51,8 @@ export default {
     }
     if (url.pathname === "/sitemap.xml") return sitemap(req, env);
     return serveWithMeta(req, env); // SPA + assets, with per-route meta/OG injection for deep links
+  },
+  async scheduled(_c: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(tick(env)); // X bot (Spec 4); FEATURE_X gates it
   },
 } satisfies ExportedHandler<Env>;
