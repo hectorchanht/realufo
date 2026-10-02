@@ -28,6 +28,14 @@ def test_embed_batches_of_100_in_order(calls):
     assert calls[0].full_url == "https://api.cloudflare.com/client/v4/accounts/acct/ai/run/@cf/baai/bge-m3"
     assert calls[0].get_header("Authorization") == "Bearer tok"
 
+def test_embed_caps_each_request_by_characters(calls):
+    # bge-m3 rejects requests over 60k tokens; garbled OCR runs ~0.6-2 tokens/char,
+    # so 100 x 1,500-char chunks (91k tokens) failed in prod with HTTP 400.
+    vecs = cfapi.embed(["x" * 1500] * 250)
+    sizes = [len(json.loads(c.data)["text"]) for c in calls]
+    assert all(n * 1500 <= cfapi.EMBED_MAX_CHARS for n in sizes)
+    assert sum(sizes) == 250 and len(vecs) == 250
+
 def test_upsert_sends_ndjson(calls):
     cfapi.upsert([{"id": "a-0", "values": [0.1], "metadata": {"record_id": "A", "page": 0, "text": "x"}}] * 3)
     (req,) = calls

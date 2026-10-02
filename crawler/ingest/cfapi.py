@@ -8,6 +8,8 @@ API = "https://api.cloudflare.com/client/v4/accounts/{acct}"
 EMBED_MODEL = "@cf/baai/bge-m3"
 INDEX = "realufo-chunks"
 EMBED_BATCH = 100
+# bge-m3 caps a request at 60k tokens; garbled OCR can run ~2 tokens/char.
+EMBED_MAX_CHARS = 30_000
 WRITE_BATCH = 1000
 
 def _call(path: str, body: bytes, ctype: str = "application/json"):
@@ -20,11 +22,21 @@ def _call(path: str, body: bytes, ctype: str = "application/json"):
         raise RuntimeError(f"{path}: {out.get('errors')}")
     return out["result"]
 
+def _batches(texts: list[str]):
+    batch, size = [], 0
+    for t in texts:
+        if batch and (len(batch) == EMBED_BATCH or size + len(t) > EMBED_MAX_CHARS):
+            yield batch
+            batch, size = [], 0
+        batch.append(t)
+        size += len(t)
+    if batch:
+        yield batch
+
 def embed(texts: list[str]) -> list[list[float]]:
     vecs: list[list[float]] = []
-    for i in range(0, len(texts), EMBED_BATCH):
-        res = _call(f"/ai/run/{EMBED_MODEL}", json.dumps({"text": texts[i:i + EMBED_BATCH]}).encode())
-        vecs += res["data"]
+    for batch in _batches(texts):
+        vecs += _call(f"/ai/run/{EMBED_MODEL}", json.dumps({"text": batch}).encode())["data"]
     return vecs
 
 def upsert(vectors: list[dict]) -> None:
