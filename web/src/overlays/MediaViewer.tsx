@@ -29,6 +29,10 @@ export function MediaViewer() {
           <video src={viewer.url} controls playsInline className="max-h-full max-w-full rounded-[10px] bg-black" />
         )}
 
+        {viewer.kind === "image" && (
+          <img src={viewer.url} alt={viewer.label} className="max-h-full max-w-full rounded-[10px] object-contain" />
+        )}
+
         {viewer.kind === "doc" && (
           <div className="flex h-full w-full flex-col gap-[10px]">
             <iframe

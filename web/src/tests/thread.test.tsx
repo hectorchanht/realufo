@@ -28,6 +28,15 @@ const useThreadMock = vi.fn();
 vi.mock("../api/queries", () => ({
   useThread: (id: string) => useThreadMock(id),
   useVote: () => ({ mutate: vi.fn(), isPending: false }),
+  useRecord: (id: string) => ({
+    data:
+      id === "NASA-UAP-D030"
+        ? {
+            record: { id, kind: "image", title: "NASA-UAP-D030, STS-80 Image 1" },
+            assets: [{ role: "full", cdn_url: "https://cdn.example/d030.jpg", mime: "image/jpeg" }],
+          }
+        : undefined,
+  }),
 }));
 
 const mockThreadDetail: ThreadDetail = {
@@ -152,6 +161,23 @@ describe("Thread", () => {
     fireEvent.click(screen.getByRole("button", { name: /open CIA-UAP-017, Odd radar contact near Roswell/i }));
     expect(mockOpenViewer).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "doc", label: "CIA-UAP-017, Odd radar contact near Roswell" }),
+    );
+  });
+
+  it("turns record ids in a post body into links with inline media (once per id)", () => {
+    const body = "See NASA-UAP-D030 and again NASA-UAP-D030, but not NASA-UAP-D999 or nasa-uap-d030.";
+    useThreadMock.mockReturnValue({
+      data: { ...mockThreadDetail, posts: [{ ...mockThreadDetail.posts[1], body }] },
+      isLoading: false,
+    });
+    renderThread();
+    const links = screen.getAllByRole("link", { name: "NASA-UAP-D030" });
+    expect(links).toHaveLength(2);
+    expect(links[0]).toHaveAttribute("href", "/doc/NASA-UAP-D030");
+    expect(screen.queryByRole("link", { name: "NASA-UAP-D999" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "open NASA-UAP-D030" }));
+    expect(mockOpenViewer).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "image", url: "https://cdn.example/d030.jpg" }),
     );
   });
 

@@ -31,7 +31,10 @@
 // thumb. Guarded defensively below (`post.source_record_id ===
 // sourceRecord?.id`) rather than assumed, so an unmatched id degrades to "no
 // image" instead of a wrong thumb.
+import type { ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
+import { RecordEmbed } from "../components/RecordEmbed";
+import { RECORD_ID_RE } from "../lib/recordMedia";
 import { useThread } from "../api/queries";
 import type { Post, ThreadSourceRecord } from "../api/types";
 import { VoteButton } from "../components/VoteButton";
@@ -66,6 +69,22 @@ function postImage(post: Post, sourceRecord: ThreadSourceRecord | null): PostIma
     return { kind: "placeholder", label: post.image_label || "image" };
   }
   return null;
+}
+
+// Post body text with each record id ("NASA-UAP-D030") turned into a
+// RecordEmbed. Media shows once per id (first mention).
+function linkifyRecords(body: string): ReactNode[] {
+  const out: ReactNode[] = [];
+  const seen = new Set<string>();
+  let last = 0;
+  for (const m of body.matchAll(RECORD_ID_RE)) {
+    out.push(body.slice(last, m.index));
+    out.push(<RecordEmbed key={m.index} id={m[0]} withMedia={!seen.has(m[0])} />);
+    seen.add(m[0]);
+    last = m.index + m[0].length;
+  }
+  out.push(body.slice(last));
+  return out;
 }
 
 interface PostRowProps {
@@ -144,7 +163,7 @@ function PostRow({ post, sourceRecord }: PostRowProps) {
         className="text-[13.5px] leading-[1.55] text-ink"
         style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
       >
-        {post.body}
+        {linkifyRecords(post.body)}
       </div>
 
       {/* footer — prototype lines 276-279: VoteButton("credible") + inert "↩ reply" */}
