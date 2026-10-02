@@ -3,6 +3,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import worker from "../index";
 import { seedTestDB } from "./helpers";
 import { loadRecord } from "../routes/records";
+import { highlightsOf } from "../routes/hubs";
 
 beforeAll(() => seedTestDB(env.DB));
 const SHELL = '<html><head><!--META--></head><body><div id="root"></div></body></html>';
@@ -144,5 +145,40 @@ describe("hub values for client-side filter mapping (Task 5b)", () => {
     const { hubs } = (await (await call("/api/hubs")).json()) as any;
     expect(hubs.find((h: any) => h.slug === "department-of-war").values).toEqual(["DoW", "Department of War"]);
     expect(hubs.find((h: any) => h.kind === "release").values).toBeUndefined();
+  });
+});
+
+describe("hub highlights", () => {
+  const put = (picks: unknown, lede = "Five FBI reports. Two describe triangles.") =>
+    env.DB.prepare("INSERT OR REPLACE INTO hub_highlights(kind,slug,lede,picks,members_hash) VALUES('agency','fbi',?,?,'h')")
+      .bind(lede, JSON.stringify(picks)).run();
+
+  it("null when no row", async () => {
+    const h: any = await (await call("/api/hubs/agency/aaro")).json();
+    expect(h.highlights).toBeNull();
+  });
+
+  it("joins title/thumb/kind and drops picks no longer in the hub", async () => {
+    await put([
+      { id: "FBI-UAP-D002", why: "Pilot report." },
+      { id: "GONE-1", why: "Moved out." },
+      { id: "FBI-UAP-D003", why: "Rendering." },
+    ]);
+    const h: any = await (await call("/api/hubs/agency/fbi")).json();
+    expect(h.highlights.lede).toBe("Five FBI reports. Two describe triangles.");
+    expect(h.highlights.picks.map((p: any) => p.id)).toEqual(["FBI-UAP-D002", "FBI-UAP-D003"]);
+    expect(h.highlights.picks[0]).toHaveProperty("title");
+    expect(h.highlights.picks[0]).toHaveProperty("thumb");
+    expect(h.highlights.picks[0].kind).toBe("pdf");
+  });
+
+  it("hidden when fewer than 2 picks survive", async () => {
+    await put([{ id: "FBI-UAP-D002", why: "Only one." }, { id: "GONE-1", why: "x" }]);
+    const h: any = await (await call("/api/hubs/agency/fbi")).json();
+    expect(h.highlights).toBeNull();
+  });
+
+  it("bad JSON in picks is null, not a 500", () => {
+    expect(highlightsOf({ lede: "x", picks: "{nope" }, [])).toBeNull();
   });
 });

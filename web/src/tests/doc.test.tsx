@@ -51,6 +51,7 @@ vi.mock("../api/queries", () => ({
   useRecords: (params: Record<string, unknown>) => useRecordsMock(params),
   useBootstrap: () => useBootstrapMock(),
   useVote: () => ({ mutate: vi.fn(), isPending: false }),
+  useCastVerdict: () => ({ mutate: vi.fn(), isPending: false }),
   useHubs: () => ({ data: { hubs: [] } }),
 }));
 

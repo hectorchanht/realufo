@@ -150,6 +150,25 @@ describe("hub pre-render", () => {
     expect(out).toContain('<a href="/location/moon">The Moon (8)</a>');
     expect(out).toContain('<a href="/browse">Browse</a> › Locations');
   });
+  it("renders escaped highlights before the files with the AI footnote", () => {
+    const out = hubBody({
+      ...hub,
+      highlights: {
+        lede: "Two files. One is <odd> & \"loud\".",
+        picks: [
+          { id: "X-2", why: "Radar <track> & pilot", title: "Second" },
+          { id: "A B#1", why: "Photo", title: "First" },
+        ],
+      },
+    });
+    expect(out).toContain("<h2>What stands out</h2><p>Two files. One is &lt;odd&gt; &amp; &quot;loud&quot;.</p>");
+    expect(out).toContain('<li><a href="/doc/X-2">X-2 — Second</a> — Radar &lt;track&gt; &amp; pilot</li>');
+    expect(out).toContain("AI-written from the file summaries");
+    expect(out.indexOf("What stands out")).toBeLessThan(out.indexOf("Files (2)"));
+  });
+  it("no highlights section when null", () => {
+    expect(hubBody({ ...hub, highlights: null })).not.toContain("What stands out");
+  });
   it("release hubs get prev/next links", () => {
     const out = hubBody({ ...hub, kind: "release", prev: "5", next: null });
     expect(out).toContain('<a href="/release/5">← Release 05</a>');

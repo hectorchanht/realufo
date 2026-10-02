@@ -9,9 +9,32 @@ import {
 } from "../lib/hubs";
 
 export type CardRow = { id: string; title: string; kind: string; incident_date: string | null } & Record<string, unknown>;
+export type HighlightPick = { id: string; why: string; title: string; thumb: string | null; kind: string };
+export type Highlights = { lede: string; picks: HighlightPick[] };
 export interface Hub {
   kind: HubKind; slug: string; title: string; intro: string; stats: HubStats;
   records: CardRow[]; siblings: HubSummary[]; prev?: string | null; next?: string | null;
+  highlights: Highlights | null;
+}
+
+// AI picks (crawler ingest.highlights) re-checked against the hub's current
+// files: a pick that left the hub is dropped; < 2 left hides the section.
+export function highlightsOf(row: { lede: string; picks: string } | null, records: CardRow[]): Highlights | null {
+  if (!row) return null;
+  let raw: unknown;
+  try {
+    raw = JSON.parse(row.picks);
+  } catch {
+    return null;
+  }
+  const byId = new Map(records.map((r) => [r.id, r]));
+  const picks = (Array.isArray(raw) ? raw : []).flatMap((p: any) => {
+    const r = byId.get(p?.id);
+    return r && typeof p.why === "string"
+      ? [{ id: r.id, why: p.why, title: r.title, thumb: (r.thumb as string | null) ?? null, kind: r.kind }]
+      : [];
+  });
+  return picks.length >= 2 ? { lede: row.lede, picks } : null;
 }
 
 // Every hub with ≥ MIN_HUB_FILES files, from the Archive's grouped counts.
@@ -64,10 +87,17 @@ export async function loadHub(env: Env, kind: string, slug: string, origin: stri
     .all<CardRow>();
   if (records.length < MIN_HUB_FILES) return null;
   const stats = hubStats(records);
+  const hlRow = await env.DB.prepare("SELECT lede,picks FROM hub_highlights WHERE kind=? AND slug=?")
+    .bind(me.kind, me.slug)
+    .first<{ lede: string; picks: string }>()
+    .catch((e) => {
+      console.error("hub highlights failed", e);
+      return null;
+    });
   const same = hubs.filter((h) => h.kind === me.kind);
   const i = same.indexOf(me);
   return {
-    kind: me.kind, slug: me.slug, title: hubTitle(me), intro: hubIntro(me, sel.release, stats), stats, records,
+    kind: me.kind, slug: me.slug, title: hubTitle(me), intro: hubIntro(me, sel.release, stats), stats, records, highlights: highlightsOf(hlRow, records),
     siblings: same.filter((h) => h !== me),
     ...(me.kind === "release" ? { prev: same[i - 1]?.slug ?? null, next: same[i + 1]?.slug ?? null } : {}),
   };

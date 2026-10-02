@@ -199,6 +199,7 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
         {isFeed && isFeedRecord(record) && (
           <div className="mt-auto flex gap-3 pt-0.5 font-mono text-[10px] text-dim">
             <span>💬 {record.commentN}</span>
+            <span>⚖ {record.verdictN ?? 0}</span>
           </div>
         )}
         {!isFeed && isListRecord(record) && (

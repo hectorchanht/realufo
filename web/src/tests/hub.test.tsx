@@ -91,3 +91,32 @@ describe("nav tab for hub routes", () => {
     expect(activeTabForPath("/releases-notes")).toBe("feed");
   });
 });
+
+describe("hub highlights", () => {
+  it("shows lede, linked picks and the AI footnote", () => {
+    useHubMock.mockReturnValue({
+      data: {
+        ...fbi,
+        highlights: {
+          lede: "Five FBI reports. Two describe triangles.",
+          picks: [
+            { id: "FBI-UAP-D002", why: "Pilot saw a triangle.", title: "FBI-UAP-D002, FD-1057, Unresolved UAP Report", thumb: null, kind: "pdf" },
+            { id: "FBI-UAP-D003", why: "A rendering.", title: "FBI-UAP-D003, Rendering", thumb: null, kind: "pdf" },
+          ],
+        },
+      },
+      isLoading: false,
+    });
+    renderAt("/agency/fbi");
+    expect(screen.getByRole("heading", { name: "WHAT STANDS OUT" })).toBeTruthy();
+    expect(screen.getByText("Five FBI reports. Two describe triangles.")).toBeTruthy();
+    expect(screen.getByText("Pilot saw a triangle.").closest("a")!.getAttribute("href")).toBe("/doc/FBI-UAP-D002");
+    expect(screen.getByText("AI-written from the file summaries")).toBeTruthy();
+  });
+
+  it("renders nothing when highlights are null", () => {
+    useHubMock.mockReturnValue({ data: { ...fbi, highlights: null }, isLoading: false });
+    renderAt("/agency/fbi");
+    expect(screen.queryByText("WHAT STANDS OUT")).toBeNull();
+  });
+});

@@ -4,6 +4,7 @@ import { CARD_COLS } from "../lib/db";
 import { hubsFor } from "../lib/hubs";
 import { listHubsCached } from "./hubs";
 import { isoDate, yearOf, decadeOf, wargovReleases, facetCounts } from "../lib/facets";
+import { verdictState } from "./verdicts";
 // Re-exported for callers that predate lib/facets (lib/xpick.ts).
 export { wargovReleases };
 
@@ -244,5 +245,11 @@ export async function loadRecord(env: Env, id: string, origin: string) {
 
 export async function getRecord(req: Request, env: Env, p: Record<string, string>) {
   const data = await loadRecord(env, p.id, new URL(req.url).origin);
-  return data ? json(data) : error(404, "record not found");
+  if (!data) return error(404, "record not found");
+  // Per-visitor, so it lives here and not in loadRecord (which also feeds the cached pre-render).
+  const verdicts = await verdictState(req, env, p.id).catch((e) => {
+    console.error("verdicts failed", e);
+    return { mine: null, total: 0 };
+  });
+  return json({ ...data, verdicts });
 }

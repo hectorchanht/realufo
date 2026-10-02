@@ -129,6 +129,7 @@ interface RecordCardBase {
 /** RecordCard shape from GET /api/feed → `featured[]`. */
 export interface FeedRecordCard extends RecordCardBase {
   commentN: number;
+  verdictN: number;
 }
 
 /** RecordCard shape from GET /api/records → `records[]`. */
@@ -228,6 +229,9 @@ export interface HubSummary {
   /** Agency/location hubs: raw values they cover, for mapping Archive filters. */
   values?: string[];
 }
+/** AI "What stands out" (crawler ingest.highlights), re-checked by the Worker. */
+export interface HubHighlightPick { id: string; why: string; title: string; thumb: string | null; kind: RecordKind }
+export interface HubHighlights { lede: string; picks: HubHighlightPick[] }
 export interface Hub {
   kind: HubKind;
   slug: string;
@@ -239,9 +243,15 @@ export interface Hub {
   /** Releases only: neighbouring release numbers. */
   prev?: string | null;
   next?: string | null;
+  highlights?: HubHighlights | null;
 }
 /** Hub slugs this record's facts link to (only hubs that exist). */
 export type HubLinks = Partial<Record<HubKind, string>>;
+
+/** Spec 6 file verdicts. `tally` is only present once this visitor has voted. */
+export type Verdict = "explained" | "unexplained" | "more_data";
+export interface VerdictTally { explained: number; unexplained: number; more_data: number }
+export interface VerdictState { mine: Verdict | null; total: number; tally?: VerdictTally }
 
 export interface RecordDetail {
   record: RecordFull;
@@ -256,6 +266,8 @@ export interface RecordDetail {
   /** Null until extracted; empty pages when no page passed the OCR filter. */
   fullText?: FullText | null;
   hubs?: HubLinks;
+  /** Per-visitor verdict state (GET /api/records/:id only, never pre-rendered). */
+  verdicts?: VerdictState;
 }
 
 export interface RelatedGroup {

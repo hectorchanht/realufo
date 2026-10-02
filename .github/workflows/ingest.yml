@@ -148,6 +148,22 @@ jobs:
           else
             python -m ingest.visuals --dry-run --limit 1 | tee -a ingest-summary.txt
           fi
+      # Hub "What stands out" (ingest.highlights): only hubs whose file list changed;
+      # after summaries/visuals so new AI text feeds it
+      - name: highlights
+        if: ${{ !cancelled() }}
+        working-directory: crawler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          LIVE: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run == 'false' }}
+        run: |
+          set -o pipefail
+          if [ "$LIVE" = "true" ]; then
+            python -m ingest.highlights | tee -a ingest-summary.txt
+          else
+            python -m ingest.highlights --dry-run --only release/6 | tee -a ingest-summary.txt
+          fi
       # "Same topic" links (ingest.links): full rewrite of record_links, no API calls
       - name: links
         if: ${{ !cancelled() }}
