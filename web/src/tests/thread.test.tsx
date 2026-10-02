@@ -178,6 +178,43 @@ describe("Thread", () => {
     expect(mockOpenComposer).toHaveBeenCalledWith({ mode: "reply", threadId: "th1" });
   });
 
+  // Quote links need real-looking Nos (the regex wants 4-10 digits; the fixture's 42/43 are too short).
+  const withNos = (body2: string) => ({
+    ...mockThreadDetail,
+    posts: [
+      { ...mockThreadDetail.posts[0], no: 24420001 },
+      { ...mockThreadDetail.posts[1], no: 24420002, body: body2 },
+    ],
+  });
+
+  it(">>No in a body links to that post and the quoted post lists a backlink", () => {
+    useThreadMock.mockReturnValue({ data: withNos(">>24420001 good point"), isLoading: false });
+    const { container } = renderThread();
+    const links = screen.getAllByRole("link", { name: ">>24420001" });
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute("href", "#p24420001");
+    // OP row (#p24420001) shows "↳ >>24420002" for the reply
+    const op = container.querySelector("#p24420001")!;
+    expect(op.textContent).toContain("↳");
+    expect(op.querySelector('a[href="#p24420002"]')).toHaveTextContent(">>24420002");
+  });
+
+  it(">>No for a post not in the thread stays plain text", () => {
+    useThreadMock.mockReturnValue({ data: withNos("re >>99999999 ok"), isLoading: false });
+    const { container } = renderThread();
+    expect(screen.queryByRole("link", { name: ">>99999999" })).toBeNull();
+    expect(container.textContent).toContain("re >>99999999 ok");
+  });
+
+  it('"↩ reply" on a post opens the composer pre-filled with its >>No', () => {
+    useThreadMock.mockReturnValue({ data: withNos("hi"), isLoading: false });
+    renderThread();
+    fireEvent.click(screen.getAllByRole("button", { name: "↩ reply" })[0]);
+    expect(mockOpenComposer).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: "reply", threadId: "th1", presetBody: ">>24420001\n" }),
+    );
+  });
+
   it("clicking a post's source-record thumb opens the media viewer for that record", () => {
     renderThread();
     fireEvent.click(screen.getByRole("button", { name: /open Odd radar contact near Roswell/i }));

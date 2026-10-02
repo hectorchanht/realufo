@@ -35,6 +35,7 @@ import type { ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { RecordEmbed } from "../components/RecordEmbed";
 import { MOMENT_SUFFIX, RECORD_ID_RE, parseMoment } from "../lib/recordMedia";
+import { QUOTE_SOURCE, backlinks } from "../lib/quoteLinks";
 import { useThread } from "../api/queries";
 import type { Post, ThreadSourceRecord } from "../api/types";
 import { VoteButton } from "../components/VoteButton";
@@ -81,9 +82,18 @@ function postImage(post: Post, sourceRecord: ThreadSourceRecord | null): PostIma
 // id ("NASA-UAP-D030", or a moment "DOW-UAP-PR133@1:23.04") into a
 // RecordEmbed. realufo.org/doc/<id> URLs (Ask-shared threads) also become a
 // RecordEmbed. Media shows once per id (first mention). URLs match first, so
-// an id inside another URL stays part of the link.
-const BODY_TOKEN_RE = new RegExp(`(https?://[^\\s<>"]+)|(${RECORD_ID_RE.source})(?:${MOMENT_SUFFIX})?`, "g");
-function linkifyBody(body: string): ReactNode[] {
+// an id inside another URL stays part of the link. ">>24420082" quote links
+// (group 4) scroll to that post when it's in this thread, else stay plain text.
+const BODY_TOKEN_RE = new RegExp(
+  `(https?://[^\\s<>"]+)|(${RECORD_ID_RE.source})(?:${MOMENT_SUFFIX})?|${QUOTE_SOURCE}`,
+  "g",
+);
+
+function scrollToPost(no: number | string) {
+  document.getElementById(`p${no}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function linkifyBody(body: string, nos: Set<number>): ReactNode[] {
   const out: ReactNode[] = [];
   const seen = new Set<string>();
   let last = 0;
@@ -110,6 +120,23 @@ function linkifyBody(body: string): ReactNode[] {
           </a>,
         );
       }
+    } else if (m[4]) {
+      if (nos.has(Number(m[4]))) {
+        const n = m[4];
+        out.push(
+          <a
+            key={m.index}
+            href={`#p${n}`}
+            className="text-cyan"
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToPost(n);
+            }}
+          >
+            &gt;&gt;{n}
+          </a>,
+        );
+      } else out.push(m[0]);
     } else {
       const id = m[2];
       out.push(<RecordEmbed key={m.index} id={id} t={parseMoment(m[3]) ?? undefined} withMedia={!seen.has(id)} />);
@@ -127,10 +154,15 @@ interface PostRowProps {
   /** Set on the OP row only: the OP *is* the thread, so it votes the thread's
    * counter (the one board rows show) instead of its own post row. */
   thread?: { id: string; votes: number };
+  /** Nos of every post in this thread (">>N" only links when N is here). */
+  nos: Set<number>;
+  /** Nos of posts that quote this one. */
+  replies: number[];
+  onQuote: (no: number) => void;
 }
 
 // One post row — prototype lines 264-280.
-function PostRow({ post, sourceRecord, thread }: PostRowProps) {
+function PostRow({ post, sourceRecord, thread, nos, replies, onQuote }: PostRowProps) {
   const { openViewer } = useOverlay();
   const img = postImage(post, sourceRecord);
 
@@ -148,6 +180,7 @@ function PostRow({ post, sourceRecord, thread }: PostRowProps) {
   return (
     <div
       data-post
+      id={`p${post.no}`}
       className="rounded-[14px] border px-[14px] py-[13px]"
       style={{
         borderColor: post.isOp ? "var(--line2)" : "var(--line)",
@@ -202,10 +235,10 @@ function PostRow({ post, sourceRecord, thread }: PostRowProps) {
         className="text-[13.5px] leading-[1.55] text-ink"
         style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
       >
-        {linkifyBody(post.body)}
+        {linkifyBody(post.body, nos)}
       </div>
 
-      {/* footer — prototype lines 276-279: VoteButton("credible") + inert "↩ reply" */}
+      {/* footer — VoteButton("credible") + "↩ reply" (opens the composer quoting this post) */}
       <div className="mt-[10px] flex items-center gap-4 font-mono text-[11px]" style={{ clear: "both" }}>
         {thread ? (
           <VoteButton targetType="thread" targetId={thread.id} votes={thread.votes} />
@@ -213,11 +246,28 @@ function PostRow({ post, sourceRecord, thread }: PostRowProps) {
           <VoteButton targetType="post" targetId={post.id} votes={post.votes} />
         )}
         <span className="text-dim">credible</span>
-        {/* prototype line 278 is a bare, unwired `<span>` — no onClick in the
-            authoritative markup. The real reply affordance is the sticky
-            bottom bar below; this stays decorative to match. */}
-        <span className="text-faint">↩ reply</span>
+        <button type="button" onClick={() => onQuote(post.no)} className="text-dim hover:text-signal">
+          ↩ reply
+        </button>
       </div>
+      {replies.length > 0 && (
+        <div className="mt-2 font-mono text-[10px] text-faint">
+          ↳{" "}
+          {replies.map((n) => (
+            <a
+              key={n}
+              href={`#p${n}`}
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToPost(n);
+              }}
+              className="mr-2 text-cyan"
+            >
+              &gt;&gt;{n}
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -257,6 +307,12 @@ export function Thread() {
     openComposer({ mode: "reply", threadId: id });
   }
 
+  const nos = new Set(posts.map((p) => p.no));
+  const replyMap = backlinks(posts);
+  function handleQuote(no: number) {
+    openComposer({ mode: "reply", threadId: id, presetBody: `>>${no}\n` });
+  }
+
   return (
     <div data-screen="thread" className="pb-16" style={{ animation: "fadeup .3s ease both" }}>
       {/* header — prototype lines 260-261 */}
@@ -293,7 +349,15 @@ export function Thread() {
       {/* post list — prototype lines 262-282 (OP-first ordering from the API) */}
       <div className="flex flex-col gap-[11px]">
         {posts.map((p) => (
-          <PostRow key={p.id} post={p} sourceRecord={sourceRecord} thread={p.isOp ? thread : undefined} />
+          <PostRow
+            key={p.id}
+            post={p}
+            sourceRecord={sourceRecord}
+            thread={p.isOp ? thread : undefined}
+            nos={nos}
+            replies={replyMap.get(p.no) ?? []}
+            onQuote={handleQuote}
+          />
         ))}
       </div>
 
