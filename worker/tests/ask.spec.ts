@@ -53,6 +53,13 @@ describe("GET /api/ask", () => {
     expect(llm.input.max_tokens).toBe(400);
   });
 
+  it("returns and caches the question in its original case", async () => {
+    const b = await body(await ask("  What Did RADAR See?  "));
+    expect(b.question).toBe("What Did RADAR See?");
+    const row = await env.DB.prepare("SELECT answer FROM ask_cache").first<{ answer: string }>();
+    expect(JSON.parse(row!.answer).question).toBe("What Did RADAR See?");
+  });
+
   it("same question with different case/spacing is a free cache hit", async () => {
     await ask("  What did   RADAR see? ");
     aiCalls = [];
@@ -145,5 +152,46 @@ describe("GET /api/ask", () => {
   it("AI failure returns 503, not 500", async () => {
     llmOut = new Error("quota");
     expect((await ask("failure question")).status).toBe(503);
+  });
+});
+
+const recent = (extra: Record<string, unknown> = {}) =>
+  worker.fetch(new Request("https://x/api/ask/recent"), { ...env, FEATURE_ASK: "on", AI, VECTORIZE, ...extra } as any, {} as any);
+
+describe("GET /api/ask/recent", () => {
+  const put = (key: string, answer: string, age: string) =>
+    env.DB.prepare("INSERT INTO ask_cache(key,answer,created_at) VALUES(?,?,datetime('now',?))").bind(key, answer, age);
+
+  it("lists answered questions newest first, current threshold only, no AI calls", async () => {
+    await env.DB.batch([
+      put("0.45|older question", JSON.stringify({ question: "Older Question", answer: "a [1]", sources: [{ n: 1 }] }), "-2 hours"),
+      put("0.45|newer question?", JSON.stringify({ question: "Newer Question?", answer: "b [1][2]", sources: [{ n: 1 }, { n: 2 }] }), "-1 hours"),
+      put("0.45|legacy lowercase", JSON.stringify({ answer: "c [1]", sources: [{ n: 1 }] }), "-3 hours"),
+      put("0.5|other threshold", JSON.stringify({ question: "Other", answer: "d", sources: [{ n: 1 }] }), "-1 hours"),
+      put("0.45|broken row", "not json", "-1 hours"),
+      put("0.45|stale question", JSON.stringify({ question: "Stale", answer: "e", sources: [{ n: 1 }] }), "-8 days"),
+    ]);
+    aiCalls = [];
+    const r = await recent();
+    expect(r.status).toBe(200);
+    const b = await body(r);
+    expect(b.recent.map((x: any) => [x.question, x.sources])).toEqual([
+      ["Newer Question?", 2],
+      ["Older Question", 1],
+      ["legacy lowercase", 1],
+    ]);
+    expect(typeof b.recent[0].asked_at).toBe("string");
+    expect(aiCalls).toEqual([]);
+  });
+
+  it("a real answer shows up in the recent list", async () => {
+    await ask("What did radar see?");
+    const b = await body(await recent());
+    expect(b.recent.map((x: any) => x.question)).toEqual(["What did radar see?"]);
+  });
+
+  it("returns 503 when FEATURE_ASK is off, serves when hidden", async () => {
+    expect((await recent({ FEATURE_ASK: "off" })).status).toBe(503);
+    expect((await recent({ FEATURE_ASK: "hidden" })).status).toBe(200);
   });
 });

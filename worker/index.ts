@@ -15,12 +15,13 @@ import { toggleVote } from "./routes/votes";
 import { getCase } from "./routes/cases";
 import { login } from "./routes/auth";
 import { serveWithMeta } from "./lib/meta";
-import { ask } from "./routes/ask";
+import { ask, recentAsks } from "./routes/ask";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
 on("GET", "/api/feed", feed);
 on("GET", "/api/ask", ask);
+on("GET", "/api/ask/recent", recentAsks);
 on("GET", "/api/records", listRecords);
 on("GET", "/api/records/facets", recordFacets);
 on("GET", "/api/records/:id", getRecord);

@@ -32,9 +32,9 @@ export async function ask(req: Request, env: Env) {
   if ((used?.c ?? 0) >= (Number(env.ASK_DAILY_MAX) || 2000)) return error(503, RESTING);
   if (!(await allowWrite(env, req, "ask"))) return error(429, "slow down — too many questions");
 
-  let body: { answer: string; sources: unknown[] };
+  let body: { question: string; answer: string; sources: unknown[] };
   try {
-    body = await answer(env, q, min);
+    body = { question: q, ...(await answer(env, q, min)) };
   } catch {
     return error(503, RESTING);
   }
@@ -88,4 +88,26 @@ async function answer(env: Env, q: string, min: number) {
       return { n: c.n, record_id: c.record_id, title: r.title, page: c.page, kind: r.kind, thumb: r.thumb ?? null };
     }),
   };
+}
+
+// GET /api/ask/recent — answered questions (only answers with sources are
+// cached) for the current threshold, newest first. Free: no AI, no rate row.
+export async function recentAsks(_req: Request, env: Env) {
+  if (env.FEATURE_ASK !== "on" && env.FEATURE_ASK !== "hidden") return error(503, RESTING);
+  const prefix = `${Number(env.ASK_MIN_SCORE) || 0.45}|`;
+  const rows = await env.DB.prepare(
+    "SELECT key, answer, created_at FROM ask_cache WHERE key LIKE ? AND created_at >= datetime('now','-7 days') ORDER BY created_at DESC LIMIT 20"
+  )
+    .bind(prefix + "%")
+    .all<{ key: string; answer: string; created_at: string }>();
+  const recent = rows.results.flatMap((r) => {
+    try {
+      const a = JSON.parse(r.answer) as { question?: string; sources?: unknown[] };
+      // Rows cached before `question` existed only have the lowercased key.
+      return [{ question: a.question || r.key.slice(prefix.length), sources: a.sources?.length ?? 0, asked_at: r.created_at }];
+    } catch {
+      return [];
+    }
+  });
+  return json({ recent });
 }
