@@ -23,6 +23,16 @@ describe("bootstrap+feed", () => {
     expect(b.cases[0]).toHaveProperty("slug");
   });
 
+  it("postsToday counts only today's posts; yearsCovered spans first to last decade", async () => {
+    const n = (sql: string) => env.DB.prepare(sql).first<{ c: number }>().then((r) => r!.c);
+    await env.DB.prepare("UPDATE posts SET created_at=datetime('now','-3 days') WHERE rowid=(SELECT min(rowid) FROM posts)").run();
+    const today = await n("SELECT count(*) c FROM posts WHERE created_at >= date('now')");
+    expect(today).toBeLessThan(await n("SELECT count(*) c FROM posts"));
+    const b: any = await get("/api/bootstrap");
+    expect(b.stats.postsToday).toBe(today);
+    expect(b.stats.yearsCovered).toBe(`${b.stats.byDecade[0][0]}–${b.stats.byDecade.at(-1)[0]}`);
+  });
+
   it("bootstrap returns real map places counted from record locations", async () => {
     await env.DB.prepare("INSERT INTO records (id,archive,agency,title,kind,location) VALUES ('MAP-1','wargov','DoW','MAP-1','pdf','Yellow Sea')").run();
     const b: any = await get("/api/bootstrap");

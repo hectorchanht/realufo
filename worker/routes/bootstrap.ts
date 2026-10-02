@@ -48,7 +48,7 @@ export async function bootstrap(req: Request, env: Env) {
                 (SELECT count(DISTINCT archive) FROM records) archives,
                 (SELECT count(*) FROM records WHERE kind='video') videos,
                 (SELECT count(*) FROM threads) threads,
-                (SELECT count(*) FROM posts) postsToday`,
+                (SELECT count(*) FROM posts WHERE created_at >= date('now')) postsToday`,
       )
       .first<{ records: number; archives: number; videos: number; threads: number; postsToday: number }>(),
     env.DB
@@ -85,7 +85,7 @@ export async function bootstrap(req: Request, env: Env) {
   const topLocations = locRows.results.slice(0, 6).map((l) => [l.location, l.n]);
   const map = mapPlaces(locRows.results, new Set(hubs.filter((h) => h.kind === "location").map((h) => h.slug)));
   const years = [...decadeCounts.keys()];
-  const yearsCovered = years.length ? `${Math.min(...years)}s–${Math.max(...years) + 9}s` : curated.yearsCovered ?? "";
+  const yearsCovered = years.length ? `${Math.min(...years)}s–${Math.max(...years)}s` : curated.yearsCovered ?? "";
 
   const stats = {
     records: totals?.records ?? 0,
