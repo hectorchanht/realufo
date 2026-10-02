@@ -162,7 +162,7 @@ export function MapScreen() {
             );
           })}
           {offWorld.length > 0 && (
-            <div className="absolute right-2 top-2 z-[3] flex flex-col items-end gap-1">
+            <div className="absolute bottom-[30px] left-3 z-[3] flex flex-col items-start gap-1">
               {offWorld.map((p) => (
                 <button
                   key={p.name}
