@@ -111,9 +111,10 @@ describe("hub pages", () => {
     expect(html).toContain('<a href="/release/2">Release 02 · 12 Jun 2026 (8)</a>');
     expect(html).not.toContain("/agency/cia");
   });
-  it("doc pre-render links its facts to hubs", async () => {
+  it("doc pre-render puts its hub links in the footer", async () => {
     const html = await (await call("/doc/FBI-UAP-D002")).text();
-    expect(html).toContain('<dt>Agency</dt><dd><a href="/agency/fbi">');
+    expect(html).not.toContain('<dt>Agency</dt><dd><a ');
+    expect(html).toMatch(/<footer><p>.*<a href="\/agency\/fbi">More from /);
   });
   it("sitemap lists /browse and live hub URLs only", async () => {
     const xml = await (await call("/sitemap.xml")).text();

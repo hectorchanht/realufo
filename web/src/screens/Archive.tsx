@@ -382,29 +382,6 @@ export function Archive() {
         />
       </form>
 
-      {boot?.features?.ask && (
-        <Link to="/ask" className="mb-3.5 block font-mono text-[11px] text-signal hover:underline">
-          ◉ Ask the archive — AI answers with sources →
-        </Link>
-      )}
-
-      {/* static predecessor archive (war-gov-ufo-release repo) */}
-      <a
-        href="https://release.realufo.org/"
-        target="_blank"
-        rel="noopener"
-        className="mb-3.5 block font-mono text-[11px] text-dim hover:text-signal"
-      >
-        Original release archive → release.realufo.org ↗
-      </a>
-
-      <Link
-        to="/browse"
-        className="mb-3.5 inline-flex items-center gap-2 rounded-[9px] border border-signal px-3 py-[7px] font-mono text-[11px] font-semibold tracking-[.4px] text-signal active:scale-[.97]"
-      >
-        ▦ BROWSE BY RELEASE · AGENCY · LOCATION · DECADE →
-      </Link>
-
       {/* archive chip row — lines 174-178 */}
       <div data-scroll className="mb-1.5 flex gap-[7px] overflow-x-auto pb-2.5">
         <ArchiveChip selected={archive === ""} style={archiveChipStyle(archive === "", true)} onClick={() => setParam("archive", null)}>

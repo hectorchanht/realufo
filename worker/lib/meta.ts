@@ -126,7 +126,7 @@ export async function serveWithMeta(req: Request, env: Env): Promise<Response> {
       const canonical = url.origin + url.pathname;
       const image = page.meta.image || shareCard(url);
       const jsonLd = page.meta.jsonLd && { "@context": "https://schema.org", ...page.meta.jsonLd, url: canonical, image };
-      return htmlResponse(injectBody(injectMeta(html, { ...page.meta, image, url: canonical, jsonLd }), page.body));
+      return htmlResponse(injectBody(injectMeta(html, { ...page.meta, image, url: canonical, jsonLd }), page.body, page.footer));
     }
     const res = await env.ASSETS.fetch(req);
     if (url.pathname !== "/index.html" && res.headers.get("content-type")?.startsWith("text/html")) return notFound(await res.text(), url);

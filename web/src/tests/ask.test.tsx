@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { AskAnswer } from "../components/AskAnswer";
@@ -260,10 +260,10 @@ describe("Ask screen", () => {
     expect(useAskMock).toHaveBeenCalledWith("los alamos 1949");
   });
 
-  it("Ask tab and Archive link show only while the feature is on", async () => {
+  it("Ask tab and footer link show only while the feature is on", async () => {
     renderAppAt("/archive");
     expect((await screen.findAllByRole("link", { name: /^◉\s*Ask$/ })).length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: /Ask the archive — AI answers/ })).toHaveAttribute("href", "/ask");
+    expect(within(screen.getByRole("navigation", { name: "Site" })).getByRole("link", { name: "Ask" })).toHaveAttribute("href", "/ask");
   });
 
   it("feature off: no tab, no link, /ask rests, old ?ask= links fall back to keyword search", async () => {
@@ -271,7 +271,7 @@ describe("Ask screen", () => {
     const { unmount } = renderAppAt("/archive?ask=los%20alamos%201949");
     expect(await screen.findByPlaceholderText(/search .*records|search the archive/)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /^◉\s*Ask$/ })).toBeNull();
-    expect(screen.queryByRole("link", { name: /Ask the archive — AI answers/ })).toBeNull();
+    expect(within(screen.getByRole("navigation", { name: "Site" })).queryByRole("link", { name: "Ask" })).toBeNull();
     unmount();
     renderAppAt("/ask");
     expect(await screen.findByText(/Ask is resting/)).toBeInTheDocument();

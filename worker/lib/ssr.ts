@@ -90,10 +90,12 @@ const STYLE =
 
 // Fills the SPA's empty mount point. Function replacement: a string
 // replacement would expand `$&`/`$'` patterns in user text.
-export function injectBody(html: string, body: string): string {
+// `pageLinks`: this page's own footer links (a doc's hubs), shown above the site links.
+export function injectBody(html: string, body: string, pageLinks: Link[] = []): string {
+  const own = pageLinks.length ? `<p>${pageLinks.map(a).join(" · ")}</p>` : "";
   return html.replace(
     '<div id="root"></div>',
-    () => `<div id="root">${STYLE}<div class="ssr"><nav>${NAV.map(a).join(" · ")}</nav><main>${body}</main><footer>${FOOTER.map(a).join(" · ")}</footer></div></div>`
+    () => `<div id="root">${STYLE}<div class="ssr"><nav>${NAV.map(a).join(" · ")}</nav><main>${body}</main><footer>${own}${FOOTER.map(a).join(" · ")}</footer></div></div>`
   );
 }
 
@@ -152,18 +154,29 @@ function media(d: DocData): string {
   return "";
 }
 
+// Same "This file" links as the SPA footer (Doc.tsx docFooterLinks).
+export function docFooter(d: DocData): Link[] {
+  const h = d.hubs ?? {};
+  const r = d.record;
+  return [
+    h.release && { href: hubHref("release", h.release), text: `More from Release ${String(d.release?.no ?? h.release).padStart(2, "0")}` },
+    h.agency && { href: hubHref("agency", h.agency), text: `More from ${r.agency_full || r.agency}` },
+    h.location && { href: hubHref("location", h.location), text: `More from ${r.location}` },
+    h.decade && { href: hubHref("decade", h.decade), text: `More from the ${h.decade}` },
+  ].filter((l): l is Link => !!l);
+}
+
 export function docBody(d: DocData): string {
   const r = d.record;
   const dur = d.assets.find((x) => x.role === "full" && x.duration)?.duration;
-  const h = d.hubs ?? {};
-  const facts: [string, string | null | undefined, string | undefined][] = [
-    ["File", r.id, undefined],
-    ["Agency", r.agency_full || r.agency, h.agency && hubHref("agency", h.agency)],
-    ["Incident date", r.incident_date, h.decade && hubHref("decade", h.decade)],
-    ["Location", r.location && r.location !== "N/A" ? r.location : null, h.location && hubHref("location", h.location)],
-    ["Released in", d.release && `Release ${String(d.release.no).padStart(2, "0")} (${d.release.date})`, h.release && hubHref("release", h.release)],
-    ["File type", r.kind.toUpperCase(), undefined],
-    ["Length", dur ? mmss(dur) : null, undefined],
+  const facts: [string, string | null | undefined][] = [
+    ["File", r.id],
+    ["Agency", r.agency_full || r.agency],
+    ["Incident date", r.incident_date],
+    ["Location", r.location && r.location !== "N/A" ? r.location : null],
+    ["Released in", d.release && `Release ${String(d.release.no).padStart(2, "0")} (${d.release.date})`],
+    ["File type", r.kind.toUpperCase()],
+    ["Length", dur ? mmss(dur) : null],
   ];
   const series = [
     d.series.prev && a({ href: docHref(d.series.prev), text: `Previous: ${d.series.prev}` }),
@@ -175,7 +188,7 @@ export function docBody(d: DocData): string {
     media(d),
     `<dl>${facts
       .filter(([, v]) => v)
-      .map(([k, v, href]) => `<dt>${k}</dt><dd>${href ? a({ href, text: String(v) }) : esc(String(v))}</dd>`)
+      .map(([k, v]) => `<dt>${k}</dt><dd>${esc(String(v))}</dd>`)
       .join("")}</dl>`,
     paras(r.summary),
     `<p>${a({ href: `/api/file/${encodeURIComponent(r.id)}`, text: "Open original file" })}</p>`,

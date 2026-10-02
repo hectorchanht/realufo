@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { esc, docHref, boardHref, injectBody, docBody, threadBody, caseBody, homeBody, type DocData, hubBody, browseBody, hubHref } from "../lib/ssr";
+import { esc, docHref, boardHref, injectBody, docBody, docFooter, threadBody, caseBody, homeBody, type DocData, hubBody, browseBody, hubHref } from "../lib/ssr";
 
 const doc = (over: Partial<DocData["record"]> = {}, rest: Partial<DocData> = {}): DocData => ({
   record: {
@@ -143,11 +143,18 @@ describe("hub pre-render", () => {
     expect(out).toContain('<a href="/decade/1950s">1950s (29)</a>');
     expect(out).not.toContain("<h2>Agencies</h2>");
   });
-  it("doc facts link to hubs only when given", () => {
-    const linked = docBody(doc({}, { hubs: { agency: "fbi", release: "3", decade: "2020s" } }));
-    expect(linked).toContain('<dt>Agency</dt><dd><a href="/agency/fbi">Federal Bureau of Investigation</a></dd>');
-    expect(linked).toContain('<dt>Released in</dt><dd><a href="/release/3">Release 03 (2026-06-12)</a></dd>');
-    expect(linked).toContain('<dt>Incident date</dt><dd><a href="/decade/2020s">2022</a></dd>');
-    expect(linked).toContain("<dt>Location</dt><dd>Colorado Springs</dd>");
+  it("doc facts are plain text; hub links go to the footer", () => {
+    const d = doc({}, { hubs: { agency: "fbi", release: "3", decade: "2020s" } });
+    const body = docBody(d);
+    expect(body).toContain("<dt>Agency</dt><dd>Federal Bureau of Investigation</dd>");
+    expect(body).not.toContain('href="/agency/fbi"');
+    expect(docFooter(d)).toEqual([
+      { href: "/release/3", text: "More from Release 03" },
+      { href: "/agency/fbi", text: "More from Federal Bureau of Investigation" },
+      { href: "/decade/2020s", text: "More from the 2020s" },
+    ]);
+    expect(docFooter(doc({}, {}))).toEqual([]);
+    const html = injectBody('<div id="root"></div>', body, docFooter(d));
+    expect(html).toMatch(/<footer><p><a href="\/release\/3">More from Release 03<\/a>.*<\/p><a href="\/browse">/);
   });
 });

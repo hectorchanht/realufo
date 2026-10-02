@@ -28,6 +28,7 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import SiteFooter from "./SiteFooter";
+import { FooterLinksProvider } from "../lib/footerLinks";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { useHideOnScroll } from "../lib/useHideOnScroll";
 import { useScrollMemory } from "../lib/useScrollMemory";
@@ -85,60 +86,62 @@ export function AppShell() {
     // — TopNav is the single merged bar; on mobile TopNav is absent and the
     // AppBar is the top bar.
     <PageTitleProvider>
-      <div data-app-shell className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-bg">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-0"
-          style={{
-            background:
-              "radial-gradient(1200px 500px at 78% -8%, var(--signal-dim), transparent 60%), radial-gradient(900px 500px at 10% 108%, rgba(70,223,255,.06), transparent 55%)",
-          }}
-        />
-        <div aria-hidden="true" className="crt-grain" />
-        {scanlines && <div aria-hidden="true" className="crt-scan" />}
+      <FooterLinksProvider>
+        <div data-app-shell className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-bg">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-0"
+            style={{
+              background:
+                "radial-gradient(1200px 500px at 78% -8%, var(--signal-dim), transparent 60%), radial-gradient(900px 500px at 10% 108%, rgba(70,223,255,.06), transparent 55%)",
+            }}
+          />
+          <div aria-hidden="true" className="crt-grain" />
+          {scanlines && <div aria-hidden="true" className="crt-scan" />}
 
-        <div
-          ref={shellRef}
-          data-shell
-          className="relative z-10 flex min-h-0 flex-1 flex-col"
-          style={{ "--bnav-y": navHidden ? "0px" : "var(--bnav-h, 0px)" } as CSSProperties}
-        >
-          {isDesktop && (
-            <TopNav activeTab={activeTab} canBack={canBack} onBack={() => navigate(-1)} />
-          )}
-
-          <main
-            ref={scrollRef}
-            data-scroll
-            className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
-            style={{ WebkitOverflowScrolling: "touch" }}
+          <div
+            ref={shellRef}
+            data-shell
+            className="relative z-10 flex min-h-0 flex-1 flex-col"
+            style={{ "--bnav-y": navHidden ? "0px" : "var(--bnav-h, 0px)" } as CSSProperties}
           >
-            {!isDesktop && (
-              <AppBar canBack={canBack} onBack={() => navigate(-1)} showBrand={!canBack} hidden={navHidden} />
+            {isDesktop && (
+              <TopNav activeTab={activeTab} canBack={canBack} onBack={() => navigate(-1)} />
             )}
 
-            <div
-              data-screenpad
-              className="relative px-4 pt-[18px]"
-              style={{ paddingBottom: "calc(2.5rem + var(--bnav-h, 0px))" }}
+            <main
+              ref={scrollRef}
+              data-scroll
+              className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
+              style={{ WebkitOverflowScrolling: "touch" }}
             >
-              <Outlet />
-              <SiteFooter />
-            </div>
-          </main>
+              {!isDesktop && (
+                <AppBar canBack={canBack} onBack={() => navigate(-1)} showBrand={!canBack} hidden={navHidden} />
+              )}
 
-          {!isDesktop && <BottomTab ref={bnavRef} activeTab={activeTab} hidden={navHidden} />}
+              <div
+                data-screenpad
+                className="relative px-4 pt-[18px]"
+                style={{ paddingBottom: "calc(2.5rem + var(--bnav-h, 0px))" }}
+              >
+                <Outlet />
+                <SiteFooter />
+              </div>
+            </main>
+
+            {!isDesktop && <BottomTab ref={bnavRef} activeTab={activeTab} hidden={navHidden} />}
+          </div>
+
+          {/* Overlays (Composer/MediaViewer/LoginSheet/Toast) mount INSIDE the
+              router tree — the Composer calls useNavigate() (to jump to a newly
+              created /thread/:id), which throws without a <Router> ancestor. They
+              are fixed-position (z-70+) so DOM placement here doesn't affect
+              layout; being inside AppShell (a route element) gives them the router
+              context. OverlayProvider still wraps RouterProvider in App.tsx, so the
+              context is available here. */}
+          <OverlayHost />
         </div>
-
-        {/* Overlays (Composer/MediaViewer/LoginSheet/Toast) mount INSIDE the
-            router tree — the Composer calls useNavigate() (to jump to a newly
-            created /thread/:id), which throws without a <Router> ancestor. They
-            are fixed-position (z-70+) so DOM placement here doesn't affect
-            layout; being inside AppShell (a route element) gives them the router
-            context. OverlayProvider still wraps RouterProvider in App.tsx, so the
-            context is available here. */}
-        <OverlayHost />
-      </div>
+      </FooterLinksProvider>
     </PageTitleProvider>
   );
 }

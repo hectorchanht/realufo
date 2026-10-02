@@ -6,14 +6,14 @@ import { loadRecord } from "../routes/records";
 import { loadHub, listHubsCached } from "../routes/hubs";
 import type { HubKind } from "./hubs";
 import {
-  DEFAULT_DESCRIPTION, type DocData, docBody, threadBody, boardBody, caseBody, homeBody, tabBody,
+  DEFAULT_DESCRIPTION, type DocData, type Link, docBody, docFooter, threadBody, boardBody, caseBody, homeBody, tabBody,
   section, docLinks, countList, boardHref, docHref, hubBody, browseBody, hubHref,
 } from "./ssr";
 
 // One SPA route's pre-render: <head> meta (url is filled in by serveWithMeta)
 // and the HTML that goes inside #root. A loader returns null when the entity
 // doesn't exist; serveWithMeta then serves index.html untouched.
-export type Page = { meta: Omit<MetaInput, "url">; body: string };
+export type Page = { meta: Omit<MetaInput, "url">; body: string; footer?: Link[] };
 export type Loader = (env: Env, groups: Record<string, string>, url: URL) => Promise<Page | null>;
 
 // records.doc_date is "M/D/YY" (war.gov) or a bare year (AARO) → ISO 8601 date.
@@ -147,6 +147,7 @@ const docPage: Loader = async (env, g, url) => {
       ],
     },
     body: docBody(d),
+    footer: docFooter(d),
   };
 };
 

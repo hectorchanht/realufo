@@ -18,6 +18,8 @@ import { act, render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import type { CommentsResponse, RecordDetail, RecordsListResponse } from "../api/types";
 import Doc from "../screens/Doc";
+import SiteFooter from "../components/SiteFooter";
+import { FooterLinksProvider } from "../lib/footerLinks";
 
 const mockOpenComposer = vi.fn();
 const mockOpenViewer = vi.fn();
@@ -48,6 +50,7 @@ vi.mock("../api/queries", () => ({
   useRecords: (params: Record<string, unknown>) => useRecordsMock(params),
   useBootstrap: () => useBootstrapMock(),
   useVote: () => ({ mutate: vi.fn(), isPending: false }),
+  useHubs: () => ({ data: { hubs: [] } }),
 }));
 
 const mockDetail: RecordDetail = {
@@ -208,16 +211,28 @@ beforeEach(() => {
 });
 
 describe("Doc", () => {
-  it("links the agency chip and meta values to their hubs when present", () => {
+  it("puts the file's hub links in the footer, not in the chip or meta values", () => {
     useRecordMock.mockReturnValue({
       data: { ...mockDetail, hubs: { agency: "cia", location: "roswell", release: "4", decade: "1970s" } },
       isLoading: false,
     });
-    renderDoc();
-    expect(screen.getByRole("link", { name: "Central Intelligence Agency" })).toHaveAttribute("href", "/agency/cia");
-    expect(screen.getByRole("link", { name: "Roswell, NM" })).toHaveAttribute("href", "/location/roswell");
-    expect(screen.getByRole("link", { name: "1978-04-01" })).toHaveAttribute("href", "/release/4");
-    expect(screen.getByRole("link", { name: "1978-03-04" })).toHaveAttribute("href", "/decade/1970s");
+    render(
+      <MemoryRouter initialEntries={["/doc/rec1"]}>
+        <FooterLinksProvider>
+          <Routes>
+            <Route path="/doc/:id" element={<Doc />} />
+          </Routes>
+          <SiteFooter />
+        </FooterLinksProvider>
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole("link", { name: "Central Intelligence Agency" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Roswell, NM" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "This file" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "More from Central Intelligence Agency" })).toHaveAttribute("href", "/agency/cia");
+    expect(screen.getByRole("link", { name: "More from Roswell, NM" })).toHaveAttribute("href", "/location/roswell");
+    expect(screen.getByRole("link", { name: /^More from Release 0?4$/ })).toHaveAttribute("href", "/release/4");
+    expect(screen.getByRole("link", { name: "More from the 1970s" })).toHaveAttribute("href", "/decade/1970s");
   });
 
   it("keeps agency and meta values as plain text without hubs", () => {

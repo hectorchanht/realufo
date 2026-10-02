@@ -32,7 +32,7 @@ import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useBootstrap, useComments, useRecord, useRecords } from "../api/queries";
 import type { RecordsParams } from "../api/queries";
-import type { Comment, RecordKind, RelatedGroup } from "../api/types";
+import type { Comment, RecordDetail, RecordKind, RelatedGroup } from "../api/types";
 import { DocCard } from "../components/DocCard";
 import { LENS_MAGS, MediaFilters, MediaToolbar, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams } from "../components/ImageTools";
 import type { ImageAdjust } from "../components/ImageTools";
@@ -43,6 +43,7 @@ import { VoteButton } from "../components/VoteButton";
 import FullText from "../components/FullText";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { useSetFooterLinks, type FooterLinks } from "../lib/footerLinks";
 import { promoteCommentOpts } from "../lib/promoteComment";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { formatMoment, parseMoment, recordMedia } from "../lib/recordMedia";
@@ -126,26 +127,31 @@ function withMoments(body: string, onSeek: (t: number) => void): ReactNode[] {
 interface MetaCellProps {
   label: string;
   value: string;
-  /** Hub page this value links to, when one exists. */
-  to?: string;
 }
 
-// One cell of the 2x2 meta grid (prototype lines 361-364).
-function MetaCell({ label, value, to }: MetaCellProps) {
+// One cell of the 2x2 meta grid (prototype lines 361-364). Hub links for these
+// facts live in the site footer ("This file" column), not inline.
+function MetaCell({ label, value }: MetaCellProps) {
   return (
     <div className="bg-surface px-[13px] py-[11px]">
       <div className="font-mono text-[8.5px] uppercase tracking-[.6px] text-faint">{label}</div>
       <div className="mt-1 font-mono text-xs text-ink" style={{ overflowWrap: "anywhere" }}>
-        {to ? (
-          <Link to={to} className="hover:text-signal">
-            {value}
-          </Link>
-        ) : (
-          value
-        )}
+        {value}
       </div>
     </div>
   );
+}
+
+// The hub pages this file belongs to, for the footer's "This file" column.
+function docFooterLinks(record: RecordDetail["record"], hubs: RecordDetail["hubs"], release: RecordDetail["release"]): FooterLinks {
+  const h = hubs ?? {};
+  const links = [
+    h.release && { to: `/release/${h.release}`, text: `More from Release ${String(release?.no ?? h.release).padStart(2, "0")}` },
+    h.agency && { to: `/agency/${h.agency}`, text: `More from ${record.agency_full || record.agency}` },
+    h.location && { to: `/location/${h.location}`, text: `More from ${record.location}` },
+    h.decade && { to: `/decade/${h.decade}`, text: `More from the ${h.decade}` },
+  ].filter((l): l is { to: string; text: string } => !!l);
+  return { title: "This file", links };
 }
 
 export function Doc() {
@@ -353,6 +359,7 @@ export function Doc() {
   // Tab title is "<id> — <short title>", same as the worker's docTitle.
   const short = record ? shortTitle(record.title) : "";
   useSetPageTitle(record?.id || "FILE", short, record && `${record.id} — ${short}`);
+  useSetFooterLinks(record && detail ? docFooterLinks(record, detail.hubs, detail.release) : null);
 
   if (isLoading) {
     return (
@@ -636,22 +643,12 @@ export function Doc() {
 
       {/* chips row — prototype line 358 */}
       <div className="mb-[10px] flex flex-wrap gap-[7px]">
-        {detail.hubs?.agency ? (
-          <Link
-            to={`/agency/${detail.hubs.agency}`}
-            className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px]"
-            style={{ color: accent }}
-          >
-            {record.agency_full || record.agency}
-          </Link>
-        ) : (
-          <span
-            className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px]"
-            style={{ color: accent }}
-          >
-            {record.agency_full || record.agency}
-          </span>
-        )}
+        <span
+          className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px]"
+          style={{ color: accent }}
+        >
+          {record.agency_full || record.agency}
+        </span>
         <span className="rounded-[7px] border border-line px-[9px] py-1 font-mono text-[10px] text-dim">
           {archiveLabel}
         </span>
@@ -677,9 +674,9 @@ export function Doc() {
 
       {/* meta grid — prototype lines 360-365 */}
       <div className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line">
-        <MetaCell label="Incident" value={record.incident_date || ""} to={detail.hubs?.decade && `/decade/${detail.hubs.decade}`} />
-        <MetaCell label="Location" value={location} to={detail.hubs?.location && `/location/${detail.hubs.location}`} />
-        <MetaCell label="Released" value={record.doc_date || ""} to={detail.hubs?.release && `/release/${detail.hubs.release}`} />
+        <MetaCell label="Incident" value={record.incident_date || ""} />
+        <MetaCell label="Location" value={location} />
+        <MetaCell label="Released" value={record.doc_date || ""} />
         <MetaCell label="VIRIN" value={record.virin || ""} />
       </div>
 
