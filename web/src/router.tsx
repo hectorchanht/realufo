@@ -4,35 +4,39 @@
 import { createBrowserRouter, type RouteObject } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import Feed from "./screens/Feed";
-import Archive from "./screens/Archive";
-import Ask from "./screens/Ask";
 import Doc from "./screens/Doc";
-import Boards from "./screens/Boards";
-import Board from "./screens/Board";
-import Thread from "./screens/Thread";
-import CaseScreen from "./screens/Case";
-import MapScreen from "./screens/Map";
-import Hub from "./screens/Hub";
-import Browse from "./screens/Browse";
+import type { ComponentType } from "react";
+import type { HubKind } from "./api/types";
+
+// Feed (the landing page) ships in the main bundle; every other screen is its
+// own chunk, fetched on first visit, so the homepage doesn't download the map,
+// Ask, Doc viewer, etc. up front.
+const screen = (load: () => Promise<{ default: ComponentType }>) => async () => ({
+  Component: (await load()).default,
+});
+const hub = (kind: HubKind) => async () => {
+  const { default: Hub } = await import("./screens/Hub");
+  return { element: <Hub kind={kind} /> };
+};
 
 export const routes: RouteObject[] = [
   {
     element: <AppShell />,
     children: [
       { path: "/", element: <Feed /> },
-      { path: "/archive", element: <Archive /> },
-      { path: "/ask", element: <Ask /> },
+      { path: "/archive", lazy: screen(() => import("./screens/Archive")) },
+      { path: "/ask", lazy: screen(() => import("./screens/Ask")) },
       { path: "/doc/:id", element: <Doc /> },
-      { path: "/boards", element: <Boards /> },
-      { path: "/board/:slug", element: <Board /> },
-      { path: "/thread/:id", element: <Thread /> },
-      { path: "/case/:slug", element: <CaseScreen /> },
-      { path: "/map", element: <MapScreen /> },
-      { path: "/browse", element: <Browse /> },
-      { path: "/release/:slug", element: <Hub kind="release" /> },
-      { path: "/agency/:slug", element: <Hub kind="agency" /> },
-      { path: "/location/:slug", element: <Hub kind="location" /> },
-      { path: "/decade/:slug", element: <Hub kind="decade" /> },
+      { path: "/boards", lazy: screen(() => import("./screens/Boards")) },
+      { path: "/board/:slug", lazy: screen(() => import("./screens/Board")) },
+      { path: "/thread/:id", lazy: screen(() => import("./screens/Thread")) },
+      { path: "/case/:slug", lazy: screen(() => import("./screens/Case")) },
+      { path: "/map", lazy: screen(() => import("./screens/Map")) },
+      { path: "/browse", lazy: screen(() => import("./screens/Browse")) },
+      { path: "/release/:slug", lazy: hub("release") },
+      { path: "/agency/:slug", lazy: hub("agency") },
+      { path: "/location/:slug", lazy: hub("location") },
+      { path: "/decade/:slug", lazy: hub("decade") },
     ],
   },
 ];

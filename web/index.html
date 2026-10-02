@@ -18,6 +18,9 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@realufoorg" />
     <!--/META-->
+    <!-- Homepage: start /api/feed now instead of after the bundle loads — its first
+         thumbnail is the LCP image. useFeed() (src/api/queries.ts) takes it over. -->
+    <script>if (location.pathname === "/") window.__feed = fetch("/api/feed").then((r) => (r.ok ? r.json() : null)).catch(() => null);</script>
   </head>
   <body>
     <div id="root"></div>

@@ -4,7 +4,9 @@ from . import fetch
 def put(key: str, path: str, content_type: str) -> None:
     subprocess.run(
         ["wrangler", "r2", "object", "put", f"realufo/{key}",
-         "--file", path, "--content-type", content_type, "--remote"],
+         "--file", path, "--content-type", content_type,
+         # 30d, not immutable: thumbs.py can re-render a thumb under the same key.
+         "--cache-control", "public, max-age=2592000", "--remote"],
         check=True)
 
 def mirror(c, workdir: str) -> bool:

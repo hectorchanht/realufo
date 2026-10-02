@@ -96,7 +96,8 @@ describe("AppBar contextual title", () => {
   it('shows "THE ARCHIVE" at "/archive"', async () => {
     renderAppAt("/archive");
     await screen.findByPlaceholderText(/search 91,808 records/i);
-    expect(within(getAppBar()).getByText("THE ARCHIVE")).toBeInTheDocument();
+    // Lazy route: the title effect can land a tick after the screen paints.
+    expect(await within(getAppBar()).findByText("THE ARCHIVE")).toBeInTheDocument();
   });
 
   it("shows the record's id + short title at /doc/:id once the record loads (not the generic 'FILE' fallback)", async () => {
