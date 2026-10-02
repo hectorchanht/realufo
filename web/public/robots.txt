@@ -1,4 +1,7 @@
+# RealUFO: declassified public-domain UAP records. Search engines and AI
+# crawlers (search, answers, training) are all welcome.
 User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
 Allow: /
 
 Sitemap: https://realufo.org/sitemap.xml
