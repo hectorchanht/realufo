@@ -1,6 +1,7 @@
 import type { Env } from "../env";
 import { esc, injectBody, DEFAULT_DESCRIPTION } from "./ssr";
 import { ROUTES, type Page } from "./pages";
+import { cachedJson } from "./cache";
 
 export { DEFAULT_DESCRIPTION };
 
@@ -72,18 +73,7 @@ const PAGE_TTL = 3600;
 // ponytail: crawlers may see up to 1h-old related lists / replies; humans get
 // fresh data from the SPA's API calls. Purge or shorten PAGE_TTL if that matters.
 async function cachedPage(url: URL, load: () => Promise<Page | null>): Promise<Page | null> {
-  const key = new Request(`${url.origin}/__page${url.pathname}`);
-  const hit = await caches.default.match(key);
-  if (hit) return hit.json<Page>();
-  const page = await load();
-  if (page)
-    await caches.default.put(
-      key,
-      new Response(JSON.stringify(page), {
-        headers: { "content-type": "application/json", "cache-control": `max-age=${PAGE_TTL}` },
-      })
-    );
-  return page;
+  return cachedJson(`${url.origin}/__page${url.pathname}`, load, PAGE_TTL);
 }
 
 // GET on a pre-rendered SPA route (lib/pages.ts ROUTES) → the built index.html

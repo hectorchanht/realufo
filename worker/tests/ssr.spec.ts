@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { esc, docHref, boardHref, injectBody, docBody, threadBody, caseBody, homeBody, type DocData } from "../lib/ssr";
+import { esc, docHref, boardHref, injectBody, docBody, threadBody, caseBody, homeBody, type DocData, hubBody, browseBody, hubHref } from "../lib/ssr";
 
 const doc = (over: Partial<DocData["record"]> = {}, rest: Partial<DocData> = {}): DocData => ({
   record: {
@@ -105,5 +105,42 @@ describe("threadBody / caseBody / homeBody", () => {
   });
   it("home lists latest files", () => {
     expect(homeBody([{ id: "X-1", title: "One" }])).toContain('<a href="/doc/X-1">One</a>');
+  });
+});
+
+describe("hub pre-render", () => {
+  const hub = {
+    kind: "location" as const, title: "UAP files: Washington, D.C. & <Area>", intro: "2 declassified UAP files about incidents in Washington, D.C.: 2 PDFs.",
+    records: [{ id: "A B#1", title: "First" }, { id: "X-2", title: "Second" }],
+    siblings: [{ kind: "location" as const, slug: "moon", label: "The Moon", count: 8 }],
+  };
+  it("renders escaped title, intro, file links and sibling hubs", () => {
+    const out = hubBody(hub);
+    expect(out).toContain("<h1>UAP files: Washington, D.C. &amp; &lt;Area&gt;</h1>");
+    expect(out).toContain("<p>2 declassified UAP files about incidents in Washington, D.C.: 2 PDFs.</p>");
+    expect(out).toContain('<a href="/doc/A%20B%231">First</a>');
+    expect(out).toContain('<a href="/location/moon">The Moon (8)</a>');
+    expect(out).toContain('<a href="/browse">Browse</a> › Locations');
+  });
+  it("release hubs get prev/next links", () => {
+    const out = hubBody({ ...hub, kind: "release", prev: "5", next: null });
+    expect(out).toContain('<a href="/release/5">← Release 05</a>');
+  });
+  it("browse groups hubs by kind with counts", () => {
+    const out = browseBody([
+      { kind: "release", slug: "6", label: "Release 06 · 18 Sep 2026", count: 74 },
+      { kind: "decade", slug: "1950s", label: "1950s", count: 29 },
+    ]);
+    expect(out).toContain("<h1>Browse the archive</h1>");
+    expect(out).toContain('<h2>Releases</h2><ul><li><a href="/release/6">Release 06 · 18 Sep 2026 (74)</a>');
+    expect(out).toContain('<a href="/decade/1950s">1950s (29)</a>');
+    expect(out).not.toContain("<h2>Agencies</h2>");
+  });
+  it("doc facts link to hubs only when given", () => {
+    const linked = docBody(doc({}, { hubs: { agency: "fbi", release: "3", decade: "2020s" } }));
+    expect(linked).toContain('<dt>Agency</dt><dd><a href="/agency/fbi">Federal Bureau of Investigation</a></dd>');
+    expect(linked).toContain('<dt>Released in</dt><dd><a href="/release/3">Release 03 (2026-06-12)</a></dd>');
+    expect(linked).toContain('<dt>Incident date</dt><dd><a href="/decade/2020s">2022</a></dd>');
+    expect(linked).toContain("<dt>Location</dt><dd>Colorado Springs</dd>");
   });
 });

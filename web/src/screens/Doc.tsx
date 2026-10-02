@@ -125,15 +125,23 @@ function withMoments(body: string, onSeek: (t: number) => void): ReactNode[] {
 interface MetaCellProps {
   label: string;
   value: string;
+  /** Hub page this value links to, when one exists. */
+  to?: string;
 }
 
 // One cell of the 2x2 meta grid (prototype lines 361-364).
-function MetaCell({ label, value }: MetaCellProps) {
+function MetaCell({ label, value, to }: MetaCellProps) {
   return (
     <div className="bg-surface px-[13px] py-[11px]">
       <div className="font-mono text-[8.5px] uppercase tracking-[.6px] text-faint">{label}</div>
       <div className="mt-1 font-mono text-xs text-ink" style={{ overflowWrap: "anywhere" }}>
-        {value}
+        {to ? (
+          <Link to={to} className="hover:text-signal">
+            {value}
+          </Link>
+        ) : (
+          value
+        )}
       </div>
     </div>
   );
@@ -608,12 +616,22 @@ export function Doc() {
 
       {/* chips row — prototype line 358 */}
       <div className="mb-[10px] flex flex-wrap gap-[7px]">
-        <span
-          className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px]"
-          style={{ color: accent }}
-        >
-          {record.agency_full || record.agency}
-        </span>
+        {detail.hubs?.agency ? (
+          <Link
+            to={`/agency/${detail.hubs.agency}`}
+            className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px]"
+            style={{ color: accent }}
+          >
+            {record.agency_full || record.agency}
+          </Link>
+        ) : (
+          <span
+            className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px]"
+            style={{ color: accent }}
+          >
+            {record.agency_full || record.agency}
+          </span>
+        )}
         <span className="rounded-[7px] border border-line px-[9px] py-1 font-mono text-[10px] text-dim">
           {archiveLabel}
         </span>
@@ -639,9 +657,9 @@ export function Doc() {
 
       {/* meta grid — prototype lines 360-365 */}
       <div className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line">
-        <MetaCell label="Incident" value={record.incident_date || ""} />
-        <MetaCell label="Location" value={location} />
-        <MetaCell label="Released" value={record.doc_date || ""} />
+        <MetaCell label="Incident" value={record.incident_date || ""} to={detail.hubs?.decade && `/decade/${detail.hubs.decade}`} />
+        <MetaCell label="Location" value={location} to={detail.hubs?.location && `/location/${detail.hubs.location}`} />
+        <MetaCell label="Released" value={record.doc_date || ""} to={detail.hubs?.release && `/release/${detail.hubs.release}`} />
         <MetaCell label="VIRIN" value={record.virin || ""} />
       </div>
 

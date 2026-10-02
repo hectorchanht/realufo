@@ -96,7 +96,7 @@ appears automatically once data grows past the threshold.
 ```ts
 interface Hub {
   kind: HubKind; slug: string;
-  title: string;          // "Release 06 · 18 Sep 2026", "FBI UAP files", "UAP files: Las Vegas, Nevada", "1950s UAP files"
+  title: string;          // "Pentagon UAP Release 06 · 18 Sep 2026" (amended after final review: keyword in <title>), "FBI UAP files", "UAP files: Las Vegas, Nevada", "1950s UAP files"
   intro: string;          // data-generated, see below
   stats: { files: number; pdf: number; video: number; image: number; from: string | null; to: string | null };
   records: ListRecordCard[];   // same card shape /api/records returns (thumb, duration included)

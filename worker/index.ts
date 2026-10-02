@@ -17,6 +17,7 @@ import { login } from "./routes/auth";
 import { serveWithMeta } from "./lib/meta";
 import { ask, recentAsks, setAskPublic } from "./routes/ask";
 import { sitemap } from "./routes/sitemap";
+import { hubsIndex, getHub } from "./routes/hubs";
 import { tick } from "./lib/xbot";
 
 on("GET", "/api/health", health);
@@ -27,6 +28,8 @@ on("GET", "/api/ask/recent", recentAsks);
 on("POST", "/api/ask/:id/public", setAskPublic);
 on("GET", "/api/records", listRecords);
 on("GET", "/api/records/facets", recordFacets);
+on("GET", "/api/hubs", hubsIndex);
+on("GET", "/api/hubs/:kind/:slug", getHub);
 on("GET", "/api/records/:id", getRecord);
 on("GET", "/api/file/:id", viewFile);
 on("GET", "/api/u/:name", viewUpload);

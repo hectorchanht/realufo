@@ -12,14 +12,14 @@ describe("records", () => {
     await env.DB.prepare("INSERT INTO record_text(record_id,pages,truncated,total_pages) VALUES('FBI-UAP-D003',?,1,12)")
       .bind(JSON.stringify([{ n: 2, text: "Page two text" }]))
       .run();
-    const d: any = await loadRecord(env as any, "FBI-UAP-D003");
+    const d: any = await loadRecord(env as any, "FBI-UAP-D003", "https://x");
     expect(d.fullText).toEqual({ pages: [{ n: 2, text: "Page two text" }], truncated: true, total_pages: 12 });
-    const none: any = await loadRecord(env as any, "FBI-UAP-D002");
+    const none: any = await loadRecord(env as any, "FBI-UAP-D002", "https://x");
     expect(none.fullText).toBeNull();
   });
   it("loadRecord returns the detail object, or null when missing", async () => {
-    expect(await loadRecord(env as any, "NOPE")).toBeNull();
-    const d: any = await loadRecord(env as any, "FBI-UAP-D002");
+    expect(await loadRecord(env as any, "NOPE", "https://x")).toBeNull();
+    const d: any = await loadRecord(env as any, "FBI-UAP-D002", "https://x");
     expect(d.record.id).toBe("FBI-UAP-D002");
     expect(d.series.next).toBe("FBI-UAP-D003");
     expect(d.related.some((g: any) => g.key === "location")).toBe(true);

@@ -3,9 +3,11 @@ import type { MetaInput } from "./meta";
 import { thumbSql } from "./db";
 import { uploadUrl } from "./upload";
 import { loadRecord } from "../routes/records";
+import { loadHub, listHubsCached } from "../routes/hubs";
+import type { HubKind } from "./hubs";
 import {
   DEFAULT_DESCRIPTION, type DocData, docBody, threadBody, boardBody, caseBody, homeBody, tabBody,
-  section, docLinks, countList, boardHref, docHref,
+  section, docLinks, countList, boardHref, docHref, hubBody, browseBody, hubHref,
 } from "./ssr";
 
 // One SPA route's pre-render: <head> meta (url is filled in by serveWithMeta)
@@ -84,8 +86,8 @@ const boardsPage: Loader = async (env) => {
 
 const mapPage: Loader = async () => ({ meta: TAB.map, body: tabBody(TAB.map.title, TAB.map.description) });
 
-const docPage: Loader = async (env, g) => {
-  const d = (await loadRecord(env, g.id)) as DocData | null;
+const docPage: Loader = async (env, g, url) => {
+  const d = (await loadRecord(env, g.id, url.origin)) as DocData | null;
   if (!d) return null;
   const x = d.record;
   const agency = x.agency_full || x.agency;
@@ -192,11 +194,55 @@ const threadPage: Loader = async (env, g) => {
   };
 };
 
+const hubPage =
+  (kind: HubKind): Loader =>
+  async (env, g, url) => {
+    const h = await loadHub(env, kind, g.slug, url.origin);
+    if (!h) return null;
+    return {
+      meta: {
+        title: h.title,
+        description: h.intro,
+        type: "website",
+        jsonLd: {
+          "@type": "CollectionPage",
+          name: h.title,
+          description: h.intro,
+          mainEntity: {
+            "@type": "ItemList",
+            numberOfItems: h.records.length,
+            itemListElement: h.records.map((r, i) => ({ "@type": "ListItem", position: i + 1, url: `${url.origin}${docHref(r.id)}`, name: r.title })),
+          },
+        },
+        breadcrumbs: [
+          { name: "Home", href: "/" },
+          { name: "Browse", href: "/browse" },
+          { name: h.title, href: hubHref(kind, h.slug) },
+        ],
+      },
+      body: hubBody(h),
+    };
+  };
+
+const browsePage: Loader = async (env, _g, url) => ({
+  meta: {
+    title: "Browse the archive",
+    description: "Every declassified UAP file, grouped by release, agency, location and decade.",
+    type: "website",
+  },
+  body: browseBody(await listHubsCached(env, url.origin)),
+});
+
 export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/" }), load: homePage },
   { pattern: new URLPattern({ pathname: "/archive" }), load: archivePage },
   { pattern: new URLPattern({ pathname: "/boards" }), load: boardsPage },
   { pattern: new URLPattern({ pathname: "/map" }), load: mapPage },
+  { pattern: new URLPattern({ pathname: "/browse" }), load: browsePage },
+  { pattern: new URLPattern({ pathname: "/release/:slug" }), load: hubPage("release") },
+  { pattern: new URLPattern({ pathname: "/agency/:slug" }), load: hubPage("agency") },
+  { pattern: new URLPattern({ pathname: "/location/:slug" }), load: hubPage("location") },
+  { pattern: new URLPattern({ pathname: "/decade/:slug" }), load: hubPage("decade") },
   { pattern: new URLPattern({ pathname: "/doc/:id" }), load: docPage },
   { pattern: new URLPattern({ pathname: "/case/:slug" }), load: casePage },
   { pattern: new URLPattern({ pathname: "/thread/:id" }), load: threadPage },
