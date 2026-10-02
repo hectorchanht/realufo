@@ -43,6 +43,8 @@ export interface DocCardProps {
   onOpen?: (id: string) => void;
   /** Query string forwarded to /doc/:id (Archive's filters + page) so Doc swipes the same list. */
   search?: string;
+  /** Above-the-fold card: load its thumb eagerly at high priority (it's the LCP image). */
+  priority?: boolean;
 }
 
 function isFeedRecord(r: RecordCard): r is FeedRecordCard {
@@ -79,7 +81,7 @@ function locOrDate(r: ListRecordCard): string {
   return r.incident_date || r.doc_date || "—";
 }
 
-export function DocCard({ record, variant = "grid", onOpen, search }: DocCardProps) {
+export function DocCard({ record, variant = "grid", onOpen, search, priority }: DocCardProps) {
   const [imgFailed, setImgFailed] = useState(false);
   const { data: boot } = useBootstrap();
   const showImg = !!record.thumb && !imgFailed;
@@ -114,7 +116,8 @@ export function DocCard({ record, variant = "grid", onOpen, search }: DocCardPro
           <img
             src={record.thumb ?? undefined}
             alt=""
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : undefined}
             onError={() => setImgFailed(true)}
             className="block h-full w-full object-cover"
             style={{ filter: "contrast(1.05) saturate(.92)" }}

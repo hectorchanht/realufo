@@ -13,9 +13,9 @@
 // `undefined` — see FRONTEND-CONTEXT.md's query-hooks contract.
 //
 // Loading: the section headers/CTA are always-rendered static markup (so the
-// screen never looks structurally empty), but the grid/list bodies swap to a
-// small "◉ loading signal…" line while `useFeed()`'s *initial* fetch is still
-// in flight (`isLoading` — true only before the first settle, so a failed
+// screen never looks structurally empty); the grid shows card-sized
+// placeholders and the thread list a "◉ loading signal…" line while
+// `useFeed()`'s *initial* fetch is still in flight (`isLoading` — true only before the first settle, so a failed
 // fetch still falls through to the graceful "map over an empty array"
 // branch instead of loading forever).
 //
@@ -88,18 +88,25 @@ export function Feed() {
   return (
     <div data-screen="feed" className="animate-[fadeup_.4s_ease_both]">
       <div className="mx-0.5 mb-3 font-pixel text-[9px] uppercase tracking-[1px] text-faint">◆ Hot right now</div>
-      {feedLoading ? (
-        <div className="mb-[26px] font-mono text-[11px] text-faint">◉ loading signal…</div>
-      ) : (
-        <div
-          data-grid
-          className="mb-[26px] grid grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]"
-        >
-          {featured.map((record) => (
-            <DocCard key={record.id} record={record} variant="feed" />
-          ))}
-        </div>
-      )}
+      <div
+        data-grid
+        aria-busy={feedLoading}
+        className="mb-[26px] grid grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]"
+      >
+        {feedLoading
+          ? // Card-sized placeholders (the feed returns 6): reserving the grid's height
+            // keeps everything below it from jumping when /api/feed lands (was CLS 0.47).
+            Array.from({ length: 6 }, (_, i) => (
+              <div key={i} aria-hidden="true" className="overflow-hidden rounded-[15px] border border-line bg-surface">
+                <div className="aspect-[4/3] border-b border-line bg-bg2" />
+                <div className="h-[100px]" />
+              </div>
+            ))
+          : featured.map((record, i) => (
+              // First two rows are above the fold on a phone; the LCP image is among them.
+              <DocCard key={record.id} record={record} variant="feed" priority={i < 4} />
+            ))}
+      </div>
 
       <BrowseStrip />
 

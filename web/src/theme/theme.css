@@ -148,12 +148,13 @@ button {
     transform: translateX(-50%);
   }
 }
+/* transform, not background-position: composited, no full-screen repaint per frame */
 @keyframes scandrift {
   0% {
-    background-position: 0 0;
+    transform: translateY(0);
   }
   100% {
-    background-position: 0 4px;
+    transform: translateY(4px);
   }
 }
 @keyframes fadeup {
@@ -222,7 +223,7 @@ button {
 }
 .crt-scan {
   position: absolute;
-  inset: 0;
+  inset: -4px 0 0; /* 4px of overdraw so the drift never uncovers the top edge */
   pointer-events: none;
   z-index: 40;
   mix-blend-mode: overlay;
