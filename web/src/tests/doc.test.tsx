@@ -208,6 +208,23 @@ beforeEach(() => {
 });
 
 describe("Doc", () => {
+  it("links the agency chip and meta values to their hubs when present", () => {
+    useRecordMock.mockReturnValue({
+      data: { ...mockDetail, hubs: { agency: "cia", location: "roswell", release: "4", decade: "1970s" } },
+      isLoading: false,
+    });
+    renderDoc();
+    expect(screen.getByRole("link", { name: "Central Intelligence Agency" })).toHaveAttribute("href", "/agency/cia");
+    expect(screen.getByRole("link", { name: "Roswell, NM" })).toHaveAttribute("href", "/location/roswell");
+    expect(screen.getByRole("link", { name: "1978-04-01" })).toHaveAttribute("href", "/release/4");
+    expect(screen.getByRole("link", { name: "1978-03-04" })).toHaveAttribute("href", "/decade/1970s");
+  });
+
+  it("keeps agency and meta values as plain text without hubs", () => {
+    renderDoc();
+    expect(screen.queryByRole("link", { name: "Central Intelligence Agency" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Roswell, NM" })).toBeNull();
+  });
   it("shows FULL TEXT: first page visible, the rest in a closed <details>, continuation when truncated", () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     useRecordMock.mockReturnValue({

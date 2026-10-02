@@ -26,6 +26,8 @@ import type {
   ThreadDetail,
   VoteResult,
   VoteTargetType,
+  Hub,
+  HubSummary,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -51,6 +53,8 @@ export const qk = {
   records: (params: RecordsParams = {}) => ["records", params] as const,
   facets: ["recordFacets"] as const,
   record: (id: string) => ["record", id] as const,
+  hubs: ["hubs"] as const,
+  hub: (kind: string, slug: string) => ["hub", kind, slug] as const,
   comments: (recordId: string) => ["comments", recordId] as const,
   boardThreads: (boardId: string) => ["boardThreads", boardId] as const,
   threadSearch: (q: string) => ["threadSearch", q] as const,
@@ -458,3 +462,16 @@ export function useVote() {
 // Re-exported so screens can import a single Comment-shaped type alongside the hook
 // without a second import from ./types when they only need this one.
 export type { Comment };
+
+export function useHubs() {
+  return useQuery({ queryKey: qk.hubs, queryFn: () => api.get<{ hubs: HubSummary[] }>("/api/hubs") });
+}
+
+export function useHub(kind: string, slug: string) {
+  return useQuery({
+    queryKey: qk.hub(kind, slug),
+    queryFn: () => api.get<Hub>(`/api/hubs/${kind}/${encodeURIComponent(slug)}`),
+    enabled: !!slug,
+    retry: false,
+  });
+}

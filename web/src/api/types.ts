@@ -203,6 +203,23 @@ export interface FullText {
   total_pages: number;
 }
 
+export type HubKind = "release" | "agency" | "location" | "decade";
+export interface HubSummary { kind: HubKind; slug: string; label: string; count: number }
+export interface Hub {
+  kind: HubKind;
+  slug: string;
+  title: string;
+  intro: string;
+  stats: { files: number; pdf: number; video: number; image: number; from: string | null; to: string | null };
+  records: ListRecordCard[];
+  siblings: HubSummary[];
+  /** Releases only: neighbouring release numbers. */
+  prev?: string | null;
+  next?: string | null;
+}
+/** Hub slugs this record's facts link to (only hubs that exist). */
+export type HubLinks = Partial<Record<HubKind, string>>;
+
 export interface RecordDetail {
   record: RecordFull;
   assets: Asset[];
@@ -215,6 +232,7 @@ export interface RecordDetail {
   related?: RelatedGroup[];
   /** Null until extracted; empty pages when no page passed the OCR filter. */
   fullText?: FullText | null;
+  hubs?: HubLinks;
 }
 
 export interface RelatedGroup {

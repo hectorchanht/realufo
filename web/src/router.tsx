@@ -11,6 +11,8 @@ import Board from "./screens/Board";
 import Thread from "./screens/Thread";
 import CaseScreen from "./screens/Case";
 import MapScreen from "./screens/Map";
+import Hub from "./screens/Hub";
+import Browse from "./screens/Browse";
 
 export const routes: RouteObject[] = [
   {
@@ -24,6 +26,11 @@ export const routes: RouteObject[] = [
       { path: "/thread/:id", element: <Thread /> },
       { path: "/case/:slug", element: <CaseScreen /> },
       { path: "/map", element: <MapScreen /> },
+      { path: "/browse", element: <Browse /> },
+      { path: "/release/:slug", element: <Hub kind="release" /> },
+      { path: "/agency/:slug", element: <Hub kind="agency" /> },
+      { path: "/location/:slug", element: <Hub kind="location" /> },
+      { path: "/decade/:slug", element: <Hub kind="decade" /> },
     ],
   },
 ];

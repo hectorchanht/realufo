@@ -40,7 +40,7 @@
 // exact page (Doc.tsx crosses into neighbour pages at the edges).
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useBootstrap, useFacets, useRecords } from "../api/queries";
 import { AskAnswer } from "../components/AskAnswer";
 import { AskHistory } from "../components/AskHistory";
@@ -464,6 +464,10 @@ export function Archive() {
       >
         Original release archive → release.realufo.org ↗
       </a>
+
+      <Link to="/browse" className="mb-3.5 block font-mono text-[11px] text-dim hover:text-signal">
+        Browse by release · agency · location · decade →
+      </Link>
 
       {/* archive chip row — lines 174-178 */}
       <div data-scroll className="mb-1.5 flex gap-[7px] overflow-x-auto pb-2.5">

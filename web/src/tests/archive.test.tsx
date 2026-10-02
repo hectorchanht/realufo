@@ -99,6 +99,10 @@ beforeEach(() => {
 });
 
 describe("Archive", () => {
+  it("links to the browse hubs page", async () => {
+    renderAppAt("/archive");
+    expect(await screen.findByRole("link", { name: "Browse by release · agency · location · decade →" })).toHaveAttribute("href", "/browse");
+  });
   it("renders records as DocCards", async () => {
     renderAppAt("/archive");
     expect(await screen.findByText(/CIA-UAP-017/)).toBeInTheDocument();
