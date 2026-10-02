@@ -21,8 +21,9 @@ from ingest.dvids import BAD_TITLE, neutral_sql, parse_page, update_sql
 HERE = os.path.dirname(os.path.abspath(__file__))
 MAP = os.path.join(HERE, "dvids-maps", "aaro-dvids.json")
 IMAGERY = "https://www.aaro.mil/UAP-Cases/Official-UAP-Imagery/"
-# AARO uploads no longer listed on aaro.mil, found by web search (2026-10-02)
-EXTRA_DVIDS = ["961723", "962722"]
+# AARO uploads not (or no longer) listed on aaro.mil, found by web search (2026-10-02):
+# Unresolved UAP Report: Middle East 2023 / 2024, Al Taqaddum Object ("jellyfish"), Middle East Red Balloon 2024
+EXTRA_DVIDS = ["961723", "962722", "960331", "964843"]
 
 
 def get(url):
