@@ -183,6 +183,13 @@ describe("Archive ASK toggle", () => {
     expect(screen.getByText("REFERENCING FILE")).toBeInTheDocument();
   });
 
+  it("ask mode tells the asker that answered questions are listed publicly", async () => {
+    renderAppAt("/archive");
+    expect(screen.queryByText(/listed publicly/)).toBeNull();
+    fireEvent.click(await screen.findByRole("button", { name: "Ask the archive" }));
+    expect(screen.getByText(/answered questions are listed publicly/i)).toBeInTheDocument();
+  });
+
   it("shows nothing extra when both lists are empty", async () => {
     renderAppAt("/archive");
     fireEvent.click(await screen.findByRole("button", { name: "Ask the archive" }));

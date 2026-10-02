@@ -447,6 +447,11 @@ export function Archive() {
         )}
       </form>
 
+      {askMode && (
+        <p className="-mt-2 mb-3 px-0.5 font-mono text-[9.5px] text-faint">
+          Answered questions are listed publicly under “Recently asked” for 7 days — don’t include personal details.
+        </p>
+      )}
       {askMode && ask && <AskAnswer question={ask} onPost={(d) => openComposer(askComposerOpts(ask, d))} />}
       {askMode && !ask && <AskHistory onPick={openAsk} />}
 
