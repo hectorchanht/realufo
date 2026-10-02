@@ -7,9 +7,9 @@ import { Link } from "react-router-dom";
 import { useRecord } from "../api/queries";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useMediaQuery } from "../lib/useMediaQuery";
-import { recordMedia } from "../lib/recordMedia";
+import { formatMoment, recordMedia } from "../lib/recordMedia";
 
-export function RecordEmbed({ id, withMedia }: { id: string; withMedia: boolean }) {
+export function RecordEmbed({ id, t, withMedia }: { id: string; t?: number; withMedia: boolean }) {
   const { data } = useRecord(id);
   const { openViewer } = useOverlay();
   const isDesktop = useMediaQuery("(min-width: 900px)");
@@ -21,8 +21,9 @@ export function RecordEmbed({ id, withMedia }: { id: string; withMedia: boolean 
 
   return (
     <>
-      <Link to={`/doc/${id}`} data-record-link className="font-mono text-signal underline underline-offset-2">
+      <Link to={`/doc/${id}${t !== undefined ? `?t=${t}` : ""}`} data-record-link className="font-mono text-signal underline underline-offset-2">
         {id}
+        {t !== undefined && `@${formatMoment(t)}`}
       </Link>
       {withMedia && (
         <span data-record-embed={id} className="block">
@@ -33,7 +34,8 @@ export function RecordEmbed({ id, withMedia }: { id: string; withMedia: boolean 
             </button>
           )}
           {media === "video" && (
-            <video src={fullUrl} poster={thumbUrl ?? undefined} controls playsInline preload="metadata" className={`${box} max-h-[260px]`} />
+            // #t= media fragment: the clip opens at the cited moment
+            <video src={t !== undefined ? `${fullUrl}#t=${t}` : fullUrl} poster={thumbUrl ?? undefined} controls playsInline preload="metadata" className={`${box} max-h-[260px]`} />
           )}
           {media === "audio" && <audio src={fullUrl} controls preload="metadata" className="my-2 block w-full max-w-[360px]" />}
           {(media === "pdf" || media === "thumb") && (

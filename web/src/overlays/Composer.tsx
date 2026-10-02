@@ -58,7 +58,7 @@ export function Composer() {
   const [stance, setStance] = useState<StanceValue>("neutral");
   const [handle, setHandle] = useState(me?.handle ?? "");
   const [threadTitle, setThreadTitle] = useState(composer?.presetTitle ?? "");
-  const [img, setImg] = useState<File | null>(null);
+  const [img, setImg] = useState<File | null>(composer?.presetImage ?? null);
   // Blob URL for the thumbnail; revoked when the image changes or the sheet unmounts.
   const [preview, setPreview] = useState<string | null>(null);
   useEffect(() => {

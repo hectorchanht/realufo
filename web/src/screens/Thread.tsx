@@ -34,7 +34,7 @@
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { RecordEmbed } from "../components/RecordEmbed";
-import { RECORD_ID_RE } from "../lib/recordMedia";
+import { MOMENT_SUFFIX, RECORD_ID_RE, parseMoment } from "../lib/recordMedia";
 import { useThread } from "../api/queries";
 import type { Post, ThreadSourceRecord } from "../api/types";
 import { VoteButton } from "../components/VoteButton";
@@ -76,9 +76,10 @@ function postImage(post: Post, sourceRecord: ThreadSourceRecord | null): PostIma
 }
 
 // Post body text with http(s) URLs turned into external links and each record
-// id ("NASA-UAP-D030") into a RecordEmbed. Media shows once per id (first
-// mention). URLs match first, so an id inside a URL stays part of the link.
-const BODY_TOKEN_RE = new RegExp(`(https?://[^\\s<>"]+)|${RECORD_ID_RE.source}`, "g");
+// id ("NASA-UAP-D030", or a moment "DOW-UAP-PR133@1:23.04") into a
+// RecordEmbed. Media shows once per id (first mention). URLs match first, so
+// an id inside a URL stays part of the link.
+const BODY_TOKEN_RE = new RegExp(`(https?://[^\\s<>"]+)|(${RECORD_ID_RE.source})(?:${MOMENT_SUFFIX})?`, "g");
 function linkifyBody(body: string): ReactNode[] {
   const out: ReactNode[] = [];
   const seen = new Set<string>();
@@ -94,8 +95,9 @@ function linkifyBody(body: string): ReactNode[] {
         </a>,
       );
     } else {
-      out.push(<RecordEmbed key={m.index} id={tok} withMedia={!seen.has(tok)} />);
-      seen.add(tok);
+      const id = m[2];
+      out.push(<RecordEmbed key={m.index} id={id} t={parseMoment(m[3]) ?? undefined} withMedia={!seen.has(id)} />);
+      seen.add(id);
     }
     last = m.index + tok.length;
   }

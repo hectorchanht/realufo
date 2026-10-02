@@ -28,20 +28,22 @@
 // settled and if the id doesn't resolve to a real record — both cases render
 // the same simple safe states (no attempt to index into `undefined`).
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useBootstrap, useComments, useRecord, useRecords } from "../api/queries";
 import type { RecordsParams } from "../api/queries";
 import type { RecordKind, RelatedGroup } from "../api/types";
 import { DocCard } from "../components/DocCard";
-import { DEFAULT_ADJUST, ImageToolbar, ZoomLens, adjustFilter } from "../components/ImageTools";
+import { DEFAULT_ADJUST, LENS_MAGS, MediaFilters, MediaToolbar, ZoomLens, adjustFilter } from "../components/ImageTools";
 import { VideoLens, VideoTransport } from "../components/VideoTools";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { useMediaQuery } from "../lib/useMediaQuery";
-import { recordMedia } from "../lib/recordMedia";
+import { formatMoment, parseMoment, recordMedia } from "../lib/recordMedia";
+import { DEFAULT_VIEW, viewTransform } from "../lib/mediaView";
+import { useZoomPan } from "../lib/useZoomPan";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
 
 // prototype line 522: `if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4)`.
@@ -97,6 +99,26 @@ function stanceColor(stance: string | null): string {
   return (stance && STANCE_COLOR[stance]) || "var(--dim)";
 }
 
+// "@1:23.04" / "1:23" in a comment → button that seeks the video there.
+const MOMENT_IN_TEXT = /@?\b(\d{1,2}:\d{2}(?:\.\d{1,2})?)\b/g;
+function withMoments(body: string, onSeek: (t: number) => void): ReactNode[] {
+  const out: ReactNode[] = [];
+  let last = 0;
+  for (const m of body.matchAll(MOMENT_IN_TEXT)) {
+    const t = parseMoment(m[1]);
+    if (t === null) continue;
+    out.push(body.slice(last, m.index));
+    out.push(
+      <button key={m.index} type="button" onClick={() => onSeek(t)} className="font-mono text-signal underline underline-offset-2">
+        {m[0]}
+      </button>,
+    );
+    last = m.index + m[0].length;
+  }
+  out.push(body.slice(last));
+  return out;
+}
+
 interface MetaCellProps {
   label: string;
   value: string;
@@ -118,7 +140,7 @@ export function Doc() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { openComposer, openViewer, composer, viewer, login } = useOverlay();
+  const { openComposer, openViewer, composer, viewer, login, toast } = useOverlay();
 
   const { data: detail, isLoading } = useRecord(id);
   const { data: commentsData } = useComments(id);
@@ -140,12 +162,28 @@ export function Doc() {
   const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
   const [adjust, setAdjust] = useState(DEFAULT_ADJUST);
   const [lens, setLens] = useState(finePointer);
+  const [mag, setMag] = useState(3);
+  const [view, setView] = useState(DEFAULT_VIEW); // frame zoom / pan / rotate / flip
+  const [pic, setPic] = useState<{ w: number; h: number } | null>(null); // natural media size
+  const [panel, setPanel] = useState<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     setAdjust(DEFAULT_ADJUST);
     setLens(finePointer);
+    setView(DEFAULT_VIEW);
+    setPic(null);
   }, [id, finePointer]);
+  const panelMedia = recordMedia(detail, isDesktop).media;
+  // A transformed <video> would zoom/rotate its native controls too, so they
+  // hide then (VideoTransport has its own seek bar).
+  const transformed = view.z !== 1 || view.rot !== 0 || view.flip;
+  const nativeControls = panelMedia === "video" && !transformed;
+  const zoom = useZoomPan(panel, view, setView, panelMedia === "image" || panelMedia === "video" ? pic : null, {
+    deadBottom: nativeControls ? 48 : 0,
+    onShiftWheel: lens ? (d) => setMag((m) => LENS_MAGS[Math.min(LENS_MAGS.length - 1, Math.max(0, LENS_MAGS.indexOf(m) + d))]) : undefined,
+  });
+  const startAt = parseMoment(searchParams.get("t")) ?? undefined;
 
   // Panel chrome (badge, REDACTED, counter, arrows) fades out after a few
   // idle seconds so it never sits over the picture/video; any pointer
@@ -182,6 +220,7 @@ export function Doc() {
   function docHref(target: string | undefined, targetPage: number): string | null {
     if (!target) return null;
     const sp = new URLSearchParams(searchParams);
+    sp.delete("t"); // a moment belongs to this file, not the next
     if (targetPage > 1) sp.set("page", String(targetPage));
     else sp.delete("page");
     const qs = sp.toString();
@@ -219,7 +258,7 @@ export function Doc() {
   function handlePointerUp(e: ReactPointerEvent<HTMLDivElement>) {
     const start = swipeStart.current;
     swipeStart.current = null;
-    if (!start) return;
+    if (!start || zoom.gestured.current || view.z > 1) return; // zoomed: drags pan instead
     const dx = e.clientX - start.x;
     const dy = e.clientY - start.y;
     if (Math.abs(dx) > SWIPE_MIN_DX && Math.abs(dx) > Math.abs(dy) * SWIPE_DOMINANCE) {
@@ -245,11 +284,24 @@ export function Doc() {
         navigate(href);
       } else if (e.key === "Escape") {
         navigate(-1);
+      } else if ((panelMedia === "image" || panelMedia === "video") && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        // media tool shortcuts (transport keys live in VideoTransport)
+        const k = e.key.toLowerCase();
+        const stepMag = (d: number) => setMag((m) => LENS_MAGS[Math.min(LENS_MAGS.length - 1, Math.max(0, LENS_MAGS.indexOf(m) + d))]);
+        if (k === "l") setLens((x) => !x);
+        else if (k === "=" || k === "+") stepMag(1);
+        else if (k === "-") stepMag(-1);
+        else if (k === "i") setAdjust((a) => ({ ...a, invert: !a.invert }));
+        else if (k === "r") setView((v) => ({ ...DEFAULT_VIEW, flip: v.flip, rot: ((v.rot + 90) % 360) as typeof v.rot }));
+        else if (k === "f") setView((v) => ({ ...v, flip: !v.flip }));
+        else if (k === "0") setView((v) => ({ ...v, z: 1, x: 0, y: 0 }));
+        else return;
+        e.preventDefault();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [composer, viewer, login, prevHref, nextHref, navigate]);
+  }, [composer, viewer, login, prevHref, nextHref, navigate, panelMedia]);
 
   const record = detail?.record;
   const comments = commentsData?.comments ?? [];
@@ -311,6 +363,26 @@ export function Doc() {
     window.open(`/api/file/${id}`, "_blank", "noopener,noreferrer");
   }
 
+  function handleShare(t: number) {
+    const url = `${window.location.origin}/doc/${id}?t=${t.toFixed(2)}`;
+    if (!navigator.clipboard) return toast(url);
+    navigator.clipboard.writeText(url).then(
+      () => toast(`Link to ${formatMoment(t)} copied`),
+      () => toast(url),
+    );
+  }
+
+  function handlePostFrame(frame: File, t: number) {
+    openComposer({ mode: "comment", recordId: id, presetImage: frame, presetBody: `@${formatMoment(t)} ` });
+  }
+
+  function seekTo(t: number) {
+    const v = videoRef.current;
+    if (!v) return;
+    v.currentTime = t;
+    panel?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+  }
+
   function handleAddComment() {
     openComposer({ mode: "comment", recordId: id });
   }
@@ -342,7 +414,9 @@ export function Doc() {
   return (
     <div data-screen="doc" className="pb-5" style={{ animation: "fadeup .28s ease both" }}>
       {/* media panel — prototype lines 348-357 */}
+      <MediaFilters />
       <div
+        ref={setPanel}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerMove={showChrome}
@@ -356,15 +430,16 @@ export function Doc() {
         data-chrome={chrome ? "on" : "off"}
         // image letterbox is the panel's black, not the <img>'s, so filters (invert) don't recolor it
         className={`relative mb-3.5 overflow-hidden rounded-2xl border border-line2 ${media === "image" ? "bg-black" : "bg-bg2"}`}
-        style={{ aspectRatio: "4/3", maxHeight: "78vh", touchAction: "pan-y" }}
+        style={{ aspectRatio: "4/3", maxHeight: "78vh", touchAction: view.z > 1 ? "none" : "pan-y" }}
       >
         {media === "image" && (
           <img
             ref={imgRef}
             src={fullUrl}
             alt={title}
+            onLoad={(e) => setPic({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
             className="h-full w-full object-contain"
-            style={{ filter: adjustFilter(adjust) || undefined }}
+            style={{ filter: adjustFilter(adjust) || undefined, transform: viewTransform(view, zoom.box, pic) || undefined }}
           />
         )}
         {media === "video" && (
@@ -372,11 +447,12 @@ export function Doc() {
             ref={videoRef}
             src={fullUrl}
             poster={thumbUrl ?? undefined}
-            controls
+            controls={nativeControls}
             playsInline
             preload="metadata"
+            onLoadedMetadata={(e) => setPic({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })}
             className="h-full w-full bg-black object-contain"
-            style={{ filter: adjustFilter(adjust) || undefined }}
+            style={{ filter: adjustFilter(adjust) || undefined, transform: viewTransform(view, zoom.box, pic) || undefined }}
           />
         )}
         {media === "pdf" && (
@@ -411,7 +487,7 @@ export function Doc() {
           <audio src={fullUrl} controls preload="metadata" className="absolute bottom-3 left-3 right-3 w-[calc(100%-24px)]" />
         )}
         {/* tap-to-open overlay only where the panel isn't itself interactive */}
-        {(media === "thumb" || (media === "image" && (!lens || finePointer))) && (
+        {(media === "thumb" || (media === "image" && view.z === 1 && (!lens || finePointer))) && (
           <button
             type="button"
             onClick={handleOpenOriginal}
@@ -429,9 +505,11 @@ export function Doc() {
           </button>
         )}
         {media === "image" && lens && (
-          <ZoomLens src={fullUrl} imgRef={imgRef} filter={adjustFilter(adjust)} clickThrough={finePointer} />
+          <ZoomLens src={fullUrl} imgRef={imgRef} filter={adjustFilter(adjust)} view={view} mag={mag} clickThrough={finePointer} />
         )}
-        {media === "video" && lens && <VideoLens videoRef={videoRef} filter={adjustFilter(adjust)} clickThrough={finePointer} />}
+        {media === "video" && lens && (
+          <VideoLens videoRef={videoRef} filter={adjustFilter(adjust)} view={view} mag={mag} clickThrough={finePointer} />
+        )}
         <span
           className={`absolute left-[10px] top-[10px] rounded-md px-2 py-1 font-mono text-[9px] font-bold ${fade}`}
           style={{ background: "rgba(0,0,0,.72)", color: accent }}
@@ -476,10 +554,36 @@ export function Doc() {
       </div>
 
       {media === "video" && (
-        <VideoTransport key={id} videoRef={videoRef} fileUrl={`/api/file/${id}`} name={id} filter={adjustFilter(adjust)} />
+        <VideoTransport
+          key={id}
+          videoRef={videoRef}
+          fileUrl={`/api/file/${id}`}
+          name={id}
+          filter={adjustFilter(adjust)}
+          view={view}
+          startAt={startAt}
+          keys={!(composer || viewer || login)}
+          onShare={handleShare}
+          onPost={handlePostFrame}
+        />
       )}
       {(media === "image" || media === "video") && (
-        <ImageToolbar adjust={adjust} onAdjust={setAdjust} lens={lens} onLens={setLens} />
+        <MediaToolbar
+          adjust={adjust}
+          onAdjust={setAdjust}
+          lens={lens}
+          onLens={setLens}
+          mag={mag}
+          onMag={setMag}
+          view={view}
+          onView={setView}
+        />
+      )}
+      {(media === "image" || media === "video") && finePointer && (
+        <p className="-mt-2 mb-3.5 font-mono text-[9px] leading-[1.6] text-faint">
+          {media === "video" && "Space play · , . frame · [ ] speed · A loop A–B · M mute · C save frame · "}L lens · - = lens zoom
+          (or Shift+wheel) · Ctrl/⌘+wheel or pinch zoom, drag to pan · 0 reset · I invert · R rotate · F flip
+        </p>
       )}
 
       {/* chips row — prototype line 358 */}
@@ -618,7 +722,7 @@ export function Doc() {
               <span className="ml-auto font-mono text-[9px] text-faint">{c.ago}</span>
             </div>
             <div className="text-[13px] leading-[1.55] text-ink" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-              {c.body}
+              {media === "video" ? withMoments(c.body, seekTo) : c.body}
             </div>
             {c.image_url && <UploadThumb url={c.image_url} />}
             <div className="mt-[9px] flex items-center gap-4">

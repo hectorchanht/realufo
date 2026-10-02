@@ -23,7 +23,7 @@ const mockOpenComposer = vi.fn();
 const mockOpenViewer = vi.fn();
 
 vi.mock("../overlays/OverlayProvider", () => ({
-  useOverlay: () => ({ openComposer: mockOpenComposer, openViewer: mockOpenViewer }),
+  useOverlay: () => ({ openComposer: mockOpenComposer, openViewer: mockOpenViewer, toast: vi.fn() }),
 }));
 
 // Spy on react-router's useNavigate (everything else — MemoryRouter, Routes,
@@ -429,6 +429,69 @@ describe("Doc", () => {
     expect(layer.style.pointerEvents).toBe("none");
     expect(screen.getByRole("button", { name: /open IMG/i })).toBeInTheDocument();
     vi.unstubAllGlobals();
+  });
+
+  it("palette, sharpen, rotate, flip and keyboard shortcuts drive the media panel", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    const img = () => document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
+    fireEvent.click(screen.getByRole("button", { name: "Ironbow" }));
+    expect(img().style.filter).toContain("#ru-ironbow");
+    expect(document.getElementById("ru-ironbow")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Sharpen" }));
+    expect(img().style.filter).toContain("#ru-sharpen");
+    // presets keep the palette
+    fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
+    expect(img().style.filter).toContain("invert(1)");
+    expect(img().style.filter).toContain("#ru-ironbow");
+
+    fireEvent.click(screen.getByRole("button", { name: /rotate 90/i }));
+    expect(img().style.transform).toContain("rotate(90deg)");
+    fireEvent.click(screen.getByRole("button", { name: "Flip" }));
+    expect(img().style.transform).toContain("scaleX(-1)");
+
+    fireEvent.keyDown(window, { key: "r" });
+    expect(img().style.transform).toContain("rotate(180deg)");
+    fireEvent.keyDown(window, { key: "i" });
+    expect(img().style.filter).not.toContain("invert(1)");
+    fireEvent.keyDown(window, { key: "l" });
+    expect(document.querySelector("[data-zoom-lens]")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "=" });
+    expect(screen.getByRole("button", { name: /lens magnification 5×/i })).toBeInTheDocument();
+  });
+
+  it("video: ?t= link sharing, post frame opens the composer, comment timestamps seek", async () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "video" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/clip.mp4", mime: "video/mp4", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    useCommentsMock.mockReturnValue({
+      data: { comments: [{ ...mockComments.comments[0], body: "Look at @0:05.50 — the blob turns." }] },
+      isLoading: false,
+    });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    renderDoc();
+    const video = document.querySelector('[data-screen="doc"] video') as HTMLVideoElement;
+    video.currentTime = 12.5;
+    fireEvent.click(screen.getByRole("button", { name: /copy link to this moment/i }));
+    expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/doc\/rec1\?t=12\.50$/));
+
+    fireEvent.click(screen.getByRole("button", { name: "@0:05.50" }));
+    expect(video.currentTime).toBeCloseTo(5.5);
+    // the seek bar mirrors the video
+    expect(screen.getByRole("slider", { name: "Seek" })).toBeInTheDocument();
   });
 
   it("no image tools on non-image records", () => {

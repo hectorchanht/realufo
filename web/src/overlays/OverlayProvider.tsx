@@ -36,6 +36,8 @@ export interface ComposerOpts {
   refLabel?: string;
   /** Pre-fills the body textarea (the "promote a comment to its own thread" flow). */
   presetBody?: string;
+  /** Pre-attaches an image (e.g. a captured video frame). */
+  presetImage?: File;
   /** Pre-fills the thread-title input (mode==='newThread' only). */
   presetTitle?: string;
   /** Target board for mode==='newThread'; Composer falls back to 'uap' on submit. */

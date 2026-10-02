@@ -205,6 +205,15 @@ describe("Thread", () => {
     );
   });
 
+  it("a record moment (ID@m:ss.cc) links to the doc at that time", () => {
+    useThreadMock.mockReturnValue({
+      data: { ...mockThreadDetail, posts: [{ ...mockThreadDetail.posts[1], body: "Watch NASA-UAP-D030@1:23.04 closely." }] },
+      isLoading: false,
+    });
+    renderThread();
+    expect(screen.getByRole("link", { name: "NASA-UAP-D030@1:23.04" })).toHaveAttribute("href", "/doc/NASA-UAP-D030?t=83.04");
+  });
+
   it("turns URLs into external links, trimming trailing punctuation; record ids inside URLs stay in the link", () => {
     const body = "See https://uaplocations.com/uap/NASA-UAP-D030-x/. Also NASA-UAP-D030.";
     useThreadMock.mockReturnValue({
