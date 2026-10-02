@@ -4,10 +4,10 @@
   "compatibility_date": "2026-07-01",
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "directory": "web/dist", "binding": "ASSETS", "not_found_handling": "single-page-application",
-    // Browser navigations (Sec-Fetch-Mode: navigate) otherwise skip the Worker and get
-    // index.html, which broke window.open('/api/file/:id'). Deep-link routes listed so
-    // OG meta injection keeps running once the list disables navigate auto-detection.
-    "run_worker_first": ["/", "/api/*", "/doc/*", "/case/*", "/thread/*", "/board/*", "/archive", "/boards", "/map", "/ask", "/sitemap.xml", "/browse", "/release/*", "/agency/*", "/location/*", "/decade/*"] },
+    // Worker sees every path except hashed bundles and the Cloudflare-managed robots.txt:
+    // navigations would otherwise skip it (broke window.open('/api/file/:id')), and
+    // unknown paths need a real 404 instead of the SPA fallback's 200.
+    "run_worker_first": ["/*", "!/assets/*", "!/robots.txt"] },
   "vars": { "FEATURE_AUTH": "false", "RATE_MAX": "20", "RATE_WINDOW_SEC": "60",
     // Cached R2 custom domain: uploads must pass through the CDN cache for the CSAM Scanning Tool.
     "UPLOAD_BASE": "https://assets.realufo.org/uploads/",
@@ -22,7 +22,8 @@
   "ai": { "binding": "AI" },
   "vectorize": [{ "binding": "VECTORIZE", "index_name": "realufo-chunks" }],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "realufo" }],
-  "routes": [{ "pattern": "realufo.org/*", "zone_name": "realufo.org" }],
+  // www (DNS still points at the old GitHub Pages site) → 301 to the apex in the Worker.
+  "routes": [{ "pattern": "realufo.org/*", "zone_name": "realufo.org" }, { "pattern": "www.realufo.org/*", "zone_name": "realufo.org" }],
     "observability": {
     "logs": {
       "enabled": true,

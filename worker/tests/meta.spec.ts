@@ -1,12 +1,19 @@
 import { env, createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { describe, it, expect, beforeAll } from "vitest";
-import { injectMeta } from "../lib/meta";
+import { injectMeta, snippet } from "../lib/meta";
 import worker from "../index";
 import { seedTestDB } from "./helpers";
 
 beforeAll(() => seedTestDB(env.DB));
 
 describe("injectMeta", () => {
+  it("snippet collapses whitespace and clips at a word under 160 chars", () => {
+    expect(snippet("Stance:\nAnalyst\n\nHi  there")).toBe("Stance: Analyst Hi there");
+    const s = snippet("word ".repeat(60));
+    expect(s.length).toBeLessThanOrEqual(160);
+    expect(s.endsWith("word…")).toBe(true);
+  });
+
   it("replaces placeholder with escaped OG tags", () => {
     const out = injectMeta("<head><!--META--></head>", {
       title: 'A "quote"',
@@ -104,7 +111,7 @@ describe("serveWithMeta (via worker.fetch)", () => {
     expect(html.toLowerCase()).toContain("<title>");
   });
 
-  it("serves index.html unmodified (placeholder intact) for a bogus /doc/NOPE", async () => {
+  it("bogus /doc/NOPE is a 404 + noindex, SPA shell kept", async () => {
     const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
     const ctx = createExecutionContext();
     const res = await worker.fetch(
@@ -113,8 +120,27 @@ describe("serveWithMeta (via worker.fetch)", () => {
       ctx
     );
     await waitOnExecutionContext(ctx);
+    expect(res.status).toBe(404);
     const html = await res.text();
-    expect(html).toContain("<!--META-->");
+    expect(html).toContain('<meta name="robots" content="noindex">');
+    expect(html).toContain("<title>Page not found · RealUFO</title>");
+  });
+
+  it("unknown paths are 404; non-HTML assets pass through", async () => {
+    const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
+    const res = await worker.fetch(new Request("https://x/totally-fake"), fakeEnv, createExecutionContext());
+    expect(res.status).toBe(404);
+    expect(await res.text()).toContain('content="noindex"');
+  });
+
+  it("trailing slash and www 301 to the canonical URL", async () => {
+    const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
+    const slash = await worker.fetch(new Request("https://x/archive/?q=a"), fakeEnv, createExecutionContext());
+    expect(slash.status).toBe(301);
+    expect(slash.headers.get("location")).toBe("https://x/archive?q=a");
+    const www = await worker.fetch(new Request("https://www.realufo.org/doc/A?b=1"), fakeEnv, createExecutionContext());
+    expect(www.status).toBe(301);
+    expect(www.headers.get("location")).toBe("https://realufo.org/doc/A?b=1");
   });
 
   it("injects fixed meta for a tab screen like /archive", async () => {
@@ -196,10 +222,9 @@ describe("per-entity meta + JSON-LD", () => {
     ]);
   });
 
-  it("doc title carries the record id; JSON-LD has identifier", async () => {
+  it("long doc titles drop the id from <title>; JSON-LD has identifier", async () => {
     const html = await get("/doc/CIA-UAP-017");
-    expect(html).toContain("— UAP file CIA-UAP-017 · RealUFO</title>");
-    expect(html).toContain('property="og:title" content="Placement on High Alert Due to Perceived Aggressive Foreign Posturing — UAP file CIA-UAP-017"');
+    expect(html).toContain("<title>Placement on High Alert Due to Perceived Aggressive Foreign Posturing · RealUFO</title>");
     const j = ld(html);
     expect(j["@type"]).toBe("DigitalDocument");
     expect(j.identifier).toBe("CIA-UAP-017");
@@ -267,9 +292,18 @@ describe("pre-rendered body", () => {
     expect(await get("/doc/ICA-UAP-D001")).toContain('<meta name="description" content="This document contains analysis');
   });
 
+  it("video doc: VideoObject JSON-LD and a <video> in the body", async () => {
+    const html = await get("/doc/AARO-956955");
+    const j = lds(html)[0];
+    expect(j["@type"]).toBe("VideoObject");
+    expect(j.contentUrl).toMatch(/^https:/);
+    expect(j.identifier).toBe("AARO-956955");
+    expect(html).toMatch(/<video controls preload="none" src="https:/);
+  });
+
   it("doc: meta + body even with Accept */* (share scrapers)", async () => {
     const html = await get("/doc/FBI-UAP-D002");
-    expect(html).toContain("— UAP file FBI-UAP-D002 · RealUFO</title>");
+    expect(html).toContain("<title>FD-1057, Unresolved UAP Report, Colorado Springs, 2022 · RealUFO</title>");
     expect(html).toContain("<h1>FBI-UAP-D002, FD-1057, Unresolved UAP Report, Colorado Springs, 2022</h1>");
     expect(html).toContain('<a href="/doc/FBI-UAP-D003">');
     const crumbs = lds(html).find((j) => j["@type"] === "BreadcrumbList");
@@ -335,7 +369,7 @@ describe("page-data cache", () => {
     const html = await get("/doc/FBI-UAP-D003", "new");
     expect(html).toContain("/assets/new.js");
     expect(html).not.toContain("/assets/old.js");
-    expect(html).toContain("UAP file FBI-UAP-D003");
+    expect(html).toContain('"identifier":"FBI-UAP-D003"');
   });
 
   it("query strings share the cache entry and misses are not cached", async () => {

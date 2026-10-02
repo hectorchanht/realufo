@@ -49,6 +49,7 @@ on("POST", "/api/auth/login", login);
 export default {
   async fetch(req: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
+    if (url.hostname.startsWith("www.")) return Response.redirect(`https://${url.hostname.slice(4)}${url.pathname}${url.search}`, 301);
     if (url.pathname.startsWith("/api/")) {
       const res = await dispatch(req, env);
       return res ?? error(404, "not found");

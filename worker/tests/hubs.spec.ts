@@ -98,11 +98,11 @@ describe("hub pages", () => {
     expect(html).toContain('"@type":"ItemList"');
     expect(html).toContain('"url":"https://x/doc/FBI-UAP-D002"');
   });
-  it("below-threshold or garbage hub URLs serve the plain shell", async () => {
+  it("below-threshold or garbage hub URLs are 404 + noindex", async () => {
     for (const p of ["/agency/cia", "/decade/abc", "/release/99", "/location/atlantis"]) {
       const res = await call(p);
-      expect(res.status, p).toBe(200);
-      expect(await res.text(), p).toBe(SHELL);
+      expect(res.status, p).toBe(404);
+      expect(await res.text(), p).toContain('<meta name="robots" content="noindex">');
     }
   });
   it("pre-renders /browse", async () => {

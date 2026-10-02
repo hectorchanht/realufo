@@ -24,6 +24,12 @@ const shortTitle = (t: string) => {
   const c = t.indexOf(",");
   return (c > 0 && c < 34 ? t.slice(c + 1).trim() : t).replace(/_/g, " ");
 };
+// Same as Doc.tsx's docTitle: "<short> — UAP file <id>" while that fits a
+// ~60-char search title with " · RealUFO", else the short title alone.
+const docTitle = (t: string, id: string) => {
+  const full = `${shortTitle(t)} — UAP file ${id}`;
+  return full.length <= 50 ? full : shortTitle(t);
+};
 
 const latest = async (env: Env) =>
   (
@@ -105,16 +111,27 @@ const docPage: Loader = async (env, g, url) => {
   const ai = d.fullText?.aiSummary;
   const description =
     (ai && (x.summary ?? "").length < 80 ? ai : x.summary) || (facts ? `Declassified UAP record — ${facts}.` : "");
-  // Matches the SPA's tab title (Doc.tsx): "<short title> — UAP file <id>".
-  const title = `${shortTitle(x.title)} — UAP file ${x.id}`;
+  const title = docTitle(x.title, x.id);
   // Same pick as thumbSql, from the assets already loaded.
   const thumb =
     d.assets.find((a) => a.role === "thumb") ?? d.assets.find((a) => a.role === "full" && a.mime?.startsWith("image/"));
+  const full = d.assets.find((a) => a.role === "full");
+  const dur = full?.duration;
+  // Video/image types make the file eligible for video and image search results.
+  const media =
+    x.kind === "video" && full
+      ? {
+          "@type": "VideoObject", thumbnailUrl: thumb?.cdn_url, contentUrl: full.cdn_url, uploadDate: x.doc_date || undefined,
+          duration: dur ? `PT${Math.floor(dur / 60)}M${Math.floor(dur % 60)}S` : undefined,
+        }
+      : x.kind === "image" && full
+        ? { "@type": "ImageObject", contentUrl: full.cdn_url, thumbnailUrl: thumb?.cdn_url, creditText: agency || undefined }
+        : { "@type": "DigitalDocument" };
   return {
     meta: {
       title, description, image: thumb?.cdn_url ?? null,
       jsonLd: {
-        "@type": "DigitalDocument", name: title, identifier: x.id, description,
+        ...media, name: x.title, identifier: x.id, description,
         dateCreated: x.doc_date || undefined, contentLocation: x.location || undefined,
         publisher: agency ? { "@type": "GovernmentOrganization", name: agency } : undefined,
       },
@@ -214,6 +231,7 @@ const hubPage =
       meta: {
         title: h.title,
         description: h.intro,
+        image: (h.records.find((r) => r.thumb)?.thumb as string | undefined) ?? null,
         type: "website",
         jsonLd: {
           "@type": "CollectionPage",

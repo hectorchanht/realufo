@@ -133,6 +133,17 @@ function fullTextSection(d: DocData): string {
   return `${ai}<section><h2>Full text</h2>${ft.pages.map((p) => `<h3>Page ${p.n}</h3>${textBlock(p.text)}`).join("")}${more}</section>`;
 }
 
+// The file itself, so image/video search can see it before JS runs.
+function media(d: DocData): string {
+  const full = d.assets.find((x) => x.role === "full");
+  const thumb = d.assets.find((x) => x.role === "thumb");
+  if (!full) return "";
+  if (d.record.kind === "image") return `<p><img src="${esc(full.cdn_url)}" alt="${esc(d.record.title)}" style="max-width:100%"></p>`;
+  if (d.record.kind === "video")
+    return `<p><video controls preload="none" src="${esc(full.cdn_url)}"${thumb ? ` poster="${esc(thumb.cdn_url)}"` : ""} style="max-width:100%"></video></p>`;
+  return "";
+}
+
 export function docBody(d: DocData): string {
   const r = d.record;
   const dur = d.assets.find((x) => x.role === "full" && x.duration)?.duration;
@@ -153,6 +164,7 @@ export function docBody(d: DocData): string {
   return [
     `<p>${a({ href: "/", text: "Home" })} › ${a({ href: "/archive", text: "Archive" })}${r.agency ? ` › ${esc(r.agency)}` : ""}</p>`,
     `<h1>${esc(r.title)}</h1>`,
+    media(d),
     `<dl>${facts
       .filter(([, v]) => v)
       .map(([k, v, href]) => `<dt>${k}</dt><dd>${href ? a({ href, text: String(v) }) : esc(String(v))}</dd>`)

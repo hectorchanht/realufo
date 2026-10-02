@@ -321,7 +321,8 @@ describe("Doc", () => {
     renderDoc();
     expect(screen.getByText(/same agency/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /FBI-UAP-007, Roswell teletype/ })).toHaveAttribute("href", "/doc/rec7");
-    expect(document.title).toBe("Placement on High Alert near Roswell — UAP file rec1 · RealUFO");
+    // 52 chars with the id > 50 → short title alone (same rule as the worker)
+    expect(document.title).toBe("Placement on High Alert near Roswell · RealUFO");
   });
 
   it("renders a comment with its body", () => {

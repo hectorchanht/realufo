@@ -350,12 +350,11 @@ export function Doc() {
   // unconditionally (before the loading/not-found returns below) so hook
   // order never varies; while `record` hasn't loaded yet, the same "FILE"
   // fallback the prototype uses for its own undefined-record case is fine.
-  // Tab title is uapbrowser-style "<short title> — UAP file <id>".
-  useSetPageTitle(
-    record?.id || "FILE",
-    record ? shortTitle(record.title) : "",
-    record ? `${shortTitle(record.title)} — UAP file ${record.id}` : undefined,
-  );
+  // Tab title is uapbrowser-style "<short title> — UAP file <id>" when that
+  // fits a ~60-char search title; same rule as the worker's docTitle.
+  const short = record ? shortTitle(record.title) : "";
+  const tabTitle = record && `${short} — UAP file ${record.id}`;
+  useSetPageTitle(record?.id || "FILE", short, tabTitle && tabTitle.length > 50 ? short : tabTitle);
 
   if (isLoading) {
     return (

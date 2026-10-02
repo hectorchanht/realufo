@@ -29,9 +29,17 @@ const ldScript = (o: unknown) => `<script type="application/ld+json">${JSON.stri
 // title is the only one left (the FIRST <title> wins for document.title). If
 // the placeholder isn't present, html is returned unchanged (aside from that
 // title strip).
+// Search snippets show ~160 chars; user text can carry newlines.
+export function snippet(text: string, max = 160): string {
+  const s = text.replace(/\s+/g, " ").trim();
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max - 1);
+  return cut.slice(0, cut.lastIndexOf(" ") > max / 2 ? cut.lastIndexOf(" ") : cut.length) + "…";
+}
+
 export function injectMeta(html: string, m: MetaInput): string {
   const t = esc(m.title);
-  const d = esc(m.description || DEFAULT_DESCRIPTION);
+  const d = esc(snippet(m.description || DEFAULT_DESCRIPTION));
   const u = esc(m.url);
   const img = m.image ? esc(m.image) : "";
   const tags = [
@@ -65,7 +73,15 @@ export function injectMeta(html: string, m: MetaInput): string {
 
 // Site share card (web/public/og.png) for pages without their own image.
 const shareCard = (url: URL) => new URL("/og.png", url).href;
-const htmlResponse = (body: string) => new Response(body, { headers: { "content-type": "text/html;charset=utf-8" } });
+const htmlResponse = (body: string, status = 200) =>
+  new Response(body, { status, headers: { "content-type": "text/html;charset=utf-8" } });
+
+// Real 404 status (no soft-404s in search); the SPA still boots and shows its own not-found screen.
+const notFound = (html: string, url: URL) =>
+  htmlResponse(
+    injectMeta(html, { title: "Page not found", description: DEFAULT_DESCRIPTION, url: url.origin + url.pathname, type: "website", robots: "noindex" }),
+    404
+  );
 
 const PAGE_TTL = 3600;
 
@@ -79,31 +95,42 @@ async function cachedPage(url: URL, load: () => Promise<Page | null>): Promise<P
   return cachedJson(`${url.origin}/__page${url.pathname}`, load, PAGE_TTL);
 }
 
+const shell = async (env: Env, url: URL) => (await env.ASSETS.fetch(new Request(new URL("/index.html", url)))).text();
+
 // GET on a pre-rendered SPA route (lib/pages.ts ROUTES) → the built index.html
 // with per-route <head> meta and a plain-HTML body in #root, whatever the
-// Accept header (share scrapers often send */*). Entity not found → index.html
-// untouched. Every other request goes straight to env.ASSETS.
+// Accept header (share scrapers often send */*). Entity not found, or a path
+// that is neither a route nor a file (the assets SPA fallback answers those
+// with index.html) → 404 + noindex. D1 error → plain shell, 200. Everything
+// else goes straight to env.ASSETS.
 export async function serveWithMeta(req: Request, env: Env): Promise<Response> {
   const url = new URL(req.url);
   if (req.method === "GET") {
+    // "/archive/" and "/archive" would otherwise be two URLs for one page.
+    if (url.pathname.length > 1 && url.pathname.endsWith("/"))
+      return Response.redirect(url.origin + url.pathname.replace(/\/+$/, "") + url.search, 301);
     for (const r of ROUTES) {
       const match = r.pattern.exec({ pathname: url.pathname });
       if (!match) continue;
-      const html = await (await env.ASSETS.fetch(new Request(new URL("/index.html", url)))).text();
+      const html = await shell(env, url);
       let page: Page | null = null;
       try {
         page = await cachedPage(url, () => r.load(env, match.pathname.groups as Record<string, string>, url));
       } catch (e) {
         // D1 trouble must not take the SPA shell down; the SPA shows its own errors.
         console.error("pre-render failed", url.pathname, e);
+        return htmlResponse(html);
       }
-      if (!page) return htmlResponse(html);
+      if (!page) return notFound(html, url);
       // Query strings (archive filters, fbclid) never make a separate canonical page.
       const canonical = url.origin + url.pathname;
       const image = page.meta.image || shareCard(url);
       const jsonLd = page.meta.jsonLd && { "@context": "https://schema.org", ...page.meta.jsonLd, url: canonical, image };
       return htmlResponse(injectBody(injectMeta(html, { ...page.meta, image, url: canonical, jsonLd }), page.body));
     }
+    const res = await env.ASSETS.fetch(req);
+    if (url.pathname !== "/index.html" && res.headers.get("content-type")?.startsWith("text/html")) return notFound(await res.text(), url);
+    return res;
   }
   return env.ASSETS.fetch(req);
 }
