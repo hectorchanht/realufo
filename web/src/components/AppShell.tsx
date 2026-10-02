@@ -25,8 +25,10 @@
 // path-based `headerForPath`/`documentTitleForPath` lookup (navItems.ts),
 // which had no way to reflect a detail screen's actually-loaded data (every
 // /doc/:id showed the same generic "FILE", regardless of record).
+import { useEffect, useRef, type CSSProperties } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useMediaQuery } from "../lib/useMediaQuery";
+import { useHideOnScroll } from "../lib/useHideOnScroll";
 import { useTheme } from "../theme/useTheme";
 import { useBootstrap } from "../api/queries";
 import { PageTitleProvider } from "../lib/pageTitle";
@@ -50,6 +52,29 @@ export function AppShell() {
   // navItems.ts's canBackForPath doc comment.
   const canBack = canBackForPath(pathname);
 
+  // Mobile: AppBar + BottomTab slide out while scrolling down, back on scroll
+  // up. BottomTab is an overlay (absolute, not in flow) so hiding it never
+  // reflows <main> — a resizing scroll container clamps scrollTop and would
+  // feed a fake "scroll up" back into the hook. Its measured height is
+  // published as --bnav-h (screen bottom padding) and --bnav-y (what sticky
+  // bottom bars like Thread's reply bar offset by: 0 while the tab is hidden).
+  const scrollRef = useRef<HTMLElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
+  const bnavRef = useRef<HTMLDivElement>(null);
+  const navHidden = useHideOnScroll(scrollRef, !isDesktop, pathname);
+
+  useEffect(() => {
+    const nav = bnavRef.current;
+    const shell = shellRef.current;
+    if (!nav || !shell || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => shell.style.setProperty("--bnav-h", `${nav.offsetHeight}px`));
+    ro.observe(nav);
+    return () => {
+      ro.disconnect();
+      shell.style.removeProperty("--bnav-h");
+    };
+  }, [isDesktop]);
+
   return (
     // PageTitleProvider wraps the WHOLE shell so both the desktop TopNav (which
     // now shows the contextual title/sub) AND the routed screens (which set it
@@ -69,24 +94,36 @@ export function AppShell() {
         <div aria-hidden="true" className="crt-grain" />
         {scanlines && <div aria-hidden="true" className="crt-scan" />}
 
-        <div data-shell className="relative z-10 flex min-h-0 flex-1 flex-col">
+        <div
+          ref={shellRef}
+          data-shell
+          className="relative z-10 flex min-h-0 flex-1 flex-col"
+          style={{ "--bnav-y": navHidden ? "0px" : "var(--bnav-h, 0px)" } as CSSProperties}
+        >
           {isDesktop && (
             <TopNav activeTab={activeTab} canBack={canBack} onBack={() => navigate(-1)} onlineNow={onlineNow} />
           )}
 
           <main
+            ref={scrollRef}
             data-scroll
             className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
-            {!isDesktop && <AppBar canBack={canBack} onBack={() => navigate(-1)} showBrand={!canBack} />}
+            {!isDesktop && (
+              <AppBar canBack={canBack} onBack={() => navigate(-1)} showBrand={!canBack} hidden={navHidden} />
+            )}
 
-            <div data-screenpad className="relative px-4 pb-10 pt-[18px]">
+            <div
+              data-screenpad
+              className="relative px-4 pt-[18px]"
+              style={{ paddingBottom: "calc(2.5rem + var(--bnav-h, 0px))" }}
+            >
               <Outlet />
             </div>
           </main>
 
-          {!isDesktop && <BottomTab activeTab={activeTab} />}
+          {!isDesktop && <BottomTab ref={bnavRef} activeTab={activeTab} hidden={navHidden} />}
         </div>
 
         {/* Overlays (Composer/MediaViewer/LoginSheet/Toast) mount INSIDE the

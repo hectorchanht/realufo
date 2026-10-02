@@ -272,10 +272,12 @@ export function Thread() {
         ))}
       </div>
 
-      {/* sticky bottom reply bar — prototype lines 284-286 */}
+      {/* sticky bottom reply bar — prototype lines 284-286. Sits above the
+          mobile BottomTab overlay via --bnav-y (AppShell; 0 when it's hidden). */}
       <div
-        className="sticky bottom-0 left-0 right-0 z-20 -mx-4 mt-4 border-t border-line px-4 py-[10px]"
+        className="sticky left-0 right-0 z-20 -mx-4 mt-4 border-t border-line px-4 py-[10px] transition-[bottom] duration-300 ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none"
         style={{
+          bottom: "var(--bnav-y, 0px)",
           background: "color-mix(in srgb, var(--bg) 82%, transparent)",
           backdropFilter: "blur(18px)",
           WebkitBackdropFilter: "blur(18px)",

@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, afterEach } from "vitest";
 import { renderAppAt } from "./util";
 
@@ -116,5 +116,34 @@ describe("AppShell", () => {
     // for any specific fetched content.
     await waitFor(() => expect(document.querySelector("[data-screen='doc']")).toBeInTheDocument());
     expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+  });
+
+  it("mobile: AppBar + BottomTab slide out on scroll down and back on scroll up", async () => {
+    renderAppAt("/");
+    await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
+
+    const main = document.querySelector<HTMLElement>("main[data-scroll]")!;
+    // jsdom does no layout — fake a 2000px document in an 800px viewport.
+    Object.defineProperty(main, "scrollHeight", { configurable: true, value: 2000 });
+    Object.defineProperty(main, "clientHeight", { configurable: true, value: 800 });
+    const scrollTo = (y: number) =>
+      act(() => {
+        main.scrollTop = y;
+        fireEvent.scroll(main);
+      });
+    const hidden = () =>
+      [document.querySelector("[data-appbar]"), document.querySelector("[data-bottomtab]")!.parentElement].map(
+        (el) => el?.hasAttribute("data-hidden"),
+      );
+
+    scrollTo(300);
+    expect(hidden()).toEqual([true, true]);
+    scrollTo(303); // under the jitter threshold: no change
+    expect(hidden()).toEqual([true, true]);
+    scrollTo(200);
+    expect(hidden()).toEqual([false, false]);
+    scrollTo(400);
+    scrollTo(20); // near the top always shows
+    expect(hidden()).toEqual([false, false]);
   });
 });

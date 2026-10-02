@@ -17,6 +17,8 @@ export interface AppBarProps {
   onLogin?: () => void;
   /** Compact login label (line 107's `{{ meShort }}`). Real auth wiring lands in Task 16/23. */
   meShort?: string;
+  /** Slid up out of view (AppShell's scroll-down auto-hide). Keyboard focus brings it back. */
+  hidden?: boolean;
 }
 
 export function AppBar({
@@ -25,12 +27,17 @@ export function AppBar({
   showBrand = true,
   onLogin,
   meShort = "GUEST",
+  hidden = false,
 }: AppBarProps) {
   const { title: headerTitle, sub: headerSub } = usePageTitle();
   return (
     <div
       data-appbar
-      className="sticky top-0 z-30 flex items-center gap-3 border-b border-line px-[18px] py-[11px] backdrop-blur-[22px] backdrop-saturate-[1.6]"
+      data-hidden={hidden || undefined}
+      className={
+        "sticky top-0 z-30 flex items-center gap-3 border-b border-line px-[18px] py-[11px] backdrop-blur-[22px] backdrop-saturate-[1.6] transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)] focus-within:translate-y-0 motion-reduce:transition-none" +
+        (hidden ? " -translate-y-full" : "")
+      }
       style={{ background: "color-mix(in srgb, var(--bg) 72%, transparent)" }}
     >
       {canBack && (
