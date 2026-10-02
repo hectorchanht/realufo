@@ -34,6 +34,24 @@ jobs:
           else
             python -m ingest --sources "$SOURCES" --dry-run | tee ingest-summary.txt
           fi
+      - run: sudo apt-get update -q && sudo apt-get install -yq ffmpeg poppler-utils
+        if: ${{ !cancelled() }}
+      # card thumbs for any live record still missing one (new releases ship none);
+      # runs even if ingest partly failed so the records it did add get thumbs
+      - name: thumbs
+        if: ${{ !cancelled() }}
+        working-directory: crawler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          LIVE: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run == 'false' }}
+        run: |
+          set -o pipefail
+          if [ "$LIVE" = "true" ]; then
+            python -m ingest.thumbs | tee -a ingest-summary.txt
+          else
+            python -m ingest.thumbs --dry-run --limit 1 | tee -a ingest-summary.txt
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
