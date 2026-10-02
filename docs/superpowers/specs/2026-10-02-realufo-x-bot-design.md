@@ -137,6 +137,10 @@ at random per post, so posts vary and formats never stack. Temperature 0.8.
   - banned: `proof`, `proves`, `confirmed alien`, `non-human`, `cover-up`,
     `exposed`, "it's (definitely) aliens" (but not "not saying it's aliens"),
     f-bombs, "baffles experts"
+- **No stale phrases:** "not saying it's aliens but…" only when that format is drawn
+  (1 of 10); the AI sees the bot's last 5 posts; copy sharing any 4-word phrase with
+  them is a repeat → up to 3 tries (fresh format/hook each), then template; template
+  closers rotate; copy echoing instructions ("with a joke", "two-line format") rejected.
 - Templates carry the voice (`📼 title / 📍 agency · place · date / not saying it's
   aliens but… 👽 drop your theory 👇`); highlights never use AI.
 

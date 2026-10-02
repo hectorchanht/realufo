@@ -130,6 +130,66 @@ describe("template", () => {
   });
 });
 
+describe("no stale catchphrases", () => {
+  const NSA = /not saying it'?s aliens/i;
+  const aliensAt = (FORMATS.findIndex((f) => NSA.test(f)) + 0.5) / FORMATS.length;
+  const capture = (response: string, recent: string[] = []) => {
+    const prompts: string[] = [];
+    const env = {
+      AI: { run: async (_m: string, input: any) => (prompts.push(input.messages[0].content), { response }) },
+      DB: { prepare: () => ({ all: async () => ({ results: recent.map((text) => ({ text })) }) }) },
+    } as any;
+    return { env, prompts };
+  };
+  it("the prompt only mentions 'not saying it's aliens' when that format was drawn", async () => {
+    const a = capture("x");
+    await draft(a.env, pick(), () => 0);
+    expect(a.prompts[0]).not.toMatch(NSA);
+    const b = capture("x");
+    await draft(b.env, pick(), () => aliensAt);
+    expect(b.prompts[0]).toMatch(NSA);
+  });
+  it("AI copy using the catchphrase under another format is rejected", async () => {
+    const line = "not saying it's aliens but… Gulf of Mexico, 2019 👽";
+    expect((await draft(capture(line).env, pick(), () => 0)).ai).toBe(false);
+    expect((await draft(capture(line).env, pick(), () => aliensAt)).ai).toBe(true);
+  });
+  it("the AI sees recent posts so it doesn't repeat openers", async () => {
+    const c = capture("Gulf of Mexico, 2019 🫠", ["enhance. ENHANCE. old post one", "POV: old post two"]);
+    await draft(c.env, pick(), () => 0);
+    expect(c.prompts[0]).toContain("enhance. ENHANCE. old post one");
+    expect(c.prompts[0]).toContain("POV: old post two");
+  });
+  it("copy repeating a 4-word phrase from a recent post is retried (3 tries), then templated", async () => {
+    const recent = ["a 2013 middle east video. the official verdict? unresolved. enhance."];
+    const calls: string[] = [];
+    const env = {
+      AI: { run: async () => (calls.push("x"), { response: "Gulf of Mexico, 2019. the official verdict? unresolved." }) },
+      DB: { prepare: () => ({ all: async () => ({ results: recent.map((text) => ({ text })) }) }) },
+    } as any;
+    const d = await draft(env, pick(), () => 0);
+    expect(calls).toHaveLength(3);
+    expect(d.ai).toBe(false);
+  });
+  it("a fresh second attempt is used", async () => {
+    const outs = ["Gulf of Mexico, 2019. the official verdict? unresolved.", "Gulf of Mexico, 2019 — a brand new angle 🫠"];
+    const env = {
+      AI: { run: async () => ({ response: outs.shift() }) },
+      DB: { prepare: () => ({ all: async () => ({ results: [{ text: "x. the official verdict? unresolved. y" }] }) }) },
+    } as any;
+    expect(await draft(env, pick(), () => 0)).toMatchObject({ ai: true, text: expect.stringContaining("brand new angle") });
+  });
+  it("rejects copy that echoes the instructions", () => {
+    expect(finalize(pick(), "rate this footage 4/10 with a joke. Gulf of Mexico, 2019")).toBeNull();
+    expect(finalize(pick(), "two-line format: Gulf of Mexico, 2019")).toBeNull();
+  });
+  it("template closers rotate, and most skip the catchphrase", () => {
+    const outs = new Set(Array.from({ length: 20 }, (_, i) => template(pick(), () => i / 20)));
+    expect(outs.size).toBeGreaterThan(3);
+    expect([...outs].filter((t) => NSA.test(t)).length).toBeLessThanOrEqual(1);
+  });
+});
+
 describe("template meta line", () => {
   it("doesn't repeat a name when source and agency match", () => {
     expect(template(pick({ archive: "aaro", agency: "AARO" }))).not.toContain("AARO · AARO");

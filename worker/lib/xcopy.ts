@@ -26,10 +26,19 @@ export const FORMATS = [
   "not saying it's aliens but… then the strangest real fact 👽 (obvious joke framing)",
   "the X-Files theme starts playing 🎶 then one real fact, one line",
   '"agency: their verdict" / "me: a reaction" two-line format',
-  'rate this footage x/10 with a joke',
+  'rate the footage "x/10" and give a funny reason',
   "a deadpan one-liner that undersells it, then a reaction emoji",
   "a hot take that splits the replies into camps (drone / balloon / sensor glitch / 👽)",
 ];
+const NSA = /not saying it'?s aliens/i; // the catchphrase: only when its own format is drawn
+const ALIENS_FORMAT = FORMATS.find((f) => NSA.test(f))!;
+// Template closers rotate so fallback posts don't all end the same way.
+const CLOSERS = [
+  "drop your theory 👇 #UAP", "drone, balloon, or 👽? #UAP", "wrong answers only 👇 #UAP",
+  "explain this one 👀 #UAP", "enhance. ENHANCE. 🔍 #UAP", "not saying it's aliens but… 👽 #UAP",
+];
+const pickOne = <T>(xs: T[], rand: () => number) => xs[Math.min(xs.length - 1, Math.floor(rand() * xs.length))];
+
 export const HOOKS = [
   "drop your theory 👇", "drone, balloon, or 👽?", "explain this one 👇", "wrong answers only 👇",
   "what are we looking at", "thoughts? 👀", "enhance. ENHANCE.", "ratio this if it's a balloon",
@@ -77,7 +86,7 @@ const fit = (s: string, max: number) => {
 const kindsText = (k: Record<string, number>) =>
   Object.entries(k).map(([kind, n]) => `${n} ${kind === "pdf" ? "PDF" : kind}${n > 1 && kind !== "pdf" ? "s" : ""}`).join(", ");
 
-export function template(c: Candidate): string {
+export function template(c: Candidate, rand: () => number = Math.random): string {
   if (c.stream === "release") {
     const n = Object.values(c.kinds).reduce((a, b) => a + b, 0);
     return `🚨 ${c.label} just dropped: ${n} new file${n === 1 ? "" : "s"} (${kindsText(c.kinds)}). the government said "here you go" 🫠 dig in 👇 #UAP`;
@@ -86,7 +95,7 @@ export function template(c: Candidate): string {
     const r = c.record;
     const meta = fit([...new Set([r.agency || ARCHIVE_NAME[r.archive] || r.archive, r.location, r.incident_date]
       .filter((v): v is string => !!v && !NA.test(v)))].join(" · "), 80);
-    const foot = "not saying it's aliens but… 👽 drop your theory 👇 #UAP";
+    const foot = pickOne(CLOSERS, rand);
     const room = Math.min(120, 280 - weightedLength(`📼 \n📍 ${meta}\n${foot}\n${c.link}`)); // finalize appends the link
     const title = room > 10 ? fit(stripLinks(r.title ?? ""), room) : "";
     return `📼 ${title}\n📍 ${meta}\n${foot}`;
@@ -105,22 +114,25 @@ export function finalize(c: Candidate, raw: string, trusted = false): string | n
     .replace(/ +\n/g, "\n")
     .trim();
   if (!t || !t.includes(mustContain(c))) return null;
-  if (!trusted && (!isClean(t) || /[[\]]/.test(t))) return null; // [..] = leaked format placeholder
+  // [..] / "with a joke" / "two-line format" = the model echoing its instructions
+  if (!trusted && (!isClean(t) || /[[\]]|\bwith a joke\b|\btwo-line format\b|\breply hook\b/i.test(t))) return null;
   const anchor = anchorLine(c, t);
   if (anchor) t += "\n" + anchor;
   if (c.stream !== "highlight") t += "\n" + c.link; // ours, after stripping any the AI wrote
   return weightedLength(t) <= 280 ? t : null;
 }
 
-const SYSTEM = (format: string, hook: string, must: string) =>
+const SYSTEM = (format: string, hook: string, must: string, recent: string[] = []) =>
   `You run the RealUFO account on X: the internet's archive of real declassified government UAP/UFO files and footage.
 Voice: extremely online, chaotic-funny, meme-literate, slang ok, lowercase energy, playful but never mean. 1-3 emojis (👀🛸👽📼🫠💀🔥).
 Use EXACTLY ONE format for this post: ${format}. Don't stack other meme formats.
 End with this reply hook (or a close variant): "${hook}".
-FACTS ARE SACRED: mention only facts in the data (agency, place, year, length, what the summary says the footage shows, the official verdict — quote it, e.g. "unresolved"). Always mention the place or the year. Never invent who filmed it, how it moved, or any detail not in the summary.
+FACTS ARE SACRED: mention only facts in the data (agency, place, year, length, what the summary says the footage shows, the official verdict in your own words). Always mention the place or the year. Never invent who filmed it, how it moved, or any detail not in the summary.
 Keep it PG-13 ("what the hell" ok, no f-bombs). Never claim experts or scientists are baffled.
-Aliens: you may joke ("not saying it's aliens but…", "the X-Files theme starts playing"), but never state or imply it IS aliens, and never call anything proof or a cover-up.
-Under 200 characters. Line breaks ok. No URLs, no website names, no @mentions, at most one hashtag: #UAP.${must ? ` It must include this exact text: "${must}".` : ""} Output only the post text.`;
+Aliens: you may joke about them, but never state or imply it IS aliens, and never call anything proof or a cover-up.
+Under 200 characters. Line breaks ok. No URLs, no website names, no @mentions, at most one hashtag: #UAP.${must ? ` It must include this exact text: "${must}".` : ""} Output only the post text.${recent.length ? `
+Your last posts (don't reuse their openers, catchphrases or hooks):
+${recent.map((t) => "- " + t.replace(/\s*https?:\/\/\S+/g, "").replace(/\s*\n\s*/g, " ")).join("\n")}` : ""}`;
 
 function facts(c: Exclude<Candidate, { stream: "highlight" }>) {
   if (c.stream === "release") return { release: c.label, files: c.kinds, sample_titles: c.titles };
@@ -129,25 +141,48 @@ function facts(c: Exclude<Candidate, { stream: "highlight" }>) {
     incident_date: r.incident_date, location: r.location, duration_s: r.duration, summary: r.summary?.slice(0, 500) };
 }
 
-const pickOne = <T>(xs: T[], rand: () => number) => xs[Math.min(xs.length - 1, Math.floor(rand() * xs.length))];
+// 4-word phrases from recent posts: copy sharing one is a repeat ("the official verdict? unresolved.").
+const grams = (t: string) => {
+  const w = t.toLowerCase().replace(/https?:\/\/\S+/g, "").match(/[a-z0-9']+/g) ?? [];
+  return new Set(w.slice(3).map((_, i) => w.slice(i, i + 4).join(" ")));
+};
+const repeats = (t: string, seen: Set<string>) => [...grams(t)].some((g) => seen.has(g));
+
+// The bot's last posts, so the AI doesn't reuse openers/catchphrases. Best effort.
+async function recentPosts(env: Env): Promise<string[]> {
+  try {
+    const { results } = await env.DB.prepare(
+      "SELECT text FROM x_posts WHERE status IN ('posted','pending','processing','draft') ORDER BY id DESC LIMIT 5"
+    ).all<{ text: string }>();
+    return results.map((r) => r.text);
+  } catch {
+    return [];
+  }
+}
 
 export async function draft(env: Env, c: Candidate, rand: () => number = Math.random): Promise<{ text: string; ai: boolean }> {
   // Highlights: user-written text is a prompt-injection surface → fixed template,
   // banned-claims check applied (the caller has already rejected unclean titles).
   if (c.stream === "highlight") return { text: finalize(c, template(c)) ?? finalize(c, template(c), true)!, ai: false };
-  try {
-    const out = await env.AI.run(ASK_LLM_MODEL as any, {
-      messages: [
-        { role: "system", content: SYSTEM(pickOne(FORMATS, rand), pickOne(HOOKS, rand), mustContain(c)) },
-        { role: "user", content: JSON.stringify(facts(c)) },
-      ],
-      max_tokens: 200, temperature: 0.8, chat_template_kwargs: { enable_thinking: false },
-    } as any);
-    const t = finalize(c, answerText(out));
-    if (t) return { text: t, ai: true };
-  } catch {
-    // AI down → template; the bot never skips a slot because of AI
+  const recent = await recentPosts(env);
+  const seen = new Set(recent.flatMap((t) => [...grams(t)]));
+  // up to 3 tries, each with a fresh format/hook; a repeat or a stray catchphrase burns one
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const format = pickOne(FORMATS, rand);
+    try {
+      const out = await env.AI.run(ASK_LLM_MODEL as any, {
+        messages: [
+          { role: "system", content: SYSTEM(format, pickOne(HOOKS, rand), mustContain(c), recent) },
+          { role: "user", content: JSON.stringify(facts(c)) },
+        ],
+        max_tokens: 200, temperature: 0.8, chat_template_kwargs: { enable_thinking: false },
+      } as any);
+      const t = finalize(c, answerText(out));
+      if (t && (format === ALIENS_FORMAT || !NSA.test(t)) && !repeats(t, seen)) return { text: t, ai: true };
+    } catch {
+      break; // AI down → template; the bot never skips a slot because of AI
+    }
   }
   // last resorts keep text non-null; an over-long one is rejected by X as a 4xx → failed row
-  return { text: finalize(c, template(c), true) ?? finalize(c, mustContain(c), true) ?? mustContain(c), ai: false };
+  return { text: finalize(c, template(c, rand), true) ?? finalize(c, mustContain(c), true) ?? mustContain(c), ai: false };
 }
