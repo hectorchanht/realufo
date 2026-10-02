@@ -16,3 +16,7 @@ export const thumbSql = (recordId: string) =>
 // Card video length (seconds) from the `full` asset; NULL when unknown.
 export const durationSql = (recordId: string) =>
   `(SELECT duration FROM assets a WHERE a.record_id=${recordId} AND a.role='full' LIMIT 1)`;
+
+// List-card columns (/api/records, related groups, hubs) for `records r`.
+export const CARD_COLS = `r.id,r.archive,r.agency,r.title,r.summary,r.kind,r.redacted,r.location,r.incident_date,r.doc_date,
+  ${thumbSql("r.id")} thumb, ${durationSql("r.id")} duration`;
