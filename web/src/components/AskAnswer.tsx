@@ -2,11 +2,32 @@
 // becomes a button that scrolls to + flashes source n.
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useAsk, useShareAsk } from "../api/queries";
+import { useAsk, useHubs, useShareAsk } from "../api/queries";
 import { ApiError } from "../api/client";
-import type { AskResponse } from "../api/types";
+import type { AskResponse, HubKind, HubLinks } from "../api/types";
 
 const CARD = "mb-3.5 rounded-xl border border-line2 bg-surface px-[13px] py-3";
+
+const CHIP_KINDS: HubKind[] = ["release", "agency", "location", "decade"];
+
+// Small links from a source row to the hubs it belongs to (R06, FBI, 1950s…).
+function HubChips({ hubs, labels }: { hubs?: HubLinks; labels: Map<string, string> }) {
+  if (!hubs) return null;
+  const chips = CHIP_KINDS.filter((k) => hubs[k]).map((k) => {
+    const slug = hubs[k]!;
+    const text = k === "release" ? `R${slug.padStart(2, "0")}` : k === "decade" ? slug : (labels.get(`${k}/${slug}`) ?? slug);
+    return (
+      <Link
+        key={k}
+        to={`/${k}/${slug}`}
+        className="rounded-[5px] border border-line px-1.5 py-px font-mono text-[9px] text-dim hover:text-signal"
+      >
+        {text}
+      </Link>
+    );
+  });
+  return chips.length ? <span className="flex flex-none gap-1">{chips}</span> : null;
+}
 
 function errorCopy(e: unknown) {
   if (e instanceof ApiError && e.status === 429) return "slow down — too many questions";
@@ -18,6 +39,8 @@ export function AskAnswer({ question, onPost }: { question: string; onPost?: (da
   const { data, isLoading, error, refetch } = useAsk(question);
   const [flash, setFlash] = useState<number | null>(null);
   const share = useShareAsk();
+  const { data: hubsData } = useHubs();
+  const hubLabels = new Map((hubsData?.hubs ?? []).map((h) => [`${h.kind}/${h.slug}`, h.label]));
   const [shared, setShared] = useState(false);
 
   function cite(n: number) {
@@ -75,6 +98,7 @@ export function AskAnswer({ question, onPost }: { question: string; onPost?: (da
               <Link to={`/doc/${s.record_id}`} className="min-w-0 flex-1 truncate text-[12px] text-ink hover:text-signal">
                 {s.title} <span className="font-mono text-[10px] text-faint">· {s.record_id}</span>
               </Link>
+              <HubChips hubs={s.hubs} labels={hubLabels} />
               {s.kind === "pdf" && s.page > 0 && (
                 <a
                   href={`/api/file/${encodeURIComponent(s.record_id)}#page=${s.page}`}

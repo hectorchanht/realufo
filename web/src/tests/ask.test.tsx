@@ -24,6 +24,7 @@ vi.mock("../api/queries", () => ({
     isLoading: false,
   }),
   useRecords: () => ({ data: { count: 0, records: [] }, isLoading: false, isPlaceholderData: false }),
+  useHubs: () => ({ data: { hubs: [{ kind: "agency", slug: "fbi", label: "FBI", count: 104, values: ["FBI"] }] } }),
 }));
 
 const answered = {
@@ -47,6 +48,19 @@ beforeEach(() => {
 });
 
 describe("AskAnswer", () => {
+  it("source rows link their hubs as chips; sources without hubs get none", () => {
+    useAskMock.mockReturnValue({
+      ...answered,
+      data: { ...answered.data, sources: [{ ...answered.data.sources[0], hubs: { agency: "fbi", release: "6", decade: "1950s" } }, answered.data.sources[1]] },
+    });
+    renderCard();
+    expect(screen.getByRole("link", { name: "FBI" })).toHaveAttribute("href", "/agency/fbi");
+    expect(screen.getByRole("link", { name: "R06" })).toHaveAttribute("href", "/release/6");
+    expect(screen.getByRole("link", { name: "1950s" })).toHaveAttribute("href", "/decade/1950s");
+    const second = document.getElementById("ask-src-2")!;
+    expect(second.querySelectorAll('a[href^="/agency/"], a[href^="/release/"], a[href^="/decade/"], a[href^="/location/"]').length).toBe(0);
+  });
+
   it("renders the answer as text with citation buttons and numbered sources", () => {
     useAskMock.mockReturnValue(answered);
     renderCard();

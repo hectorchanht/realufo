@@ -41,7 +41,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useBootstrap, useFacets, useRecords } from "../api/queries";
+import { useBootstrap, useFacets, useHubs, useRecords } from "../api/queries";
+import { hubForFilters } from "../lib/hubLink";
 import { AskAnswer } from "../components/AskAnswer";
 import { AskHistory } from "../components/AskHistory";
 import { addAskHistory } from "../lib/askHistory";
@@ -268,6 +269,12 @@ export function Archive() {
   const redacted = !!filter.redacted;
   const release = filter.release ?? "";
   const { data: facets } = useFacets();
+  // One active tag filter that belongs to a hub → offer its landing page.
+  const { data: hubsData } = useHubs();
+  const tagHub = hubForFilters(
+    { release: filter.release, agency: filter.agency, location: filter.location, decade: filter.decade },
+    hubsData?.hubs ?? []
+  );
   const { openComposer } = useOverlay();
   // Releases are war.gov-only, so the chips only show for All / War.gov.
   const showReleases = !!facets?.releases.length && (archive === "" || archive === "wargov");
@@ -532,6 +539,15 @@ export function Archive() {
           onChange={(v) => setParam("location", v)}
         />
       </div>
+
+      {tagHub && (
+        <Link
+          to={`/${tagHub.kind}/${tagHub.slug}`}
+          className="mb-3.5 block font-mono text-[11px] text-signal hover:underline"
+        >
+          → {tagHub.label} page
+        </Link>
+      )}
 
       {/* type chips + redacted toggle — lines 179-186 */}
       <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2.5 px-0.5 py-1">

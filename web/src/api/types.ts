@@ -204,7 +204,14 @@ export interface FullText {
 }
 
 export type HubKind = "release" | "agency" | "location" | "decade";
-export interface HubSummary { kind: HubKind; slug: string; label: string; count: number }
+export interface HubSummary {
+  kind: HubKind;
+  slug: string;
+  label: string;
+  count: number;
+  /** Agency/location hubs: raw values they cover, for mapping Archive filters. */
+  values?: string[];
+}
 export interface Hub {
   kind: HubKind;
   slug: string;
@@ -449,6 +456,8 @@ export interface AskSource {
   page: number; // 0 = record card, else 1-based PDF page
   kind: RecordKind;
   thumb: string | null;
+  /** Hubs this source links to; absent on answers from before hub pages. */
+  hubs?: HubLinks;
 }
 export interface AskResponse {
   /** The question as asked (original case); absent on answers cached before it existed. */

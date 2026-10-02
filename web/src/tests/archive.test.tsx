@@ -88,6 +88,9 @@ vi.mock("../api/queries", () => ({
   useBootstrap: () => ({ data: mockBootstrap, isLoading: false }),
   useRecords: (params: Record<string, unknown>) => useRecordsMock(params),
   useFacets: () => ({ data: mockFacets }),
+  useHubs: () => ({
+    data: { hubs: [{ kind: "agency", slug: "department-of-war", label: "Department of War", count: 267, values: ["DoW", "Department of War"] }] },
+  }),
 }));
 
 beforeEach(() => {
@@ -99,6 +102,17 @@ beforeEach(() => {
 });
 
 describe("Archive", () => {
+  it("links a single mapped tag filter to its hub page", async () => {
+    renderAppAt("/archive?agency=DoW");
+    expect(await screen.findByRole("link", { name: "→ Department of War page" })).toHaveAttribute("href", "/agency/department-of-war");
+  });
+
+  it("no hub link for an unmapped filter value", async () => {
+    renderAppAt("/archive?agency=IC");
+    await screen.findByRole("link", { name: "Browse by release · agency · location · decade →" });
+    expect(screen.queryByRole("link", { name: /page$/ })).toBeNull();
+  });
+
   it("links to the browse hubs page", async () => {
     renderAppAt("/archive");
     expect(await screen.findByRole("link", { name: "Browse by release · agency · location · decade →" })).toHaveAttribute("href", "/browse");
