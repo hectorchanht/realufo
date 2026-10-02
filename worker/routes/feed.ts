@@ -1,6 +1,6 @@
 import type { Env } from "../env";
 import { json } from "../lib/json";
-import { relAgo } from "../lib/db";
+import { relAgo, thumbSql } from "../lib/db";
 
 // Feed = live activity, not static flags:
 //  - "Hot right now" records are ordered by their most recent comment (the
@@ -10,7 +10,7 @@ import { relAgo } from "../lib/db";
 export async function feed(_req: Request, env: Env) {
   const featured = await env.DB.prepare(
     `SELECT r.id,r.archive,r.agency,r.title,r.summary,r.kind,r.redacted,
-      (SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND a.role='thumb' LIMIT 1) thumb,
+      ${thumbSql("r.id")} thumb,
       (SELECT count(*) FROM comments c WHERE c.record_id=r.id) commentN,
       (SELECT max(created_at) FROM comments c WHERE c.record_id=r.id) lastComment
     FROM records r

@@ -23,6 +23,14 @@ describe("records", () => {
     expect(Array.isArray(j.promotedThreads)).toBe(true);
     expect(j.promotedThreads.some((t: any) => t.source_record_id === "CIA-UAP-017")).toBe(true); // t1 has rec CIA-UAP-017
   });
+  it("card thumb falls back to an image record's full file when it has no thumb asset", async () => {
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO records (id,archive,agency,title,kind) VALUES ('IMG-NOTHUMB','wargov','NASA','zzimgnothumb','image')"),
+      env.DB.prepare("INSERT INTO assets (record_id,role,cdn_url,mime) VALUES ('IMG-NOTHUMB','full','https://cdn/x.jpg','image/jpeg')"),
+    ]);
+    const j: any = await (await get("/api/records?q=zzimgnothumb")).json();
+    expect(j.records[0].thumb).toBe("https://cdn/x.jpg");
+  });
   it("404s unknown id", async () => {
     expect((await get("/api/records/NOPE")).status).toBe(404);
   });

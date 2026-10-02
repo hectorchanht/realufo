@@ -271,6 +271,19 @@ describe("Doc", () => {
     openSpy.mockRestore();
   });
 
+  it("renders an IMAGE record's full file inline even with no thumb asset", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    expect(document.querySelector('[data-screen="doc"] img')).toHaveAttribute("src", "https://cdn.example/photo.jpg");
+  });
+
   it("opening a VIDEO record uses the in-app media viewer (not a new tab)", () => {
     useRecordMock.mockReturnValue({
       data: {

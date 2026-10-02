@@ -9,7 +9,7 @@
 // folded into this single bar instead, so desktop shows one nav, not two.
 import { Link } from "react-router-dom";
 import { Saucer } from "./Saucer";
-import { NAV_ITEMS, type NavTab } from "./navItems";
+import { NAV_ITEMS, RELEASE_LINK, type NavTab } from "./navItems";
 import { usePageTitle, DEFAULT_PAGE_TITLE } from "../lib/pageTitle";
 
 export interface TopNavProps {
@@ -66,6 +66,15 @@ export function TopNav({ activeTab, canBack = false, onBack, onlineNow = 0, meLa
             </Link>
           );
         })}
+        <a
+          href={RELEASE_LINK.href}
+          target="_blank"
+          rel="noopener"
+          className="flex min-h-[44px] flex-none items-center gap-[9px] rounded-[11px] px-3.5 py-2 font-mono text-[13px] font-medium text-dim hover:bg-surface"
+        >
+          <span className="text-center text-[15px]">{RELEASE_LINK.glyph}</span>
+          <span>{RELEASE_LINK.label}</span>
+        </a>
       </div>
 
       {/* Contextual page title/sub — the "bottom bar" description, folded in.

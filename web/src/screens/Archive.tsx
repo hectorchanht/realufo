@@ -226,6 +226,16 @@ export function Archive() {
         </span>
       </div>
 
+      {/* static predecessor archive (war-gov-ufo-release repo) */}
+      <a
+        href="https://release.realufo.org/"
+        target="_blank"
+        rel="noopener"
+        className="mb-3.5 block font-mono text-[11px] text-dim hover:text-signal"
+      >
+        Original release archive → release.realufo.org ↗
+      </a>
+
       {/* archive chip row — lines 174-178 */}
       <div data-scroll className="mb-1.5 flex gap-[7px] overflow-x-auto pb-2.5">
         <ArchiveChip selected={archive === ""} style={archiveChipStyle(archive === "", true)} onClick={() => setParam("archive", null)}>

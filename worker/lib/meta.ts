@@ -1,4 +1,5 @@
 import type { Env } from "../env";
+import { thumbSql } from "./db";
 
 export interface MetaInput {
   title: string;
@@ -48,7 +49,7 @@ const META_ROUTES = [
 async function lookupMeta(env: Env, kind: "doc" | "case" | "thread", groups: Record<string, string>): Promise<MetaInput | null> {
   if (kind === "doc") {
     const x = await env.DB.prepare(
-      `SELECT r.title,r.summary,(SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND a.role='thumb' LIMIT 1) thumb
+      `SELECT r.title,r.summary,${thumbSql("r.id")} thumb
        FROM records r WHERE r.id=?`
     )
       .bind(groups.id)

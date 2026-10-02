@@ -1,6 +1,6 @@
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
-import { relAgo, stanceOK } from "../lib/db";
+import { relAgo, stanceOK, thumbSql } from "../lib/db";
 import { newId, newNo, actorId } from "../lib/anon";
 import { allowWrite } from "../lib/ratelimit";
 import { readBody, putImage, uploadUrl } from "../lib/upload";
@@ -16,7 +16,7 @@ export async function getThread(_req: Request, env: Env, p: Record<string, strin
   thread.ago = relAgo(thread.created_at);
   const sourceRecord = thread.source_record_id
     ? await env.DB.prepare(
-        `SELECT id,agency,title,kind,(SELECT cdn_url FROM assets a WHERE a.record_id=records.id AND a.role='thumb' LIMIT 1) thumb FROM records WHERE id=?`
+        `SELECT id,agency,title,kind,${thumbSql("records.id")} thumb FROM records WHERE id=?`
       )
         .bind(thread.source_record_id)
         .first()

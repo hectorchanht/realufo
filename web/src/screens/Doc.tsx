@@ -34,6 +34,8 @@ import type { RecordKind } from "../api/types";
 import { VoteButton } from "../components/VoteButton";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { useMediaQuery } from "../lib/useMediaQuery";
+import { recordMedia } from "../lib/recordMedia";
 
 // prototype line 522: `if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4)`.
 const SWIPE_MIN_DX = 55;
@@ -106,6 +108,9 @@ export function Doc() {
   const { data: detail, isLoading } = useRecord(id);
   const { data: commentsData } = useComments(id);
   const { data: boot } = useBootstrap();
+  // Inline PDF <iframe> only on desktop — it renders blank on mobile browsers,
+  // so mobile keeps the thumbnail + tap-to-open-in-new-tab flow.
+  const isDesktop = useMediaQuery("(min-width: 900px)");
 
   // Fall back to the hatch placeholder if the thumbnail 404s / fails to load
   // (thumbs are generated best-effort, so a record may point at a not-yet-
@@ -146,6 +151,8 @@ export function Doc() {
   // instance fields so a re-render mid-gesture never loses the start point.
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   function handlePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    // Scrubbing a video/audio timeline must not count as a swipe.
+    if ((e.target as HTMLElement).closest("video,audio")) return;
     swipeStart.current = { x: e.clientX, y: e.clientY };
   }
   function handlePointerUp(e: ReactPointerEvent<HTMLDivElement>) {
@@ -216,12 +223,7 @@ export function Doc() {
   const title = shortTitle(record.title);
   const isVideo = record.kind === "video";
   const glyph = typeGlyph(record.kind);
-  const thumbUrl = detail?.assets.find((a) => a.role === "thumb")?.cdn_url ?? null;
-  const fullUrl =
-    detail?.assets.find((a) => a.role === "full")?.cdn_url ??
-    detail?.assets.find((a) => a.role === "original")?.cdn_url ??
-    thumbUrl ??
-    "";
+  const { media, fullUrl, thumbUrl } = recordMedia(detail, isDesktop);
   const badge = record.agency || "DOC";
   const location = record.location && record.location !== "N/A" ? record.location : "";
 
@@ -229,6 +231,10 @@ export function Doc() {
     if (!fullUrl) return;
     if (isVideo) {
       openViewer({ kind: "video", url: fullUrl, label: title });
+      return;
+    }
+    if (media === "image") {
+      openViewer({ kind: "image", url: fullUrl, label: title });
       return;
     }
     // PDFs/docs open in a new tab via the SAME-ORIGIN inline route (worker
@@ -274,56 +280,70 @@ export function Doc() {
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         className="relative mb-3.5 overflow-hidden rounded-2xl border border-line2 bg-bg2"
-        style={{ aspectRatio: "4/3", touchAction: "pan-y" }}
+        style={{ aspectRatio: "4/3", maxHeight: "78vh", touchAction: "pan-y" }}
       >
-        {thumbUrl && !thumbFailed ? (
-          <img
-            src={thumbUrl}
-            alt=""
-            onError={() => setThumbFailed(true)}
-            className="h-full w-full object-cover"
-            style={{ filter: "contrast(1.05) saturate(.92)" }}
-          />
-        ) : (
-          <div
-            className="grid h-full w-full place-items-center"
-            style={{
-              background:
-                "repeating-linear-gradient(45deg,var(--bg2),var(--bg2) 12px,var(--surface) 12px,var(--surface) 24px)",
-            }}
-          >
-            <span
-              className="rounded-[9px] border-2 px-4 py-2 font-mono text-base font-bold"
-              style={{ color: accent, borderColor: accent }}
-            >
-              {glyph}
-            </span>
-          </div>
+        {media === "image" && (
+          <img src={fullUrl} alt={title} className="h-full w-full bg-black object-contain" />
         )}
-        <button
-          type="button"
-          onClick={handleOpenOriginal}
-          aria-label={`open ${glyph}`}
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(to top, rgba(0,0,0,.45), transparent 45%)" }}
-        >
-          {isVideo && (
+        {media === "video" && (
+          <video
+            src={fullUrl}
+            poster={thumbUrl ?? undefined}
+            controls
+            playsInline
+            preload="metadata"
+            className="h-full w-full bg-black object-contain"
+          />
+        )}
+        {media === "pdf" && (
+          <iframe title={title} src={`/api/file/${id}`} className="h-full w-full border-0 bg-white" />
+        )}
+        {(media === "thumb" || media === "audio") &&
+          (thumbUrl && !thumbFailed ? (
+            <img
+              src={thumbUrl}
+              alt=""
+              onError={() => setThumbFailed(true)}
+              className="h-full w-full object-cover"
+              style={{ filter: "contrast(1.05) saturate(.92)" }}
+            />
+          ) : (
+            <div
+              className="grid h-full w-full place-items-center"
+              style={{
+                background:
+                  "repeating-linear-gradient(45deg,var(--bg2),var(--bg2) 12px,var(--surface) 12px,var(--surface) 24px)",
+              }}
+            >
+              <span
+                className="rounded-[9px] border-2 px-4 py-2 font-mono text-base font-bold"
+                style={{ color: accent, borderColor: accent }}
+              >
+                {media === "audio" ? "AUD" : glyph}
+              </span>
+            </div>
+          ))}
+        {media === "audio" && (
+          <audio src={fullUrl} controls preload="metadata" className="absolute bottom-3 left-3 right-3 w-[calc(100%-24px)]" />
+        )}
+        {/* tap-to-open overlay only where the panel isn't itself interactive */}
+        {(media === "thumb" || media === "image") && (
+          <button
+            type="button"
+            onClick={handleOpenOriginal}
+            aria-label={`open ${glyph}`}
+            className="absolute inset-0"
+            style={media === "thumb" ? { background: "linear-gradient(to top, rgba(0,0,0,.45), transparent 45%)" } : undefined}
+          >
             <span
               aria-hidden="true"
-              className="absolute left-1/2 top-1/2 grid h-[60px] w-[60px] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-white text-[22px] text-white"
-              style={{ background: "rgba(0,0,0,.55)" }}
+              className="absolute bottom-[11px] right-3 rounded-[7px] px-[9px] py-1 font-mono text-[10px] text-white"
+              style={{ background: "rgba(0,0,0,.6)" }}
             >
-              ▶
+              ⛶ open {glyph}
             </span>
-          )}
-          <span
-            aria-hidden="true"
-            className="absolute bottom-[11px] right-3 rounded-[7px] px-[9px] py-1 font-mono text-[10px] text-white"
-            style={{ background: "rgba(0,0,0,.6)" }}
-          >
-            ⛶ open {glyph}
-          </span>
-        </button>
+          </button>
+        )}
         <span
           className="absolute left-[10px] top-[10px] rounded-md px-2 py-1 font-mono text-[9px] font-bold"
           style={{ background: "rgba(0,0,0,.72)", color: accent }}

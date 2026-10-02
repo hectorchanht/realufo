@@ -1,5 +1,6 @@
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
+import { thumbSql } from "../lib/db";
 
 export async function listRecords(req: Request, env: Env) {
   const u = new URL(req.url);
@@ -28,7 +29,7 @@ export async function listRecords(req: Request, env: Env) {
   const rows = await env.DB.prepare(
     `
     SELECT r.id,r.archive,r.agency,r.title,r.summary,r.kind,r.redacted,r.location,r.incident_date,r.doc_date,
-      (SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND a.role='thumb' LIMIT 1) thumb
+      ${thumbSql("r.id")} thumb
     FROM records r ${w} ORDER BY r.featured DESC, r.created_at DESC LIMIT ? OFFSET ?`
   )
     .bind(...bind, limit, offset)

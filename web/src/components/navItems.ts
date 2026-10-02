@@ -28,6 +28,9 @@ export const NAV_ITEMS: NavItem[] = [
   { tab: "map", glyph: "◐", label: "Map", path: "/map" },
 ];
 
+/** External link to the static predecessor archive (war-gov-ufo-release repo). */
+export const RELEASE_LINK = { glyph: "↗", label: "Release", href: "https://release.realufo.org/" };
+
 /**
  * Route -> active nav tab. Mirrors the prototype's `curTab` logic exactly:
  * doc screens highlight Archive, thread/board screens highlight Boards, case

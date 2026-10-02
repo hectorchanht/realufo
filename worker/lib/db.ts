@@ -8,3 +8,7 @@ export function relAgo(iso?: string | null): string {
   return Math.floor(h/24) + "d";
 }
 export const stanceOK = (x: unknown) => ["neutral","believer","skeptic","analyst"].includes(String(x)) ? String(x) : "neutral";
+// Card thumbnail subquery: the `thumb` asset, else the `full` asset when it is
+// itself an image (most image records ship no separate thumb).
+export const thumbSql = (recordId: string) =>
+  `(SELECT cdn_url FROM assets a WHERE a.record_id=${recordId} AND (a.role='thumb' OR (a.role='full' AND a.mime LIKE 'image/%')) ORDER BY a.role='thumb' DESC LIMIT 1)`;
