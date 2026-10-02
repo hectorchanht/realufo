@@ -1,9 +1,10 @@
 // Image inspection tools for the Doc media panel, uapbrowser-style:
 // brightness / contrast / saturation sliders, Enhance / Invert IR / B&W
-// presets, and a zoom lens. Pure CSS filters + a background-image lens, so
-// no canvas (and no CORS dependency on the CDN).
-import { useState } from "react";
-import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
+// presets, and a zoom lens (LensLayer, shared with VideoTools). Pure CSS
+// filters + a background-image lens, so no canvas (and no CORS dependency on
+// the CDN).
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import type { ReactNode, RefObject } from "react";
 
 export interface ImageAdjust {
   brightness: number; // percent, 100 = unchanged
@@ -38,9 +39,9 @@ export function adjustFilter(a: ImageAdjust): string {
   return f.join(" ");
 }
 
-const chip = "rounded-[7px] border px-[9px] py-1 font-mono text-[10px] active:scale-[.96]";
-const on = "border-signal text-signal";
-const off = "border-line2 text-dim";
+export const chip = "rounded-[7px] border px-[9px] py-1 font-mono text-[10px] active:scale-[.96]";
+export const on = "border-signal text-signal";
+export const off = "border-line2 text-dim";
 
 export function ImageToolbar({
   adjust,
@@ -53,7 +54,7 @@ export function ImageToolbar({
   lens: boolean;
   onLens: (on: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const changed = adjustFilter(adjust) !== "";
   return (
     <div className="mb-3.5">
@@ -65,11 +66,20 @@ export function ImageToolbar({
           ⌕ LENS
         </button>
         {open &&
-          PRESETS.map((p) => (
-            <button key={p.label} type="button" onClick={() => onAdjust(p.adj)} className={`${chip} ${off}`}>
-              {p.label}
-            </button>
-          ))}
+          PRESETS.map((p) => {
+            const active = adjustFilter(p.adj) === adjustFilter(adjust);
+            return (
+              <button
+                key={p.label}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onAdjust(active ? DEFAULT_ADJUST : p.adj)}
+                className={`${chip} ${active ? on : off}`}
+              >
+                {p.label}
+              </button>
+            );
+          })}
         {changed && (
           <button type="button" onClick={() => onAdjust(DEFAULT_ADJUST)} className={`${chip} ${off} ml-auto`}>
             ↺ Reset
@@ -98,70 +108,148 @@ export function ImageToolbar({
   );
 }
 
-const LENS_PX = 170;
-const LENS_ZOOM = 3;
+export const LENS_PX = 170;
+export const LENS_ZOOM = 3;
+
+/** Where the pointer sits on an `object-contain` picture of natural size w×h filling `box`. */
+export interface LensHit {
+  x: number; // pointer, box px
+  y: number;
+  u: number; // pointer, 0–1 across the drawn picture
+  v: number;
+  rw: number; // drawn picture size, px
+  rh: number;
+  lift: number; // touch: raise the bubble clear of the finger
+}
+
+type PointerLike = { clientX: number; clientY: number; pointerType: string };
+
+function hitAt(box: DOMRect, e: PointerLike, w: number, h: number): LensHit | null {
+  const scale = Math.min(box.width / w, box.height / h);
+  const rw = w * scale;
+  const rh = h * scale;
+  const x = e.clientX - box.left;
+  const y = e.clientY - box.top;
+  const u = (x - (box.width - rw) / 2) / rw;
+  const v = (y - (box.height - rh) / 2) / rh;
+  if (u < 0 || u > 1 || v < 0 || v > 1) return null;
+  return { x, y, u, v, rw, rh, lift: e.pointerType === "touch" ? LENS_PX * 0.65 : 0 };
+}
 
 /**
- * Magnifier over an `object-contain` <img> filling the same box. Covers the
- * panel while on (so it also replaces tap-to-open and stops swipes).
+ * Magnifier bubble over the media panel; `children` paints the zoomed view.
+ * `clickThrough` (mouse): the layer ignores clicks so the media's own
+ * controls / tap-to-open keep working, and tracks the pointer on the panel
+ * underneath. Otherwise (touch) it covers the panel and captures drags.
+ * The cursor hides while the bubble shows; `deadBottom` px at the bottom
+ * (a video's control bar) get no lens.
  */
-export function ZoomLens({ src, imgRef, filter }: { src: string; imgRef: RefObject<HTMLImageElement | null>; filter: string }) {
-  const [pos, setPos] = useState<{ x: number; y: number; bg: string; size: string; lift: number } | null>(null);
+export function LensLayer({
+  size,
+  clickThrough,
+  deadBottom = 0,
+  children,
+}: {
+  size: () => { w: number; h: number } | null;
+  clickThrough: boolean;
+  deadBottom?: number;
+  children: (hit: LensHit) => ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [hit, setHit] = useState<LensHit | null>(null);
 
-  function track(e: ReactPointerEvent<HTMLDivElement>) {
-    const img = imgRef.current;
-    const box = e.currentTarget.getBoundingClientRect();
-    if (!img?.naturalWidth) return setPos(null);
-    // where object-contain actually drew the picture inside the box
-    const scale = Math.min(box.width / img.naturalWidth, box.height / img.naturalHeight);
-    const rw = img.naturalWidth * scale;
-    const rh = img.naturalHeight * scale;
-    const x = e.clientX - box.left;
-    const y = e.clientY - box.top;
-    const u = (x - (box.width - rw) / 2) / rw;
-    const v = (y - (box.height - rh) / 2) / rh;
-    if (u < 0 || u > 1 || v < 0 || v > 1) return setPos(null);
-    setPos({
-      x,
-      y,
-      size: `${rw * LENS_ZOOM}px ${rh * LENS_ZOOM}px`,
-      bg: `${LENS_PX / 2 - u * rw * LENS_ZOOM}px ${LENS_PX / 2 - v * rh * LENS_ZOOM}px`,
-      lift: e.pointerType === "touch" ? LENS_PX * 0.65 : 0, // keep it clear of the finger
-    });
+  function show(h: LensHit | null) {
+    setHit(h);
+    const panel = ref.current?.parentElement;
+    if (panel) panel.toggleAttribute("data-lens-on", !!h);
   }
+  function move(e: PointerLike) {
+    const el = ref.current;
+    const s = size();
+    if (!el || !s) return show(null);
+    const box = el.getBoundingClientRect();
+    if (deadBottom && e.clientY - box.top > box.height - deadBottom) return show(null);
+    show(hitAt(box, e, s.w, s.h));
+  }
+  const onPanelMove = useEffectEvent((e: PointerEvent) => move(e));
+  const onPanelLeave = useEffectEvent(() => show(null));
+
+  useEffect(() => {
+    const panel = ref.current?.parentElement;
+    if (!clickThrough || !panel) return;
+    const m = (e: PointerEvent) => onPanelMove(e);
+    const l = () => onPanelLeave();
+    panel.addEventListener("pointermove", m);
+    panel.addEventListener("pointerleave", l);
+    return () => {
+      panel.removeEventListener("pointermove", m);
+      panel.removeEventListener("pointerleave", l);
+      panel.removeAttribute("data-lens-on");
+    };
+  }, [clickThrough]);
+
+  useEffect(() => () => ref.current?.parentElement?.removeAttribute("data-lens-on"), []);
 
   return (
     <div
+      ref={ref}
       data-zoom-lens
-      className="absolute inset-0 cursor-crosshair"
-      style={{ touchAction: "none" }}
+      className="absolute inset-0"
+      style={clickThrough ? { pointerEvents: "none" } : { touchAction: "none" }}
       onPointerDown={(e) => {
         e.stopPropagation();
-        track(e);
+        move(e);
       }}
       onPointerUp={(e) => e.stopPropagation()}
-      onPointerMove={track}
-      onPointerLeave={() => setPos(null)}
+      onPointerMove={(e) => move(e)}
+      onPointerLeave={() => show(null)}
     >
-      {pos && (
+      {hit && (
         <div
           aria-hidden="true"
           className="pointer-events-none absolute overflow-hidden rounded-full bg-black shadow-[0_0_0_2px_rgba(255,255,255,.8),0_6px_24px_rgba(0,0,0,.6)]"
-          style={{ width: LENS_PX, height: LENS_PX, left: pos.x - LENS_PX / 2, top: pos.y - LENS_PX / 2 - pos.lift }}
+          style={{ width: LENS_PX, height: LENS_PX, left: hit.x - LENS_PX / 2, top: hit.y - LENS_PX / 2 - hit.lift }}
         >
-          {/* filter on an inner layer so it doesn't recolor the lens ring */}
-          <div
-            className="h-full w-full"
-            style={{
-              backgroundImage: `url("${src}")`,
-              backgroundRepeat: "no-repeat",
-              backgroundSize: pos.size,
-              backgroundPosition: pos.bg,
-              filter: filter || undefined,
-            }}
-          />
+          {children(hit)}
         </div>
       )}
     </div>
+  );
+}
+
+/** Image lens: the full image as a zoomed background (no canvas, so no CORS dependency). */
+export function ZoomLens({
+  src,
+  imgRef,
+  filter,
+  clickThrough,
+}: {
+  src: string;
+  imgRef: RefObject<HTMLImageElement | null>;
+  filter: string;
+  clickThrough: boolean;
+}) {
+  return (
+    <LensLayer
+      clickThrough={clickThrough}
+      size={() => {
+        const img = imgRef.current;
+        return img?.naturalWidth ? { w: img.naturalWidth, h: img.naturalHeight } : null;
+      }}
+    >
+      {(h) => (
+        // filter on an inner layer so it doesn't recolor the lens ring
+        <div
+          className="h-full w-full"
+          style={{
+            backgroundImage: `url("${src}")`,
+            backgroundRepeat: "no-repeat",
+            backgroundSize: `${h.rw * LENS_ZOOM}px ${h.rh * LENS_ZOOM}px`,
+            backgroundPosition: `${LENS_PX / 2 - h.u * h.rw * LENS_ZOOM}px ${LENS_PX / 2 - h.v * h.rh * LENS_ZOOM}px`,
+            filter: filter || undefined,
+          }}
+        />
+      )}
+    </LensLayer>
   );
 }

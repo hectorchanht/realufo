@@ -35,6 +35,7 @@ import type { RecordsParams } from "../api/queries";
 import type { RecordKind, RelatedGroup } from "../api/types";
 import { DocCard } from "../components/DocCard";
 import { DEFAULT_ADJUST, ImageToolbar, ZoomLens, adjustFilter } from "../components/ImageTools";
+import { VideoLens, VideoTransport } from "../components/VideoTools";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
 import { useOverlay } from "../overlays/OverlayProvider";
@@ -132,14 +133,19 @@ export function Doc() {
   const [thumbFailed, setThumbFailed] = useState(false);
   useEffect(() => setThumbFailed(false), [id]);
 
-  // Image tools (adjust filters + zoom lens) start clean on every file.
+  // Image/video tools (adjust filters + zoom lens) start clean on every file.
+  // With a mouse the lens is on by default and click-through (follows the
+  // pointer, media stays clickable); on touch it would block scrolling the
+  // panel, so it stays an opt-in drag mode there.
+  const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
   const [adjust, setAdjust] = useState(DEFAULT_ADJUST);
-  const [lens, setLens] = useState(false);
+  const [lens, setLens] = useState(finePointer);
   const imgRef = useRef<HTMLImageElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     setAdjust(DEFAULT_ADJUST);
-    setLens(false);
-  }, [id]);
+    setLens(finePointer);
+  }, [id, finePointer]);
 
   // Panel chrome (badge, REDACTED, counter, arrows) fades out after a few
   // idle seconds so it never sits over the picture/video; any pointer
@@ -363,12 +369,14 @@ export function Doc() {
         )}
         {media === "video" && (
           <video
+            ref={videoRef}
             src={fullUrl}
             poster={thumbUrl ?? undefined}
             controls
             playsInline
             preload="metadata"
             className="h-full w-full bg-black object-contain"
+            style={{ filter: adjustFilter(adjust) || undefined }}
           />
         )}
         {media === "pdf" && (
@@ -403,7 +411,7 @@ export function Doc() {
           <audio src={fullUrl} controls preload="metadata" className="absolute bottom-3 left-3 right-3 w-[calc(100%-24px)]" />
         )}
         {/* tap-to-open overlay only where the panel isn't itself interactive */}
-        {(media === "thumb" || (media === "image" && !lens)) && (
+        {(media === "thumb" || (media === "image" && (!lens || finePointer))) && (
           <button
             type="button"
             onClick={handleOpenOriginal}
@@ -420,7 +428,10 @@ export function Doc() {
             </span>
           </button>
         )}
-        {media === "image" && lens && <ZoomLens src={fullUrl} imgRef={imgRef} filter={adjustFilter(adjust)} />}
+        {media === "image" && lens && (
+          <ZoomLens src={fullUrl} imgRef={imgRef} filter={adjustFilter(adjust)} clickThrough={finePointer} />
+        )}
+        {media === "video" && lens && <VideoLens videoRef={videoRef} filter={adjustFilter(adjust)} clickThrough={finePointer} />}
         <span
           className={`absolute left-[10px] top-[10px] rounded-md px-2 py-1 font-mono text-[9px] font-bold ${fade}`}
           style={{ background: "rgba(0,0,0,.72)", color: accent }}
@@ -464,7 +475,12 @@ export function Doc() {
         )}
       </div>
 
-      {media === "image" && <ImageToolbar adjust={adjust} onAdjust={setAdjust} lens={lens} onLens={setLens} />}
+      {media === "video" && (
+        <VideoTransport key={id} videoRef={videoRef} fileUrl={`/api/file/${id}`} name={id} filter={adjustFilter(adjust)} />
+      )}
+      {(media === "image" || media === "video") && (
+        <ImageToolbar adjust={adjust} onAdjust={setAdjust} lens={lens} onLens={setLens} />
+      )}
 
       {/* chips row — prototype line 358 */}
       <div className="mb-[10px] flex flex-wrap gap-[7px]">

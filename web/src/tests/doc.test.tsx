@@ -344,9 +344,14 @@ describe("Doc", () => {
     });
     renderDoc();
     const img = () => document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
-    fireEvent.click(screen.getByRole("button", { name: /adjust/i }));
+    expect(screen.getByRole("button", { name: /adjust/i })).toHaveAttribute("aria-expanded", "true"); // open by default
     fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
     expect(img().style.filter).toContain("invert(1)");
+    // presets are toggles: lit while active, a second click turns it off
+    expect(screen.getByRole("button", { name: /invert ir/i })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
+    expect(img().style.filter).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
     fireEvent.change(screen.getByLabelText(/brightness/i), { target: { value: "150" } });
     expect(img().style.filter).toContain("brightness(1.5)");
     fireEvent.click(screen.getByRole("button", { name: /reset/i }));
@@ -355,6 +360,75 @@ describe("Doc", () => {
     expect(document.querySelector("[data-zoom-lens]")).toBeInTheDocument();
     // lens mode replaces tap-to-open
     expect(screen.queryByRole("button", { name: /open IMG/i })).toBeNull();
+  });
+
+  it("video tools: speed, frame step, loop, A–B, filters and lens drive the <video>", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "video" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/clip.mp4", mime: "video/mp4", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    const pause = vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+    renderDoc();
+    const video = document.querySelector('[data-screen="doc"] video') as HTMLVideoElement;
+    video.currentTime = 2;
+
+    fireEvent.click(screen.getByRole("button", { name: "0.25×" }));
+    expect(video.playbackRate).toBe(0.25);
+    expect(screen.getByRole("button", { name: "0.25×" })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: /next frame/i }));
+    expect(video.currentTime).toBeCloseTo(2 + 1 / 30);
+    fireEvent.click(screen.getByRole("button", { name: /previous frame/i }));
+    expect(video.currentTime).toBeCloseTo(2);
+    expect(pause).toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /^loop$/i }));
+    expect(video.loop).toBe(true);
+
+    // A–B: first click marks A, second marks B, third clears
+    const ab = () => screen.getByRole("button", { name: /loop a–b/i });
+    fireEvent.click(ab());
+    expect(ab()).toHaveTextContent(/set B/i);
+    video.currentTime = 3;
+    fireEvent.click(ab());
+    expect(ab()).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(ab());
+    expect(ab()).toHaveAttribute("aria-pressed", "false");
+
+    expect(screen.getByRole("button", { name: /adjust/i })).toHaveAttribute("aria-expanded", "true"); // open by default
+    fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
+    expect(video.style.filter).toContain("invert(1)");
+    fireEvent.click(screen.getByRole("button", { name: /lens/i }));
+    expect(document.querySelector("[data-zoom-lens]")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /capture frame/i })).toBeInTheDocument();
+    pause.mockRestore();
+  });
+
+  it("with a mouse the lens is on by default and click-through (tap-to-open still works)", () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("pointer: fine"),
+      media: q,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    const layer = document.querySelector("[data-zoom-lens]") as HTMLElement;
+    expect(layer).toBeInTheDocument();
+    expect(layer.style.pointerEvents).toBe("none");
+    expect(screen.getByRole("button", { name: /open IMG/i })).toBeInTheDocument();
+    vi.unstubAllGlobals();
   });
 
   it("no image tools on non-image records", () => {

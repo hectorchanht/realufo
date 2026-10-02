@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* zoom lens (components/ImageTools LensLayer): no cursor over the bubble */
+[data-lens-on],
+[data-lens-on] * {
+  cursor: none !important;
+}
