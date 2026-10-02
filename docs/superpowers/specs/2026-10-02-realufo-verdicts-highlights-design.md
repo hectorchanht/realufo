@@ -76,8 +76,8 @@ ordering uses the latest activity of either kind:
 
 ### UI
 
-- **Doc page** (`web/src/screens/Doc.tsx`): new `VerdictBar` component under the media / above
-  summary. Label `YOUR VERDICT`, three buttons `EXPLAINED · UNEXPLAINED · NEED MORE DATA`; selected
+- **Doc page** (`web/src/screens/Doc.tsx`): new `VerdictBar` component after the
+  summary, above OPEN ORIGINAL (read first, then judge). Label `YOUR VERDICT`, three buttons `EXPLAINED · UNEXPLAINED · NEED MORE DATA`; selected
   one highlighted; tapping it again clears. Before voting: `N verdicts so far — vote to see the split`
   (or `Be the first to weigh in` when 0). After voting: a 3-segment horizontal bar with % labels
   and `N verdicts`. Optimistic update; on error revert and show the server message (429 text).
