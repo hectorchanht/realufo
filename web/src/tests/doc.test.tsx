@@ -14,7 +14,7 @@
 // promoted-thread link assertion, per the task brief ("Render within
 // providers + MemoryRouter at /doc/:id").
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import type { CommentsResponse, RecordDetail, RecordsListResponse } from "../api/types";
 import Doc from "../screens/Doc";
@@ -194,6 +194,21 @@ beforeEach(() => {
 });
 
 describe("Doc", () => {
+  it("fades the media-panel chrome after idle, brings it back on pointer move", () => {
+    vi.useFakeTimers();
+    try {
+      const { container } = renderDoc();
+      const panel = container.querySelector("[data-chrome]")!;
+      expect(panel.getAttribute("data-chrome")).toBe("on");
+      act(() => vi.advanceTimersByTime(3000));
+      expect(panel.getAttribute("data-chrome")).toBe("off");
+      fireEvent.pointerMove(panel);
+      expect(panel.getAttribute("data-chrome")).toBe("on");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("renders the meta grid fields and the summary", () => {
     renderDoc();
     expect(screen.getByText("1978-03-04")).toBeInTheDocument();

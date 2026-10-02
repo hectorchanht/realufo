@@ -43,6 +43,7 @@ import { RECORDS_PAGE_SIZE, recordsPage } from "../lib/recordsPage";
 // prototype line 522: `if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4)`.
 const SWIPE_MIN_DX = 55;
 const SWIPE_DOMINANCE = 1.4;
+const CHROME_IDLE_MS = 2500;
 
 // Default board a promoted comment / file-thread lands in — the prototype's
 // `defBoard=(D.boards[0]&&D.boards[0].id)||'uap'` (RealUFO.dc.html:628);
@@ -121,6 +122,22 @@ export function Doc() {
   const [thumbFailed, setThumbFailed] = useState(false);
   useEffect(() => setThumbFailed(false), [id]);
 
+  // Panel chrome (badge, REDACTED, counter, arrows) fades out after a few
+  // idle seconds so it never sits over the picture/video; any pointer
+  // movement or tap on the panel brings it back, mouse-out hides it at once.
+  const [chrome, setChrome] = useState(true);
+  const chromeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  function showChrome() {
+    setChrome(true);
+    clearTimeout(chromeTimer.current);
+    chromeTimer.current = setTimeout(() => setChrome(false), CHROME_IDLE_MS);
+  }
+  const fade = `transition-opacity duration-300 ${chrome ? "" : "opacity-0"}`;
+  useEffect(() => {
+    showChrome();
+    return () => clearTimeout(chromeTimer.current);
+  }, [id]);
+
   // See file header note — same filter param names Archive.tsx reads off its
   // own URL, read here off THIS route's URL instead.
   const page = recordsPage(searchParams);
@@ -175,6 +192,7 @@ export function Doc() {
   // instance fields so a re-render mid-gesture never loses the start point.
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   function handlePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    showChrome();
     // Scrubbing a video/audio timeline must not count as a swipe.
     if ((e.target as HTMLElement).closest("video,audio")) return;
     swipeStart.current = { x: e.clientX, y: e.clientY };
@@ -303,6 +321,15 @@ export function Doc() {
       <div
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
+        onPointerMove={showChrome}
+        onPointerLeave={(e) => {
+          if (e.pointerType === "mouse") {
+            clearTimeout(chromeTimer.current);
+            setChrome(false);
+          }
+        }}
+        onFocus={showChrome}
+        data-chrome={chrome ? "on" : "off"}
         className="relative mb-3.5 overflow-hidden rounded-2xl border border-line2 bg-bg2"
         style={{ aspectRatio: "4/3", maxHeight: "78vh", touchAction: "pan-y" }}
       >
@@ -361,7 +388,7 @@ export function Doc() {
           >
             <span
               aria-hidden="true"
-              className="absolute bottom-[11px] right-3 rounded-[7px] px-[9px] py-1 font-mono text-[10px] text-white"
+              className={`absolute bottom-[11px] right-3 rounded-[7px] px-[9px] py-1 font-mono text-[10px] text-white ${fade}`}
               style={{ background: "rgba(0,0,0,.6)" }}
             >
               ⛶ open {glyph}
@@ -369,19 +396,19 @@ export function Doc() {
           </button>
         )}
         <span
-          className="absolute left-[10px] top-[10px] rounded-md px-2 py-1 font-mono text-[9px] font-bold"
+          className={`absolute left-[10px] top-[10px] rounded-md px-2 py-1 font-mono text-[9px] font-bold ${fade}`}
           style={{ background: "rgba(0,0,0,.72)", color: accent }}
         >
           {badge}
         </span>
         {!!record.redacted && (
-          <span className="absolute right-[10px] top-[10px] rounded-md bg-red px-2 py-1 font-mono text-[9px] font-bold text-white">
+          <span className={`absolute right-[10px] top-[10px] rounded-md bg-red px-2 py-1 font-mono text-[9px] font-bold text-white ${fade}`}>
             REDACTED
           </span>
         )}
         {docIdx && (
           <span
-            className="absolute left-1/2 top-[11px] -translate-x-1/2 rounded-full px-[9px] py-[3px] font-mono text-[9px] text-white"
+            className={`absolute left-1/2 top-[11px] -translate-x-1/2 rounded-full px-[9px] py-[3px] font-mono text-[9px] text-white ${fade}`}
             style={{ background: "rgba(0,0,0,.55)" }}
           >
             {docIdx}
@@ -392,7 +419,7 @@ export function Doc() {
             type="button"
             onClick={() => goTo(-1)}
             aria-label="Previous file"
-            className="absolute left-2 top-1/2 grid h-[38px] w-[38px] -translate-y-1/2 place-items-center rounded-full border border-white/25 text-[19px] text-white active:scale-90"
+            className={`absolute left-2 top-1/2 grid h-[38px] w-[38px] -translate-y-1/2 place-items-center rounded-full border border-white/25 text-[19px] text-white active:scale-90 ${fade}`}
             style={{ background: "rgba(0,0,0,.5)" }}
           >
             ‹
@@ -403,7 +430,7 @@ export function Doc() {
             type="button"
             onClick={() => goTo(1)}
             aria-label="Next file"
-            className="absolute right-2 top-1/2 grid h-[38px] w-[38px] -translate-y-1/2 place-items-center rounded-full border border-white/25 text-[19px] text-white active:scale-90"
+            className={`absolute right-2 top-1/2 grid h-[38px] w-[38px] -translate-y-1/2 place-items-center rounded-full border border-white/25 text-[19px] text-white active:scale-90 ${fade}`}
             style={{ background: "rgba(0,0,0,.5)" }}
           >
             ›
