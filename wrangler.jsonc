@@ -3,7 +3,11 @@
   "main": "worker/index.ts",
   "compatibility_date": "2026-07-01",
   "compatibility_flags": ["nodejs_compat"],
-  "assets": { "directory": "web/dist", "binding": "ASSETS", "not_found_handling": "single-page-application" },
+  "assets": { "directory": "web/dist", "binding": "ASSETS", "not_found_handling": "single-page-application",
+    // Browser navigations (Sec-Fetch-Mode: navigate) otherwise skip the Worker and get
+    // index.html, which broke window.open('/api/file/:id'). Deep-link routes listed so
+    // OG meta injection keeps running once the list disables navigate auto-detection.
+    "run_worker_first": ["/api/*", "/doc/*", "/case/*", "/thread/*"] },
   "vars": { "FEATURE_AUTH": "false", "RATE_MAX": "20", "RATE_WINDOW_SEC": "60" },
   "d1_databases": [{ "binding": "DB", "database_name": "realufo-db", "database_id": "a8836cc9-9f49-42bd-ad99-4162b410bcd9", "migrations_dir": "db/migrations" }],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "realufo" }],
