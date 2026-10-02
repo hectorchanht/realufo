@@ -551,6 +551,8 @@ describe("Doc", () => {
     const bubble = document.body.querySelector(":scope > .rounded-full.fixed") as HTMLElement;
     expect(bubble).toBeInTheDocument();
     expect(layer.contains(bubble)).toBe(false);
+    // stacks above the full-screen MediaViewer (z-[70]), else the expanded image hides it
+    expect(bubble).toHaveClass("z-[75]");
     expect(bubble.style.left).toBe(`${490 - 85}px`);
     expect(bubble.style.top).toBe(`${60 - 85}px`);
     // touch: docks below the panel (clear of the finger), x follows the finger clamped on-screen

@@ -430,7 +430,7 @@ export function LensLayer({
         createPortal(
           <div
             aria-hidden="true"
-            className="pointer-events-none fixed z-50 overflow-hidden rounded-full bg-black shadow-[0_0_0_2px_rgba(255,255,255,.8),0_6px_24px_rgba(0,0,0,.6)]"
+            className="pointer-events-none fixed z-[75] overflow-hidden rounded-full bg-black shadow-[0_0_0_2px_rgba(255,255,255,.8),0_6px_24px_rgba(0,0,0,.6)]"
             style={{ width: LENS_PX, height: LENS_PX, left: hit.x, top: hit.y }}
           >
             {children(hit)}
