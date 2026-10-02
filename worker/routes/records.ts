@@ -1,6 +1,8 @@
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
 import { CARD_COLS } from "../lib/db";
+import { hubsFor } from "../lib/hubs";
+import { listHubsCached } from "./hubs";
 import { isoDate, yearOf, decadeOf, wargovReleases, facetCounts } from "../lib/facets";
 // Re-exported for callers that predate lib/facets (lib/xpick.ts).
 export { wargovReleases };
@@ -145,13 +147,13 @@ export async function recordFacets(_req: Request, env: Env) {
 
 // The doc detail object, shared by GET /api/records/:id and the Worker's
 // pre-render of /doc/:id (lib/pages.ts). Null when the record doesn't exist.
-export async function loadRecord(env: Env, id: string) {
+export async function loadRecord(env: Env, id: string, origin: string) {
   const record = await env.DB.prepare("SELECT * FROM records WHERE id=?")
     .bind(id)
     .first<RecordRow>();
   if (!record) return null;
   const releaseP = releaseOf(env, record);
-  const [assets, promoted, series, release, related, text] = await Promise.all([
+  const [assets, promoted, series, release, related, text, hubList] = await Promise.all([
     env.DB.prepare("SELECT role,cdn_url,mime,width,height,duration FROM assets WHERE record_id=?").bind(id).all(),
     env.DB.prepare(
       `SELECT t.id,t.no,t.title,t.stance,t.votes,t.source_record_id,b.slug boardSlug,b.accent accent
@@ -165,15 +167,24 @@ export async function loadRecord(env: Env, id: string) {
     env.DB.prepare("SELECT pages,truncated,total_pages FROM record_text WHERE record_id=?")
       .bind(id)
       .first<{ pages: string; truncated: number; total_pages: number }>(),
+    // Hub links are optional garnish: a failing facet query must not break the doc.
+    listHubsCached(env, origin).catch((e) => {
+      console.error("hub list failed", e);
+      return [];
+    }),
   ]);
   // Quality-filtered PDF text (crawler ingest.fulltext); null until extracted.
   const fullText = text
     ? { pages: JSON.parse(text.pages) as { n: number; text: string }[], truncated: !!text.truncated, total_pages: text.total_pages }
     : null;
-  return { record, assets: assets.results, promotedThreads: promoted.results, series, release, related, fullText };
+  const live = new Set(hubList.map((h) => `${h.kind}/${h.slug}`));
+  return {
+    record, assets: assets.results, promotedThreads: promoted.results, series, release, related, fullText,
+    hubs: hubsFor(record, release?.no ?? null, live),
+  };
 }
 
-export async function getRecord(_req: Request, env: Env, p: Record<string, string>) {
-  const data = await loadRecord(env, p.id);
+export async function getRecord(req: Request, env: Env, p: Record<string, string>) {
+  const data = await loadRecord(env, p.id, new URL(req.url).origin);
   return data ? json(data) : error(404, "record not found");
 }

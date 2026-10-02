@@ -84,8 +84,8 @@ const boardsPage: Loader = async (env) => {
 
 const mapPage: Loader = async () => ({ meta: TAB.map, body: tabBody(TAB.map.title, TAB.map.description) });
 
-const docPage: Loader = async (env, g) => {
-  const d = (await loadRecord(env, g.id)) as DocData | null;
+const docPage: Loader = async (env, g, url) => {
+  const d = (await loadRecord(env, g.id, url.origin)) as DocData | null;
   if (!d) return null;
   const x = d.record;
   const agency = x.agency_full || x.agency;
