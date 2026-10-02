@@ -28,12 +28,14 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 
 ## Follow-ups from review
 
-- `/cases` ledes are cut at 160 chars mid-word with no ellipsis (`worker/routes/bootstrap.ts` `substr(...,1,160)`); trim at a word and add "…".
+- DONE 420e840: `/cases` ledes clipped at a word with "…" (`snippet()` moved to `worker/lib/ssr.ts`).
+- DONE 821a302: composer keeps drafts on dismiss; can't dismiss mid-send.
+- DONE (data, 2026-10-02): old Ask thread `ut_414A673B` rewritten to the `[n]` + doc-URL format (posts.body + threads.op_body); the only old-format Ask post.
 - One unreproduced single-test flake seen once on plan 003's branch under parallel load (3 clean reruns after).
 
 ## Findings not planned (yet)
 
-- **Search inside documents (FTS5 over `record_text`)** — maintainer asked about weight; not selected for planning yet. Wants a spike plan first (export/backup behaviour of FTS5 virtual tables in D1, index size, sync with ingest).
+- **Search inside documents (FTS5) — spike done 2026-10-02, ready to plan.** Real data: `record_text` = 429 files / 5.6 MB (not 38 MB) → 2,884 pages. Local FTS5 (porter unicode61): full index +11.5 MB, contentless (`content=''`) +4.1 MB; build 0.2 s; queries <1 ms. Recall vs today's LIKE on title/summary: roswell 0→3 files, radar 9→91, "weather balloon" 2→10, "blue book" 9→13. **Gotcha (Cloudflare docs, import-export page): "Export is not supported for virtual tables, including databases with virtual tables"** — workaround: drop FTS table, export, recreate. Nothing in repo/CI uses `d1 export`; D1 Time Travel restores are unaffected. Recommended: contentless FTS5 per page, snippets read from `record_text` for the top hits, index rows written by `crawler/ingest/fulltext.py`, Archive `q` = FTS match OR existing LIKE.
 - Composer loses draft on dismiss; close-mid-upload swallows the result toast (`web/src/overlays/Composer.tsx:141-193`).
 - Accessibility: Composer/MediaViewer not real dialogs, unlabeled fields, Space captured on video pages (`VideoTools.tsx:205`), stance shown by color only, small tap targets.
 - Doc deep links wait on an uncached `/api/records/:id` though the Worker already loaded the record for the HTML (`worker/lib/pages.ts:102`).
