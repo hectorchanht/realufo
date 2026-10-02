@@ -43,6 +43,8 @@ import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useBootstrap, useFacets, useRecords } from "../api/queries";
 import { AskAnswer } from "../components/AskAnswer";
+import { AskHistory } from "../components/AskHistory";
+import { addAskHistory } from "../lib/askHistory";
 import { DocCard } from "../components/DocCard";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
@@ -285,11 +287,11 @@ export function Archive() {
     }
   }, [ask]);
 
-  function submitAsk(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!askMode) return;
-    const q = askInput.replace(/\s+/g, " ").trim();
-    if (q.length < 3) return;
+  // Ask one question: echo it in the box, remember it in this browser, and
+  // write ?ask= (a history entry, so back returns to the lists).
+  function openAsk(q: string) {
+    setAskInput(q);
+    addAskHistory(q);
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
@@ -298,6 +300,14 @@ export function Archive() {
       },
       { replace: false },
     );
+  }
+
+  function submitAsk(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!askMode) return;
+    const q = askInput.replace(/\s+/g, " ").trim();
+    if (q.length < 3) return;
+    openAsk(q);
   }
 
   function toggleAsk() {
@@ -435,6 +445,7 @@ export function Archive() {
       </form>
 
       {askMode && ask && <AskAnswer question={ask} />}
+      {askMode && !ask && <AskHistory onPick={openAsk} />}
 
       {/* static predecessor archive (war-gov-ufo-release repo) */}
       <a

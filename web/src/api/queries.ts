@@ -9,6 +9,7 @@ import { api } from "./client";
 import type {
   AddCommentResponse,
   AskResponse,
+  AskRecentResponse,
   BoardThreadsResponse,
   Bootstrap,
   CaseDetail,
@@ -54,6 +55,7 @@ export const qk = {
   boardThreads: (boardId: string) => ["boardThreads", boardId] as const,
   threadSearch: (q: string) => ["threadSearch", q] as const,
   ask: (question: string) => ["ask", question] as const,
+  askRecent: ["askRecent"] as const,
   thread: (id: string) => ["thread", id] as const,
   case: (slug: string) => ["case", slug] as const,
   caseComments: (slug: string) => ["caseComments", slug] as const,
@@ -152,6 +154,17 @@ export function useAsk(question: string) {
     queryFn: () => api.get<AskResponse>(`/api/ask?q=${encodeURIComponent(question)}`),
     enabled: !!question,
     staleTime: Infinity,
+    retry: false,
+  });
+}
+
+// Free (no AI): mounted only in Ask mode, so a short staleTime refreshes it each
+// time the answer card closes.
+export function useAskRecent() {
+  return useQuery({
+    queryKey: qk.askRecent,
+    queryFn: () => api.get<AskRecentResponse>("/api/ask/recent"),
+    staleTime: 30_000,
     retry: false,
   });
 }

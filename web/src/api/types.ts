@@ -422,7 +422,19 @@ export interface AskSource {
   thumb: string | null;
 }
 export interface AskResponse {
+  /** The question as asked (original case); absent on answers cached before it existed. */
+  question?: string;
   answer: string;
   sources: AskSource[];
   cached: boolean;
+}
+
+/** GET /api/ask/recent — answered questions, newest first. */
+export interface AskRecent {
+  question: string;
+  sources: number;
+  asked_at: string;
+}
+export interface AskRecentResponse {
+  recent: AskRecent[];
 }

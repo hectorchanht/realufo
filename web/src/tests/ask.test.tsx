@@ -1,14 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { AskAnswer } from "../components/AskAnswer";
 import { renderAppAt } from "./util";
+import { ASK_HISTORY_KEY } from "../lib/askHistory";
 
 const useAskMock = vi.fn();
+const useAskRecentMock = vi.fn();
 let askFeature = true;
 vi.mock("../api/queries", () => ({
   useAsk: (q: string) => useAskMock(q),
+  useAskRecent: () => useAskRecentMock(),
   useFacets: () => ({ data: undefined }),
   useBootstrap: () => ({
     data: { archives: [], boards: [], stats: { records: 2 }, ticker: [], sightings: [], cases: [], features: { ask: askFeature } },
@@ -93,10 +96,68 @@ describe("AskAnswer", () => {
   });
 });
 
+function memoryStorage() {
+  const m = new Map<string, string>();
+  return {
+    getItem: (k: string) => m.get(k) ?? null,
+    setItem: (k: string, v: string) => void m.set(k, String(v)),
+    removeItem: (k: string) => void m.delete(k),
+    clear: () => m.clear(),
+  };
+}
+
 describe("Archive ASK toggle", () => {
   beforeEach(() => {
     askFeature = true;
     useAskMock.mockReturnValue({ data: undefined, isLoading: false, error: null, refetch: vi.fn() });
+    useAskRecentMock.mockReturnValue({ data: undefined });
+    vi.stubGlobal("localStorage", memoryStorage());
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("ask mode with no question shows your questions and recently asked; tapping one asks it", async () => {
+    localStorage.setItem(ASK_HISTORY_KEY, JSON.stringify(["Earlier question one"]));
+    useAskRecentMock.mockReturnValue({
+      data: { recent: [{ question: "What about Gimbal?", sources: 2, asked_at: "2026-10-02 08:00:00" }] },
+    });
+    useAskMock.mockReturnValue({ data: undefined, isLoading: true, error: null, refetch: vi.fn() });
+    renderAppAt("/archive");
+    fireEvent.click(await screen.findByRole("button", { name: "Ask the archive" }));
+    expect(screen.getByText("YOUR QUESTIONS")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Earlier question one" })).toBeInTheDocument();
+    expect(screen.getByText("RECENTLY ASKED")).toBeInTheDocument();
+    expect(screen.getByText("2 sources")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /What about Gimbal\?/ }));
+    expect(await screen.findByText("◉ consulting the archive…")).toBeInTheDocument();
+    expect(useAskMock).toHaveBeenLastCalledWith("What about Gimbal?");
+    expect(screen.queryByText("RECENTLY ASKED")).toBeNull(); // lists hide while an answer is open
+    expect(JSON.parse(localStorage.getItem(ASK_HISTORY_KEY)!)[0]).toBe("What about Gimbal?");
+  });
+
+  it("submitting a question saves it to your questions", async () => {
+    renderAppAt("/archive");
+    fireEvent.click(await screen.findByRole("button", { name: "Ask the archive" }));
+    const box = screen.getByPlaceholderText(/ask the archive — e\.g\./);
+    fireEvent.change(box, { target: { value: "  what did radar see?  " } });
+    fireEvent.submit(box.closest("form")!);
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(ASK_HISTORY_KEY)!)).toEqual(["what did radar see?"]));
+  });
+
+  it("clear button empties your questions", async () => {
+    localStorage.setItem(ASK_HISTORY_KEY, JSON.stringify(["Old one"]));
+    renderAppAt("/archive");
+    fireEvent.click(await screen.findByRole("button", { name: "Ask the archive" }));
+    fireEvent.click(screen.getByRole("button", { name: "clear your questions" }));
+    expect(screen.queryByRole("button", { name: "Old one" })).toBeNull();
+    expect(localStorage.getItem(ASK_HISTORY_KEY)).toBeNull();
+  });
+
+  it("shows nothing extra when both lists are empty", async () => {
+    renderAppAt("/archive");
+    fireEvent.click(await screen.findByRole("button", { name: "Ask the archive" }));
+    expect(screen.queryByText("YOUR QUESTIONS")).toBeNull();
+    expect(screen.queryByText("RECENTLY ASKED")).toBeNull();
   });
 
   it("is hidden when the ask feature is off", async () => {
