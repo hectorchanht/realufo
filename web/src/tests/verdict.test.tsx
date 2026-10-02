@@ -41,4 +41,18 @@ describe("VerdictBar", () => {
     fireEvent.click(screen.getByRole("button", { name: "EXPLAINED" }));
     expect(toast).toHaveBeenCalledWith("slow down — too many votes");
   });
+
+  it("ignores a quick double-tap on the same option (would otherwise clear the vote)", () => {
+    const now = vi.spyOn(Date, "now").mockReturnValue(1000);
+    render(<VerdictBar recordId="r1" state={{ mine: null, total: 0 }} />);
+    const btn = screen.getByRole("button", { name: "EXPLAINED" });
+    fireEvent.click(btn);
+    now.mockReturnValue(1200);
+    fireEvent.click(btn);
+    expect(mutate).toHaveBeenCalledTimes(1);
+    now.mockReturnValue(2000);
+    fireEvent.click(btn);
+    expect(mutate).toHaveBeenCalledTimes(2);
+    now.mockRestore();
+  });
 });

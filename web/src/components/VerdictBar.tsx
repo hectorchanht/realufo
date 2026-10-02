@@ -1,5 +1,6 @@
 // File verdict (Spec 6 Part A): one tap per visitor; the split is shown only
 // after you vote (the API withholds the tally until then).
+import { useRef } from "react";
 import type { Verdict, VerdictState } from "../api/types";
 import { useCastVerdict } from "../api/queries";
 import { useOverlay } from "../overlays/OverlayProvider";
@@ -10,6 +11,8 @@ const OPTIONS: { v: Verdict; label: string; color: string }[] = [
   { v: "more_data", label: "NEED MORE DATA", color: "var(--amber)" },
 ];
 const pct = (n: number, total: number) => (total ? Math.round((n * 100) / total) : 0);
+// A second tap on the same option inside this window is a double-tap, not "clear my vote".
+const DOUBLE_TAP_MS = 600;
 const plural = (n: number) => `${n} ${n === 1 ? "verdict" : "verdicts"}`;
 
 export function VerdictBar({ recordId, state }: { recordId: string; state?: VerdictState }) {
@@ -19,7 +22,13 @@ export function VerdictBar({ recordId, state }: { recordId: string; state?: Verd
   const total = state?.total ?? 0;
   const tally = mine ? state?.tally : undefined;
 
+  const lastTap = useRef<{ v: Verdict; t: number } | null>(null);
+
   const vote = (v: Verdict) => {
+    const t = Date.now();
+    const prev = lastTap.current;
+    lastTap.current = { v, t };
+    if (prev?.v === v && t - prev.t < DOUBLE_TAP_MS) return;
     navigator.vibrate?.(5);
     cast.mutate(v, { onError: (e: Error) => toast(e.message) });
   };
