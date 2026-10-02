@@ -10,7 +10,8 @@ INDEX = "realufo-chunks"
 EMBED_BATCH = 100
 # bge-m3 caps a request at 60k tokens; garbled OCR can run ~2 tokens/char.
 EMBED_MAX_CHARS = 30_000
-WRITE_BATCH = 1000
+WRITE_BATCH = 1000   # upsert
+DELETE_BATCH = 100   # delete_by_ids: API max is 100 ids
 
 def _call(path: str, body: bytes, ctype: str = "application/json"):
     acct, tok = os.environ["CLOUDFLARE_ACCOUNT_ID"], os.environ["CLOUDFLARE_API_TOKEN"]
@@ -45,5 +46,5 @@ def upsert(vectors: list[dict]) -> None:
         _call(f"/vectorize/v2/indexes/{INDEX}/upsert", nd, "application/x-ndjson")
 
 def delete(ids: list[str]) -> None:
-    for i in range(0, len(ids), WRITE_BATCH):
-        _call(f"/vectorize/v2/indexes/{INDEX}/delete_by_ids", json.dumps({"ids": ids[i:i + WRITE_BATCH]}).encode())
+    for i in range(0, len(ids), DELETE_BATCH):
+        _call(f"/vectorize/v2/indexes/{INDEX}/delete_by_ids", json.dumps({"ids": ids[i:i + DELETE_BATCH]}).encode())

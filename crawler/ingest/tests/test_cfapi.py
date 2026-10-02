@@ -46,7 +46,8 @@ def test_upsert_sends_ndjson(calls):
 
 def test_delete_batches_ids(calls):
     cfapi.delete([f"id-{i}" for i in range(1500)])
-    assert [len(json.loads(c.data)["ids"]) for c in calls] == [1000, 500]
+    # Vectorize delete_by_ids: "max id count is 100" (code 40007, seen in prod)
+    assert [len(json.loads(c.data)["ids"]) for c in calls] == [100] * 15
     assert calls[0].full_url.endswith("/vectorize/v2/indexes/realufo-chunks/delete_by_ids")
 
 def test_api_failure_raises(monkeypatch, calls):
