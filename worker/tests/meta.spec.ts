@@ -282,3 +282,38 @@ describe("pre-rendered body", () => {
     expect(await get("/doc/NOPE")).toContain('<div id="root"></div>');
   });
 });
+
+describe("page-data cache", () => {
+  const shell = (bundle: string) =>
+    `<html><head><!--META--><script src="/assets/${bundle}.js"></script></head><body><div id="root"></div></body></html>`;
+  const get = async (path: string, bundle = "a") => {
+    const ctx = createExecutionContext();
+    const fakeEnv = { ...env, ASSETS: { fetch: async () => new Response(shell(bundle)) } } as any;
+    const res = await worker.fetch(new Request("https://x" + path), fakeEnv, ctx);
+    await waitOnExecutionContext(ctx);
+    return res.text();
+  };
+
+  it("second request is served without D1 (row deleted in between)", async () => {
+    await env.DB.prepare("INSERT INTO boards(id,slug,name,desc) VALUES('b_cache','/cachetest/','Cache Board','d')").run();
+    expect(await get("/board/cachetest")).toContain("<h1>Cache Board</h1>");
+    await env.DB.prepare("DELETE FROM boards WHERE id='b_cache'").run();
+    expect(await get("/board/cachetest")).toContain("<h1>Cache Board</h1>");
+  });
+
+  it("cached data is injected into the current index.html (new bundle after deploy)", async () => {
+    await get("/doc/FBI-UAP-D003", "old");
+    const html = await get("/doc/FBI-UAP-D003", "new");
+    expect(html).toContain("/assets/new.js");
+    expect(html).not.toContain("/assets/old.js");
+    expect(html).toContain("UAP file FBI-UAP-D003");
+  });
+
+  it("query strings share the cache entry and misses are not cached", async () => {
+    expect(await get("/doc/NOPE2?x=1")).toContain('<div id="root"></div>');
+    await env.DB.prepare(
+      "INSERT INTO records(id,archive,agency,title,kind,status) VALUES('NOPE2','wargov','FBI','NOPE2, Late arrival','pdf','live')"
+    ).run();
+    expect(await get("/doc/NOPE2?y=2")).toContain("<h1>NOPE2, Late arrival</h1>");
+  });
+});

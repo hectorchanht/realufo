@@ -1,6 +1,6 @@
 import type { Env } from "../env";
 import { esc, injectBody, DEFAULT_DESCRIPTION } from "./ssr";
-import { ROUTES } from "./pages";
+import { ROUTES, type Page } from "./pages";
 
 export { DEFAULT_DESCRIPTION };
 
@@ -63,6 +63,29 @@ export function injectMeta(html: string, m: MetaInput): string {
 const shareCard = (url: URL) => new URL("/og.png", url).href;
 const htmlResponse = (body: string) => new Response(body, { headers: { "content-type": "text/html;charset=utf-8" } });
 
+const PAGE_TTL = 3600;
+
+// Caches the loaded page data (meta + body JSON) per path, so D1 runs at most
+// once per path per colo per hour. Data, not HTML: the current index.html is
+// re-read every request, so a deploy's new bundle hash is never stale.
+// Pathname-only key so query strings can't bust it; misses aren't cached.
+// ponytail: crawlers may see up to 1h-old related lists / replies; humans get
+// fresh data from the SPA's API calls. Purge or shorten PAGE_TTL if that matters.
+async function cachedPage(url: URL, load: () => Promise<Page | null>): Promise<Page | null> {
+  const key = new Request(`${url.origin}/__page${url.pathname}`);
+  const hit = await caches.default.match(key);
+  if (hit) return hit.json<Page>();
+  const page = await load();
+  if (page)
+    await caches.default.put(
+      key,
+      new Response(JSON.stringify(page), {
+        headers: { "content-type": "application/json", "cache-control": `max-age=${PAGE_TTL}` },
+      })
+    );
+  return page;
+}
+
 // GET on a pre-rendered SPA route (lib/pages.ts ROUTES) → the built index.html
 // with per-route <head> meta and a plain-HTML body in #root, whatever the
 // Accept header (share scrapers often send */*). Entity not found → index.html
@@ -74,7 +97,7 @@ export async function serveWithMeta(req: Request, env: Env): Promise<Response> {
       const match = r.pattern.exec({ pathname: url.pathname });
       if (!match) continue;
       const html = await (await env.ASSETS.fetch(new Request(new URL("/index.html", url)))).text();
-      const page = await r.load(env, match.pathname.groups as Record<string, string>, url);
+      const page = await cachedPage(url, () => r.load(env, match.pathname.groups as Record<string, string>, url));
       if (!page) return htmlResponse(html);
       const image = page.meta.image || shareCard(url);
       const jsonLd = page.meta.jsonLd && { "@context": "https://schema.org", ...page.meta.jsonLd, url: url.href, image };
