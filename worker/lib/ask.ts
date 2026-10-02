@@ -66,3 +66,23 @@ export function cleanCitations(answer: string, max: number): { text: string; cit
     .trim();
   return { text, cited: [...cited].sort((a, b) => a - b) };
 }
+
+// Shared answer URLs (Spec 8 §1.4): /ask/123-what-did-radar-see. The worker is
+// the only place that builds them; web and crawler use the url it returns.
+export const askSlug = (q: string) =>
+  q
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+/, "")
+    .slice(0, 60)
+    .replace(/-+$/, "");
+
+export const askHref = (id: number, q: string) => {
+  const s = askSlug(q);
+  return `/ask/${id}${s ? "-" + s : ""}`;
+};
+
+// "123" or "123-anything" → 123; the slug part is never checked (canonical tag fixes it).
+export const askIdOf = (param: string) => Number(/^(\d+)(?:-|$)/.exec(param)?.[1]) || null;

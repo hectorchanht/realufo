@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, NOT_COVERED } from "../lib/ask";
+import { normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, NOT_COVERED, askSlug, askHref, askIdOf } from "../lib/ask";
 
 describe("ask helpers", () => {
   it("normalizes whitespace and enforces 3–300 chars", () => {
@@ -36,5 +36,39 @@ describe("ask helpers", () => {
 
   it("strips out-of-range citations and reports cited sources", () => {
     expect(cleanCitations("Seen [1] and [9] then [2][2].", 3)).toEqual({ text: "Seen [1] and then [2][2].", cited: [1, 2] });
+  });
+});
+
+describe("shared answer URLs", () => {
+  it("askSlug lowercases, strips accents and punctuation, joins with hyphens", () => {
+    expect(askSlug("What did the 1949 Los Alamos conference conclude?")).toBe("what-did-the-1949-los-alamos-conference-conclude");
+    expect(askSlug("Café — Roswell?!")).toBe("cafe-roswell");
+    expect(askSlug("  --Tic Tac--  ")).toBe("tic-tac");
+  });
+
+  it("askSlug is empty for text with no latin letters or digits", () => {
+    expect(askSlug("罗斯威尔事件是什么？")).toBe("");
+    expect(askSlug("???")).toBe("");
+  });
+
+  it("askSlug cuts at 60 chars without a trailing hyphen", () => {
+    const s = askSlug("a ".repeat(40));
+    expect(s.length).toBeLessThanOrEqual(60);
+    expect(s.endsWith("-")).toBe(false);
+    expect(s.startsWith("a-a-")).toBe(true);
+  });
+
+  it("askHref appends the slug only when there is one", () => {
+    expect(askHref(12, "Roswell?")).toBe("/ask/12-roswell");
+    expect(askHref(12, "罗斯威尔")).toBe("/ask/12");
+  });
+
+  it("askIdOf reads the leading id and rejects anything else", () => {
+    expect(askIdOf("123")).toBe(123);
+    expect(askIdOf("123-what-happened")).toBe(123);
+    expect(askIdOf("x-123")).toBeNull();
+    expect(askIdOf("12abc")).toBeNull();
+    expect(askIdOf("0")).toBeNull();
+    expect(askIdOf("")).toBeNull();
   });
 });
