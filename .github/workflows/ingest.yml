@@ -52,6 +52,21 @@ jobs:
           else
             python -m ingest.thumbs --dry-run --limit 1 | tee -a ingest-summary.txt
           fi
+      # Ask the Archive: embed any live record not yet in the Vectorize index
+      - name: textindex
+        if: ${{ !cancelled() }}
+        working-directory: crawler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          LIVE: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run == 'false' }}
+        run: |
+          set -o pipefail
+          if [ "$LIVE" = "true" ]; then
+            python -m ingest.textindex | tee -a ingest-summary.txt
+          else
+            python -m ingest.textindex --dry-run --limit 1 | tee -a ingest-summary.txt
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

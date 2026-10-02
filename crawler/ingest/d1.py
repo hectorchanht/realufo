@@ -47,3 +47,6 @@ def load_existing():
 
 def apply_sql(path: str) -> None:
     subprocess.run(["wrangler", "d1", "execute", "realufo-db", "--remote", "--file", path], check=True)
+
+def execute(sql: str) -> None:
+    subprocess.run(["wrangler", "d1", "execute", "realufo-db", "--remote", "--command", sql], check=True)
