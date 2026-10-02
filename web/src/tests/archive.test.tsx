@@ -153,6 +153,36 @@ describe("Archive", () => {
     expect(screen.getByRole("button", { name: /War\.gov/ }).getAttribute("style")).not.toContain("#9184d9");
   });
 
+  it("pages through results: next/number buttons set offset, filter change resets to page 1", async () => {
+    useRecordsMock.mockImplementation(() => ({ data: { count: 1000, records: [cardWargov] }, isLoading: false }));
+    renderAppAt("/archive?page=5");
+    await screen.findByText(/CIA-UAP-017/);
+    expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ limit: 40, offset: 160 }));
+
+    const nav = screen.getByRole("navigation", { name: "Pagination" });
+    // 1000 / 40 = 25 pages: 1 … 4 5 6 … 25
+    expect(nav.textContent).toBe("‹ prev1…456…25next ›");
+    expect(screen.getByRole("button", { name: "5" })).toHaveAttribute("aria-current", "page");
+
+    fireEvent.click(screen.getByRole("button", { name: /next/ }));
+    await waitFor(() => expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 200 })));
+
+    fireEvent.click(screen.getByRole("button", { name: "25" }));
+    await waitFor(() => expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 960 })));
+    expect(screen.getByRole("button", { name: /next/ })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Docs" }));
+    await waitFor(() =>
+      expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ type: "pdf", offset: 0 })),
+    );
+  });
+
+  it("hides the pager when everything fits on one page", async () => {
+    renderAppAt("/archive");
+    await screen.findByText(/CIA-UAP-017/);
+    expect(screen.queryByRole("navigation", { name: "Pagination" })).not.toBeInTheDocument();
+  });
+
   it('shows "no records match" when the result count is 0', async () => {
     useRecordsMock.mockReturnValue({ data: empty, isLoading: false });
     renderAppAt("/archive");

@@ -3,7 +3,7 @@
 //
 // Query key convention: `[resource]` or `[resource, id-or-params]`, exported as `qk` so
 // mutations can target exactly the caches they touch when invalidating.
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryKey } from "@tanstack/react-query";
 import { api } from "./client";
 import type {
@@ -83,6 +83,8 @@ export function useRecords(params: RecordsParams = {}) {
   return useQuery({
     queryKey: qk.records(params),
     queryFn: () => api.get<RecordsListResponse>(recordsPath(params)),
+    // Archive paging/filtering: keep the old page visible until the new one lands.
+    placeholderData: keepPreviousData,
   });
 }
 

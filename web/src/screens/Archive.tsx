@@ -29,11 +29,13 @@
 // fetch is in flight (`isLoading` — true only before the first settle, same
 // convention as Feed.tsx) so a filter change never flashes an empty state.
 //
-// Pagination: the prototype markup at lines 167-205 has no "load more"/pager
-// control (`useRecords` supports `limit`/`offset`, but nothing here calls
-// with them) — out of scope for this task; a later task can add paging once
-// the prototype defines it.
-import { useEffect, useState } from "react";
+// Pagination: a 1-based `page` URL param -> useRecords({limit, offset}),
+// PAGE_SIZE matching the Worker's default limit. Any filter change drops
+// `page` (back to 1). Page clicks push a history entry (unlike filters) so
+// back steps through pages, and scroll the shell's `[data-scroll]` main back
+// to the top. useRecords keeps the previous page on screen while the next
+// one loads (dimmed) instead of flashing the loading line.
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useBootstrap, useRecords } from "../api/queries";
@@ -41,6 +43,56 @@ import { DocCard } from "../components/DocCard";
 import { useSetPageTitle } from "../lib/pageTitle";
 
 const SEARCH_DEBOUNCE_MS = 250;
+const PAGE_SIZE = 40;
+
+// First, last, and current±1, with "…" for each skipped run:
+// (5, 20) -> [1, "…", 4, 5, 6, "…", 20].
+export function pageList(page: number, total: number): (number | "…")[] {
+  const out: (number | "…")[] = [];
+  for (let p = 1; p <= total; p++) {
+    if (p === 1 || p === total || Math.abs(p - page) <= 1) out.push(p);
+    else if (out[out.length - 1] !== "…") out.push("…");
+  }
+  return out;
+}
+
+interface PagerProps {
+  page: number;
+  totalPages: number;
+  onPage: (page: number) => void;
+}
+
+function Pager({ page, totalPages, onPage }: PagerProps) {
+  const btn = "min-w-[30px] rounded-lg px-[9px] py-[5px] font-mono text-[11px] active:scale-[.96] disabled:opacity-35 disabled:active:scale-100";
+  return (
+    <nav aria-label="Pagination" className="mt-5 flex flex-wrap items-center justify-center gap-1.5">
+      <button type="button" className={btn} style={typeChipStyle(false)} disabled={page <= 1} onClick={() => onPage(page - 1)}>
+        ‹ prev
+      </button>
+      {pageList(page, totalPages).map((p, i) =>
+        p === "…" ? (
+          <span key={`gap${i}`} className="px-1 font-mono text-[11px] text-faint">
+            …
+          </span>
+        ) : (
+          <button
+            key={p}
+            type="button"
+            className={btn}
+            style={typeChipStyle(p === page)}
+            aria-current={p === page ? "page" : undefined}
+            onClick={() => onPage(p)}
+          >
+            {p}
+          </button>
+        ),
+      )}
+      <button type="button" className={btn} style={typeChipStyle(false)} disabled={page >= totalPages} onClick={() => onPage(page + 1)}>
+        next ›
+      </button>
+    </nav>
+  );
+}
 
 // "label first segment": bootstrap archive labels pack a short code and a
 // longer aside separated by " · " (e.g. "NARA · Blue Book", "UK · National
@@ -145,6 +197,8 @@ export function Archive() {
   const archive = searchParams.get("archive") ?? "";
   const type = searchParams.get("type") ?? "";
   const redacted = searchParams.get("redacted") === "1";
+  const page = Math.max(1, Math.floor(Number(searchParams.get("page")))) || 1;
+  const rootRef = useRef<HTMLDivElement>(null);
 
   // Local echo of the search box so every keystroke feels instant; only the
   // debounced value below is ever written to the `q` param / handed to
@@ -169,6 +223,7 @@ export function Archive() {
           const next = new URLSearchParams(prev);
           if (inputValue) next.set("q", inputValue);
           else next.delete("q");
+          next.delete("page");
           return next;
         },
         { replace: true },
@@ -187,25 +242,39 @@ export function Archive() {
         const next = new URLSearchParams(prev);
         if (value) next.set(key, value);
         else next.delete(key);
+        next.delete("page");
         return next;
       },
       { replace: true },
     );
   }
 
+  function goToPage(p: number) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (p > 1) next.set("page", String(p));
+      else next.delete("page");
+      return next;
+    });
+    rootRef.current?.closest("[data-scroll]")?.scrollTo?.({ top: 0 });
+  }
+
   const archives = boot?.archives ?? [];
 
-  const { data, isLoading } = useRecords({
+  const { data, isLoading, isPlaceholderData } = useRecords({
     q: q || undefined,
     archive: archive || undefined,
     type: type || undefined,
     redacted: redacted || undefined,
+    limit: PAGE_SIZE,
+    offset: (page - 1) * PAGE_SIZE,
   });
   const records = data?.records ?? [];
   const count = data?.count ?? 0;
+  const totalPages = Math.ceil(count / PAGE_SIZE);
 
   return (
-    <div data-screen="archive" className="animate-[fadeup_.35s_ease_both]">
+    <div ref={rootRef} data-screen="archive" className="animate-[fadeup_.35s_ease_both]">
       {/* search bar — lines 169-173 */}
       <div className="mb-3.5 flex items-center gap-[9px] rounded-xl border border-line2 bg-surface px-[13px] py-2.5">
         <span aria-hidden="true" className="text-[15px] text-faint">
@@ -300,11 +369,15 @@ export function Archive() {
         <>
           {/* result count — line 187 */}
           <div className="mx-0.5 mb-3 font-mono text-[10px] uppercase tracking-[.8px] text-faint">
-            <b className="text-signal">{count}</b> records · swipe a file to flip through
+            <b className="text-signal">{count.toLocaleString()}</b> records
+            {totalPages > 1 && ` · page ${page} / ${totalPages}`} · swipe a file to flip through
           </div>
 
           {/* grid — lines 188-203 */}
-          <div data-grid className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]">
+          <div
+            data-grid
+            className={`transition-opacity ${isPlaceholderData ? "opacity-50" : ""} grid grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]`}
+          >
             {records.map((record) => (
               <DocCard key={record.id} record={record} variant="grid" />
             ))}
@@ -318,6 +391,8 @@ export function Archive() {
               the truth is elsewhere.
             </div>
           )}
+
+          {totalPages > 1 && <Pager page={page} totalPages={totalPages} onPage={goToPage} />}
         </>
       )}
     </div>
