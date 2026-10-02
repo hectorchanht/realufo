@@ -72,10 +72,10 @@ def vision_json(system: str, text: str, jpeg: bytes, schema: dict, max_tokens: i
 
 CHAT_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8"  # same LLM as Ask (worker/lib/ask.ts)
 
-def chat(system: str, user: str, max_tokens: int = 400):
+def chat(system: str, user: str, max_tokens: int = 400, temperature: float = 0.2):
     """System + user text -> the model's reply text (may still hold a <think> block)."""
     body = {"messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
-            "max_tokens": max_tokens, "temperature": 0.2, "chat_template_kwargs": {"enable_thinking": False}}
+            "max_tokens": max_tokens, "temperature": temperature, "chat_template_kwargs": {"enable_thinking": False}}
     out = _call(f"/ai/run/{CHAT_MODEL}", json.dumps(body).encode())
     msg = ((out.get("choices") or [{}])[0].get("message") or {})
     # Qwen3 on Workers AI sometimes answers in reasoning_content with content null.
