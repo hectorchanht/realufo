@@ -57,7 +57,9 @@ def render(row, out, work):
         seek = ["-ss", f"{float(dur or 0) * 0.35:.2f}"]
         det = subprocess.run(["ffmpeg", "-v", "info", *seek, "-i", url, "-vf", "cropdetect=24:2:0",
                               "-frames:v", "30", "-f", "null", "-"], capture_output=True, text=True).stderr
-        crop = "crop=" + det.rsplit("crop=", 1)[1].split()[0] + "," if "crop=" in det else ""
+        crop = det.rsplit("crop=", 1)[1].split()[0] if "crop=" in det else ""
+        # all-black sample -> cropdetect emits negative w/h; skip cropping then
+        crop = f"crop={crop}," if crop and "-" not in crop else ""
         vf = f"{crop}thumbnail=30,{SCALE}"
     for s in (seek, []):  # unreadable duration / seek past end: retry from 0
         p = subprocess.run(["ffmpeg", "-v", "error", "-y", *s, "-i", url, "-vf", vf,
