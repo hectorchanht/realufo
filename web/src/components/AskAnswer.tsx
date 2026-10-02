@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAsk } from "../api/queries";
 import { ApiError } from "../api/client";
+import type { AskResponse } from "../api/types";
 
 const CARD = "mb-3.5 rounded-xl border border-line2 bg-surface px-[13px] py-3";
 
@@ -13,7 +14,7 @@ function errorCopy(e: unknown) {
   return null;
 }
 
-export function AskAnswer({ question }: { question: string }) {
+export function AskAnswer({ question, onPost }: { question: string; onPost?: (data: AskResponse) => void }) {
   const { data, isLoading, error, refetch } = useAsk(question);
   const [flash, setFlash] = useState<number | null>(null);
 
@@ -86,8 +87,19 @@ export function AskAnswer({ question }: { question: string }) {
           ))}
         </ol>
       )}
-      <div className="mt-2.5 font-mono text-[9.5px] text-faint">
-        AI answer drawn from archive text &amp; OCR — can be wrong. Check the sources.
+      <div className="mt-2.5 flex items-center gap-3">
+        <span className="flex-1 font-mono text-[9.5px] text-faint">
+          AI answer drawn from archive text &amp; OCR — can be wrong. Check the sources.
+        </span>
+        {onPost && data.sources.length > 0 && (
+          <button
+            type="button"
+            onClick={() => onPost(data)}
+            className="flex-none rounded-md border border-line2 px-2 py-0.5 font-mono text-[10px] text-signal hover:border-signal"
+          >
+            ⤴ post to a board
+          </button>
+        )}
       </div>
     </section>
   );

@@ -12,6 +12,10 @@ let askFeature = true;
 vi.mock("../api/queries", () => ({
   useAsk: (q: string) => useAskMock(q),
   useAskRecent: () => useAskRecentMock(),
+  useAddComment: () => ({ mutate: vi.fn(), isPending: false }),
+  useAddCaseComment: () => ({ mutate: vi.fn(), isPending: false }),
+  useReply: () => ({ mutate: vi.fn(), isPending: false }),
+  useCreateThread: () => ({ mutate: vi.fn(), isPending: false }),
   useFacets: () => ({ data: undefined }),
   useBootstrap: () => ({
     data: { archives: [], boards: [], stats: { records: 2 }, ticker: [], sightings: [], cases: [], features: { ask: askFeature } },
@@ -55,6 +59,21 @@ describe("AskAnswer", () => {
     const { container } = renderCard();
     expect(container.querySelector("img[src='x']")).toBeNull();
     expect(screen.getByText(/<img src=x/)).toBeInTheDocument();
+  });
+
+  it("post to a board hands the answer to onPost; hidden without sources or without onPost", () => {
+    useAskMock.mockReturnValue(answered);
+    const onPost = vi.fn();
+    const { rerender } = render(<MemoryRouter><AskAnswer question="what did radar see?" onPost={onPost} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "⤴ post to a board" }));
+    expect(onPost).toHaveBeenCalledWith(answered.data);
+
+    rerender(<MemoryRouter><AskAnswer question="what did radar see?" /></MemoryRouter>);
+    expect(screen.queryByRole("button", { name: "⤴ post to a board" })).toBeNull();
+
+    useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, sources: [] } });
+    rerender(<MemoryRouter><AskAnswer question="what did radar see?" onPost={onPost} /></MemoryRouter>);
+    expect(screen.queryByRole("button", { name: "⤴ post to a board" })).toBeNull();
   });
 
   it("citation button highlights its source row", () => {
@@ -151,6 +170,17 @@ describe("Archive ASK toggle", () => {
     fireEvent.click(screen.getByRole("button", { name: "clear your questions" }));
     expect(screen.queryByRole("button", { name: "Old one" })).toBeNull();
     expect(localStorage.getItem(ASK_HISTORY_KEY)).toBeNull();
+  });
+
+  it("post to a board opens the new-thread composer pre-filled from the answer", async () => {
+    useAskMock.mockReturnValue(answered);
+    renderAppAt("/archive?ask=what%20did%20radar%20see%3F");
+    fireEvent.click(await screen.findByRole("button", { name: "⤴ post to a board" }));
+    expect(await screen.findByPlaceholderText("Thread title")).toHaveValue("what did radar see?");
+    const bodyBox = screen.getByPlaceholderText("Say your piece. Keep it sourced.") as HTMLTextAreaElement;
+    expect(bodyBox.value).toContain("Radar tracked it DOE-UAP-D004 and pilots saw it WARGOV-VID-1.");
+    expect(bodyBox.value).toContain("Sources: DOE-UAP-D004, WARGOV-VID-1");
+    expect(screen.getByText("REFERENCING FILE")).toBeInTheDocument();
   });
 
   it("shows nothing extra when both lists are empty", async () => {

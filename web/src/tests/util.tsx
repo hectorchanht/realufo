@@ -4,19 +4,15 @@
 // definitions — createBrowserRouter(routes) in the app,
 // createMemoryRouter(routes, {...}) here.
 //
-// OverlayProvider/OverlayHost are included (mirroring App.tsx's own
-// `<OverlayProvider><RouterProvider/><OverlayHost/></OverlayProvider>`
-// nesting — see App.tsx) since Task 19's Doc screen is the first screen to
-// call `useOverlay()`; without a real provider in the tree, any route that
-// mounts Doc (directly, or reached by navigating from another screen, e.g.
-// feed.test.tsx's DocCard click-through) would throw "useOverlay must be
-// used within an OverlayProvider" the moment it rendered.
+// OverlayProvider wraps the router, mirroring App.tsx, so every screen can
+// call `useOverlay()`. OverlayHost is NOT rendered here: AppShell mounts it
+// inside the router (the Composer calls useNavigate()), exactly as in the app.
 import { render } from "@testing-library/react";
 import type { RenderResult } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { ThemeProvider } from "../theme/ThemeProvider";
-import { OverlayProvider, OverlayHost } from "../overlays/OverlayProvider";
+import { OverlayProvider } from "../overlays/OverlayProvider";
 import { routes } from "../router";
 
 export function renderAppAt(path: string): RenderResult {
@@ -32,7 +28,6 @@ export function renderAppAt(path: string): RenderResult {
       <ThemeProvider>
         <OverlayProvider>
           <RouterProvider router={memoryRouter} />
-          <OverlayHost />
         </OverlayProvider>
       </ThemeProvider>
     </QueryClientProvider>,

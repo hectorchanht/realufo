@@ -45,6 +45,8 @@ import { useBootstrap, useFacets, useRecords } from "../api/queries";
 import { AskAnswer } from "../components/AskAnswer";
 import { AskHistory } from "../components/AskHistory";
 import { addAskHistory } from "../lib/askHistory";
+import { askComposerOpts } from "../lib/askThread";
+import { useOverlay } from "../overlays/OverlayProvider";
 import { DocCard } from "../components/DocCard";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
@@ -266,6 +268,7 @@ export function Archive() {
   const redacted = !!filter.redacted;
   const release = filter.release ?? "";
   const { data: facets } = useFacets();
+  const { openComposer } = useOverlay();
   // Releases are war.gov-only, so the chips only show for All / War.gov.
   const showReleases = !!facets?.releases.length && (archive === "" || archive === "wargov");
   const hasFilters = FILTER_KEYS.some((k) => searchParams.has(k));
@@ -444,7 +447,7 @@ export function Archive() {
         )}
       </form>
 
-      {askMode && ask && <AskAnswer question={ask} />}
+      {askMode && ask && <AskAnswer question={ask} onPost={(d) => openComposer(askComposerOpts(ask, d))} />}
       {askMode && !ask && <AskHistory onPick={openAsk} />}
 
       {/* static predecessor archive (war-gov-ufo-release repo) */}
