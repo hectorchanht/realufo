@@ -20,6 +20,7 @@ import { sitemap } from "./routes/sitemap";
 import { llms, llmsFull } from "./routes/llms";
 import { hubsIndex, getHub } from "./routes/hubs";
 import { tick } from "./lib/xbot";
+import { tick as socialTick } from "./lib/social/tick";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -61,6 +62,12 @@ export default {
     return serveWithMeta(req, env); // SPA + assets, with per-route meta/OG injection for deep links
   },
   async scheduled(_c: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
-    ctx.waitUntil(tick(env)); // X bot (Spec 4); FEATURE_X gates it
+    // X bot first (Spec 4; FEATURE_X gates it), then mirror to other platforms (Spec 5;
+    // FEATURE_SOCIAL_* gate it). Social failing never affects X.
+    const logErr = (who: string) => (e: unknown) => console.log(JSON.stringify({ [who]: true, crashed: String(e).slice(0, 300) }));
+    ctx.waitUntil((async () => {
+      await tick(env).catch(logErr("xbot"));
+      await socialTick(env).catch(logErr("social"));
+    })());
   },
 } satisfies ExportedHandler<Env>;
