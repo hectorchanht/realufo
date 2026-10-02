@@ -15,7 +15,7 @@
     "FEATURE_ASK": "on", "ASK_DAILY_MAX": "2000", "ASK_MIN_SCORE": "0.45",
     // X bot (Spec 4): off | dry (drafts to x_posts, no X calls) | on.
     // X_HIGHLIGHT_MIN_VOTES "" = community highlights off (votes are forgeable; opt in deliberately)
-    "FEATURE_X": "dry", "X_DAILY_MAX": "3", "X_MONTHLY_USD_CAP": "10", "X_HIGHLIGHT_MIN_VOTES": "", "X_SINCE": "2026-10-02" },
+    "FEATURE_X": "on", "X_DAILY_MAX": "3", "X_MONTHLY_USD_CAP": "10", "X_HIGHLIGHT_MIN_VOTES": "", "X_SINCE": "2026-10-02" },
   "d1_databases": [{ "binding": "DB", "database_name": "realufo-db", "database_id": "a8836cc9-9f49-42bd-ad99-4162b410bcd9", "migrations_dir": "db/migrations" }],
   // No `remote: true`: it breaks the vitest workers pool. Vectorize has no local
   // simulator, so /api/ask returns 503 under `wrangler dev`.
