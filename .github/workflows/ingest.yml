@@ -52,6 +52,21 @@ jobs:
           else
             python -m ingest.thumbs --dry-run --limit 1 | tee -a ingest-summary.txt
           fi
+      # X bot clips (Spec 4): 140 s-max MP4s at clips/<archive>/<id>.mp4 for new videos
+      - name: clips
+        if: ${{ !cancelled() }}
+        working-directory: crawler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          LIVE: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run == 'false' }}
+        run: |
+          set -o pipefail
+          if [ "$LIVE" = "true" ]; then
+            python -m ingest.clips | tee -a ingest-summary.txt
+          else
+            python -m ingest.clips --dry-run --limit 1 | tee -a ingest-summary.txt
+          fi
       # AI key moments for videos still without them (spec 2026-10-02-realufo-ai-key-moments)
       - name: moments
         if: ${{ !cancelled() }}
