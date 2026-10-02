@@ -64,9 +64,20 @@ export interface Sighting {
   name: string;
   lat: number;
   lng: number;
-  count: number;
   accent: string;
   case_slug: string | null;
+}
+
+/** A real map spot (worker/lib/places.ts): file count summed over its raw D1 `location` values. */
+export interface MapPlace {
+  name: string;
+  /** null = off-world (Moon, low Earth orbit) — shown as a chip, not a dot. */
+  lat: number | null;
+  lng: number | null;
+  values: string[];
+  count: number;
+  /** Live location-hub slug, when one covers this place. */
+  hub: string | null;
 }
 
 /** Slim case projection used in bootstrap's `cases[]` (map pins / case chips). */
@@ -83,6 +94,9 @@ export interface Bootstrap {
   stats: Stats;
   ticker: TickerItem[];
   sightings: Sighting[];
+  places?: MapPlace[];
+  /** Files with a location the map has no spot for ("Various", new values). */
+  unmappedFiles?: number;
   cases: CaseLite[];
   /** Server feature flags. `ask` shows the Archive ASK toggle. */
   features?: { ask: boolean };

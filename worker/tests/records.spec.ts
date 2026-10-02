@@ -170,4 +170,14 @@ describe("records", () => {
     const j: any = await res.json();
     expect(j.records.length).toBeLessThanOrEqual(40);
   });
+  it("repeated location params match any of them (map places merge aliases)", async () => {
+    await env.DB.batch(
+      [["LOCA-1", "Alias A"], ["LOCA-2", "Alias B"], ["LOCA-3", "Alias C"]].map(([id, loc]) =>
+        env.DB.prepare("INSERT INTO records (id,archive,agency,title,kind,location) VALUES (?,'wargov','DoW',?,'pdf',?)").bind(id, id, loc)
+      )
+    );
+    const j: any = await (await get("/api/records?location=Alias+A&location=Alias+B")).json();
+    expect(j.records.map((r: any) => r.id).sort()).toEqual(["LOCA-1", "LOCA-2"]);
+    expect(j.count).toBe(2);
+  });
 });

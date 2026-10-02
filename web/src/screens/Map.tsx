@@ -1,38 +1,40 @@
 // Sighting Map + stats screen — ported from realufo-handoff/RealUFO.dc.html
-// lines 311-343 (the `showMap` branch): a bordered grid-lined map with one
-// twinkling signal dot per bootstrap `sightings[]` entry, 4 "Press Start 2P"
-// stat tiles, a "◆ Records by decade" vertical bar chart, and a "◆ Top
-// locations" horizontal bar list.
+// lines 311-343 (the `showMap` branch): a bordered grid-lined map with
+// twinkling signal dots, 4 "Press Start 2P" stat tiles, a "◆ Records by
+// decade" vertical bar chart, and a "◆ Top locations" horizontal bar list.
 //
 // This component renders ONLY the screen content — AppShell (Task 14) owns
 // the app frame/AppBar/nav and mounts this inside its `<Outlet/>`, same as
-// every other screen task. Data: `useBootstrap()` for `sightings`/`stats`
-// (both default to `[]`/undefined-safe so nothing here ever indexes into
-// `undefined` while the query is still loading — see FRONTEND-CONTEXT.md's
-// query-hooks contract).
+// every other screen task. Data: `useBootstrap()` for `places`/`sightings`/
+// `stats` (all default to `[]`/undefined-safe so nothing here ever indexes
+// into `undefined` while the query is still loading — see
+// FRONTEND-CONTEXT.md's query-hooks contract).
 //
-// Map points: the prototype's data.js precomputes each point's `x`/`y`
-// (equirectangular projection of `lat`/`lng`); our API instead returns raw
-// `lat`/`lng` on each Sighting; `project()` (lib/map.ts) reproduces that
-// projection client-side.
-//
-// Tap behavior (prototype's per-point `onTap`): a sighting with a
-// `case_slug` navigates to `/case/:slug`; one without surfaces a toast
-// ("<name> · <count> reports") via `useOverlay()` instead (prototype line
-// 495's toast pattern, same as every other screen's non-navigating tap).
-import { useNavigate } from "react-router-dom";
-import { useBootstrap } from "../api/queries";
-import { useOverlay } from "../overlays/OverlayProvider";
+// Map points: real places (bootstrap `places[]`, worker/lib/places.ts) —
+// one dot per spot, sized by its real file count, projected client-side with
+// `project()` (lib/map.ts). Off-world places (Moon, low Earth orbit) have no
+// lat/lng and sit in a corner chip instead. Tapping a place opens PlacePanel
+// (below the map on phones, a right column >=900px) listing its files via
+// `useRecords`, with "See all" to its location hub (or the filtered Archive).
+// Curated case pins (`sightings[]`, case rows only) are a separate diamond
+// marker that navigates to /case/:slug; their prototype counts were fake and
+// are gone.
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useBootstrap, useRecords } from "../api/queries";
 import { project } from "../lib/map";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { WorldMap } from "../components/WorldMap";
-import type { Sighting, Stats } from "../api/types";
+import { DocCard } from "../components/DocCard";
+import type { MapPlace, Stats } from "../api/types";
 
-// prototype line 318: dot diameter in px, `9 + min(15, n/11)` — scales with
-// report count, capped at 24px.
+// Dot diameter in px: log-scaled so a 1-file place is still tappable and the
+// ~50-file regions don't swallow their neighbours.
 function dotSize(count: number): number {
-  return 9 + Math.min(15, count / 11);
+  return 8 + Math.min(14, Math.log2(count) * 2.5);
 }
+
+const files = (n: number) => `${n} file${n === 1 ? "" : "s"}`;
 
 const STAT_TILES: Array<{ key: keyof Pick<Stats, "records" | "videos" | "threads" | "postsToday">; label: string; color: string }> = [
   { key: "records", label: "Records", color: "var(--signal)" },
@@ -41,15 +43,55 @@ const STAT_TILES: Array<{ key: keyof Pick<Stats, "records" | "videos" | "threads
   { key: "postsToday", label: "Posts today", color: "var(--violet)" },
 ];
 
+const PANEL_FILES = 12;
+
+function PlacePanel({ place, onClose }: { place: MapPlace; onClose: () => void }) {
+  const { data, isLoading } = useRecords({ location: place.values, limit: PANEL_FILES });
+  const seeAll = place.hub ? `/location/${place.hub}` : `/archive?${new URLSearchParams({ location: place.values[0] })}`;
+  return (
+    <section
+      aria-label={place.name}
+      className="mb-[14px] rounded-2xl border border-line2 bg-surface p-[14px] min-[900px]:max-h-[640px] min-[900px]:overflow-y-auto"
+      style={{ animation: "fadeup .25s ease both" }}
+    >
+      <div className="mb-3 flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[15px] font-semibold text-ink">{place.name}</h2>
+          <div className="mt-1 font-mono text-[10px] uppercase tracking-[.6px] text-faint">{files(place.count)}</div>
+        </div>
+        <button type="button" aria-label="Close" onClick={onClose} className="px-1 font-mono text-[14px] text-faint hover:text-ink">
+          ✕
+        </button>
+      </div>
+      {isLoading ? (
+        <div className="font-mono text-[11px] text-faint">Loading files…</div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {(data?.records ?? []).map((r) => (
+            <DocCard key={r.id} record={r} variant="grid" />
+          ))}
+        </div>
+      )}
+      <Link to={seeAll} className="mt-3 inline-block font-mono text-[11px] text-signal hover:underline">
+        See all {place.count} →
+      </Link>
+    </section>
+  );
+}
+
 export function MapScreen() {
   // AppBar title — prototype's `titles.map` (RealUFO.dc.html:566).
   useSetPageTitle("SIGHTING MAP", "Where the files come from");
 
   const { data } = useBootstrap();
   const navigate = useNavigate();
-  const { toast } = useOverlay();
+  const [selected, setSelected] = useState<string | null>(null);
 
-  const sightings = data?.sightings ?? [];
+  const cases = data?.sightings ?? [];
+  const places = data?.places ?? [];
+  const onMap = places.filter((p) => p.lat !== null && p.lng !== null);
+  const offWorld = places.filter((p) => p.lat === null || p.lng === null);
+  const place = places.find((p) => p.name === selected) ?? null;
   const stats = data?.stats;
   const byDecade = stats?.byDecade ?? [];
   const topLocations = stats?.topLocations ?? [];
@@ -59,62 +101,97 @@ export function MapScreen() {
   const maxDecade = Math.max(1, ...byDecade.map(([, n]) => n));
   const maxLocation = Math.max(1, ...topLocations.map(([, n]) => n));
 
-  function handleTap(sighting: Sighting) {
-    if (sighting.case_slug) {
-      navigate(`/case/${sighting.case_slug}`);
-    } else {
-      toast(`${sighting.name} · ${sighting.count} reports`);
-    }
-  }
+  const toggle = (name: string) => setSelected((s) => (s === name ? null : name));
 
   return (
     <div data-screen="map" style={{ animation: "fadeup .35s ease both" }}>
-      {/* map panel — prototype lines 313-321 */}
-      <div
-        className="relative mb-[14px] aspect-[16/10] overflow-hidden rounded-2xl border border-line2"
-        style={{ background: "radial-gradient(120% 120% at 50% 0%, var(--surface), var(--bg2))" }}
-      >
+      <div className={place ? "items-start min-[900px]:grid min-[900px]:grid-cols-[minmax(0,1fr)_340px] min-[900px]:gap-[14px]" : ""}>
+        {/* map panel — prototype lines 313-321 */}
         <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage:
-              "linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px)",
-            backgroundSize: "9.09% 12.5%",
-          }}
-        />
-        {/* Pixelated equirectangular world map behind the sighting dots. */}
-        <WorldMap />
-        <div className="absolute left-0 right-0 top-1/2 h-px opacity-60" style={{ background: "var(--line2)" }} />
-        <div className="absolute bottom-0 top-0 left-1/2 w-px opacity-60" style={{ background: "var(--line2)" }} />
-        {sightings.map((sighting) => {
-          const { x, y } = project(sighting.lat, sighting.lng);
-          const size = dotSize(sighting.count);
-          return (
-            <button
-              key={sighting.id}
-              type="button"
-              title={sighting.name}
-              onClick={() => handleTap(sighting)}
-              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full hover:scale-150"
-              style={{
-                left: `${x * 100}%`,
-                top: `${y * 100}%`,
-                width: size,
-                height: size,
-                background: sighting.accent,
-                boxShadow: `0 0 12px 2px ${sighting.accent}`,
-                animation: "twinkle 3s ease-in-out infinite",
-              }}
-            />
-          );
-        })}
-        <div
-          className="absolute bottom-[11px] left-3 font-mono text-[9px] text-faint"
-          style={{ letterSpacing: ".5px" }}
+          className="relative mb-[14px] aspect-[16/10] overflow-hidden rounded-2xl border border-line2"
+          style={{ background: "radial-gradient(120% 120% at 50% 0%, var(--surface), var(--bg2))" }}
         >
-          ◉ {sightings.length} HOTSPOTS · TAP A SIGNAL
+          <div
+            className="absolute inset-0 opacity-30"
+            style={{
+              backgroundImage:
+                "linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px)",
+              backgroundSize: "9.09% 12.5%",
+            }}
+          />
+          {/* Pixelated equirectangular world map behind the sighting dots. */}
+          <WorldMap />
+          <div className="absolute left-0 right-0 top-1/2 h-px opacity-60" style={{ background: "var(--line2)" }} />
+          <div className="absolute bottom-0 top-0 left-1/2 w-px opacity-60" style={{ background: "var(--line2)" }} />
+          {onMap.map((p) => {
+            const { x, y } = project(p.lat!, p.lng!);
+            const size = dotSize(p.count);
+            const active = p.name === selected;
+            return (
+              <button
+                key={p.name}
+                type="button"
+                title={`${p.name} · ${files(p.count)}`}
+                aria-pressed={active}
+                onClick={() => toggle(p.name)}
+                className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full hover:scale-150"
+                style={{
+                  left: `${x * 100}%`,
+                  top: `${y * 100}%`,
+                  width: size,
+                  height: size,
+                  background: "var(--signal)",
+                  boxShadow: active ? "0 0 0 2px var(--ink), 0 0 14px 3px var(--signal)" : "0 0 12px 2px var(--signal)",
+                  zIndex: active ? 2 : 1,
+                  animation: active ? undefined : "twinkle 3s ease-in-out infinite",
+                }}
+              />
+            );
+          })}
+          {cases.map((c) => {
+            const { x, y } = project(c.lat, c.lng);
+            return (
+              <button
+                key={c.id}
+                type="button"
+                title={`Case: ${c.name}`}
+                onClick={() => c.case_slug && navigate(`/case/${c.case_slug}`)}
+                className="absolute z-[3] h-[9px] w-[9px] -translate-x-1/2 -translate-y-1/2 rotate-45 border border-bg hover:scale-150"
+                style={{ left: `${x * 100}%`, top: `${y * 100}%`, background: c.accent }}
+              />
+            );
+          })}
+          {offWorld.length > 0 && (
+            <div className="absolute right-2 top-2 z-[3] flex flex-col items-end gap-1">
+              {offWorld.map((p) => (
+                <button
+                  key={p.name}
+                  type="button"
+                  aria-pressed={p.name === selected}
+                  onClick={() => toggle(p.name)}
+                  className={`rounded-full border bg-surface px-2 py-[3px] font-mono text-[9px] hover:text-ink ${
+                    p.name === selected ? "border-signal text-signal" : "border-line2 text-dim"
+                  }`}
+                >
+                  ☾ {p.name} · {p.count}
+                </button>
+              ))}
+            </div>
+          )}
+          <div
+            className="absolute bottom-[11px] left-3 font-mono text-[9px] text-faint"
+            style={{ letterSpacing: ".5px" }}
+          >
+            ◉ {places.length} PLACES · ◆ {cases.length} CASES · TAP A SIGNAL
+          </div>
         </div>
+        {place && <PlacePanel place={place} onClose={() => setSelected(null)} />}
       </div>
+      {!!data?.unmappedFiles && (
+        <div className="-mt-2 mb-[14px] font-mono text-[9px] text-faint">
+          + {files(data.unmappedFiles)} without a map spot (e.g. “Various”)
+        </div>
+      )}
 
       {/* 4 stat tiles — prototype lines 322-327 */}
       <div data-grid className="mb-5 grid grid-cols-2 gap-[10px] min-[900px]:grid-cols-4">

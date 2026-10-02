@@ -1,6 +1,8 @@
 import type { Env } from "../env";
 import { json } from "../lib/json";
 import { actorId } from "../lib/anon";
+import { mapPlaces } from "../lib/places";
+import { listHubsCached } from "./hubs";
 
 // App shell data. archives + stats are computed from ACTUAL records (no fake
 // fillups): archives are filtered to those that really have records, with real
@@ -20,7 +22,7 @@ export async function bootstrap(req: Request, env: Env) {
   } catch {
     /* presence is non-critical */
   }
-  const [archives, boards, statsRow, ticker, sightings, cases, totals, locRows, dateRows, online] = await Promise.all([
+  const [archives, boards, statsRow, ticker, sightings, cases, totals, locRows, dateRows, online, hubs] = await Promise.all([
     env.DB.prepare(
       `SELECT a.id, a.label, a.flag, a.accent, a.coord,
               (SELECT count(*) FROM records r WHERE r.archive = a.id) AS count
@@ -37,7 +39,8 @@ export async function bootstrap(req: Request, env: Env) {
       .all(),
     env.DB.prepare("SELECT json FROM stats WHERE id=1").first<{ json: string }>(),
     env.DB.prepare("SELECT kind,board,text,ago FROM ticker ORDER BY sort").all(),
-    env.DB.prepare("SELECT id,name,lat,lng,count,accent,case_slug FROM sightings").all(),
+    // Curated case pins only; the prototype's per-pin counts were fake, so they're dropped.
+    env.DB.prepare("SELECT id,name,lat,lng,accent,case_slug FROM sightings WHERE case_slug IS NOT NULL").all(),
     env.DB.prepare("SELECT slug,name,accent,coord FROM cases").all(),
     env.DB
       .prepare(
@@ -52,7 +55,7 @@ export async function bootstrap(req: Request, env: Env) {
       .prepare(
         `SELECT location, count(*) n FROM records
          WHERE location IS NOT NULL AND trim(location) NOT IN ('','N/A')
-         GROUP BY location ORDER BY n DESC LIMIT 6`,
+         GROUP BY location ORDER BY n DESC`,
       )
       .all<{ location: string; n: number }>(),
     env.DB.prepare("SELECT incident_date FROM records WHERE incident_date IS NOT NULL AND incident_date != ''").all<{
@@ -64,6 +67,7 @@ export async function bootstrap(req: Request, env: Env) {
       .prepare("SELECT count(*) c FROM presence WHERE last_seen > datetime('now','-5 minutes')")
       .first<{ c: number }>()
       .catch(() => null),
+    listHubsCached(env, new URL(req.url).origin),
   ]);
 
   const curated = statsRow ? (JSON.parse(statsRow.json) as Record<string, unknown>) : {};
@@ -78,7 +82,8 @@ export async function bootstrap(req: Request, env: Env) {
     decadeCounts.set(decade, (decadeCounts.get(decade) ?? 0) + 1);
   }
   const byDecade = [...decadeCounts.entries()].sort((a, b) => a[0] - b[0]).map(([d, n]) => [`${d}s`, n]);
-  const topLocations = locRows.results.map((l) => [l.location, l.n]);
+  const topLocations = locRows.results.slice(0, 6).map((l) => [l.location, l.n]);
+  const map = mapPlaces(locRows.results, new Set(hubs.filter((h) => h.kind === "location").map((h) => h.slug)));
   const years = [...decadeCounts.keys()];
   const yearsCovered = years.length ? `${Math.min(...years)}s–${Math.max(...years) + 9}s` : curated.yearsCovered ?? "";
 
@@ -101,6 +106,8 @@ export async function bootstrap(req: Request, env: Env) {
     stats,
     ticker: ticker.results,
     sightings: sightings.results,
+    places: map.places,
+    unmappedFiles: map.unmapped,
     cases: cases.results,
     features: { ask: env.FEATURE_ASK === "on" },
   });

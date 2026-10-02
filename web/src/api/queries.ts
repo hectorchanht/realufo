@@ -42,7 +42,8 @@ export interface RecordsParams {
   release?: string;
   agency?: string;
   decade?: string;
-  location?: string;
+  /** Several values = any of them (a map place's aliases). */
+  location?: string | string[];
   limit?: number;
   offset?: number;
 }
@@ -71,7 +72,8 @@ function recordsPath(params: RecordsParams): string {
   if (params.type) usp.set("type", params.type);
   if (params.redacted) usp.set("redacted", "1");
   if (params.q) usp.set("q", params.q);
-  for (const k of ["release", "agency", "decade", "location"] as const) if (params[k]) usp.set(k, params[k]);
+  for (const k of ["release", "agency", "decade"] as const) if (params[k]) usp.set(k, params[k]);
+  for (const v of [params.location ?? []].flat()) if (v) usp.append("location", v);
   if (params.limit != null) usp.set("limit", String(params.limit));
   if (params.offset != null) usp.set("offset", String(params.offset));
   const qs = usp.toString();

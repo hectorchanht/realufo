@@ -27,12 +27,16 @@ export async function listRecords(req: Request, env: Env) {
     where.push("r.archive='wargov' AND r.doc_date IN (SELECT value FROM json_each(?))");
     bind.push(JSON.stringify((await wargovReleases(env)).find((r) => String(r.no) === release)?.raw ?? []));
   }
-  for (const col of ["agency", "location"]) {
-    const v = u.searchParams.get(col);
-    if (v) {
-      where.push(`r.${col}=?`);
-      bind.push(v);
-    }
+  const agency = u.searchParams.get("agency");
+  if (agency) {
+    where.push("r.agency=?");
+    bind.push(agency);
+  }
+  // Repeatable: a map place merges alias values ("Westen United States").
+  const locations = u.searchParams.getAll("location").filter(Boolean);
+  if (locations.length) {
+    where.push("r.location IN (SELECT value FROM json_each(?))");
+    bind.push(JSON.stringify(locations));
   }
   const decade = Number(u.searchParams.get("decade"));
   if (decade) {

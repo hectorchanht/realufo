@@ -17,8 +17,17 @@ describe("bootstrap+feed", () => {
     expect(b.stats.records).toBe(28);
     expect(b.stats.archives).toBe(b.archives.length);
     expect(b.boards.length).toBe(7);
-    expect(b.sightings.length).toBe(12);
+    // Only curated case pins survive; the prototype's fake per-pin counts are gone.
+    expect(b.sightings.length).toBeGreaterThan(0);
+    expect(b.sightings.every((s: any) => s.case_slug && !("count" in s))).toBe(true);
     expect(b.cases[0]).toHaveProperty("slug");
+  });
+
+  it("bootstrap returns real map places counted from record locations", async () => {
+    await env.DB.prepare("INSERT INTO records (id,archive,agency,title,kind,location) VALUES ('MAP-1','wargov','DoW','MAP-1','pdf','Yellow Sea')").run();
+    const b: any = await get("/api/bootstrap");
+    expect(b.places.find((p: any) => p.name === "Yellow Sea")).toMatchObject({ count: 1, values: ["Yellow Sea"] });
+    expect(typeof b.unmappedFiles).toBe("number");
   });
 
   it("feed returns featured records and hot threads with boardSlug", async () => {

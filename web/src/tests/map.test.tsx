@@ -8,6 +8,11 @@
 // dot with a `case_slug` can assert *where* it navigates without needing a
 // full router+screen tree for the destination.
 //
+// Real places (bootstrap `places[]`, counted from record locations) render
+// as dots; tapping one opens the in-map panel that lists its files via
+// `useRecords({ location: values })`. Curated case pins (`sightings[]`) stay a
+// separate marker that navigates to /case/:slug.
+//
 // Fixture values (Roswell's lat/lng, the byDecade/topLocations pairs) are
 // taken from realufo-handoff/data.js's `mapPoints`/`stats` so the `project()`
 // assertion below can be checked directly against the prototype's own
@@ -16,14 +21,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
-import type { Bootstrap, Sighting } from "../api/types";
+import type { Bootstrap, MapPlace, Sighting } from "../api/types";
 import { project } from "../lib/map";
 import MapScreen from "../screens/Map";
-
-const mockToast = vi.fn();
-vi.mock("../overlays/OverlayProvider", () => ({
-  useOverlay: () => ({ toast: mockToast }),
-}));
 
 const mockNavigate = vi.fn();
 vi.mock("react-router-dom", async (importOriginal) => {
@@ -32,31 +32,32 @@ vi.mock("react-router-dom", async (importOriginal) => {
 });
 
 const useBootstrapMock = vi.fn();
+const useRecordsMock = vi.fn();
 vi.mock("../api/queries", () => ({
   useBootstrap: () => useBootstrapMock(),
+  useRecords: (...a: unknown[]) => useRecordsMock(...a),
 }));
 
-// Roswell: has a case_slug -> tapping navigates to /case/roswell.
+// Curated case pin.
 const roswell: Sighting = {
   id: 1,
   name: "Roswell, NM",
   lat: 33.39,
   lng: -104.52,
-  count: 412,
   accent: "#c8d0dc",
   case_slug: "roswell",
 };
 
-// Kaikoura here deliberately has NO case_slug -> tapping should toast, not navigate.
-const kaikoura: Sighting = {
-  id: 2,
-  name: "Kaikoura, NZ",
-  lat: -42.4,
-  lng: 173.68,
-  count: 61,
-  accent: "#6ea8ff",
-  case_slug: null,
+const western: MapPlace = {
+  name: "Western United States",
+  lat: 39.5,
+  lng: -116.5,
+  values: ["Western United States", "Westen United States"],
+  count: 56,
+  hub: "western-united-states",
 };
+const harare: MapPlace = { name: "Harare, Zimbabwe", lat: -17.83, lng: 31.05, values: ["Harare, Zimbabwe"], count: 1, hub: null };
+const moon: MapPlace = { name: "The Moon", lat: null, lng: null, values: ["Moon"], count: 8, hub: "moon" };
 
 const mockBootstrap: Bootstrap = {
   archives: [],
@@ -81,7 +82,9 @@ const mockBootstrap: Bootstrap = {
     ],
   },
   ticker: [],
-  sightings: [roswell, kaikoura],
+  sightings: [roswell],
+  places: [western, moon, harare],
+  unmappedFiles: 8,
   cases: [],
 };
 
@@ -97,7 +100,8 @@ function renderMap() {
 }
 
 beforeEach(() => {
-  mockToast.mockReset();
+  useRecordsMock.mockReset();
+  useRecordsMock.mockReturnValue({ data: undefined, isLoading: true });
   mockNavigate.mockReset();
   useBootstrapMock.mockReset();
   useBootstrapMock.mockReturnValue({ data: mockBootstrap, isLoading: false });
@@ -116,24 +120,47 @@ describe("project", () => {
 });
 
 describe("Map", () => {
-  it("renders one dot per sighting", () => {
+  it("renders one dot per real place, titled with its real file count", () => {
     renderMap();
-    expect(screen.getByTitle("Roswell, NM")).toBeInTheDocument();
-    expect(screen.getByTitle("Kaikoura, NZ")).toBeInTheDocument();
+    expect(screen.getByTitle("Western United States · 56 files")).toBeInTheDocument();
+    expect(screen.getByTitle("Harare, Zimbabwe · 1 file")).toBeInTheDocument();
+    expect(screen.getByText(/3 PLACES/)).toBeInTheDocument();
+    expect(screen.getByText(/8 files without a map spot/)).toBeInTheDocument();
   });
 
-  it("tapping a dot with a case_slug navigates to /case/:slug", () => {
+  it("renders curated case pins that navigate to /case/:slug", () => {
     renderMap();
-    fireEvent.click(screen.getByTitle("Roswell, NM"));
+    fireEvent.click(screen.getByTitle("Case: Roswell, NM"));
     expect(mockNavigate).toHaveBeenCalledWith("/case/roswell");
-    expect(mockToast).not.toHaveBeenCalled();
   });
 
-  it("tapping a dot without a case_slug shows a toast instead of navigating", () => {
+  it("puts off-world places in a chip instead of on the grid", () => {
     renderMap();
-    fireEvent.click(screen.getByTitle("Kaikoura, NZ"));
-    expect(mockToast).toHaveBeenCalledWith("Kaikoura, NZ · 61 reports");
-    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /The Moon · 8/ })).toBeInTheDocument();
+  });
+
+  it("tapping a place opens the panel listing its files across all alias values", () => {
+    useRecordsMock.mockReturnValue({
+      data: { count: 56, records: [{ id: "DOW-1", title: "West file", agency: "DoW", archive: "wargov", kind: "pdf" }] },
+      isLoading: false,
+    });
+    renderMap();
+    expect(screen.queryByRole("region", { name: "Western United States" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTitle("Western United States · 56 files"));
+    const panel = screen.getByRole("region", { name: "Western United States" });
+    expect(useRecordsMock).toHaveBeenLastCalledWith(
+      { location: ["Western United States", "Westen United States"], limit: 12 },
+    );
+    expect(panel).toHaveTextContent("West file");
+    expect(screen.getByRole("link", { name: /See all 56/ })).toHaveAttribute("href", "/location/western-united-states");
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("region", { name: "Western United States" })).not.toBeInTheDocument();
+  });
+
+  it("a place without a live hub links to the Archive filtered by its location", () => {
+    renderMap();
+    fireEvent.click(screen.getByTitle("Harare, Zimbabwe · 1 file"));
+    expect(screen.getByRole("link", { name: /See all 1/ })).toHaveAttribute("href", "/archive?location=Harare%2C+Zimbabwe");
   });
 
   it("renders the 4 stat tiles with their labels and numbers", () => {
@@ -169,6 +196,6 @@ describe("Map", () => {
   it("does not crash while bootstrap is still loading (defaults sightings/byDecade/topLocations to [])", () => {
     useBootstrapMock.mockReturnValue({ data: undefined, isLoading: true });
     renderMap();
-    expect(screen.queryByTitle("Roswell, NM")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Case: Roswell, NM")).not.toBeInTheDocument();
   });
 });
