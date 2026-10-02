@@ -1,5 +1,5 @@
 // Ask mode with no question open: this browser's past questions and the
-// public "recently asked" list (questions their askers shared). Tapping an item
+// public "shared questions" list (questions their askers shared). Tapping an item
 // asks it. Each list hides when empty; the recent list also hides on error.
 import { useState } from "react";
 import { useAskRecent } from "../api/queries";
@@ -44,7 +44,7 @@ export function AskHistory({ onPick }: { onPick: (q: string) => void }) {
       {recent.length > 0 && (
         <section>
           <div className={HEAD}>
-            <span>RECENTLY ASKED</span>
+            <span>SHARED QUESTIONS</span>
           </div>
           <div className="flex flex-col gap-1">
             {recent.map((r) => (

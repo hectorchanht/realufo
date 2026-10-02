@@ -9,7 +9,7 @@
 // folded into this single bar instead, so desktop shows one nav, not two.
 import { Link } from "react-router-dom";
 import { Saucer } from "./Saucer";
-import { NAV_ITEMS, tabHref, type NavTab } from "./navItems";
+import { tabHref, useNavItems, type NavTab } from "./navItems";
 import { ThemeToggle } from "./ThemeToggle";
 import { usePageTitle, DEFAULT_PAGE_TITLE } from "../lib/pageTitle";
 
@@ -21,6 +21,7 @@ export interface TopNavProps {
 }
 
 export function TopNav({ activeTab, canBack = false, onBack }: TopNavProps) {
+  const navItems = useNavItems();
   const { title, sub } = usePageTitle();
   // Suppress the contextual block on the root/Feed tab — its title is
   // "REALUFO", which the brand wordmark already shows (avoids a dupe).
@@ -38,7 +39,7 @@ export function TopNav({ activeTab, canBack = false, onBack }: TopNavProps) {
       </a>
 
       <div className="flex flex-none items-center gap-1">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const active = activeTab === item.tab;
           return (
             <Link

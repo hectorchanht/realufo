@@ -128,6 +128,16 @@ describe("serveWithMeta (via worker.fetch)", () => {
     expect(html).toContain('property="og:image" content="https://x/og.png"');
   });
 
+  it("/ask gets its own meta with robots noindex; other tabs don't", async () => {
+    const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
+    const get = async (path: string) => (await worker.fetch(new Request("https://x" + path), fakeEnv, createExecutionContext())).text();
+    const html = await get("/ask?q=roswell");
+    expect(html).toContain("<title>Ask the Archive · RealUFO</title>");
+    expect(html).toContain('<meta name="robots" content="noindex">');
+    expect(html).toContain('rel="canonical" href="https://x/ask"');
+    expect(await get("/archive")).not.toContain('name="robots"');
+  });
+
   it("injects board meta for /board/:slug (bare slug in URL)", async () => {
     const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
     const ctx = createExecutionContext();

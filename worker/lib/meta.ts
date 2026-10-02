@@ -15,6 +15,8 @@ export interface MetaInput {
   jsonLd?: Record<string, unknown>;
   // Emitted as a BreadcrumbList; hrefs are resolved against url.
   breadcrumbs?: { name: string; href: string }[];
+  // e.g. "noindex" for pages whose content (AI answers) must not be indexed.
+  robots?: string;
 }
 
 // `<` escaped so user text can't close the script element.
@@ -36,6 +38,7 @@ export function injectMeta(html: string, m: MetaInput): string {
     `<title>${t} · RealUFO</title>`,
     `<meta name="description" content="${d}">`,
     `<link rel="canonical" href="${u}">`,
+    m.robots && `<meta name="robots" content="${esc(m.robots)}">`,
     `<meta property="og:site_name" content="RealUFO">`,
     `<meta property="og:type" content="${m.type ?? "article"}">`,
     `<meta property="og:title" content="${t}">`,
