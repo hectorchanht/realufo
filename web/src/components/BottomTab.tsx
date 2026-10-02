@@ -1,10 +1,10 @@
-// Mobile (<900px) bottom tab bar + home-indicator strip. Ported from
-// realufo-handoff/RealUFO.dc.html lines 393-401 (bottom tab) and line 401
-// (home indicator). Nav buttons are react-router `Link`s (see TopNav.tsx for
+// Mobile (<900px) bottom tab bar. Ported from
+// realufo-handoff/RealUFO.dc.html lines 393-400 (the prototype's fake
+// home-indicator strip, line 401, is dropped — real phones draw their own). Nav buttons are react-router `Link`s (see TopNav.tsx for
 // why). Each tab has a 44px min-height tap target per the task requirement.
 import type { Ref } from "react";
 import { Link } from "react-router-dom";
-import { NAV_ITEMS, type NavTab } from "./navItems";
+import { NAV_ITEMS, tabHref, type NavTab } from "./navItems";
 
 export interface BottomTabProps {
   activeTab: NavTab;
@@ -36,7 +36,7 @@ export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
           return (
             <Link
               key={item.tab}
-              to={item.path}
+              to={tabHref(item, activeTab)}
               aria-current={active ? "page" : undefined}
               className="flex min-h-[44px] flex-1 flex-col items-center gap-1 px-0.5 py-[5px] active:scale-90"
               style={{ color: active ? "var(--signal)" : "var(--dim)" }}
@@ -48,13 +48,6 @@ export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
             </Link>
           );
         })}
-      </div>
-      <div
-        data-homeind
-        className="flex flex-none justify-center pb-[9px] pt-1.5"
-        style={{ background: "color-mix(in srgb, var(--bg) 78%, transparent)" }}
-      >
-        <div className="h-[5px] w-32 rounded-[3px] bg-line2" />
       </div>
     </div>
   );

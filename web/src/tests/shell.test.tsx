@@ -146,4 +146,26 @@ describe("AppShell", () => {
     scrollTo(20); // near the top always shows
     expect(hidden()).toEqual([false, false]);
   });
+
+  it("mobile: tabs reopen their last URL and each URL gets its scroll back", async () => {
+    renderAppAt("/archive?type=video");
+    await waitFor(() => expect(document.querySelector("[data-screen='archive']")).toBeInTheDocument());
+    const main = document.querySelector<HTMLElement>("main[data-scroll]")!;
+    Object.defineProperty(main, "scrollHeight", { configurable: true, value: 5000 });
+    Object.defineProperty(main, "clientHeight", { configurable: true, value: 800 });
+    act(() => {
+      main.scrollTop = 700;
+      fireEvent.scroll(main);
+    });
+
+    const nav = () => within(getNavContainer());
+    fireEvent.click(nav().getByText("Feed"));
+    await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
+    expect(main.scrollTop).not.toBe(700); // feed keeps its own position
+    expect(nav().getByText("Archive").closest("a")).toHaveAttribute("href", "/archive?type=video");
+
+    fireEvent.click(nav().getByText("Archive"));
+    await waitFor(() => expect(document.querySelector("[data-screen='archive']")).toBeInTheDocument());
+    expect(main.scrollTop).toBe(700);
+  });
 });

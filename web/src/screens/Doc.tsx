@@ -199,6 +199,7 @@ export function Doc() {
     clearTimeout(chromeTimer.current);
     chromeTimer.current = setTimeout(() => setChrome(false), CHROME_IDLE_MS);
   }
+  // data-lens-hide: also hidden while the lens bubble shows (index.css), so nothing sits over it
   const fade = `transition-opacity duration-300 ${chrome ? "" : "opacity-0"}`;
   useEffect(() => {
     showChrome();
@@ -432,9 +433,16 @@ export function Doc() {
         }}
         onFocus={showChrome}
         data-chrome={chrome ? "on" : "off"}
-        // image letterbox is the panel's black, not the <img>'s, so filters (invert) don't recolor it
-        className={`relative mb-3.5 overflow-hidden rounded-2xl border border-line2 ${media === "image" ? "bg-black" : "bg-bg2"}`}
-        style={{ aspectRatio: "4/3", maxHeight: "78vh", touchAction: view.z > 1 ? "none" : "pan-y" }}
+        // image letterbox is the panel's black, not the <img>'s, so filters (invert) don't recolor it.
+        // select-none: a long-press while lensing must not start a text selection on the badges.
+        className={`relative mb-3.5 select-none overflow-hidden rounded-2xl border border-line2 ${media === "image" ? "bg-black" : "bg-bg2"}`}
+        style={{
+          // panel takes the media's own shape once known, so it fills the block with no letterbox bars
+          aspectRatio: pic && (media === "image" || media === "video") ? `${pic.w} / ${pic.h}` : "4/3",
+          maxHeight: "78vh",
+          touchAction: view.z > 1 ? "none" : "pan-y",
+          WebkitTouchCallout: "none",
+        }}
       >
         {media === "image" && (
           <img
@@ -451,7 +459,9 @@ export function Doc() {
             ref={videoRef}
             src={fullUrl}
             poster={thumbUrl ?? undefined}
-            controls={nativeControls}
+            // native controls (big play button) fade with the panel chrome; tap brings them back.
+            // Touch lens mode covers the panel, so they'd be unreachable — VideoTransport has play/seek.
+            controls={nativeControls && chrome && (finePointer || !lens)}
             playsInline
             preload="metadata"
             onLoadedMetadata={(e) => setPic({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })}
@@ -501,6 +511,7 @@ export function Doc() {
           >
             <span
               aria-hidden="true"
+              data-lens-hide
               className={`absolute bottom-[11px] right-3 rounded-[7px] px-[9px] py-1 font-mono text-[10px] text-white ${fade}`}
               style={{ background: "rgba(0,0,0,.6)" }}
             >
@@ -515,18 +526,22 @@ export function Doc() {
           <VideoLens videoRef={videoRef} filter={adjustFilter(adjust)} view={view} mag={mag} clickThrough={finePointer} />
         )}
         <span
+          data-lens-hide
           className={`absolute left-[10px] top-[10px] rounded-md px-2 py-1 font-mono text-[9px] font-bold ${fade}`}
           style={{ background: "rgba(0,0,0,.72)", color: accent }}
         >
           {badge}
         </span>
         {!!record.redacted && (
-          <span className={`absolute right-[10px] top-[10px] rounded-md bg-red px-2 py-1 font-mono text-[9px] font-bold text-white ${fade}`}>
+          <span
+            data-lens-hide
+            className={`absolute right-[10px] top-[10px] rounded-md bg-red px-2 py-1 font-mono text-[9px] font-bold text-white ${fade}`}>
             REDACTED
           </span>
         )}
         {docIdx && (
           <span
+            data-lens-hide
             className={`absolute left-1/2 top-[11px] -translate-x-1/2 rounded-full px-[9px] py-[3px] font-mono text-[9px] text-white ${fade}`}
             style={{ background: "rgba(0,0,0,.55)" }}
           >
@@ -538,6 +553,7 @@ export function Doc() {
             type="button"
             onClick={() => goTo(-1)}
             aria-label="Previous file"
+            data-lens-hide
             className={`absolute left-2 top-1/2 grid h-[38px] w-[38px] -translate-y-1/2 place-items-center rounded-full border border-white/25 text-[19px] text-white active:scale-90 ${fade}`}
             style={{ background: "rgba(0,0,0,.5)" }}
           >
@@ -549,6 +565,7 @@ export function Doc() {
             type="button"
             onClick={() => goTo(1)}
             aria-label="Next file"
+            data-lens-hide
             className={`absolute right-2 top-1/2 grid h-[38px] w-[38px] -translate-y-1/2 place-items-center rounded-full border border-white/25 text-[19px] text-white active:scale-90 ${fade}`}
             style={{ background: "rgba(0,0,0,.5)" }}
           >

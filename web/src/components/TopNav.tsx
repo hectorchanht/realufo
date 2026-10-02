@@ -9,7 +9,7 @@
 // folded into this single bar instead, so desktop shows one nav, not two.
 import { Link } from "react-router-dom";
 import { Saucer } from "./Saucer";
-import { NAV_ITEMS, type NavTab } from "./navItems";
+import { NAV_ITEMS, tabHref, type NavTab } from "./navItems";
 import { ThemeToggle } from "./ThemeToggle";
 import { usePageTitle, DEFAULT_PAGE_TITLE } from "../lib/pageTitle";
 
@@ -43,7 +43,7 @@ export function TopNav({ activeTab, canBack = false, onBack }: TopNavProps) {
           return (
             <Link
               key={item.tab}
-              to={item.path}
+              to={tabHref(item, activeTab)}
               aria-current={active ? "page" : undefined}
               className={
                 "flex min-h-[44px] flex-none items-center gap-[9px] rounded-[11px] px-3.5 py-2 font-mono text-[13px] font-medium" +

@@ -7,3 +7,8 @@
 [data-lens-on] * {
   cursor: none !important;
 }
+/* ...and the panel chrome (badge, counter, arrows) gets out of its way */
+[data-lens-on] [data-lens-hide] {
+  opacity: 0 !important;
+  pointer-events: none;
+}

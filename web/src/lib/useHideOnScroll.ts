@@ -34,7 +34,8 @@ export function useHideOnScroll(ref: RefObject<HTMLElement | null>, enabled: boo
     };
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
-  }, [ref, enabled]);
+    // resetKey: re-baseline `last` on a new route (its scroll was just restored)
+  }, [ref, enabled, resetKey]);
 
   return enabled && hidden;
 }

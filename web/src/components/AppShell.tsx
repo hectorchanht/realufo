@@ -29,17 +29,18 @@ import { useEffect, useRef, type CSSProperties } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { useHideOnScroll } from "../lib/useHideOnScroll";
+import { useScrollMemory } from "../lib/useScrollMemory";
 import { useTheme } from "../theme/useTheme";
 import { PageTitleProvider } from "../lib/pageTitle";
 import { OverlayHost } from "../overlays/OverlayProvider";
 import { TopNav } from "./TopNav";
 import { AppBar } from "./AppBar";
 import { BottomTab } from "./BottomTab";
-import { activeTabForPath, canBackForPath } from "./navItems";
+import { activeTabForPath, canBackForPath, rememberTabUrl } from "./navItems";
 
 export function AppShell() {
   const isDesktop = useMediaQuery("(min-width:900px)");
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const { scanlines } = useTheme();
 
@@ -58,7 +59,11 @@ export function AppShell() {
   const scrollRef = useRef<HTMLElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const bnavRef = useRef<HTMLDivElement>(null);
-  const navHidden = useHideOnScroll(scrollRef, !isDesktop, pathname);
+  // useScrollMemory runs first (layout effect) so the hide hook starts from
+  // the restored scrollTop and doesn't read the jump as a scroll-down.
+  useScrollMemory(scrollRef, pathname + search);
+  const navHidden = useHideOnScroll(scrollRef, !isDesktop, pathname + search);
+  useEffect(() => rememberTabUrl(pathname, search), [pathname, search]);
 
   useEffect(() => {
     const nav = bnavRef.current;
