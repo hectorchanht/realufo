@@ -14,7 +14,7 @@ SITE = "https://realufo.org"
 UA = {"User-Agent": "realufo-ingest/1.0 (+https://realufo.org)"}
 INPUT_CAP = 12000
 PER_FILE = 400
-MIN_PICKS, MAX_PICKS, WHY_WORDS, LEDE_WORDS = 2, 5, 25, 60
+MIN_PICKS, MAX_PICKS, WHY_WORDS, LEDE_WORDS = 2, 5, 35, 60
 SYSTEM = """You write the "What stands out" blurb for one group of declassified U.S. government UAP (UFO) files on a public archive.
 You get the group (a release, agency, place or decade) and its files: id, title, type, date/place and a summary for each.
 Return JSON only, nothing around it:

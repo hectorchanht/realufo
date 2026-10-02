@@ -26,10 +26,10 @@ def test_validate_rejects_too_few_picks_or_empty_lede():
     assert hl.validate({"lede": " ", "picks": [{"id": "A-1", "why": "w"}, {"id": "B-2", "why": "w"}]}, IDS) is None
     assert hl.validate(["not", "a", "dict"], IDS) is None
 
-def test_validate_trims_why_to_25_words():
+def test_validate_trims_why_to_the_word_cap():
     long = " ".join(["word"] * 40)
     out = hl.validate({"lede": "L.", "picks": [{"id": "A-1", "why": long}, {"id": "B-2", "why": "ok"}]}, IDS)
-    assert len(out["picks"][0]["why"].split()) == 25
+    assert len(out["picks"][0]["why"].split()) == hl.WHY_WORDS
 
 def test_build_prompt_longest_summaries_first_and_capped():
     files = [{"id": "short", "title": "S", "text": "tiny"},
@@ -95,7 +95,7 @@ def test_system_prompt_asks_for_distinct_picks_and_exact_facts():
 
 def test_long_why_ends_on_a_whole_sentence_not_mid_word():
     why = ("Four minutes of infrared footage at 500 mph. The Pentagon's camera budget clearly peaked in 1998. "
-           "Also positrons are basically tiny angry electrons that the budget office would very much like to")
+           "Also positrons are basically tiny angry electrons that the budget office would very much like to never discuss again at any meeting ever because frankly the forms alone take")
     out = hl.validate({"lede": "L.", "picks": [{"id": "A-1", "why": why}, {"id": "B-2", "why": "w"}]}, IDS)
     assert out["picks"][0]["why"] == "Four minutes of infrared footage at 500 mph. The Pentagon's camera budget clearly peaked in 1998."
 
@@ -138,3 +138,7 @@ def test_scrub_strips_a_leaked_joke_label():
 
 def test_scrub_drops_kite_guess():
     assert hl.scrub("Five soldiers saw an angular object. Could be a particularly obstinate kite.") == "Five soldiers saw an angular object."
+
+def test_why_cap_leaves_room_for_the_punchline():
+    # prompt asks for 25 words; the cap is looser so a slightly long joke isn't cut mid-punchline
+    assert hl.WHY_WORDS >= 35
