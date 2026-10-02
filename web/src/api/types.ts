@@ -109,6 +109,7 @@ interface RecordCardBase {
   kind: RecordKind;
   redacted: number; // 0|1
   thumb: string | null;
+  duration?: number | null; // video length in seconds (full asset); null/absent = unknown
 }
 
 /** RecordCard shape from GET /api/feed → `featured[]`. */

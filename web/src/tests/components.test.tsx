@@ -136,6 +136,15 @@ describe("DocCard", () => {
     expect(screen.getByText("▶")).toBeInTheDocument();
   });
 
+  it("shows video length bottom-right when duration is known", () => {
+    const { rerender } = render(withRouter(<DocCard record={{ ...feedRecord, kind: "video", duration: 9.6 }} variant="feed" />));
+    expect(screen.getByText("0:10")).toBeInTheDocument();
+    rerender(withRouter(<DocCard record={{ ...feedRecord, kind: "video", duration: 3725 }} variant="feed" />));
+    expect(screen.getByText("1:02:05")).toBeInTheDocument();
+    rerender(withRouter(<DocCard record={{ ...feedRecord, kind: "video", duration: null }} variant="feed" />));
+    expect(screen.queryByText(/^\d+:\d\d$/)).not.toBeInTheDocument();
+  });
+
   it("does not show the play glyph for non-video kinds", () => {
     render(withRouter(<DocCard record={feedRecord} variant="feed" />));
     expect(screen.queryByText("▶")).not.toBeInTheDocument();

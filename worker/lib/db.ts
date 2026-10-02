@@ -12,3 +12,7 @@ export const stanceOK = (x: unknown) => ["neutral","believer","skeptic","analyst
 // itself an image (most image records ship no separate thumb).
 export const thumbSql = (recordId: string) =>
   `(SELECT cdn_url FROM assets a WHERE a.record_id=${recordId} AND (a.role='thumb' OR (a.role='full' AND a.mime LIKE 'image/%')) ORDER BY a.role='thumb' DESC LIMIT 1)`;
+
+// Card video length (seconds) from the `full` asset; NULL when unknown.
+export const durationSql = (recordId: string) =>
+  `(SELECT duration FROM assets a WHERE a.record_id=${recordId} AND a.role='full' LIMIT 1)`;

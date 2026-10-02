@@ -1,6 +1,6 @@
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
-import { thumbSql } from "../lib/db";
+import { durationSql, thumbSql } from "../lib/db";
 
 export async function listRecords(req: Request, env: Env) {
   const u = new URL(req.url);
@@ -48,7 +48,7 @@ export async function listRecords(req: Request, env: Env) {
   const rows = await env.DB.prepare(
     `
     SELECT r.id,r.archive,r.agency,r.title,r.summary,r.kind,r.redacted,r.location,r.incident_date,r.doc_date,
-      ${thumbSql("r.id")} thumb
+      ${thumbSql("r.id")} thumb, ${durationSql("r.id")} duration
     FROM records r ${w} ORDER BY r.featured DESC, r.created_at DESC LIMIT ? OFFSET ?`
   )
     .bind(...bind, limit, offset)
@@ -156,7 +156,7 @@ async function relatedOf(env: Env, r: RecordRow, release: { no: number } | null)
     groups.map((g) =>
       env.DB.prepare(
         `SELECT r.id,r.archive,r.agency,r.title,r.summary,r.kind,r.redacted,r.location,r.incident_date,r.doc_date,
-          ${thumbSql("r.id")} thumb
+          ${thumbSql("r.id")} thumb, ${durationSql("r.id")} duration
         FROM records r WHERE ${g.where} AND r.id<>? ORDER BY r.featured DESC, r.created_at DESC LIMIT ?`
       )
         .bind(...g.bind, r.id, RELATED_PER_GROUP * 4)

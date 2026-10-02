@@ -58,6 +58,15 @@ function typeGlyph(kind: RecordCard["kind"]): string {
   return "PDF";
 }
 
+/** 9.6 → "0:10", 3725 → "1:02:05". */
+export function formatDuration(sec: number): string {
+  const t = Math.round(sec);
+  const h = Math.floor(t / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const ss = String(t % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
+}
+
 function metaLine(r: RecordCard): string {
   const agency = r.agency || "";
   const archive = r.archive.toUpperCase();
@@ -148,6 +157,11 @@ export function DocCard({ record, variant = "grid", onOpen, search }: DocCardPro
             style={{ background: "rgba(0,0,0,.55)" }}
           >
             ▶
+          </span>
+        )}
+        {record.kind === "video" && !!record.duration && (
+          <span className="absolute bottom-2 right-2 rounded-[5px] px-1.5 py-1 font-mono text-[9px] font-bold text-white" style={{ background: "rgba(0,0,0,.72)" }}>
+            {formatDuration(record.duration)}
           </span>
         )}
       </div>

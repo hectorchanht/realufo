@@ -12,7 +12,7 @@ CREATE TABLE records (
 CREATE INDEX idx_records_archive ON records(archive);
 CREATE INDEX idx_records_kind ON records(kind);
 CREATE TABLE assets (id INTEGER PRIMARY KEY AUTOINCREMENT, record_id TEXT REFERENCES records(id),
-  role TEXT CHECK(role IN ('thumb','full','original')), r2_key TEXT, cdn_url TEXT, mime TEXT, width INTEGER, height INTEGER, bytes INTEGER);
+  role TEXT CHECK(role IN ('thumb','full','original')), r2_key TEXT, cdn_url TEXT, mime TEXT, width INTEGER, height INTEGER, bytes INTEGER, duration REAL);
 CREATE INDEX idx_assets_record ON assets(record_id);
 CREATE TABLE threads (
   id TEXT PRIMARY KEY, no INTEGER, board_id TEXT REFERENCES boards(id),
