@@ -88,7 +88,7 @@ function isoDate(mdy: string): string | null {
 
 // All war.gov releases, oldest first: no, ISO date, the raw doc_date strings
 // that map to it, and how many files it holds.
-async function wargovReleases(env: Env) {
+export async function wargovReleases(env: Env) {
   const rows = await env.DB.prepare(
     "SELECT doc_date d, count(*) n FROM records WHERE archive='wargov' AND doc_date IS NOT NULL GROUP BY doc_date"
   ).all<{ d: string; n: number }>();
