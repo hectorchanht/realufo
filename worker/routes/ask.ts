@@ -44,7 +44,7 @@ export async function ask(req: Request, env: Env) {
 }
 
 async function answer(env: Env, q: string) {
-  const emb = (await env.AI.run(ASK_EMBED_MODEL as any, { text: [q] } as any)) as { data: number[][] };
+  const emb = (await env.AI.run(ASK_EMBED_MODEL as any, { text: [q] } as any)) as unknown as { data: number[][] };
   const res = await env.VECTORIZE.query(emb.data[0], { topK: ASK_TOP_K, returnMetadata: "all" });
   const min = Number(env.ASK_MIN_SCORE) || 0.45;
   const strong = res.matches.filter((m) => m.score >= min && m.metadata?.record_id);
