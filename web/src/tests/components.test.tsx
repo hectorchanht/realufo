@@ -255,6 +255,17 @@ describe("DocCard", () => {
     expect(screen.getByText("Roswell, NM")).toBeInTheDocument();
   });
 
+  it("a search hit inside the file's text shows the page and excerpt", () => {
+    const hit: ListRecordCard = {
+      id: "rec3", archive: "wargov", agency: "FBI", title: "Teletype", summary: "", kind: "pdf", redacted: 0,
+      thumb: null, location: null, incident_date: null, doc_date: null,
+      match: { page: 12, text: "…described several weather balloons over the…" },
+    };
+    render(withRouter(<DocCard record={hit} variant="grid" />));
+    expect(screen.getByText("p.12")).toBeInTheDocument();
+    expect(screen.getByText(/several weather balloons/)).toBeInTheDocument();
+  });
+
   it("calls onOpen instead of navigating when provided", () => {
     const onOpen = vi.fn();
     render(withRouter(<DocCard record={feedRecord} variant="feed" onOpen={onOpen} />));

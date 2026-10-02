@@ -202,6 +202,12 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
             <span>⚖ {record.verdictN ?? 0}</span>
           </div>
         )}
+        {isListRecord(record) && record.match && (
+          <div className="line-clamp-3 text-[11px] leading-[1.4] text-dim">
+            <span className="mr-1 font-mono text-[9px] text-signal">p.{record.match.page}</span>
+            {record.match.text}
+          </div>
+        )}
         {!isFeed && isListRecord(record) && (
           <div className="mt-auto flex flex-wrap gap-2 font-mono text-[9px] text-faint">
             <span>{locOrDate(record)}</span>

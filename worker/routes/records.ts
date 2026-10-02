@@ -16,6 +16,17 @@ const HAS: Record<string, string> = {
   featured: "r.featured=1",
 };
 
+/** Free text → a safe FTS5 query: each word quoted (no operators get through),
+ * all words required, the last one also as a prefix so typing "kecksbu" hits. */
+export function ftsQuery(q: string): string | null {
+  const words = (q.match(/[\p{L}\p{N}]+/gu) ?? []).slice(0, 8);
+  if (!words.length) return null;
+  return words.map((w) => `"${w}"`).join(" ") + "*";
+}
+
+// Title/agency/location/summary substring match (the original search).
+const META_LIKE = "lower(r.title||' '||r.agency||' '||coalesce(r.location,'')||' '||coalesce(r.summary,'')) LIKE ?";
+
 export async function listRecords(req: Request, env: Env) {
   const u = new URL(req.url);
   const where: string[] = [];
@@ -57,13 +68,22 @@ export async function listRecords(req: Request, env: Env) {
     bind.push(JSON.stringify(rows.results.map((r) => r.d).filter((d) => decadeOf(d) === decade)));
   }
   const q = (u.searchParams.get("q") || "").trim();
+  const like = "%" + q.toLowerCase() + "%";
+  const fts = q ? ftsQuery(q) : null;
   if (q) {
-    where.push("(lower(r.title||' '||r.agency||' '||coalesce(r.location,'')||' '||coalesce(r.summary,'')) LIKE ?)");
-    bind.push("%" + q.toLowerCase() + "%");
+    // Metadata OR page text (record_fts, migration 0020).
+    where.push(fts ? `(${META_LIKE} OR r.id IN (SELECT record_id FROM record_fts WHERE record_fts MATCH ?))` : `(${META_LIKE})`);
+    bind.push(like, ...(fts ? [fts] : []));
   }
   const w = where.length ? "WHERE " + where.join(" AND ") : "";
   const sort = u.searchParams.get("sort");
   let order = "r.featured DESC, r.created_at DESC";
+  const orderBind: unknown[] = [];
+  // Searching with no explicit sort: title/summary hits before text-only hits.
+  if (q && !sort) {
+    order = `CASE WHEN ${META_LIKE} THEN 0 ELSE 1 END, ${order}`;
+    orderBind.push(like);
+  }
   let join = "";
   const joinBind: unknown[] = [];
   if (sort === "new") order = "r.created_at DESC";
@@ -78,14 +98,22 @@ export async function listRecords(req: Request, env: Env) {
   const limit = Math.max(1, Math.min(100, Number(u.searchParams.get("limit")) || 40));
   const offset = Math.max(0, Number(u.searchParams.get("offset")) || 0);
   const total = await env.DB.prepare(`SELECT count(*) c FROM records r ${w}`).bind(...bind).first<{ c: number }>();
+  // The best-matching page of each file, as {page, text} with a short excerpt.
+  const matchCol = fts
+    ? `, (SELECT json_object('page', page, 'text', snippet(record_fts, 2, '', '', '…', 14)) FROM record_fts
+          WHERE record_fts MATCH ? AND record_id = r.id ORDER BY rank LIMIT 1) text_match`
+    : "";
   const rows = await env.DB.prepare(
     `
-    SELECT ${CARD_COLS}
+    SELECT ${CARD_COLS}${matchCol}
     FROM records r ${join} ${w} ORDER BY ${order} LIMIT ? OFFSET ?`
   )
-    .bind(...joinBind, ...bind, limit, offset)
-    .all();
-  return json({ count: total?.c ?? 0, records: rows.results });
+    .bind(...(fts ? [fts] : []), ...joinBind, ...bind, ...orderBind, limit, offset)
+    .all<Record<string, unknown>>();
+  const records = fts
+    ? rows.results.map(({ text_match, ...x }) => ({ ...x, match: text_match ? JSON.parse(String(text_match)) : null }))
+    : rows.results;
+  return json({ count: total?.c ?? 0, records });
 }
 
 // "NASA-UAP-D030" → ["NASA-UAP-D", 30, ""]; "NASA-UAP-D003A" → [.., 3, "A"].

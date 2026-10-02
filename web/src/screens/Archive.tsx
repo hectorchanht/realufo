@@ -411,8 +411,8 @@ export function Archive() {
           enterKeyHint="search"
           placeholder={
             totalRecords != null
-              ? `search ${totalRecords.toLocaleString()} records — title, agency, location…`
-              : "search the archive — title, agency, location…"
+              ? `search ${totalRecords.toLocaleString()} records — titles, places, words inside the files…`
+              : "search the archive — titles, places, words inside the files…"
           }
           className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[12.5px] text-ink outline-none placeholder:text-faint"
         />
