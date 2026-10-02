@@ -483,19 +483,24 @@ export function Doc() {
           />
         )}
         {media === "video" && (
-          <video
-            ref={videoRef}
-            src={fullUrl}
-            poster={thumbUrl ?? undefined}
-            // native controls (big play button) fade with the panel chrome; tap brings them back.
-            // Touch lens mode covers the panel, so they'd be unreachable — VideoTransport has play/seek.
-            controls={nativeControls && chrome && (finePointer || !lens)}
-            playsInline
-            preload="metadata"
-            onLoadedMetadata={(e) => setPic({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })}
-            className="h-full w-full bg-black object-contain"
-            style={{ filter: adjustFilter(adjust) || undefined, transform: viewTransform(view, zoom.box, pic) || undefined }}
-          />
+          // filter on a wrapper, not the <video>: macOS Chrome hands an unoccluded playing video
+          // to a hardware overlay that skips url() (SVG) filters, so palettes went flat navy
+          // whenever the controls/chrome faded out.
+          <div className="h-full w-full" style={{ filter: adjustFilter(adjust) || undefined }}>
+            <video
+              ref={videoRef}
+              src={fullUrl}
+              poster={thumbUrl ?? undefined}
+              // native controls (big play button) fade with the panel chrome; tap brings them back.
+              // Touch lens mode covers the panel, so they'd be unreachable — VideoTransport has play/seek.
+              controls={nativeControls && chrome && (finePointer || !lens)}
+              playsInline
+              preload="metadata"
+              onLoadedMetadata={(e) => setPic({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })}
+              className="h-full w-full bg-black object-contain"
+              style={{ transform: viewTransform(view, zoom.box, pic) || undefined }}
+            />
+          </div>
         )}
         {media === "pdf" && (
           <iframe title={title} src={`/api/file/${id}`} className="h-full w-full border-0 bg-white" />

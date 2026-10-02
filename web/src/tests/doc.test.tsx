@@ -505,7 +505,9 @@ describe("Doc", () => {
 
     expect(screen.getByRole("button", { name: /adjust/i })).toHaveAttribute("aria-expanded", "true"); // open by default
     fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
-    expect(video.style.filter).toContain("invert(1)");
+    // filter sits on a wrapper: on the <video> itself macOS Chrome's overlay path drops url() filters
+    expect(video.style.filter).toBe("");
+    expect(video.parentElement!.style.filter).toContain("invert(1)");
     fireEvent.click(screen.getByRole("button", { name: /lens/i }));
     expect(document.querySelector("[data-zoom-lens]")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /capture frame/i })).toBeInTheDocument();
