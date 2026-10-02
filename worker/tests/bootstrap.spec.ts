@@ -22,6 +22,11 @@ describe("bootstrap+feed", () => {
     expect(b.sightings.every((s: any) => s.case_slug && !("count" in s))).toBe(true);
     expect(b.cases[0]).toHaveProperty("slug");
     expect(b.cases[0]).toHaveProperty("lede");
+    // Long ledes are clipped at a word with an ellipsis, never mid-word.
+    const long = b.cases.filter((c: any) => c.lede.endsWith("…"));
+    expect(long.length).toBeGreaterThan(0);
+    for (const c of b.cases) expect(c.lede.length).toBeLessThanOrEqual(160);
+    for (const c of long) expect(c.lede.slice(0, -1)).not.toMatch(/\s$/);
   });
 
   it("postsToday counts only today's posts; yearsCovered spans first to last decade", async () => {

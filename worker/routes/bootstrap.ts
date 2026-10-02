@@ -3,6 +3,7 @@ import { json } from "../lib/json";
 import { actorId } from "../lib/anon";
 import { mapPlaces } from "../lib/places";
 import { listHubsCached } from "./hubs";
+import { snippet } from "../lib/ssr";
 
 // App shell data. archives + stats are computed from ACTUAL records (no fake
 // fillups): archives are filtered to those that really have records, with real
@@ -41,7 +42,7 @@ export async function bootstrap(req: Request, env: Env) {
     env.DB.prepare("SELECT kind,board,text,ago FROM ticker ORDER BY sort").all(),
     // Curated case pins only; the prototype's per-pin counts were fake, so they're dropped.
     env.DB.prepare("SELECT id,name,lat,lng,accent,case_slug FROM sightings WHERE case_slug IS NOT NULL").all(),
-    env.DB.prepare("SELECT slug,name,accent,coord,substr(coalesce(lede,''),1,160) lede FROM cases ORDER BY name").all(),
+    env.DB.prepare("SELECT slug,name,accent,coord,coalesce(lede,'') lede FROM cases ORDER BY name").all<{ lede: string }>(),
     env.DB
       .prepare(
         `SELECT (SELECT count(*) FROM records) records,
@@ -108,7 +109,7 @@ export async function bootstrap(req: Request, env: Env) {
     sightings: sightings.results,
     places: map.places,
     unmappedFiles: map.unmapped,
-    cases: cases.results,
+    cases: cases.results.map((c) => ({ ...c, lede: snippet(c.lede) })),
     features: { ask: env.FEATURE_ASK === "on" },
   });
 }

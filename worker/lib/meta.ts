@@ -1,10 +1,10 @@
 import type { Env } from "../env";
-import { esc, injectBody, DEFAULT_DESCRIPTION } from "./ssr";
+import { esc, injectBody, snippet, DEFAULT_DESCRIPTION } from "./ssr";
 import { ROUTES, type Page } from "./pages";
 import { cachedJson } from "./cache";
 import { decodedGroups } from "../router";
 
-export { DEFAULT_DESCRIPTION };
+export { DEFAULT_DESCRIPTION, snippet };
 
 export interface MetaInput {
   title: string;
@@ -30,13 +30,6 @@ const ldScript = (o: unknown) => `<script type="application/ld+json">${JSON.stri
 // title is the only one left (the FIRST <title> wins for document.title). If
 // the placeholder isn't present, html is returned unchanged (aside from that
 // title strip).
-// Search snippets show ~160 chars; user text can carry newlines.
-export function snippet(text: string, max = 160): string {
-  const s = text.replace(/\s+/g, " ").trim();
-  if (s.length <= max) return s;
-  const cut = s.slice(0, max - 1);
-  return cut.slice(0, cut.lastIndexOf(" ") > max / 2 ? cut.lastIndexOf(" ") : cut.length) + "…";
-}
 
 export function injectMeta(html: string, m: MetaInput): string {
   const t = esc(m.title);

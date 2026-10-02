@@ -7,7 +7,7 @@ import { loadHub, listHubsCached } from "../routes/hubs";
 import type { HubKind } from "./hubs";
 import {
   DEFAULT_DESCRIPTION, type DocData, type Link, docBody, docFooter, threadBody, boardBody, caseBody, homeBody, tabBody,
-  section, docLinks, countList, docTitle, docTitleParts, boardHref, docHref, hubBody, browseBody, hubHref, docMoments,
+  section, docLinks, countList, docTitle, docTitleParts, boardHref, docHref, hubBody, browseBody, hubHref, docMoments, snippet,
 } from "./ssr";
 
 // One SPA route's pre-render: <head> meta (url is filled in by serveWithMeta)
@@ -103,7 +103,7 @@ const boardsPage: Loader = async (env) => {
 const casesPage: Loader = async (env) => {
   const { results } = await env.DB.prepare("SELECT slug,name,lede FROM cases ORDER BY name").all<{ slug: string; name: string; lede: string | null }>();
   const t = TAB.cases;
-  const links = results.map((c) => ({ href: `/case/${encodeURIComponent(c.slug)}`, text: c.lede ? `${c.name} — ${c.lede.slice(0, 140)}` : c.name }));
+  const links = results.map((c) => ({ href: `/case/${encodeURIComponent(c.slug)}`, text: c.lede ? `${c.name} — ${snippet(c.lede, 140)}` : c.name }));
   return { meta: t, body: tabBody(t.title, t.description, section("Cases", links)) };
 };
 

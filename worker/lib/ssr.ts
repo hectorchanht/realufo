@@ -15,6 +15,14 @@ export const esc = (s: string) =>
 
 export type Link = { href: string; text: string };
 
+// Search snippets show ~160 chars; user text can carry newlines.
+export function snippet(text: string, max = 160): string {
+  const s = text.replace(/\s+/g, " ").trim();
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max - 1);
+  return cut.slice(0, cut.lastIndexOf(" ") > max / 2 ? cut.lastIndexOf(" ") : cut.length) + "…";
+}
+
 // How a file's id and title are shown together: id prefix and underscores
 // stripped; showId false when the id only respells the title.
 // Same rule as web/src/lib/docTitle.ts — keep them in sync.
