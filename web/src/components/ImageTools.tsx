@@ -6,6 +6,8 @@
 // (and no CORS dependency on the CDN).
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { ReactNode, RefObject } from "react";
+import { Contrast, DropletOff, Droplet, Flame, FlipHorizontal2, Focus, Rainbow, RotateCcw, RotateCw, Shrink, SlidersHorizontal, Sun, SunMoon, WandSparkles, X, ZoomIn } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { DEFAULT_VIEW, pointToUV } from "../lib/mediaView";
 import type { MediaView } from "../lib/mediaView";
 
@@ -32,22 +34,22 @@ export const DEFAULT_ADJUST: ImageAdjust = {
 };
 
 // Presets set the tone controls only; palette + sharpen stay as they are.
-const PRESETS: { label: string; adj: Partial<ImageAdjust> }[] = [
-  { label: "Enhance", adj: { brightness: 110, contrast: 140, saturate: 120 } },
-  { label: "Invert IR", adj: { invert: true } },
-  { label: "B&W", adj: { contrast: 120, gray: true } },
+const PRESETS: { label: string; Icon: LucideIcon; adj: Partial<ImageAdjust> }[] = [
+  { label: "Enhance", Icon: WandSparkles, adj: { brightness: 110, contrast: 140, saturate: 120 } },
+  { label: "Invert IR", Icon: SunMoon, adj: { invert: true } },
+  { label: "B&W", Icon: DropletOff, adj: { contrast: 120, gray: true } },
 ];
 const TONE = { brightness: 100, contrast: 100, saturate: 100, invert: false, gray: false };
 
-const PALETTES: { key: Exclude<Palette, "none">; label: string }[] = [
-  { key: "ironbow", label: "Ironbow" },
-  { key: "rainbow", label: "Rainbow" },
+const PALETTES: { key: Exclude<Palette, "none">; label: string; Icon: LucideIcon }[] = [
+  { key: "ironbow", label: "Ironbow", Icon: Flame },
+  { key: "rainbow", label: "Rainbow", Icon: Rainbow },
 ];
 
-const SLIDERS: { key: "brightness" | "contrast" | "saturate"; label: string }[] = [
-  { key: "brightness", label: "Brightness" },
-  { key: "contrast", label: "Contrast" },
-  { key: "saturate", label: "Saturation" },
+const SLIDERS: { key: "brightness" | "contrast" | "saturate"; label: string; Icon: LucideIcon }[] = [
+  { key: "brightness", label: "Brightness", Icon: Sun },
+  { key: "contrast", label: "Contrast", Icon: Contrast },
+  { key: "saturate", label: "Saturation", Icon: Droplet },
 ];
 
 export const LENS_MAGS = [2, 3, 5, 8];
@@ -99,7 +101,9 @@ export function MediaFilters() {
   );
 }
 
-export const chip = "rounded-[7px] border px-[9px] py-1 font-mono text-[10px] active:scale-[.96]";
+export const chip = "inline-flex items-center gap-1 rounded-[7px] border px-[9px] py-1 font-mono text-[10px] active:scale-[.96]";
+/** Lucide icon size/stroke for chips. */
+export const ico = { size: 14, strokeWidth: 1.75, "aria-hidden": true } as const;
 export const on = "border-signal text-signal";
 export const off = "border-line2 text-dim";
 
@@ -128,11 +132,18 @@ export function MediaToolbar({
   return (
     <div className="mb-3.5">
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className={`${chip} ${open || changed ? on : off}`}>
-          ◐ ADJUST
+        <button
+          type="button"
+          aria-label="Adjust"
+          aria-expanded={open}
+          title="Adjust"
+          onClick={() => setOpen(!open)}
+          className={`${chip} ${open || changed ? on : off}`}
+        >
+          <SlidersHorizontal {...ico} />
         </button>
-        <button type="button" aria-pressed={lens} onClick={() => onLens(!lens)} title="L" className={`${chip} ${lens ? on : off}`}>
-          ⌕ LENS
+        <button type="button" aria-label="Lens" aria-pressed={lens} onClick={() => onLens(!lens)} title="Lens (L)" className={`${chip} ${lens ? on : off}`}>
+          <ZoomIn {...ico} />
         </button>
         {lens && (
           <button
@@ -148,30 +159,33 @@ export function MediaToolbar({
         <button
           type="button"
           aria-label="Rotate 90°"
-          title="R"
+          title="Rotate 90° (R)"
           onClick={() => onView({ ...DEFAULT_VIEW, flip: view.flip, rot: ((view.rot + 90) % 360) as MediaView["rot"] })}
           className={`${chip} ${view.rot ? on : off}`}
         >
-          ⟳{view.rot ? ` ${view.rot}°` : ""}
+          <RotateCw {...ico} />
+          {view.rot ? `${view.rot}°` : ""}
         </button>
         <button
           type="button"
           aria-label="Flip"
           aria-pressed={view.flip}
-          title="F"
+          title="Flip (F)"
           onClick={() => onView({ ...view, flip: !view.flip })}
           className={`${chip} ${view.flip ? on : off}`}
         >
-          ⇋
+          <FlipHorizontal2 {...ico} />
         </button>
         {view.z > 1 && (
-          <button type="button" aria-label="Reset zoom" title="0" onClick={() => onView({ ...view, z: 1, x: 0, y: 0 })} className={`${chip} ${on}`}>
-            ⤢ {view.z.toFixed(1)}× ✕
+          <button type="button" aria-label="Reset zoom" title="Reset zoom (0)" onClick={() => onView({ ...view, z: 1, x: 0, y: 0 })} className={`${chip} ${on}`}>
+            <Shrink {...ico} />
+            {view.z.toFixed(1)}×
+            <X {...ico} size={12} />
           </button>
         )}
         {changed && (
-          <button type="button" onClick={() => onAdjust(DEFAULT_ADJUST)} className={`${chip} ${off} ml-auto`}>
-            ↺ Reset
+          <button type="button" aria-label="Reset filters" title="Reset filters" onClick={() => onAdjust(DEFAULT_ADJUST)} className={`${chip} ${off} ml-auto`}>
+            <RotateCcw {...ico} />
           </button>
         )}
       </div>
@@ -185,11 +199,13 @@ export function MediaToolbar({
                 <button
                   key={p.label}
                   type="button"
+                  aria-label={p.label}
                   aria-pressed={active}
+                  title={p.label}
                   onClick={() => onAdjust(active ? { ...adjust, ...TONE } : preset)}
                   className={`${chip} ${active ? on : off}`}
                 >
-                  {p.label}
+                  <p.Icon {...ico} />
                 </button>
               );
             })}
@@ -198,28 +214,33 @@ export function MediaToolbar({
               <button
                 key={p.key}
                 type="button"
+                aria-label={p.label}
                 aria-pressed={adjust.palette === p.key}
+                title={p.label}
                 onClick={() => onAdjust({ ...adjust, palette: adjust.palette === p.key ? "none" : p.key })}
                 className={`${chip} ${adjust.palette === p.key ? on : off}`}
               >
-                {p.label}
+                <p.Icon {...ico} />
               </button>
             ))}
             <button
               type="button"
+              aria-label="Sharpen"
               aria-pressed={adjust.sharpen}
+              title="Sharpen"
               onClick={() => onAdjust({ ...adjust, sharpen: !adjust.sharpen })}
               className={`${chip} ${adjust.sharpen ? on : off}`}
             >
-              Sharpen
+              <Focus {...ico} />
             </button>
           </div>
           <div className="grid gap-x-5 gap-y-2 min-[600px]:grid-cols-3">
             {SLIDERS.map((s) => (
-              <label key={s.key} className="flex items-center gap-2.5 font-mono text-[9.5px] tracking-[.4px] text-faint">
-                <span className="w-[74px] flex-none uppercase">{s.label}</span>
+              <label key={s.key} title={s.label} className="flex items-center gap-2.5 font-mono text-[9.5px] tracking-[.4px] text-faint">
+                <s.Icon {...ico} className="flex-none" />
                 <input
                   type="range"
+                  aria-label={s.label}
                   min={0}
                   max={200}
                   value={adjust[s.key]}

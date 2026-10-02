@@ -9,7 +9,8 @@
 // the same file through our same-origin /api/file/:id route.
 import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import { LENS_PX, LensLayer, chip, lensTurn, off, on } from "./ImageTools";
+import { Camera, Link, LoaderCircle, MessageSquarePlus, Pause, Play, Repeat, Repeat1, StepBack, StepForward, TriangleAlert, Volume2, VolumeX, X } from "lucide-react";
+import { LENS_PX, LensLayer, chip, ico, lensTurn, off, on } from "./ImageTools";
 import type { LensHit } from "./ImageTools";
 import type { MediaView } from "../lib/mediaView";
 import { formatMoment } from "../lib/recordMedia";
@@ -218,7 +219,7 @@ export function VideoTransport({
     return () => window.removeEventListener("keydown", h);
   }, [keys]);
 
-  const abLabel = !ab ? "A–B" : ab.b === undefined ? "set B" : "A–B ✕";
+  const abLabel = `Loop A–B: ${!ab ? "set A" : ab.b === undefined ? "set B" : "clear"}`;
 
   return (
     <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -237,24 +238,27 @@ export function VideoTransport({
         }}
         className="w-full accent-[var(--signal)]"
       />
-      <button type="button" aria-label={playing ? "Pause" : "Play"} title="Space" onClick={togglePlay} className={`${chip} ${off} w-8`}>
-        {playing ? "❚❚" : "▶"}
+      <button type="button" aria-label={playing ? "Pause" : "Play"} title={`${playing ? "Pause" : "Play"} (Space)`} onClick={togglePlay} className={`${chip} ${off}`}>
+        {playing ? <Pause {...ico} /> : <Play {...ico} />}
       </button>
-      <button type="button" aria-label="Previous frame" title="," onClick={() => step(-1)} className={`${chip} ${off}`}>
-        ◁
+      <button type="button" aria-label="Previous frame" title="Previous frame (,)" onClick={() => step(-1)} className={`${chip} ${off}`}>
+        <StepBack {...ico} />
       </button>
-      <button type="button" aria-label="Next frame" title="." onClick={() => step(1)} className={`${chip} ${off}`}>
-        ▷
+      <button type="button" aria-label="Next frame" title="Next frame (.)" onClick={() => step(1)} className={`${chip} ${off}`}>
+        <StepForward {...ico} />
       </button>
       <span className="font-mono text-[10px] tabular-nums text-dim">
         {formatMoment(t, true)} / {formatMoment(dur, true)} <span className="text-faint">F{frameOf(t)}</span>
       </span>
-      <button type="button" aria-label="Loop A–B" aria-pressed={ab?.b !== undefined} title="A" onClick={markAb} className={`${chip} ${ab ? on : off}`}>
-        {abLabel}
+      <button type="button" aria-label={abLabel} aria-pressed={ab?.b !== undefined} title={`${abLabel} (A)`} onClick={markAb} className={`${chip} ${ab ? on : off}`}>
+        <Repeat1 {...ico} />
+        {ab && (ab.b === undefined ? "B?" : <X {...ico} size={12} />)}
       </button>
       <button
         type="button"
+        aria-label="Loop"
         aria-pressed={loop}
+        title="Loop"
         onClick={() => {
           const el = v();
           if (el) el.loop = !loop;
@@ -262,27 +266,47 @@ export function VideoTransport({
         }}
         className={`${chip} ${loop ? on : off}`}
       >
-        Loop
+        <Repeat {...ico} />
       </button>
-      <button type="button" aria-label={muted ? "Unmute" : "Mute"} aria-pressed={muted} title="M" onClick={toggleMute} className={`${chip} ${muted ? on : off}`}>
-        {muted ? "🔇" : "🔊"}
+      <button type="button" aria-label={muted ? "Unmute" : "Mute"} aria-pressed={muted} title={`${muted ? "Unmute" : "Mute"} (M)`} onClick={toggleMute} className={`${chip} ${muted ? on : off}`}>
+        {muted ? <VolumeX {...ico} /> : <Volume2 {...ico} />}
       </button>
       <span className="flex flex-wrap gap-1">
         {SPEEDS.map((s) => (
-          <button key={s} type="button" aria-pressed={rate === s} title="[ ]" onClick={() => speed(s)} className={`${chip} ${rate === s ? on : off}`}>
+          <button key={s} type="button" aria-pressed={rate === s} title="Speed ([ ])" onClick={() => speed(s)} className={`${chip} ${rate === s ? on : off}`}>
             {s}×
           </button>
         ))}
       </span>
       <span className="ml-auto flex flex-wrap gap-2">
-        <button type="button" aria-label="Copy link to this moment" onClick={() => onShare(v()?.currentTime ?? t)} className={`${chip} ${off}`}>
-          ⧉ Link @{formatMoment(t)}
+        <button
+          type="button"
+          aria-label="Copy link to this moment"
+          title={`Copy link @${formatMoment(t)}`}
+          onClick={() => onShare(v()?.currentTime ?? t)}
+          className={`${chip} ${off}`}
+        >
+          <Link {...ico} />
         </button>
-        <button type="button" aria-label="Capture frame" title="C" onClick={() => grab("save")} disabled={capture === "busy"} className={`${chip} ${off}`}>
-          {capture === "busy" ? "capturing…" : capture === "failed" ? "⤓ failed — retry" : "⤓ Save frame"}
+        <button
+          type="button"
+          aria-label={capture === "failed" ? "Capture failed, retry" : "Capture frame"}
+          title={capture === "failed" ? "Capture failed — retry (C)" : "Save frame (C)"}
+          onClick={() => grab("save")}
+          disabled={capture === "busy"}
+          className={`${chip} ${capture === "failed" ? "border-amber text-amber" : off}`}
+        >
+          {capture === "busy" ? <LoaderCircle {...ico} className="animate-spin" /> : capture === "failed" ? <TriangleAlert {...ico} /> : <Camera {...ico} />}
         </button>
-        <button type="button" aria-label="Post frame to discussion" onClick={() => grab("post")} disabled={capture === "busy"} className={`${chip} ${off}`}>
-          ✎ Post frame
+        <button
+          type="button"
+          aria-label="Post frame to discussion"
+          title="Post frame to discussion"
+          onClick={() => grab("post")}
+          disabled={capture === "busy"}
+          className={`${chip} ${off}`}
+        >
+          <MessageSquarePlus {...ico} />
         </button>
       </span>
     </div>
@@ -458,7 +482,8 @@ export function KeyMoments({
               className={`flex w-full gap-2.5 rounded-lg px-2 py-1.5 text-left active:scale-[.99] ${i === active ? "bg-[var(--signal-dim)]" : ""}`}
             >
               <span className={`flex-none pt-px font-mono text-[10.5px] tabular-nums ${i === active ? "text-signal" : "text-dim"}`}>
-                ▶ {formatMoment(m.start, true).slice(0, 5)}
+                <Play {...ico} size={10} className="mr-1 inline align-[-1px]" />
+                {formatMoment(m.start, true).slice(0, 5)}
               </span>
               {isAi && (
                 <span className="flex-none self-start rounded border border-amber px-1 font-mono text-[8px] leading-[14px] text-amber">

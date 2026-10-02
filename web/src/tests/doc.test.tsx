@@ -392,7 +392,7 @@ describe("Doc", () => {
     // A–B: first click marks A, second marks B, third clears
     const ab = () => screen.getByRole("button", { name: /loop a–b/i });
     fireEvent.click(ab());
-    expect(ab()).toHaveTextContent(/set B/i);
+    expect(ab()).toHaveAccessibleName(/set B/i);
     video.currentTime = 3;
     fireEvent.click(ab());
     expect(ab()).toHaveAttribute("aria-pressed", "true");
