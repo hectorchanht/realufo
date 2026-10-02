@@ -214,3 +214,71 @@ describe("per-entity meta + JSON-LD", () => {
     expect(ld(await get("/board/uap"))["@type"]).toBe("CollectionPage");
   });
 });
+
+describe("pre-rendered body", () => {
+  const SHELL = '<html><head><!--META--></head><body><div id="root"></div></body></html>';
+  const fakeEnv = () => ({ ...env, UPLOAD_BASE: "https://cdn/uploads/", ASSETS: { fetch: async () => new Response(SHELL) } }) as any;
+  const get = async (path: string, accept = "*/*") => {
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(new Request("https://x" + path, { headers: { accept } }), fakeEnv(), ctx);
+    await waitOnExecutionContext(ctx);
+    return res.text();
+  };
+  const lds = (html: string) =>
+    [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]));
+
+  beforeAll(async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO threads(id,no,board_id,title,op_body,op_handle,reply_count,created_at) VALUES('t_ssr',9,'uap','Costs $& more','op <script>alert(1)</script>','anon $1',1,'2026-10-02 08:00:00')"
+      ),
+      env.DB.prepare(
+        "INSERT INTO posts(id,no,thread_id,body,handle,is_op,created_at) VALUES('p_ssr',2,'t_ssr','reply $'' tail','h',0,'2026-10-02 09:00:00')"
+      ),
+    ]);
+  });
+
+  it("doc: meta + body even with Accept */* (share scrapers)", async () => {
+    const html = await get("/doc/FBI-UAP-D002");
+    expect(html).toContain("— UAP file FBI-UAP-D002 · RealUFO</title>");
+    expect(html).toContain("<h1>FBI-UAP-D002, FD-1057, Unresolved UAP Report, Colorado Springs, 2022</h1>");
+    expect(html).toContain('<a href="/doc/FBI-UAP-D003">');
+    const crumbs = lds(html).find((j) => j["@type"] === "BreadcrumbList");
+    expect(crumbs.itemListElement.map((i: any) => i.item)).toEqual([
+      "https://x/", "https://x/archive", "https://x/doc/FBI-UAP-D002",
+    ]);
+  });
+
+  it("thread: user text escaped and $-patterns kept literally in head and body", async () => {
+    const html = await get("/thread/t_ssr");
+    expect(html).toContain("<title>Costs $&amp; more · RealUFO</title>");
+    expect(html).toContain("<h1>Costs $&amp; more</h1>");
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+    expect(html).not.toContain("<script>alert");
+    expect(html).toContain("<b>anon $1</b>");
+    expect(html).toContain("<p>reply $' tail</p>"); // `$'` survives (string replace would splice the rest of the doc)
+  });
+
+  it("home: canonical, WebSite JSON-LD with search, latest doc links", async () => {
+    const html = await get("/");
+    expect(html).toContain('<link rel="canonical" href="https://x/">');
+    const site = lds(html).find((j) => j["@type"] === "WebSite");
+    expect(site.potentialAction.target).toBe("https://x/archive?q={search_term_string}");
+    expect(html).toMatch(/<a href="\/doc\/[^"]+">/);
+  });
+
+  it("archive lists agencies with counts; boards lists board links", async () => {
+    expect(await get("/archive")).toMatch(/<li>FBI \(\d+\)<\/li>/);
+    expect(await get("/boards")).toContain('<a href="/board/uap">');
+  });
+
+  it("case renders lede and its discussion thread", async () => {
+    const html = await get("/case/kaikoura");
+    expect(html).toContain("<h1>The Kaikoura Lights</h1>");
+    expect(html).toContain('<a href="/thread/t5">');
+  });
+
+  it("unknown doc keeps the empty root", async () => {
+    expect(await get("/doc/NOPE")).toContain('<div id="root"></div>');
+  });
+});
