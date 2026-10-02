@@ -40,6 +40,11 @@ Videos: CSV `DVIDS Video ID` is a *catalog* id. `resolve-dvids-r0*.py` resolve
 it to the *DOD asset* id; the results are cached in `dvids-maps/dvids2dod-r0*.json`.
 The R2 mp4 basename is `DOD_<dodAssetId>.mp4`.
 
+New release with videos: run locally (DVIDS blocks GitHub Actions IPs), commit the
+map, then the daily ingest (or `python -m ingest --sources wargov`) inserts records:
+
+    python resolve-dvids.py 9/18/26 r06 --mirror   # map + upload mp4s to R2
+
 ## Source-of-truth data
 
 - `uap-data.csv` (334 rows) + `uap-release001.csv` (158 rows) — war.gov releases.
@@ -53,7 +58,7 @@ The R2 mp4 basename is `DOD_<dodAssetId>.mp4`.
 - `download-war.gov.py` — the crawler (needs `pip install curl_cffi`).
 - `_archive_common.py` — R2 URL mapping helpers (pure stdlib; `rewrite_to_r2`, `pdf_thumb_url`).
 - `build-pdf-thumbs.py` — renders + uploads PDF thumbnails.
-- `resolve-dvids-r0{1,3,4}.py` + `dvids-maps/` — DVIDS catalog→DOD asset id resolution.
+- `resolve-dvids.py` (any release; r05+) and legacy `resolve-dvids-r0{1,3,4}.py` + `dvids-maps/` — DVIDS catalog→DOD asset id resolution.
 
 ## Backfill recipe (how the 2026-07-24 video backfill worked)
 
