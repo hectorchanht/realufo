@@ -16,6 +16,7 @@ import { getCase } from "./routes/cases";
 import { login } from "./routes/auth";
 import { serveWithMeta } from "./lib/meta";
 import { ask, recentAsks } from "./routes/ask";
+import { sitemap } from "./routes/sitemap";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -47,6 +48,7 @@ export default {
       const res = await dispatch(req, env);
       return res ?? error(404, "not found");
     }
+    if (url.pathname === "/sitemap.xml") return sitemap(req, env);
     return serveWithMeta(req, env); // SPA + assets, with per-route meta/OG injection for deep links
   },
 } satisfies ExportedHandler<Env>;
