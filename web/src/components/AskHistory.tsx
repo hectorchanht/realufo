@@ -1,5 +1,5 @@
 // Ask mode with no question open: this browser's past questions and the
-// public "recently asked" list (answered questions only). Tapping an item
+// public "recently asked" list (questions their askers shared). Tapping an item
 // asks it. Each list hides when empty; the recent list also hides on error.
 import { useState } from "react";
 import { useAskRecent } from "../api/queries";

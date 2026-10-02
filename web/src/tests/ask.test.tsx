@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { AskAnswer } from "../components/AskAnswer";
@@ -8,10 +8,12 @@ import { ASK_HISTORY_KEY } from "../lib/askHistory";
 
 const useAskMock = vi.fn();
 const useAskRecentMock = vi.fn();
+const shareMutate = vi.fn();
 let askFeature = true;
 vi.mock("../api/queries", () => ({
   useAsk: (q: string) => useAskMock(q),
   useAskRecent: () => useAskRecentMock(),
+  useShareAsk: () => ({ mutate: shareMutate, isPending: false }),
   useAddComment: () => ({ mutate: vi.fn(), isPending: false }),
   useAddCaseComment: () => ({ mutate: vi.fn(), isPending: false }),
   useReply: () => ({ mutate: vi.fn(), isPending: false }),
@@ -39,7 +41,10 @@ const answered = {
 };
 const renderCard = () => render(<MemoryRouter><AskAnswer question="what did radar see?" /></MemoryRouter>);
 
-beforeEach(() => useAskMock.mockReset());
+beforeEach(() => {
+  useAskMock.mockReset();
+  shareMutate.mockReset();
+});
 
 describe("AskAnswer", () => {
   it("renders the answer as text with citation buttons and numbered sources", () => {
@@ -74,6 +79,24 @@ describe("AskAnswer", () => {
     useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, sources: [] } });
     rerender(<MemoryRouter><AskAnswer question="what did radar see?" onPost={onPost} /></MemoryRouter>);
     expect(screen.queryByRole("button", { name: "⤴ post to a board" })).toBeNull();
+  });
+
+  it("share publicly sends this ask's log id and flips to undo; hidden without log id or sources", () => {
+    useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, log_id: 7 } });
+    const { rerender } = renderCard();
+    fireEvent.click(screen.getByRole("button", { name: "share publicly" }));
+    expect(shareMutate).toHaveBeenCalledWith({ id: 7, public: true }, expect.anything());
+    act(() => shareMutate.mock.calls[0][1].onSuccess({ public: true }));
+    fireEvent.click(screen.getByRole("button", { name: "✓ shared · undo" }));
+    expect(shareMutate).toHaveBeenLastCalledWith({ id: 7, public: false }, expect.anything());
+
+    useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, log_id: null } });
+    rerender(<MemoryRouter><AskAnswer question="q?" /></MemoryRouter>);
+    expect(screen.queryByRole("button", { name: /share publicly|undo/ })).toBeNull();
+
+    useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, log_id: 7, sources: [] } });
+    rerender(<MemoryRouter><AskAnswer question="q2?" /></MemoryRouter>);
+    expect(screen.queryByRole("button", { name: /share publicly|undo/ })).toBeNull();
   });
 
   it("citation button highlights its source row", () => {
@@ -183,11 +206,11 @@ describe("Archive ASK toggle", () => {
     expect(screen.getByText("REFERENCING FILE")).toBeInTheDocument();
   });
 
-  it("ask mode tells the asker that answered questions are listed publicly", async () => {
+  it("ask mode tells the asker questions are logged and listed only when shared", async () => {
     renderAppAt("/archive");
-    expect(screen.queryByText(/listed publicly/)).toBeNull();
+    expect(screen.queryByText(/Questions are logged/)).toBeNull();
     fireEvent.click(await screen.findByRole("button", { name: "Ask the archive" }));
-    expect(screen.getByText(/answered questions are listed publicly/i)).toBeInTheDocument();
+    expect(screen.getByText(/Questions are logged\. Tap “share publicly”/)).toBeInTheDocument();
   });
 
   it("shows nothing extra when both lists are empty", async () => {

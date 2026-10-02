@@ -2,6 +2,7 @@ import type { Env } from "../env";
 import { json, error } from "../lib/json";
 import { thumbSql } from "../lib/db";
 import { allowWrite } from "../lib/ratelimit";
+import { actorId } from "../lib/anon";
 import {
   ASK_EMBED_MODEL, ASK_LLM_MODEL, ASK_TOP_K, NOT_COVERED, RESTING,
   normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, type AskChunk,
@@ -23,7 +24,12 @@ export async function ask(req: Request, env: Env) {
   const hit = await env.DB.prepare("SELECT answer FROM ask_cache WHERE key=? AND created_at >= datetime('now','-7 days')")
     .bind(key)
     .first<{ answer: string }>();
-  if (hit) return json({ ...JSON.parse(hit.answer), cached: true });
+  if (hit) {
+    const b = JSON.parse(hit.answer);
+    // Cache hits skip the limiter, so log one only if the browser is under its own limit.
+    const log_id = (await allowWrite(env, req, "ask_hit")) ? await logAsk(env, req, q, b.sources?.length ?? 0, true) : null;
+    return json({ ...b, cached: true, log_id });
+  }
 
   // allowWrite records a browser row AND an `ip:` row per request; count browser rows only.
   const used = await env.DB.prepare(
@@ -45,7 +51,29 @@ export async function ask(req: Request, env: Env) {
       env.DB.prepare("DELETE FROM ask_cache WHERE created_at < datetime('now','-7 days')"),
       env.DB.prepare("INSERT OR REPLACE INTO ask_cache(key,answer) VALUES(?,?)").bind(key, JSON.stringify(body)),
     ]);
-  return json({ ...body, cached: false });
+  return json({ ...body, cached: false, log_id: await logAsk(env, req, q, body.sources.length, false) });
+}
+
+async function logAsk(env: Env, req: Request, q: string, sources: number, cached: boolean) {
+  const row = await env.DB.prepare("INSERT INTO ask_log(question,actor_id,sources,cached) VALUES(?,?,?,?) RETURNING id")
+    .bind(q, await actorId(req, env.ANON_SALT), sources, cached ? 1 : 0)
+    .first<{ id: number }>();
+  return row?.id ?? null;
+}
+
+// POST /api/ask/:id/public {public: boolean} — the asker shares (or unshares)
+// their own answered question. Anything else is a 404 so ids can't be probed.
+export async function setAskPublic(req: Request, env: Env, params: Record<string, string>) {
+  const b = await req.json<any>().catch(() => ({}));
+  if (typeof b.public !== "boolean") return error(400, "public must be true or false");
+  const actor = await actorId(req, env.ANON_SALT);
+  if (actor === "anon:none") return error(404, "not found");
+  if (!(await allowWrite(env, req, "ask_share"))) return error(429, "slow down");
+  const r = await env.DB.prepare("UPDATE ask_log SET public=? WHERE id=? AND actor_id=? AND sources>0")
+    .bind(b.public ? 1 : 0, Number(params.id) || 0, actor)
+    .run();
+  if (!r.meta.changes) return error(404, "not found");
+  return json({ public: b.public });
 }
 
 async function answer(env: Env, q: string, min: number) {
@@ -90,24 +118,14 @@ async function answer(env: Env, q: string, min: number) {
   };
 }
 
-// GET /api/ask/recent — answered questions (only answers with sources are
-// cached) for the current threshold, newest first. Free: no AI, no rate row.
+// GET /api/ask/recent — questions their askers chose to share, newest first,
+// one entry per distinct question. Free: no AI, no rate row.
 export async function recentAsks(_req: Request, env: Env) {
   if (env.FEATURE_ASK !== "on" && env.FEATURE_ASK !== "hidden") return error(503, RESTING);
-  const prefix = `${Number(env.ASK_MIN_SCORE) || 0.45}|`;
   const rows = await env.DB.prepare(
-    "SELECT key, answer, created_at FROM ask_cache WHERE key LIKE ? AND created_at >= datetime('now','-7 days') ORDER BY created_at DESC LIMIT 20"
-  )
-    .bind(prefix + "%")
-    .all<{ key: string; answer: string; created_at: string }>();
-  const recent = rows.results.flatMap((r) => {
-    try {
-      const a = JSON.parse(r.answer) as { question?: string; sources?: unknown[] };
-      // Rows cached before `question` existed only have the lowercased key.
-      return [{ question: a.question || r.key.slice(prefix.length), sources: a.sources?.length ?? 0, asked_at: r.created_at }];
-    } catch {
-      return [];
-    }
-  });
-  return json({ recent });
+    `SELECT question, sources, created_at asked_at FROM ask_log WHERE id IN (
+       SELECT max(id) FROM ask_log WHERE public=1 GROUP BY lower(question)
+     ) ORDER BY id DESC LIMIT 20`
+  ).all<{ question: string; sources: number; asked_at: string }>();
+  return json({ recent: rows.results });
 }

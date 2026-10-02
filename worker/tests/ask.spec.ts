@@ -35,7 +35,7 @@ beforeEach(async () => {
   aiCalls = [];
   llmOut = { response: "Radar tracked it [1]." };
   matches = [hit("CIA-UAP-017", 2)];
-  await env.DB.prepare("DELETE FROM ask_cache").run();
+  await env.DB.batch([env.DB.prepare("DELETE FROM ask_cache"), env.DB.prepare("DELETE FROM ask_log")]);
 });
 
 describe("GET /api/ask", () => {
@@ -155,21 +155,75 @@ describe("GET /api/ask", () => {
   });
 });
 
+const share = (id: unknown, pub: unknown, anon: string | null = "asker", extra: Record<string, unknown> = {}) =>
+  worker.fetch(
+    new Request(`https://x/api/ask/${id}/public`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(anon ? { "X-Anon-Id": anon } : {}) },
+      body: JSON.stringify({ public: pub }),
+    }),
+    { ...env, FEATURE_ASK: "on", AI, VECTORIZE, ...extra } as any,
+    {} as any
+  );
+
+describe("ask_log", () => {
+  it("logs every answered, cached and not-covered ask, private by default", async () => {
+    const a = await body(await ask("What did radar see?"));
+    const c = await body(await ask("what did radar see?"));
+    matches = [];
+    const n = await body(await ask("who built the pyramids?"));
+    expect([a.log_id, c.log_id, n.log_id].every((x) => typeof x === "number")).toBe(true);
+    const rows = await env.DB.prepare("SELECT question,sources,cached,public FROM ask_log ORDER BY id").all();
+    expect(rows.results).toEqual([
+      { question: "What did radar see?", sources: 1, cached: 0, public: 0 },
+      { question: "what did radar see?", sources: 1, cached: 1, public: 0 },
+      { question: "who built the pyramids?", sources: 0, cached: 0, public: 0 },
+    ]);
+  });
+
+  it("cache hits over the browser's limit are served but not logged", async () => {
+    const lim = { RATE_MAX: "1", ASK_DAILY_MAX: "100000" };
+    await ask("hit limit question", lim, "hitter");
+    expect((await body(await ask("hit limit question", lim, "hitter"))).log_id).not.toBeNull(); // first ask_hit
+    const b = await body(await ask("hit limit question", lim, "hitter"));
+    expect(b.cached).toBe(true);
+    expect(b.log_id).toBeNull();
+  });
+});
+
+describe("POST /api/ask/:id/public", () => {
+  it("only the asker can share an answered question, and can unshare it", async () => {
+    const { log_id } = await body(await ask("What did radar see?"));
+    expect((await share(log_id, true, "someone-else")).status).toBe(404);
+    expect((await share(log_id, true, null)).status).toBe(404);
+    expect((await share(log_id, "yes")).status).toBe(400);
+    expect(await body(await share(log_id, true))).toEqual({ public: true });
+    expect((await env.DB.prepare("SELECT public FROM ask_log WHERE id=?").bind(log_id).first())!.public).toBe(1);
+    expect(await body(await share(log_id, false))).toEqual({ public: false });
+  });
+
+  it("not-covered and unknown questions cannot be shared", async () => {
+    matches = [];
+    const { log_id } = await body(await ask("who built the pyramids?"));
+    expect((await share(log_id, true)).status).toBe(404);
+    expect((await share(999999, true)).status).toBe(404);
+    expect((await share("abc", true)).status).toBe(404);
+  });
+});
+
 const recent = (extra: Record<string, unknown> = {}) =>
   worker.fetch(new Request("https://x/api/ask/recent"), { ...env, FEATURE_ASK: "on", AI, VECTORIZE, ...extra } as any, {} as any);
 
 describe("GET /api/ask/recent", () => {
-  const put = (key: string, answer: string, age: string) =>
-    env.DB.prepare("INSERT INTO ask_cache(key,answer,created_at) VALUES(?,?,datetime('now',?))").bind(key, answer, age);
+  const put = (question: string, pub: number, sources = 1) =>
+    env.DB.prepare("INSERT INTO ask_log(question,actor_id,sources,public) VALUES(?,'a',?,?)").bind(question, sources, pub);
 
-  it("lists answered questions newest first, current threshold only, no AI calls", async () => {
+  it("lists only shared questions, newest first, one per distinct question, no AI calls", async () => {
     await env.DB.batch([
-      put("0.45|older question", JSON.stringify({ question: "Older Question", answer: "a [1]", sources: [{ n: 1 }] }), "-2 hours"),
-      put("0.45|newer question?", JSON.stringify({ question: "Newer Question?", answer: "b [1][2]", sources: [{ n: 1 }, { n: 2 }] }), "-1 hours"),
-      put("0.45|legacy lowercase", JSON.stringify({ answer: "c [1]", sources: [{ n: 1 }] }), "-3 hours"),
-      put("0.5|other threshold", JSON.stringify({ question: "Other", answer: "d", sources: [{ n: 1 }] }), "-1 hours"),
-      put("0.45|broken row", "not json", "-1 hours"),
-      put("0.45|stale question", JSON.stringify({ question: "Stale", answer: "e", sources: [{ n: 1 }] }), "-8 days"),
+      put("Older Question", 1),
+      put("Private Question", 0),
+      put("older question", 1, 3),
+      put("Newer Question?", 1, 2),
     ]);
     aiCalls = [];
     const r = await recent();
@@ -177,17 +231,17 @@ describe("GET /api/ask/recent", () => {
     const b = await body(r);
     expect(b.recent.map((x: any) => [x.question, x.sources])).toEqual([
       ["Newer Question?", 2],
-      ["Older Question", 1],
-      ["legacy lowercase", 1],
+      ["older question", 3],
     ]);
     expect(typeof b.recent[0].asked_at).toBe("string");
     expect(aiCalls).toEqual([]);
   });
 
-  it("a real answer shows up in the recent list", async () => {
-    await ask("What did radar see?");
-    const b = await body(await recent());
-    expect(b.recent.map((x: any) => x.question)).toEqual(["What did radar see?"]);
+  it("an answer appears only after its asker shares it", async () => {
+    const { log_id } = await body(await ask("What did radar see?"));
+    expect((await body(await recent())).recent).toEqual([]);
+    await share(log_id, true);
+    expect((await body(await recent())).recent.map((x: any) => x.question)).toEqual(["What did radar see?"]);
   });
 
   it("returns 503 when FEATURE_ASK is off, serves when hidden", async () => {

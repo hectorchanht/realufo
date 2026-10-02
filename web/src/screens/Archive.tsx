@@ -449,7 +449,7 @@ export function Archive() {
 
       {askMode && (
         <p className="-mt-2 mb-3 px-0.5 font-mono text-[9.5px] text-faint">
-          Answered questions are listed publicly under “Recently asked” for 7 days — don’t include personal details.
+          Questions are logged. Tap “share publicly” on an answer to list it under “Recently asked” — don’t include personal details.
         </p>
       )}
       {askMode && ask && <AskAnswer question={ask} onPost={(d) => openComposer(askComposerOpts(ask, d))} />}

@@ -438,9 +438,11 @@ export interface AskResponse {
   answer: string;
   sources: AskSource[];
   cached: boolean;
+  /** This ask's ask_log row, for sharing; null when the log write was rate-limited. */
+  log_id?: number | null;
 }
 
-/** GET /api/ask/recent — answered questions, newest first. */
+/** GET /api/ask/recent — questions their askers shared, newest first. */
 export interface AskRecent {
   question: string;
   sources: number;

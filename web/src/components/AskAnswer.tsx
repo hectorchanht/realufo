@@ -2,7 +2,7 @@
 // becomes a button that scrolls to + flashes source n.
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useAsk } from "../api/queries";
+import { useAsk, useShareAsk } from "../api/queries";
 import { ApiError } from "../api/client";
 import type { AskResponse } from "../api/types";
 
@@ -17,6 +17,8 @@ function errorCopy(e: unknown) {
 export function AskAnswer({ question, onPost }: { question: string; onPost?: (data: AskResponse) => void }) {
   const { data, isLoading, error, refetch } = useAsk(question);
   const [flash, setFlash] = useState<number | null>(null);
+  const share = useShareAsk();
+  const [shared, setShared] = useState(false);
 
   function cite(n: number) {
     document.getElementById(`ask-src-${n}`)?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
@@ -91,6 +93,17 @@ export function AskAnswer({ question, onPost }: { question: string; onPost?: (da
         <span className="flex-1 font-mono text-[9.5px] text-faint">
           AI answer drawn from archive text &amp; OCR — can be wrong. Check the sources.
         </span>
+        {data.log_id != null && data.sources.length > 0 && (
+          <button
+            type="button"
+            aria-pressed={shared}
+            disabled={share.isPending}
+            onClick={() => share.mutate({ id: data.log_id!, public: !shared }, { onSuccess: (r) => setShared(r.public) })}
+            className="flex-none rounded-md border border-line2 px-2 py-0.5 font-mono text-[10px] text-signal hover:border-signal disabled:opacity-50"
+          >
+            {shared ? "✓ shared · undo" : "share publicly"}
+          </button>
+        )}
         {onPost && data.sources.length > 0 && (
           <button
             type="button"

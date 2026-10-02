@@ -197,6 +197,16 @@ export function useCaseComments(slug: string) {
 // Mutations
 // ---------------------------------------------------------------------------
 
+// The asker shares (or unshares) their own answered question to "Recently asked".
+export function useShareAsk() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: number; public: boolean }) =>
+      api.post<{ public: boolean }>(`/api/ask/${vars.id}/public`, { public: vars.public }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: qk.askRecent }),
+  });
+}
+
 export function useAddComment(recordId: string) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -15,7 +15,7 @@ import { toggleVote } from "./routes/votes";
 import { getCase } from "./routes/cases";
 import { login } from "./routes/auth";
 import { serveWithMeta } from "./lib/meta";
-import { ask, recentAsks } from "./routes/ask";
+import { ask, recentAsks, setAskPublic } from "./routes/ask";
 import { sitemap } from "./routes/sitemap";
 import { tick } from "./lib/xbot";
 
@@ -24,6 +24,7 @@ on("GET", "/api/bootstrap", bootstrap);
 on("GET", "/api/feed", feed);
 on("GET", "/api/ask", ask);
 on("GET", "/api/ask/recent", recentAsks);
+on("POST", "/api/ask/:id/public", setAskPublic);
 on("GET", "/api/records", listRecords);
 on("GET", "/api/records/facets", recordFacets);
 on("GET", "/api/records/:id", getRecord);
