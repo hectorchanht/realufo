@@ -18,4 +18,14 @@ describe("sitemap", () => {
     expect(xml).not.toContain("%2F");
     expect(xml).toContain("/case/");
   });
+
+  it("video docs carry video:video tags (thumbnail, title, content, date)", async () => {
+    await env.DB.prepare("INSERT INTO assets(record_id,role,cdn_url,mime) VALUES('AARO-956955','thumb','https://cdn/t.jpg','image/jpeg')").run();
+    const xml = await (await worker.fetch(new Request("https://realufo.org/sitemap.xml"), env as any, {} as any)).text();
+    const v = xml.match(/<url><loc>https:\/\/realufo\.org\/doc\/AARO-956955<\/loc>.*?<\/url>/)![0];
+    expect(v).toMatch(/<video:thumbnail_loc>https:[^<]+<\/video:thumbnail_loc>/);
+    expect(v).toContain("<video:title>AARO-956955 — ");
+    expect(v).toMatch(/<video:content_loc>https:[^<]+\.mp4<\/video:content_loc>/);
+    expect(v).toContain("<video:publication_date>2024</video:publication_date>");
+  });
 });

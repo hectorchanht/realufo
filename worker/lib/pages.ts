@@ -31,12 +31,8 @@ const shortTitle = (t: string) => {
   const c = t.indexOf(",");
   return (c > 0 && c < 34 ? t.slice(c + 1).trim() : t).replace(/_/g, " ");
 };
-// Same as Doc.tsx's docTitle: "<short> — UAP file <id>" while that fits a
-// ~60-char search title with " · RealUFO", else the short title alone.
-const docTitle = (t: string, id: string) => {
-  const full = `${shortTitle(t)} — UAP file ${id}`;
-  return full.length <= 50 ? full : shortTitle(t);
-};
+// Same as Doc.tsx's tab title: the file id first, then the short title.
+export const docTitle = (t: string, id: string) => `${id} — ${shortTitle(t)}`;
 
 const latest = async (env: Env) =>
   (

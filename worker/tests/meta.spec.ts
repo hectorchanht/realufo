@@ -231,9 +231,9 @@ describe("per-entity meta + JSON-LD", () => {
     ]);
   });
 
-  it("long doc titles drop the id from <title>; JSON-LD has identifier", async () => {
+  it("doc title starts with the record id; JSON-LD has identifier", async () => {
     const html = await get("/doc/CIA-UAP-017");
-    expect(html).toContain("<title>Placement on High Alert Due to Perceived Aggressive Foreign Posturing · RealUFO</title>");
+    expect(html).toContain("<title>CIA-UAP-017 — Placement on High Alert Due to Perceived Aggressive Foreign Posturing · RealUFO</title>");
     const j = ld(html);
     expect(j["@type"]).toBe("DigitalDocument");
     expect(j.identifier).toBe("CIA-UAP-017");
@@ -313,7 +313,7 @@ describe("pre-rendered body", () => {
 
   it("doc: meta + body even with Accept */* (share scrapers)", async () => {
     const html = await get("/doc/FBI-UAP-D002");
-    expect(html).toContain("<title>FD-1057, Unresolved UAP Report, Colorado Springs, 2022 · RealUFO</title>");
+    expect(html).toContain("<title>FBI-UAP-D002 — FD-1057, Unresolved UAP Report, Colorado Springs, 2022 · RealUFO</title>");
     expect(html).toContain("<h1>FBI-UAP-D002, FD-1057, Unresolved UAP Report, Colorado Springs, 2022</h1>");
     expect(html).toContain('<a href="/doc/FBI-UAP-D003">');
     const crumbs = lds(html).find((j) => j["@type"] === "BreadcrumbList");
