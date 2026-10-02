@@ -31,7 +31,7 @@ import SiteFooter from "./SiteFooter";
 import { FooterLinksProvider } from "../lib/footerLinks";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { useHideOnScroll } from "../lib/useHideOnScroll";
-import { useScrollMemory } from "../lib/useScrollMemory";
+import { scrollKey, useScrollMemory } from "../lib/useScrollMemory";
 import { useTheme } from "../theme/useTheme";
 import { PageTitleProvider } from "../lib/pageTitle";
 import { OverlayHost } from "../overlays/OverlayProvider";
@@ -63,8 +63,9 @@ export function AppShell() {
   const bnavRef = useRef<HTMLDivElement>(null);
   // useScrollMemory runs first (layout effect) so the hide hook starts from
   // the restored scrollTop and doesn't read the jump as a scroll-down.
-  useScrollMemory(scrollRef, pathname + search);
-  const navHidden = useHideOnScroll(scrollRef, !isDesktop, pathname + search);
+  const key = scrollKey(pathname, search);
+  useScrollMemory(scrollRef, key);
+  const navHidden = useHideOnScroll(scrollRef, !isDesktop, key);
   useEffect(() => rememberTabUrl(pathname, search), [pathname, search]);
 
   useEffect(() => {

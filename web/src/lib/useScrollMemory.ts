@@ -6,9 +6,19 @@
 // page, or RESTORE_MS passes. Positions aren't saved while restoring, so a
 // half-loaded page's clamped scrollTop never overwrites the real one.
 import { useLayoutEffect, type RefObject } from "react";
+import { TOOL_PARAMS } from "../components/ImageTools";
 
 const saved = new Map<string, number>();
 const RESTORE_MS = 1500;
+
+/** Scroll-memory key for a URL: media-tool params (?br=, ?lens=, …) only restyle
+ * the file page, so they must not count as a new page. */
+export function scrollKey(pathname: string, search: string): string {
+  const sp = new URLSearchParams(search);
+  for (const k of TOOL_PARAMS) sp.delete(k);
+  const qs = sp.toString();
+  return qs ? `${pathname}?${qs}` : pathname;
+}
 
 export function useScrollMemory(ref: RefObject<HTMLElement | null>, key: string): void {
   useLayoutEffect(() => {
