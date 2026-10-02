@@ -8,14 +8,14 @@ Other agents share this checkout — run each plan in its own git worktree/branc
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 001 | [Media-tool changes keep scroll position](001-keep-scroll-on-media-tool-changes.md) | P1 | S | — | TODO |
-| 002 | [Vote buttons show real voted state + error toast](002-vote-button-keeps-voted-state.md) | P1 | S | — | TODO |
-| 003 | [404 page, route error screen, load-error states, no 4xx retries](003-not-found-and-load-error-states.md) | P1 | M | — | TODO |
-| 004 | [Back on a deep-linked page stays in the app](004-back-button-stays-in-app.md) | P1 | S | — | TODO |
-| 005 | [Ask-shared threads link their sources](005-ask-shared-threads-link-sources.md) | P1 | S | — | TODO |
-| 006 | [Long-cache hashed assets; query staleTime](006-cache-static-assets-and-queries.md) | P2 | S | 003 | TODO |
-| 007 | ["↩ reply" + `>>No` quote links and backlinks](007-reply-quote-links.md) | P2 | S–M | 005 | TODO |
-| 008 | [Cold cases index, entry points, all case threads](008-cold-cases-index.md) | P2 | M | (after 003–007) | TODO |
+| 001 | [Media-tool changes keep scroll position](001-keep-scroll-on-media-tool-changes.md) | P1 | S | — | DONE (branch `worktree-agent-af42f98e86b5d86b9`) |
+| 002 | [Vote buttons show real voted state + error toast](002-vote-button-keeps-voted-state.md) | P1 | S | — | DONE (branch `worktree-agent-ac905a32db9e6b4f7`) |
+| 003 | [404 page, route error screen, load-error states, no 4xx retries](003-not-found-and-load-error-states.md) | P1 | M | — | DONE (branch `worktree-agent-a2d24c51a6d8bc9d9`) |
+| 004 | [Back on a deep-linked page stays in the app](004-back-button-stays-in-app.md) | P1 | S | — | DONE (branch `worktree-agent-a3f6c7791ed3aff15`) |
+| 005 | [Ask-shared threads link their sources](005-ask-shared-threads-link-sources.md) | P1 | S | — | DONE (branch `worktree-agent-a9e73b9036a1e4ee5`) |
+| 006 | [Long-cache hashed assets; query staleTime](006-cache-static-assets-and-queries.md) | P2 | S | 003 | DONE (branch `worktree-agent-a219e7221bab573dd`) |
+| 007 | ["↩ reply" + `>>No` quote links and backlinks](007-reply-quote-links.md) | P2 | S–M | 005 | DONE (branch `worktree-agent-a51d7fc588d758545`) |
+| 008 | [Cold cases index, entry points, all case threads](008-cold-cases-index.md) | P2 | M | (after 003–007) | DONE (branch `worktree-agent-a11af8dcc5237ea18` — integration branch with 001–008 merged) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
@@ -25,6 +25,11 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 - 007 after 005: both edit `linkifyBody` in `web/src/screens/Thread.tsx`.
 - 008 last: touches `router.tsx`, `Thread.tsx`, `Feed.tsx`, which 003/004/005/007 also touch. After 008, update plan 004's `parentPath` (`/case/` → `/cases`).
 - Common test gotcha: on Node ≥ 25 run web tests with `NODE_OPTIONS=--no-experimental-webstorage`.
+
+## Follow-ups from review
+
+- `/cases` ledes are cut at 160 chars mid-word with no ellipsis (`worker/routes/bootstrap.ts` `substr(...,1,160)`); trim at a word and add "…".
+- One unreproduced single-test flake seen once on plan 003's branch under parallel load (3 clean reruns after).
 
 ## Findings not planned (yet)
 
