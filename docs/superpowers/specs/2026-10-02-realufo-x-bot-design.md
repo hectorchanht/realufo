@@ -49,7 +49,7 @@ Worker cron "0 */3 * * *"  ─► scheduled() ─► bot.tick(env)
   2. budget gate: posts today < X_DAILY_MAX AND month spend + next cost ≤ X_MONTHLY_USD_CAP
   3. pick ONE candidate (priority order):
        release    : unposted release group, newest record ≥ 2h old, created_at ≥ X_SINCE
-       pick       : none posted today AND hour ≥ 14 UTC
+       pick       : picks today < slots reached in X_PICK_HOURS (live: 15,18,21 UTC = 3/day)
        highlight  : none posted today AND hour ≥ 20 UTC AND a qualifying thread exists
   4. draft = AI(candidate) → validate → else template(candidate)
   5. insert x_posts row status='pending'          (dedupe guard, BEFORE calling X)
@@ -187,11 +187,11 @@ For every live video record with no `clips/<archive>/<id>.mp4` on the CDN:
 | Item | Volume / month | Cost |
 |---|---|---|
 | Release posts (URL) | ~1–2 | ~$0.40 |
-| Daily pick (URL + clip) | 30 | $6.45 |
+| Daily picks (URL + clip) | 90 (3/day) | $19.35 |
 | Highlights (no URL) | ≤ 30 | ≤ $0.45 |
 | Media upload calls | ≤ 60 uploads | **unknown — verify in plan task 1** |
 | Workers AI copy | ~60 short generations | < $0.05 |
-| **Total** | | **≈ $7.30/mo** incl. booked media, capped at $10 |
+| **Total** | | **≈ $20/mo** incl. booked media, capped at $25 (`X_DAILY_MAX=4`) |
 
 ## 6. Error handling
 

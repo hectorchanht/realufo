@@ -14,6 +14,7 @@ export interface Env {
   ASK_MIN_SCORE?: string;
   FEATURE_X?: string; // off | dry | on (Spec 4)
   X_DAILY_MAX?: string;
+  X_PICK_HOURS?: string; // UTC hours for daily picks, e.g. "15,18,21"; default "14"
   X_MONTHLY_USD_CAP?: string;
   X_HIGHLIGHT_MIN_VOTES?: string;
   X_SINCE?: string; // "YYYY-MM-DD"; empty = no release posts

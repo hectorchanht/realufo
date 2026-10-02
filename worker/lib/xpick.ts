@@ -145,11 +145,22 @@ async function highlightCandidate(env: Env, now: Date): Promise<Candidate | null
   return { stream: "highlight", ref: t.id, thread: { id: t.id, title: t.title ?? "", body: (t.op_body ?? "").slice(0, 500), votes: t.votes }, media };
 }
 
+// Pick slots (UTC hours, e.g. "15,18,21"): a pick is due while today's picks are fewer
+// than the slots already reached, so a failed tick is caught up by the next one.
+async function pickDue(env: Env, now: Date): Promise<boolean> {
+  const slots = (env.X_PICK_HOURS || "14").split(",").map(Number).filter((h) => h >= 0 && h < 24);
+  const reached = slots.filter((h) => h <= now.getUTCHours()).length;
+  if (!reached) return false;
+  const r = await env.DB.prepare("SELECT count(*) n FROM x_posts WHERE stream='pick' AND status!='failed' AND date(created_at)=date(?)")
+    .bind(sqlTime(now)).first<{ n: number }>();
+  return (r?.n ?? 0) < reached;
+}
+
 export async function nextCandidate(env: Env, now: Date): Promise<Candidate | null> {
   const h = now.getUTCHours();
   return (
     (await releaseCandidate(env, now)) ??
-    (h >= 14 && !(await postedToday(env, "pick", now)) ? await pickCandidate(env) : null) ??
+    ((await pickDue(env, now)) ? await pickCandidate(env) : null) ??
     (h >= 20 && !(await postedToday(env, "highlight", now)) ? await highlightCandidate(env, now) : null)
   );
 }

@@ -76,6 +76,23 @@ describe("daily pick", () => {
     await posted("pick", "XT-V1", NOW);
     expect(await nextCandidate(E(), T("2026-10-10T18:00:00"))).toBeNull();
   });
+  it("X_PICK_HOURS spreads several picks across the day, one per passed slot", async () => {
+    for (const v of ["XT-P1", "XT-P2", "XT-P3", "XT-P4"]) { await rec(v, "video"); await clip(v); }
+    const env = E({ X_PICK_HOURS: "15,18,21" });
+    const at = (h: string) => T(`2026-10-10T${h}:00:00`);
+    expect(await nextCandidate(env, at("14"))).toBeNull();
+    const first = await nextCandidate(env, at("15"));
+    expect(first?.stream).toBe("pick");
+    await posted("pick", first!.ref, at("15"));
+    expect(await nextCandidate(env, at("16"))).toBeNull();      // slot 1 used, slot 2 not yet
+    const second = await nextCandidate(env, at("18"));
+    expect(second?.stream).toBe("pick");
+    await posted("pick", second!.ref, at("18"));
+    const third = await nextCandidate(env, at("21"));
+    expect(third?.stream).toBe("pick");
+    await posted("pick", third!.ref, at("21"));
+    expect(await nextCandidate(env, at("23"))).toBeNull();      // 3 of 3 done
+  });
   it("skips records whose title is the 'original title not published' placeholder", async () => {
     await rec("XT-V3", "video");
     await env.DB.prepare("UPDATE records SET title='AARO video · DOD_1 (original title not published)' WHERE id='XT-V3'").run();
