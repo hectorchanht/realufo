@@ -101,7 +101,13 @@ describe("DocCard", () => {
     redacted: 0,
     thumb: null,
     commentN: 12,
+    verdictN: 3,
   };
+
+  it("feed variant shows the real verdict count", () => {
+    render(withRouter(<DocCard record={feedRecord} variant="feed" />));
+    expect(screen.getByText("⚖ 3")).toBeInTheDocument();
+  });
 
   it("renders title and agency badge", () => {
     render(withRouter(<DocCard record={feedRecord} variant="feed" />));

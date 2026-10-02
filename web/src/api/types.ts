@@ -129,6 +129,7 @@ interface RecordCardBase {
 /** RecordCard shape from GET /api/feed → `featured[]`. */
 export interface FeedRecordCard extends RecordCardBase {
   commentN: number;
+  verdictN: number;
 }
 
 /** RecordCard shape from GET /api/records → `records[]`. */

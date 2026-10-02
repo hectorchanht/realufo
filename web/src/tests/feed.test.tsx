@@ -45,6 +45,7 @@ const mockFeed: FeedResponse = {
       redacted: 0,
       thumb: null,
       commentN: 12,
+      verdictN: 0,
     },
     {
       id: "rec2",
@@ -56,6 +57,7 @@ const mockFeed: FeedResponse = {
       redacted: 0,
       thumb: null,
       commentN: 4,
+      verdictN: 0,
     },
   ],
   hot: [
