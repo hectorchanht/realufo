@@ -8,5 +8,5 @@ export function shouldRetry(failureCount: number, error: unknown): boolean {
 }
 
 export function makeQueryClient(): QueryClient {
-  return new QueryClient({ defaultOptions: { queries: { retry: shouldRetry } } });
+  return new QueryClient({ defaultOptions: { queries: { retry: shouldRetry, staleTime: 30_000 } } });
 }

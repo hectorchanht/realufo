@@ -94,6 +94,8 @@ export function useBootstrap() {
   return useQuery({
     queryKey: qk.bootstrap,
     queryFn: () => api.get<Bootstrap>("/api/bootstrap"),
+    // archives/boards/stats change slowly; also the presence heartbeat — 5 min matches its window
+    staleTime: 5 * 60_000,
   });
 }
 
