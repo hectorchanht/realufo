@@ -5,7 +5,7 @@ import { yt } from "../lib/social/yt";
 const ctx = { now: new Date("2026-10-10T12:00:00Z"), sleep: async () => {} };
 const E = { ...env, YT_CLIENT_ID: "ci", YT_CLIENT_SECRET: "cs", YT_REFRESH_TOKEN: "rt" } as any;
 const video = { kind: "video" as const, key: "clips-v/wargov/V1.mp4", url: "https://assets.realufo.org/clips-v/wargov/V1.mp4", size: 1234 };
-const P = (title = "Gulf orb") => ({ text: "desc https://realufo.org/doc/V1", title, link: "https://realufo.org/doc/V1", media: video });
+const P = (title = "Gulf orb #Shorts") => ({ text: "desc https://realufo.org/doc/V1", title, link: "https://realufo.org/doc/V1", media: video });
 
 let meta: any = null;
 let tokenStatus = 200;
@@ -40,9 +40,9 @@ describe("yt", () => {
     expect(meta.status).toEqual({ privacyStatus: "public", selfDeclaredMadeForKids: false });
     expect(putBytes).toBe(1234);
   });
-  it("long title skips #Shorts", async () => {
-    await yt.publish(E, P("t".repeat(95)), ctx);
-    expect(meta.snippet.title).toBe("t".repeat(95));
+  it("sends the composed title unchanged (ytTitle already added #Shorts)", async () => {
+    await yt.publish(E, P("t".repeat(92) + " #Shorts"), ctx);
+    expect(meta.snippet.title).toBe("t".repeat(92) + " #Shorts");
   });
   it("invalid_grant on token refresh → 401 auth error", async () => {
     tokenStatus = 400;

@@ -27,6 +27,21 @@ export const tagsFor = (archive: string | null) => [SITE_TAGS, ARCHIVE_TAG[archi
 // "clip:clips/wargov/V1.mp4" | "thumb:images/aaro/x.png" → "wargov" | "aaro"
 export const archiveOf = (media: string | null) => media?.slice(media.indexOf(":") + 1).split("/")[1] ?? null;
 
+// YouTube title: first line, cut at a sentence end or word (never "…" mid-word), + " #Shorts".
+// YouTube rejects empty titles and "<" ">".
+const SHORTS = " #Shorts";
+export function ytTitle(base: string): string {
+  const line = (base.split("\n")[0].trim() || base.trim()).replace(/[<>]/g, "").replace(/\s+/g, " ").trim();
+  const max = 100 - SHORTS.length;
+  if (!line) return "Declassified UAP file" + SHORTS;
+  if (line.length <= max) return line + SHORTS;
+  const head = line.slice(0, max + 1); // +1: a space right after the limit still counts as a word end
+  const sentence = head.slice(0, max).match(/^.*[.!?](?=\s)/)?.[0];
+  const sp = head.lastIndexOf(" ");
+  const cut = sentence && sentence.length >= 30 ? sentence : sp > 0 ? head.slice(0, sp).replace(/[\s,;:–-]+$/, "") : clip(line, max);
+  return cut + SHORTS;
+}
+
 export function compose(p: Platform, xText: string, archive: string | null): { text: string; title: string; link: string | null } {
   const link = linkOf(xText);
   const base = stripUrls(xText);
@@ -44,7 +59,7 @@ export function compose(p: Platform, xText: string, archive: string | null): { t
     case "ig":
       return { text: room(2200, `${link ? "\n\n🔗 link in bio" : ""}\n\n${tags}`), title, link };
     case "yt":
-      return { text: room(5000, `${link ? `\n\n${link}` : ""}\n\n${tags}`), title, link };
+      return { text: room(5000, `${link ? `\n\n${link}` : ""}\n\n${tags}`), title: ytTitle(base), link };
     case "tiktok":
       return { text: room(2200, `\n\n${tags}`), title, link };
   }

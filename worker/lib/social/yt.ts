@@ -19,11 +19,10 @@ export const yt: Adapter = {
     const auth = `Bearer ${await accessToken(env)}`;
     const obj = await env.MEDIA.get(p.media!.key);
     if (!obj) throw new SocialError(404, `media missing in R2: ${p.media!.key}`);
-    const title = p.title.length + 8 <= 100 ? `${p.title} #Shorts` : p.title;
     const init = await fetch("https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status", {
       method: "POST",
       headers: { Authorization: auth, "Content-Type": "application/json; charset=UTF-8", "X-Upload-Content-Type": "video/mp4", "X-Upload-Content-Length": String(obj.size) },
-      body: JSON.stringify({ snippet: { title, description: p.text, categoryId: "28" }, status: { privacyStatus: "public", selfDeclaredMadeForKids: false } }),
+      body: JSON.stringify({ snippet: { title: p.title, description: p.text, categoryId: "28" }, status: { privacyStatus: "public", selfDeclaredMadeForKids: false } }),
     });
     if (!init.ok) throw new SocialError(init.status, await init.text());
     const loc = init.headers.get("Location");

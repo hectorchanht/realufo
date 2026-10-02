@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { compose, linkOf, stripUrls, clip, graphemes, bskyFacets, archiveOf, tagsFor } from "../lib/social/text";
+import { compose, linkOf, stripUrls, clip, graphemes, bskyFacets, archiveOf, tagsFor, ytTitle } from "../lib/social/text";
 
 const LINK = "https://realufo.org/doc/DOW-UAP-PR019";
 const X = `📼 Gulf of Oman, 2023: the orb that wouldn't quit\n📍 Dept. of War · 30 s clip\n${LINK}`;
@@ -35,12 +35,26 @@ describe("social text", () => {
     expect(compose("ig", "just text", null).text).toBe("just text\n\n#UFO #UAP #Pentagon #declassified");
   });
 
-  it("yt: title is the first line (≤100), description keeps link + tags", () => {
+  it("yt: title is the first line + #Shorts (≤100), description keeps link + tags", () => {
     const c = compose("yt", X, "wargov");
-    expect(c.title).toBe("📼 Gulf of Oman, 2023: the orb that wouldn't quit");
+    expect(c.title).toBe("📼 Gulf of Oman, 2023: the orb that wouldn't quit #Shorts");
     expect(c.text).toContain(LINK);
     expect(c.text.endsWith("#DeptOfWar")).toBe(true);
     expect(compose("yt", "a".repeat(150), null).title.length).toBeLessThanOrEqual(100);
+  });
+
+  it("ytTitle cuts a long line at a word (no …) and always keeps #Shorts", () => {
+    const live = "not saying it's aliens but… a 2013 middle east video shows an eight-pointed star in infrared 🫠👀 the official verdict? unresolved. enhance. ENHANCE.";
+    expect(ytTitle(live)).toBe("not saying it's aliens but… a 2013 middle east video shows an eight-pointed star in infrared #Shorts");
+    expect(ytTitle("a".repeat(150)).endsWith(" #Shorts")).toBe(true);
+    expect(ytTitle("a".repeat(150)).length).toBeLessThanOrEqual(100);
+  });
+
+  it("ytTitle prefers a sentence end, drops < >, never empty", () => {
+    expect(ytTitle("Pentagon releases the Gulf orb tape. Here is what the pilots saw over the water that night in 2023 near Oman"))
+      .toBe("Pentagon releases the Gulf orb tape. #Shorts");
+    expect(ytTitle("orb <script> tape")).toBe("orb script tape #Shorts");
+    expect(ytTitle("")).toBe("Declassified UAP file #Shorts");
   });
 
   it("tiktok: no link, tags appended, ≤2200", () => {
