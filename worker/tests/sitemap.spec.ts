@@ -28,4 +28,14 @@ describe("sitemap", () => {
     expect(v).toMatch(/<video:content_loc>https:[^<]+\.mp4<\/video:content_loc>/);
     expect(v).toContain("<video:publication_date>2024</video:publication_date>");
   });
+
+  it("llms.txt is Markdown: title, summary with counts, main pages and hub links", async () => {
+    const res = await worker.fetch(new Request("https://realufo.org/llms.txt"), env as any, {} as any);
+    expect(res.headers.get("content-type")).toMatch(/text\/markdown/);
+    const md = await res.text();
+    expect(md).toMatch(/^# RealUFO\n\n> Searchable archive of \d+ declassified/);
+    expect(md).toContain("- [Archive](https://realufo.org/archive)");
+    expect(md).toContain("## Agencies");
+    expect(md).toContain("- [FBI UAP files](https://realufo.org/agency/fbi): ");
+  });
 });
