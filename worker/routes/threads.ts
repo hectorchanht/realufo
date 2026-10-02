@@ -1,7 +1,7 @@
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
 import { relAgo, stanceOK, thumbSql } from "../lib/db";
-import { newId, newNo, actorId } from "../lib/anon";
+import { newId, newNo } from "../lib/anon";
 import { allowWrite } from "../lib/ratelimit";
 import { readBody, putImage, uploadUrl } from "../lib/upload";
 
@@ -39,8 +39,7 @@ export async function createThread(req: Request, env: Env) {
   const { b, image } = await readBody(req);
   const op_body = typeof b.op_body === "string" ? b.op_body.trim() : "";
   if (!op_body) return error(400, "empty body");
-  const actor = await actorId(req, env.ANON_SALT);
-  if (!(await allowWrite(env, actor, "thread"))) return error(429, "slow down — too many posts");
+  if (!(await allowWrite(env, req, "thread"))) return error(429, "slow down — too many posts");
   const board = b.board || "uap";
   const boardRow = await env.DB.prepare("SELECT slug, accent FROM boards WHERE id=?").bind(board).first<any>();
   if (!boardRow) return error(400, "unknown board");

@@ -1,7 +1,7 @@
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
 import { stanceOK } from "../lib/db";
-import { newId, newNo, actorId } from "../lib/anon";
+import { newId, newNo } from "../lib/anon";
 import { allowWrite } from "../lib/ratelimit";
 import { readBody, putImage, uploadUrl } from "../lib/upload";
 
@@ -9,8 +9,7 @@ export async function createPost(req: Request, env: Env, p: Record<string, strin
   const { b, image } = await readBody(req);
   const body = typeof b.body === "string" ? b.body.trim() : "";
   if (!body) return error(400, "empty body");
-  const actor = await actorId(req, env.ANON_SALT);
-  if (!(await allowWrite(env, actor, "post"))) return error(429, "slow down — too many posts");
+  if (!(await allowWrite(env, req, "post"))) return error(429, "slow down — too many posts");
   const t = await env.DB.prepare("SELECT 1 FROM threads WHERE id=?").bind(p.id).first();
   if (!t) return error(404, "thread not found");
   const id = newId();

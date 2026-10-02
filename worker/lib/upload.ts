@@ -1,5 +1,6 @@
 import type { Env } from "../env";
 import { error } from "./json";
+import { stripMeta } from "./stripmeta";
 
 // User-uploaded post images. Stored in R2 under `uploads/<uuid>.<ext>` and
 // served from UPLOAD_BASE: the cached R2 domain in prod (so Cloudflare's CSAM
@@ -44,6 +45,6 @@ export async function putImage(env: Env, file: File): Promise<string | Response>
   const t = sniff(bytes);
   if (!t) return error(400, "image must be JPG, PNG, GIF or WebP");
   const key = `uploads/${crypto.randomUUID()}.${t.ext}`;
-  await env.MEDIA.put(key, bytes, { httpMetadata: { contentType: t.mime } });
+  await env.MEDIA.put(key, stripMeta(bytes, t.ext), { httpMetadata: { contentType: t.mime } });
   return key;
 }

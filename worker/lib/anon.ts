@@ -1,6 +1,8 @@
 export async function actorId(req: Request, salt: string): Promise<string> {
   const raw = req.headers.get("X-Anon-Id");
-  if (!raw) return "anon:none";
+  return raw ? saltedHash(raw, salt) : "anon:none";
+}
+export async function saltedHash(raw: string, salt: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw + salt));
   return [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2, "0")).join("");
 }

@@ -6,11 +6,11 @@ import { seedTestDB } from "./helpers";
 beforeAll(() => seedTestDB(env.DB));
 
 const lowEnv = { ...env, RATE_MAX: "3", RATE_WINDOW_SEC: "60" };
-const postComment = (anon: string) =>
+const postComment = (anon: string, ip?: string) =>
   worker.fetch(
     new Request("https://x/api/records/CIA-UAP-017/comments", {
       method: "POST",
-      headers: { "content-type": "application/json", "X-Anon-Id": anon },
+      headers: { "content-type": "application/json", "X-Anon-Id": anon, ...(ip ? { "CF-Connecting-IP": ip } : {}) },
       body: JSON.stringify({ body: "spammy take" }),
     }),
     lowEnv as any,
@@ -48,5 +48,27 @@ describe("ratelimit", () => {
     // even though other actors have already hit the "comment" limit above.
     const r = await postThread("thread-actor");
     expect(r.status).toBe(201);
+  });
+
+  // X-Anon-Id is client-chosen; rotating it must not bypass the limit.
+  it("caps one IP at 3x RATE_MAX even with a fresh anon id per request", async () => {
+    for (let i = 0; i < 9; i++) expect((await postComment("rot" + i, "203.0.113.7")).status).toBe(201);
+    expect((await postComment("rot-final", "203.0.113.7")).status).toBe(429);
+    expect((await postComment("other-ip", "198.51.100.1")).status).toBe(201);
+  });
+
+  it("rate-limits votes too", async () => {
+    const vote = () =>
+      worker.fetch(
+        new Request("https://x/api/votes", {
+          method: "POST",
+          headers: { "X-Anon-Id": "vote-spammer" },
+          body: JSON.stringify({ target_type: "thread", target_id: "t1" }),
+        }),
+        lowEnv as any,
+        {} as any
+      );
+    for (let i = 0; i < 3; i++) expect((await vote()).status).toBe(200);
+    expect((await vote()).status).toBe(429);
   });
 });

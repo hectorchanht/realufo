@@ -1,6 +1,7 @@
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
 import { actorId } from "../lib/anon";
+import { allowWrite } from "../lib/ratelimit";
 
 // Fixed whitelist: target_type -> table name. Never build this map from
 // request input — it's the only thing standing between `UPDATE ${table}`
@@ -18,6 +19,7 @@ export async function toggleVote(req: Request, env: Env) {
   // not, so require `typeof table === "string"` to close that off.
   if (typeof table !== "string" || typeof targetId !== "string" || !targetId.trim()) return error(400, "bad target");
 
+  if (!(await allowWrite(env, req, "vote"))) return error(429, "slow down — too many votes");
   const actor = await actorId(req, env.ANON_SALT);
   const existing = await env.DB.prepare("SELECT id FROM votes WHERE actor_id=? AND target_type=? AND target_id=?")
     .bind(actor, b.target_type, targetId)
