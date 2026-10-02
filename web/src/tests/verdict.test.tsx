@@ -13,26 +13,36 @@ beforeEach(() => {
 });
 
 describe("VerdictBar", () => {
-  it("invites the first vote when nobody voted", () => {
+  it("teases the meter before anybody voted", () => {
     render(<VerdictBar recordId="r1" state={{ mine: null, total: 0 }} />);
-    expect(screen.getByText("Be the first to weigh in")).toBeTruthy();
+    expect(screen.getByText("WTF-METER")).toBeTruthy();
+    expect(screen.getByText("? ? ? Judge it to reveal the crowd")).toBeTruthy();
   });
 
-  it("hides the split before voting and casts on tap", () => {
+  it("hides the split before voting (count shown) and casts on tap", () => {
     render(<VerdictBar recordId="r1" state={{ mine: null, total: 7 }} />);
-    expect(screen.getByText("7 verdicts so far — vote to see the split")).toBeTruthy();
+    expect(screen.getByText("? ? ? Judge it to reveal the crowd · 7 verdicts")).toBeTruthy();
     expect(screen.queryByRole("img")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "NEED MORE DATA" }));
     expect(mutate).toHaveBeenCalledWith("more_data", expect.any(Object));
   });
 
-  it("shows the split and marks my choice after voting", () => {
+  it("under 5 verdicts: early-days line, split still shown, no big number", () => {
     render(
       <VerdictBar recordId="r1" state={{ mine: "unexplained", total: 4, tally: { explained: 1, unexplained: 2, more_data: 1 } }} />
     );
     expect(screen.getByRole("button", { name: "UNEXPLAINED" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("img").getAttribute("aria-label")).toBe("explained 25%, unexplained 50%, need more data 25%");
-    expect(screen.getByText("4 verdicts")).toBeTruthy();
+    expect(screen.getByText("Early days — 4 verdicts")).toBeTruthy();
+    expect(screen.queryByText(/% UNEXPLAINED/)).toBeNull();
+  });
+
+  it("5+ verdicts: big unexplained percentage above the split", () => {
+    render(
+      <VerdictBar recordId="r1" state={{ mine: "explained", total: 24, tally: { explained: 5, unexplained: 17, more_data: 2 } }} />
+    );
+    expect(screen.getByText("71% UNEXPLAINED")).toBeTruthy();
+    expect(screen.getByText("24 verdicts")).toBeTruthy();
   });
 
   it("toasts the server message on error", () => {
