@@ -64,7 +64,7 @@ so route order does not matter).
 ### 2.1 Types and query
 
 - `AskResponse` gains `question?: string`.
-- New `AskRecent { question: string; sources: number; asked_at: string }` and `useAskRecent(enabled)` in
+- New `AskRecent { question: string; sources: number; asked_at: string }` and `useAskRecent()` in
   `api/queries.ts` (`GET /api/ask/recent`, key `["askRecent"]`, `staleTime` 30 s). The list mounts each time the
   answer card closes, so a stale list refetches then and a new question shows up without explicit invalidation.
 
@@ -83,17 +83,18 @@ answer card.
 
 - **Your questions** — from `readAskHistory()`. Each item is a button; tapping sets `?ask=<question>` (same path as
   submitting). A small "clear" button calls `clearAskHistory()`. Hidden when empty.
-- **Recently asked** — from `useAskRecent(askMode)`. Each item shows the question and "N sources"; tapping sets
+- **Recently asked** — from `useAskRecent()` (the component only mounts in Ask mode). Each item shows the question and "N sources"; tapping sets
   `?ask=`. Hidden when empty, loading, or errored.
 - If both are empty, nothing renders.
 
 Archive passes an `onPick(q)` callback that does what `submitAsk` does for a question (`setAskInput`, history add,
 `?ask=` write).
 
-### 2.4 Post to a board — in `AskAnswer.tsx`
+### 2.4 Post to a board — `AskAnswer.tsx` + Archive
 
-A "⤴ post to a board" button at the bottom of the answer card, shown only when `data.sources.length > 0`. It calls
-`openComposer` (from `useOverlay`) with:
+A "⤴ post to a board" button at the bottom of the answer card, shown only when `data.sources.length > 0` and the
+card was given an `onPost(data)` prop (the card stays renderable without an `OverlayProvider`). Archive passes
+`onPost={(d) => openComposer(askComposerOpts(ask, d))}`; `askComposerOpts` returns:
 
 | Field | Value |
 |---|---|
