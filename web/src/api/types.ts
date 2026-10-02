@@ -125,6 +125,7 @@ interface RecordCardBase {
   redacted: number; // 0|1
   thumb: string | null;
   duration?: number | null; // video length in seconds (full asset); null/absent = unknown
+  oneLiner?: string | null; // TL;DR joke (Spec 7); null/absent until generated
 }
 
 /** RecordCard shape from GET /api/feed → `featured[]`. */
@@ -256,6 +257,9 @@ export type Verdict = "explained" | "unexplained" | "more_data";
 export interface VerdictTally { explained: number; unexplained: number; more_data: number }
 export interface VerdictState { mine: Verdict | null; total: number; tally?: VerdictTally }
 
+/** Spec 7 TL;DR: 3 factual bullets + a deadpan one-liner; cardUrl = share PNG. */
+export interface Tldr { bullets: string[]; oneLiner: string; cardUrl: string | null }
+
 export interface RecordDetail {
   record: RecordFull;
   assets: Asset[];
@@ -268,6 +272,7 @@ export interface RecordDetail {
   related?: RelatedGroup[];
   /** Null until extracted; empty pages when no page passed the OCR filter. */
   fullText?: FullText | null;
+  tldr?: Tldr | null;
   hubs?: HubLinks;
   /** Per-visitor verdict state (GET /api/records/:id only, never pre-rendered). */
   verdicts?: VerdictState;
