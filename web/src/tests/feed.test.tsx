@@ -44,7 +44,6 @@ const mockFeed: FeedResponse = {
       kind: "pdf",
       redacted: 0,
       thumb: null,
-      credible: 240,
       commentN: 12,
     },
     {
@@ -56,7 +55,6 @@ const mockFeed: FeedResponse = {
       kind: "pdf",
       redacted: 0,
       thumb: null,
-      credible: 88,
       commentN: 4,
     },
   ],

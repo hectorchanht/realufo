@@ -100,7 +100,6 @@ describe("DocCard", () => {
     kind: "pdf",
     redacted: 0,
     thumb: null,
-    credible: 240,
     commentN: 12,
   };
 
@@ -198,7 +197,7 @@ describe("DocCard", () => {
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 
-  it("grid/archive variant shows locOrDate footer instead of credible/commentN", () => {
+  it("grid/archive variant shows locOrDate footer instead of commentN", () => {
     const listRecord: ListRecordCard = {
       id: "rec2",
       archive: "nara",

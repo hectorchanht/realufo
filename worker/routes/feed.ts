@@ -28,7 +28,7 @@ export async function feed(_req: Request, env: Env) {
   ).all<any>();
 
   return json({
-    featured: featured.results.map((r: any) => ({ ...r, credible: 120 + (r.id.length * 7) % 380 })),
+    featured: featured.results,
     hot: hot.results.map((t: any) => ({ ...t, ago: relAgo(t.lastPost || t.created_at) })),
   });
 }

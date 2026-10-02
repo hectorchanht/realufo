@@ -105,7 +105,7 @@ export interface Bootstrap {
 // ---------------------------------------------------------------------------
 // RecordCard — two distinct projections of the `records` table.
 //
-//   FeedRecordCard  ← GET /api/feed            (featured[])   has credible, commentN
+//   FeedRecordCard  ← GET /api/feed            (featured[])   has commentN
 //   ListRecordCard  ← GET /api/records          (records[])    has location, incident_date, doc_date
 //
 // They share the same base columns; each adds fields the other endpoint doesn't select.
@@ -128,7 +128,6 @@ interface RecordCardBase {
 
 /** RecordCard shape from GET /api/feed → `featured[]`. */
 export interface FeedRecordCard extends RecordCardBase {
-  credible: number; // synthetic "credibility" score computed by the worker
   commentN: number;
 }
 
@@ -139,7 +138,7 @@ export interface ListRecordCard extends RecordCardBase {
   doc_date: string | null;
 }
 
-/** Union of both RecordCard projections — narrow with `"credible" in card` or `"location" in card`. */
+/** Union of both RecordCard projections — narrow with `"commentN" in card` or `"location" in card`. */
 export type RecordCard = FeedRecordCard | ListRecordCard;
 
 export interface Feed {

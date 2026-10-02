@@ -1,7 +1,7 @@
 // Document/record card. Reconciles the prototype's two near-duplicate card
 // markups into one component driven by a `variant` prop:
 //   variant="feed"  -> realufo-handoff/RealUFO.dc.html lines 121-136 (Hot right
-//                      now grid on the Feed screen): 15px radius, credible+
+//                      now grid on the Feed screen): 15px radius, comment count+
 //                      commentN footer, a top "agency · archive" meta line.
 //   variant="grid"  -> lines 189-202 (Archive screen's record grid): 14px
 //                      radius, locOrDate footer, no meta line.
@@ -49,7 +49,7 @@ export interface DocCardProps {
 }
 
 function isFeedRecord(r: RecordCard): r is FeedRecordCard {
-  return "credible" in r;
+  return "commentN" in r;
 }
 
 function isListRecord(r: RecordCard): r is ListRecordCard {
@@ -198,7 +198,6 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
         </div>
         {isFeed && isFeedRecord(record) && (
           <div className="mt-auto flex gap-3 pt-0.5 font-mono text-[10px] text-dim">
-            <span>▲ {record.credible}</span>
             <span>💬 {record.commentN}</span>
           </div>
         )}
