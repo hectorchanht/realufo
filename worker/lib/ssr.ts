@@ -100,6 +100,7 @@ export type DocData = {
   record: {
     id: string; title: string; summary: string | null; agency: string | null; agency_full: string | null;
     incident_date: string | null; location: string | null; doc_date: string | null; kind: string;
+    created_at?: string | null;
   };
   assets: { role: string; cdn_url: string; mime: string | null; duration?: number | null }[];
   promotedThreads: { id: string; title: string }[];

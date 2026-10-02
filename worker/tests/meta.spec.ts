@@ -1,12 +1,21 @@
 import { env, createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { describe, it, expect, beforeAll } from "vitest";
 import { injectMeta, snippet } from "../lib/meta";
+import { isoDate } from "../lib/pages";
 import worker from "../index";
 import { seedTestDB } from "./helpers";
 
 beforeAll(() => seedTestDB(env.DB));
 
 describe("injectMeta", () => {
+  it("isoDate normalizes war.gov M/D/YY and keeps years", () => {
+    expect(isoDate("5/8/26")).toBe("2026-05-08");
+    expect(isoDate("12/31/2024")).toBe("2024-12-31");
+    expect(isoDate("2024")).toBe("2024");
+    expect(isoDate("July, 2008")).toBeUndefined();
+    expect(isoDate(null)).toBeUndefined();
+  });
+
   it("snippet collapses whitespace and clips at a word under 160 chars", () => {
     expect(snippet("Stance:\nAnalyst\n\nHi  there")).toBe("Stance: Analyst Hi there");
     const s = snippet("word ".repeat(60));
@@ -298,6 +307,7 @@ describe("pre-rendered body", () => {
     expect(j["@type"]).toBe("VideoObject");
     expect(j.contentUrl).toMatch(/^https:/);
     expect(j.identifier).toBe("AARO-956955");
+    expect(j.uploadDate).toBe("2024");
     expect(html).toMatch(/<video controls preload="none" src="https:/);
   });
 

@@ -16,6 +16,13 @@ import {
 export type Page = { meta: Omit<MetaInput, "url">; body: string };
 export type Loader = (env: Env, groups: Record<string, string>, url: URL) => Promise<Page | null>;
 
+// records.doc_date is "M/D/YY" (war.gov) or a bare year (AARO) → ISO 8601 date.
+export const isoDate = (d: string | null | undefined) => {
+  const m = d?.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (m) return `${m[3].length === 2 ? "20" + m[3] : m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`;
+  return d && /^\d{4}(-\d{2}){0,2}$/.test(d) ? d : undefined;
+};
+
 // D1 "YYYY-MM-DD HH:MM:SS" (UTC) → ISO 8601.
 const iso = (d: string | null) => (d ? d.replace(" ", "T") + "Z" : undefined);
 const person = (handle: string | null) => ({ "@type": "Person", name: handle || "Anonymous" });
@@ -121,7 +128,9 @@ const docPage: Loader = async (env, g, url) => {
   const media =
     x.kind === "video" && full
       ? {
-          "@type": "VideoObject", thumbnailUrl: thumb?.cdn_url, contentUrl: full.cdn_url, uploadDate: x.doc_date || undefined,
+          "@type": "VideoObject", thumbnailUrl: thumb?.cdn_url, contentUrl: full.cdn_url,
+          // Required by Google; AARO has no release date, so fall back to when we added it.
+          uploadDate: isoDate(x.doc_date) || x.created_at?.slice(0, 10),
           duration: dur ? `PT${Math.floor(dur / 60)}M${Math.floor(dur % 60)}S` : undefined,
         }
       : x.kind === "image" && full
@@ -132,7 +141,7 @@ const docPage: Loader = async (env, g, url) => {
       title, description, image: thumb?.cdn_url ?? null,
       jsonLd: {
         ...media, name: x.title, identifier: x.id, description,
-        dateCreated: x.doc_date || undefined, contentLocation: x.location || undefined,
+        dateCreated: isoDate(x.doc_date), contentLocation: x.location || undefined,
         publisher: agency ? { "@type": "GovernmentOrganization", name: agency } : undefined,
       },
       breadcrumbs: [
