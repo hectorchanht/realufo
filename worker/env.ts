@@ -22,4 +22,25 @@ export interface Env {
   X_API_SECRET?: string;
   X_ACCESS_TOKEN?: string;
   X_ACCESS_SECRET?: string;
+  // Social fan-out (Spec 5): each off | dry | on
+  FEATURE_SOCIAL_FB?: string;
+  FEATURE_SOCIAL_IG?: string;
+  FEATURE_SOCIAL_THREADS?: string;
+  FEATURE_SOCIAL_BSKY?: string;
+  FEATURE_SOCIAL_YT?: string;
+  FEATURE_SOCIAL_TIKTOK?: string;
+  SOCIAL_SINCE?: string; // "YYYY-MM-DD"; x_posts created before it are never mirrored; empty = mirror nothing
+  YT_DAILY_MAX?: string; // default "5" (Data API quota ≈ 6 uploads/day)
+  TIKTOK_PRIVACY?: string; // SELF_ONLY until TikTok's audit passes, then PUBLIC_TO_EVERYONE
+  META_PAGE_ID?: string; // secrets
+  META_PAGE_TOKEN?: string;
+  IG_USER_ID?: string;
+  THREADS_USER_ID?: string;
+  BSKY_HANDLE?: string;
+  BSKY_APP_PASSWORD?: string;
+  YT_CLIENT_ID?: string;
+  YT_CLIENT_SECRET?: string;
+  YT_REFRESH_TOKEN?: string;
+  TIKTOK_CLIENT_KEY?: string;
+  TIKTOK_CLIENT_SECRET?: string;
 }

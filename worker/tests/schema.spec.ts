@@ -1,7 +1,7 @@
 import { applyD1Migrations, env } from "cloudflare:test";
 import { beforeAll, describe, it, expect } from "vitest";
 
-const EXPECTED = ["archives","ask_cache","ask_log","assets","boards","cases","comments","posts","presence","rate_events","record_links","record_text","records","sightings","stats","text_index","threads","ticker","users","votes","x_posts"];
+const EXPECTED = ["archives","ask_cache","ask_log","assets","boards","cases","comments","posts","presence","rate_events","record_links","record_text","records","sightings","social_auth","social_posts","stats","text_index","threads","ticker","users","votes","x_posts"];
 
 beforeAll(async () => {
   await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
@@ -14,6 +14,16 @@ describe("schema", () => {
     await ins("S-1");
     await expect(ins("S-1")).rejects.toThrow(/UNIQUE/);
     await expect(ins("S-2", "bogus")).rejects.toThrow(/CHECK/);
+  });
+
+  it("social_posts dedupes on (x_post_id, platform) and checks platform/status", async () => {
+    const x = await env.DB.prepare("INSERT INTO x_posts(stream,ref,text,ai,cost_usd,status) VALUES ('pick','SP-1','t',0,0.015,'posted') RETURNING id").first<{ id: number }>();
+    const ins = (platform: string, status = "draft") =>
+      env.DB.prepare("INSERT INTO social_posts(x_post_id,platform,status) VALUES (?,?,?)").bind(x!.id, platform, status).run();
+    await ins("bsky");
+    await expect(ins("bsky")).rejects.toThrow(/UNIQUE/);
+    await expect(ins("myspace")).rejects.toThrow(/CHECK/);
+    await expect(ins("fb", "bogus")).rejects.toThrow(/CHECK/);
   });
 
   it("has all tables", async () => {
