@@ -12,11 +12,13 @@ import sys
 import urllib.request
 
 HOST = "realufo.org"
+# api.indexnow.org 403s urllib's default "Python-urllib" User-Agent.
+UA = {"user-agent": "realufo-indexnow/1.0 (+https://realufo.org)"}
 KEY = "15c819920fcebcf77e8010d63ce74426"
 
 
 def sitemap_urls():
-    with urllib.request.urlopen(f"https://{HOST}/sitemap.xml") as r:
+    with urllib.request.urlopen(urllib.request.Request(f"https://{HOST}/sitemap.xml", headers=UA)) as r:
         return re.findall(r"<loc>([^<]+)</loc>", r.read().decode())
 
 
@@ -24,7 +26,7 @@ def main():
     urls = sys.argv[1:] or sitemap_urls()
     body = json.dumps({"host": HOST, "key": KEY, "keyLocation": f"https://{HOST}/{KEY}.txt", "urlList": urls[:10000]})
     req = urllib.request.Request(
-        "https://api.indexnow.org/indexnow", data=body.encode(), headers={"content-type": "application/json; charset=utf-8"}
+        "https://api.indexnow.org/indexnow", data=body.encode(), headers={**UA, "content-type": "application/json; charset=utf-8"}
     )
     with urllib.request.urlopen(req) as r:
         print(r.status, f"submitted {len(urls)} urls")
