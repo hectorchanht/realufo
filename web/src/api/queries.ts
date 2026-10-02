@@ -8,6 +8,7 @@ import type { QueryKey } from "@tanstack/react-query";
 import { api } from "./client";
 import type {
   AddCommentResponse,
+  AskResponse,
   BoardThreadsResponse,
   Bootstrap,
   CaseDetail,
@@ -46,6 +47,7 @@ export const qk = {
   comments: (recordId: string) => ["comments", recordId] as const,
   boardThreads: (boardId: string) => ["boardThreads", boardId] as const,
   threadSearch: (q: string) => ["threadSearch", q] as const,
+  ask: (question: string) => ["ask", question] as const,
   thread: (id: string) => ["thread", id] as const,
   case: (slug: string) => ["case", slug] as const,
   caseComments: (slug: string) => ["caseComments", slug] as const,
@@ -125,6 +127,17 @@ export function useSearchThreads(q: string) {
     queryFn: () => api.get<{ threads: ThreadCard[] }>(`/api/threads?q=${encodeURIComponent(term)}`),
     enabled: term.length >= 2,
     placeholderData: keepPreviousData,
+  });
+}
+
+// Each ask costs money: fetch once per question, never retry automatically.
+export function useAsk(question: string) {
+  return useQuery({
+    queryKey: qk.ask(question),
+    queryFn: () => api.get<AskResponse>(`/api/ask?q=${encodeURIComponent(question)}`),
+    enabled: !!question,
+    staleTime: Infinity,
+    retry: false,
   });
 }
 

@@ -402,3 +402,18 @@ export interface AuthStub {
 export interface ApiError {
   error: string;
 }
+
+// GET /api/ask (Spec 3)
+export interface AskSource {
+  n: number;
+  record_id: string;
+  title: string;
+  page: number; // 0 = record card, else 1-based PDF page
+  kind: RecordKind;
+  thumb: string | null;
+}
+export interface AskResponse {
+  answer: string;
+  sources: AskSource[];
+  cached: boolean;
+}
