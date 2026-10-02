@@ -108,3 +108,11 @@ def test_summary_trim_ends_on_a_sentence_so_the_model_never_sees_a_cut_off_word(
     p = hl.build_prompt("R", [{"id": "A-1", "title": "a", "text": text}])
     summary = p.split("summary: ", 1)[1].split("\n", 1)[0]
     assert summary.endswith("light.") and len(summary) <= hl.PER_FILE
+
+def test_clip_does_not_treat_us_abbreviation_as_a_sentence_end():
+    text = "A 1948 memo suggesting UFOs might be Soviet flying wings. The U.S. Air Force then spent a decade arguing about it with itself in triplicate forms"
+    assert hl.clip(text, 25) == "A 1948 memo suggesting UFOs might be Soviet flying wings."
+
+def test_clip_keeps_a_closing_quote():
+    t = "He said “stop.” Then the tape ran out and nobody filed anything at all for forty years apparently ok"
+    assert hl.clip(t, 12) == "He said “stop.”"
