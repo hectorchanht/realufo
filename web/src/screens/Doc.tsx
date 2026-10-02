@@ -646,9 +646,9 @@ export function Doc() {
       </div>
 
       {/* record id kicker — uapbrowser-style accent breadcrumb */}
-      <div className="mb-1 font-mono text-[11px] font-semibold tracking-[.4px]" style={{ color: accent }}>
-        {record.id}
-      </div>
+      // <div className="mb-1 font-mono text-[11px] font-semibold tracking-[.4px]" style={{ color: accent }}>
+      //   {record.id}
+      // </div>
 
       {/* title — full official title (id prefix kept, it's how the file is cited) */}
       <h1 className="mb-3.5 text-[19px] font-bold leading-[1.3] text-ink" style={{ overflowWrap: "anywhere" }}>
