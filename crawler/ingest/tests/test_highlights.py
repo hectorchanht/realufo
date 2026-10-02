@@ -45,3 +45,42 @@ def test_row_sql_upserts_escaped_json():
     sql = hl.row_sql("location", "o'hare", {"lede": "It's L.", "picks": [{"id": "A-1", "why": "w"}]}, "abc")
     assert sql.startswith("INSERT INTO hub_highlights(kind,slug,lede,picks,members_hash) VALUES('location','o''hare','It''s L.',")
     assert "ON CONFLICT(kind,slug) DO UPDATE SET" in sql
+
+def test_parse_reply_ignores_trailing_text_with_braces():
+    raw = '```json\n{"lede": "L.", "picks": []}\n```\nNote: ids from {list}.'
+    assert hl.parse_reply(raw) == {"lede": "L.", "picks": []}
+    assert hl.parse_reply('Here: {"a": 1} and {"b": 1}') == {"a": 1}
+
+def test_validate_rejects_non_string_lede_and_why():
+    two = [{"id": "A-1", "why": "w"}, {"id": "B-2", "why": "w"}]
+    assert hl.validate({"lede": ["x"], "picks": two}, IDS) is None
+    out = hl.validate({"lede": "L.", "picks": [{"id": "A-1", "why": {"k": "v"}}, *two]}, IDS)
+    assert out["picks"] == two
+
+def test_validate_caps_lede_at_60_words():
+    out = hl.validate({"lede": " ".join(["w"] * 90), "picks": [{"id": "A-1", "why": "w"}, {"id": "B-2", "why": "w"}]}, IDS)
+    assert len(out["lede"].split()) == 60
+
+def test_main_keeps_going_when_one_hub_fetch_fails(monkeypatch, capsys):
+    import urllib.error
+    hubs = {"hubs": [{"kind": "agency", "slug": "bad"}, {"kind": "agency", "slug": "good"}]}
+    good = {"title": "Good", "records": [{"id": "A-1", "title": "a"}, {"id": "B-2", "title": "b"}]}
+    def fake_get(path):
+        if path == "/api/hubs":
+            return hubs
+        if path.endswith("/bad"):
+            raise urllib.error.HTTPError(path, 404, "nf", None, None)
+        return good
+    writes = []
+    monkeypatch.setattr(hl, "get_json", fake_get)
+    monkeypatch.setattr(hl.d1, "_d1_json", lambda sql: [])
+    monkeypatch.setattr(hl.d1, "execute", writes.append)
+    monkeypatch.setattr(hl.cfapi, "chat", lambda *a, **k: '{"lede": "L.", "picks": [{"id": "A-1", "why": "w"}, {"id": "B-2", "why": "w"}]}')
+    try:
+        hl.main([])
+    except SystemExit:
+        pass
+    out = capsys.readouterr().out
+    assert "FAIL agency/bad" in out and "ok   agency/good" in out
+    assert "highlights ok=1 skipped=0 failed=1" in out
+    assert len(writes) == 1

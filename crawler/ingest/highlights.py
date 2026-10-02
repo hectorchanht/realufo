@@ -14,7 +14,7 @@ SITE = "https://realufo.org"
 UA = {"User-Agent": "realufo-ingest/1.0 (+https://realufo.org)"}
 INPUT_CAP = 12000
 PER_FILE = 400
-MIN_PICKS, MAX_PICKS, WHY_WORDS = 2, 5, 25
+MIN_PICKS, MAX_PICKS, WHY_WORDS, LEDE_WORDS = 2, 5, 25, 60
 SYSTEM = """You are the archivist of a public archive of declassified U.S. government UAP (UFO) files.
 You get one group of files (a release, agency, place or decade): id, title, date/place and a summary for each.
 Return JSON only, nothing around it:
@@ -45,26 +45,30 @@ def build_prompt(title: str, files: list[dict], cap: int = INPUT_CAP, per_file: 
 
 def parse_reply(raw):
     t = re.sub(r"<think>[\s\S]*?(</think>|$)", "", str(raw or ""))
-    m = re.search(r"\{[\s\S]*\}", t)
-    if not m:
+    # First JSON object; trailing prose (even with braces) is ignored.
+    start = t.find("{")
+    if start < 0:
         return None
     try:
-        return json.loads(m.group(0))
+        return json.JSONDecoder().raw_decode(t[start:])[0]
     except ValueError:
         return None
 
 def validate(obj, member_ids):
     if not isinstance(obj, dict):
         return None
-    lede = re.sub(r"\s+", " ", str(obj.get("lede") or "")).strip()
-    if not lede:
+    lede = obj.get("lede")
+    if not isinstance(lede, str) or not lede.strip():
         return None
+    lede = " ".join(lede.split()[:LEDE_WORDS])
     picks, seen = [], set()
     for p in obj.get("picks") or []:
         if not isinstance(p, dict):
             continue
-        pid = str(p.get("id") or "").strip()
-        why = " ".join(str(p.get("why") or "").split()[:WHY_WORDS])
+        pid, why = p.get("id"), p.get("why")
+        if not isinstance(pid, str) or not isinstance(why, str):
+            continue
+        pid, why = pid.strip(), " ".join(why.split()[:WHY_WORDS])
         if pid not in member_ids or pid in seen or not why:
             continue
         seen.add(pid)
@@ -98,14 +102,15 @@ def main(argv=None):
     ok = skipped = failed = 0
     for i, h in enumerate(hubs, 1):
         key = f"{h['kind']}/{h['slug']}"
-        hub = get_json(f"/api/hubs/{h['kind']}/{urllib.parse.quote(h['slug'])}")
-        ids = [r["id"] for r in hub["records"]]
-        mh = members_hash(ids)
-        if done.get((h["kind"], h["slug"])) == mh:
-            skipped += 1
-            continue
-        files = [{**r, "text": ai.get(r["id"]) or r.get("summary")} for r in hub["records"]]
         try:
+            # One hub's fetch failing (404/5xx/timeout) must not stop the rest.
+            hub = get_json(f"/api/hubs/{h['kind']}/{urllib.parse.quote(h['slug'])}")
+            ids = [r["id"] for r in hub["records"]]
+            mh = members_hash(ids)
+            if done.get((h["kind"], h["slug"])) == mh:
+                skipped += 1
+                continue
+            files = [{**r, "text": ai.get(r["id"]) or r.get("summary")} for r in hub["records"]]
             out = validate(parse_reply(cfapi.chat(SYSTEM, build_prompt(hub["title"], files), max_tokens=600)), set(ids))
             if not out:
                 raise ValueError("no valid lede / < 2 valid picks")
