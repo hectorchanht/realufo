@@ -8,7 +8,7 @@ CREATE TABLE records (
   redacted INTEGER DEFAULT 0, featured INTEGER DEFAULT 0, virin TEXT,
   source_url TEXT, source_site TEXT, retrieved_at TEXT, license TEXT,
   status TEXT CHECK(status IN ('pending','fetched','processed','live','failed')) DEFAULT 'live',
-  checksum TEXT, created_at TEXT DEFAULT (datetime('now')));
+  checksum TEXT, created_at TEXT DEFAULT (datetime('now')), ai_moments TEXT);
 CREATE INDEX idx_records_archive ON records(archive);
 CREATE INDEX idx_records_kind ON records(kind);
 CREATE TABLE assets (id INTEGER PRIMARY KEY AUTOINCREMENT, record_id TEXT REFERENCES records(id),
