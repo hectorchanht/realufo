@@ -17,11 +17,12 @@ const HAS: Record<string, string> = {
 };
 
 /** Free text → a safe FTS5 query: each word quoted (no operators get through),
- * all words required, the last one also as a prefix so typing "kecksbu" hits. */
+ * all words required, one-letter words dropped, and a last word of 3+ letters
+ * also matched as a prefix so typing "kecksbu" hits. */
 export function ftsQuery(q: string): string | null {
-  const words = (q.match(/[\p{L}\p{N}]+/gu) ?? []).slice(0, 8);
+  const words = (q.match(/[\p{L}\p{N}]+/gu) ?? []).filter((w) => w.length > 1).slice(0, 8);
   if (!words.length) return null;
-  return words.map((w) => `"${w}"`).join(" ") + "*";
+  return words.map((w) => `"${w}"`).join(" ") + (words[words.length - 1].length >= 3 ? "*" : "");
 }
 
 // Title/agency/location/summary substring match (the original search).

@@ -61,5 +61,8 @@ describe("record_fts (search inside documents)", () => {
     expect(ftsQuery("tic tac")).toBe('"tic" "tac"*');
     expect(ftsQuery('"weather* -balloon')).toBe('"weather" "balloon"*');
     expect(ftsQuery("!!!")).toBeNull();
+    // one-letter words are noise; short last words aren't prefixes ("b*" = everything)
+    expect(ftsQuery("a*b")).toBeNull();
+    expect(ftsQuery("area 51")).toBe('"area" "51"');
   });
 });
