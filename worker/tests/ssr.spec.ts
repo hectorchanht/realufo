@@ -34,6 +34,20 @@ describe("ssr helpers", () => {
 });
 
 describe("docBody", () => {
+  it("renders full text pages escaped, with continuation link only when truncated", () => {
+    const ft = { pages: [{ n: 3, text: "Para one line\nline two\n\n\n\n<script>x</script>\n\n  \n" }], truncated: true, total_pages: 40 };
+    const out = docBody(doc({}, { fullText: ft }));
+    expect(out).toContain(
+      "<section><h2>Full text</h2><h3>Page 3</h3><p>Para one line<br>line two</p><p>&lt;script&gt;x&lt;/script&gt;</p>"
+    );
+    expect(out).not.toContain("<p></p>");
+    expect(out).toContain('<a href="/api/file/FBI-UAP-D002">Text continues in the original file (40 pages).</a>');
+    expect(docBody(doc({}, { fullText: { ...ft, truncated: false } }))).not.toContain("Text continues");
+  });
+  it("no Full text section for an empty or missing fullText", () => {
+    expect(docBody(doc({}, { fullText: { pages: [], truncated: false, total_pages: 2 } }))).not.toContain("Full text");
+    expect(docBody(doc())).not.toContain("Full text");
+  });
   it("renders full-title h1, facts, summary paragraphs, file link, series and related", () => {
     const out = docBody(doc());
     expect(out).toContain("<h1>FBI-UAP-D002, FD-1057, Unresolved UAP Report</h1>");

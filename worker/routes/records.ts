@@ -207,7 +207,7 @@ export async function loadRecord(env: Env, id: string) {
     .first<RecordRow>();
   if (!record) return null;
   const releaseP = releaseOf(env, record);
-  const [assets, promoted, series, release, related] = await Promise.all([
+  const [assets, promoted, series, release, related, text] = await Promise.all([
     env.DB.prepare("SELECT role,cdn_url,mime,width,height,duration FROM assets WHERE record_id=?").bind(id).all(),
     env.DB.prepare(
       `SELECT t.id,t.no,t.title,t.stance,t.votes,t.source_record_id,b.slug boardSlug,b.accent accent
@@ -218,8 +218,15 @@ export async function loadRecord(env: Env, id: string) {
     seriesNav(env, id),
     releaseP,
     releaseP.then((rel) => relatedOf(env, record, rel)),
+    env.DB.prepare("SELECT pages,truncated,total_pages FROM record_text WHERE record_id=?")
+      .bind(id)
+      .first<{ pages: string; truncated: number; total_pages: number }>(),
   ]);
-  return { record, assets: assets.results, promotedThreads: promoted.results, series, release, related };
+  // Quality-filtered PDF text (crawler ingest.fulltext); null until extracted.
+  const fullText = text
+    ? { pages: JSON.parse(text.pages) as { n: number; text: string }[], truncated: !!text.truncated, total_pages: text.total_pages }
+    : null;
+  return { record, assets: assets.results, promotedThreads: promoted.results, series, release, related, fullText };
 }
 
 export async function getRecord(_req: Request, env: Env, p: Record<string, string>) {

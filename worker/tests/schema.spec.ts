@@ -1,7 +1,7 @@
 import { applyD1Migrations, env } from "cloudflare:test";
 import { beforeAll, describe, it, expect } from "vitest";
 
-const EXPECTED = ["archives","ask_cache","assets","boards","cases","comments","posts","presence","rate_events","records","sightings","stats","text_index","threads","ticker","users","votes","x_posts"];
+const EXPECTED = ["archives","ask_cache","assets","boards","cases","comments","posts","presence","rate_events","record_text","records","sightings","stats","text_index","threads","ticker","users","votes","x_posts"];
 
 beforeAll(async () => {
   await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);

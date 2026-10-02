@@ -73,11 +73,30 @@ export type DocData = {
   series: { prev: string | null; next: string | null };
   release: { no: number; date: string } | null;
   related: { key: string; label: string; records: RecordLink[] }[];
+  fullText?: { pages: { n: number; text: string }[]; truncated: boolean; total_pages: number } | null;
 };
 
 const RELATED_HEADING: Record<string, string> = {
   location: "Same location", period: "Same period", release: "Same release", agency: "Same agency",
 };
+
+// Blank-line-separated paragraphs; single newlines kept as <br>.
+const textBlock = (t: string) =>
+  t
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p>${p.split("\n").map(esc).join("<br>")}</p>`)
+    .join("");
+
+function fullTextSection(d: DocData): string {
+  const ft = d.fullText;
+  if (!ft?.pages.length) return "";
+  const more = ft.truncated
+    ? `<p>${a({ href: `/api/file/${encodeURIComponent(d.record.id)}`, text: `Text continues in the original file (${ft.total_pages} pages).` })}</p>`
+    : "";
+  return `<section><h2>Full text</h2>${ft.pages.map((p) => `<h3>Page ${p.n}</h3>${textBlock(p.text)}`).join("")}${more}</section>`;
+}
 
 export function docBody(d: DocData): string {
   const r = d.record;
@@ -101,6 +120,7 @@ export function docBody(d: DocData): string {
     `<dl>${facts.filter(([, v]) => v).map(([k, v]) => `<dt>${k}</dt><dd>${esc(String(v))}</dd>`).join("")}</dl>`,
     paras(r.summary),
     `<p>${a({ href: `/api/file/${encodeURIComponent(r.id)}`, text: "Open original file" })}</p>`,
+    fullTextSection(d),
     series.length ? `<p>${series.join(" · ")}</p>` : "",
     ...d.related.map((g) => section(`${RELATED_HEADING[g.key] ?? "Related"}: ${g.label}`, docLinks(g.records))),
     section("Discussion", d.promotedThreads.map((t) => ({ href: threadHref(t.id), text: t.title }))),
