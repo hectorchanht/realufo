@@ -228,6 +228,30 @@ describe("Thread", () => {
     expect(screen.getAllByRole("link", { name: "NASA-UAP-D030" })).toHaveLength(1);
   });
 
+  it("realufo.org/doc URLs become record embeds, not external links", () => {
+    const body = "see https://realufo.org/doc/NARA-Pentagon-Papers-Index and https://realufo.org/doc/AARO-956955.";
+    useThreadMock.mockReturnValue({
+      data: { ...mockThreadDetail, posts: [{ ...mockThreadDetail.posts[1], body }] },
+      isLoading: false,
+    });
+    const { container } = renderThread();
+    // no external link to realufo.org; unresolved ids render as plain id text (the RecordEmbed fallback)
+    expect(container.querySelector('a[target="_blank"][href*="realufo.org"]')).toBeNull();
+    expect(container.textContent).not.toContain("https://realufo.org/doc/");
+    expect(container.textContent).toContain("see NARA-Pentagon-Papers-Index and AARO-956955.");
+  });
+
+  it("a resolvable realufo.org/doc URL (with ?t=) embeds the record at that moment", () => {
+    const body = "watch https://realufo.org/doc/NASA-UAP-D030?t=83.04 now";
+    useThreadMock.mockReturnValue({
+      data: { ...mockThreadDetail, posts: [{ ...mockThreadDetail.posts[1], body }] },
+      isLoading: false,
+    });
+    renderThread();
+    expect(screen.getByRole("link", { name: "NASA-UAP-D030@1:23.04" })).toHaveAttribute("href", "/doc/NASA-UAP-D030?t=83.04");
+    expect(screen.getByRole("button", { name: "open NASA-UAP-D030" })).toBeInTheDocument();
+  });
+
   it("renders a user-uploaded post image and opens it in the image viewer", () => {
     useThreadMock.mockReturnValue({
       data: { ...mockThreadDetail, posts: [{ ...mockThreadDetail.posts[1], image_kind: "upload", image_url: "/api/u/a.png" }] },

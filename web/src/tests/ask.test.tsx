@@ -230,8 +230,8 @@ describe("Ask screen", () => {
     fireEvent.click(await screen.findByRole("button", { name: "⤴ post to a board" }));
     expect(await screen.findByPlaceholderText("Thread title")).toHaveValue("what did radar see?");
     const bodyBox = screen.getByPlaceholderText("Say your piece. Keep it sourced.") as HTMLTextAreaElement;
-    expect(bodyBox.value).toContain("Radar tracked it DOE-UAP-D004 and pilots saw it WARGOV-VID-1.");
-    expect(bodyBox.value).toContain("Sources: DOE-UAP-D004, WARGOV-VID-1");
+    expect(bodyBox.value).toContain("Radar tracked it [1] and pilots saw it [2].");
+    expect(bodyBox.value).toContain("[1] https://realufo.org/doc/DOE-UAP-D004");
     expect(screen.getByText("REFERENCING FILE")).toBeInTheDocument();
   });
 

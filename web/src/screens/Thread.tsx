@@ -79,8 +79,9 @@ function postImage(post: Post, sourceRecord: ThreadSourceRecord | null): PostIma
 
 // Post body text with http(s) URLs turned into external links and each record
 // id ("NASA-UAP-D030", or a moment "DOW-UAP-PR133@1:23.04") into a
+// RecordEmbed. realufo.org/doc/<id> URLs (Ask-shared threads) also become a
 // RecordEmbed. Media shows once per id (first mention). URLs match first, so
-// an id inside a URL stays part of the link.
+// an id inside another URL stays part of the link.
 const BODY_TOKEN_RE = new RegExp(`(https?://[^\\s<>"]+)|(${RECORD_ID_RE.source})(?:${MOMENT_SUFFIX})?`, "g");
 function linkifyBody(body: string): ReactNode[] {
   const out: ReactNode[] = [];
@@ -91,11 +92,24 @@ function linkifyBody(body: string): ReactNode[] {
     let tok = m[0];
     if (m[1]) {
       tok = tok.replace(/[.,;:!?)\]'"]+$/, ""); // trailing sentence punctuation isn't part of the URL
-      out.push(
-        <a key={m.index} href={tok} target="_blank" rel="nofollow ugc noopener noreferrer" className="text-cyan underline">
-          {tok}
-        </a>,
-      );
+      const doc = /^https?:\/\/(?:www\.)?realufo\.org\/doc\/([^/?#\s]+)(?:\?([^#\s]*))?/.exec(tok);
+      let docId: string | null = null;
+      try {
+        if (doc) docId = decodeURIComponent(doc[1]);
+      } catch {
+        /* malformed escape: fall back to a plain link */
+      }
+      if (doc && docId) {
+        const t = parseMoment(new URLSearchParams(doc[2] ?? "").get("t")) ?? undefined;
+        out.push(<RecordEmbed key={m.index} id={docId} t={t} withMedia={!seen.has(docId)} />);
+        seen.add(docId);
+      } else {
+        out.push(
+          <a key={m.index} href={tok} target="_blank" rel="nofollow ugc noopener noreferrer" className="text-cyan underline">
+            {tok}
+          </a>,
+        );
+      }
     } else {
       const id = m[2];
       out.push(<RecordEmbed key={m.index} id={id} t={parseMoment(m[3]) ?? undefined} withMedia={!seen.has(id)} />);
