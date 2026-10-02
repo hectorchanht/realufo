@@ -81,7 +81,12 @@ const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).
 
 export const section = (heading: string, items: Link[]) =>
   items.length ? `<section><h2>${esc(heading)}</h2>${ul(items)}</section>` : "";
-export const docLinks = (rs: RecordLink[]): Link[] => rs.map((r) => ({ href: docHref(r.id), text: r.title }));
+// "<id> — <title>", or the title alone when the id only respells it (same as the SPA tab title).
+export const docTitle = (t: string, id: string) => {
+  const p = docTitleParts(id, t);
+  return p.showId ? `${id} — ${p.title}` : p.title;
+};
+export const docLinks = (rs: RecordLink[]): Link[] => rs.map((r) => ({ href: docHref(r.id), text: docTitle(r.title, r.id) }));
 export const countList = (heading: string, items: { name: string; count: number }[]) =>
   items.length
     ? `<section><h2>${esc(heading)}</h2><ul>${items.map((x) => `<li>${esc(x.name)} (${x.count})</li>`).join("")}</ul></section>`

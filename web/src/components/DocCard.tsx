@@ -32,6 +32,7 @@ import { useState } from "react";
 import type { MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import { useBootstrap } from "../api/queries";
+import { docTitleParts } from "../lib/docTitle";
 import type { FeedRecordCard, ListRecordCard, RecordCard } from "../api/types";
 
 export type DocCardVariant = "feed" | "grid";
@@ -86,6 +87,8 @@ export function DocCard({ record, variant = "grid", onOpen, search }: DocCardPro
   // see file header note — resolved from the shared bootstrap cache; falls
   // back to var(--signal) until bootstrap loads or for an unknown archive id.
   const accentColor = boot?.archives.find((a) => a.id === record.archive)?.accent ?? "var(--signal)";
+  // Same title rule as the Doc page: id once as a kicker (unless it only respells the title).
+  const tp = docTitleParts(record.id, record.title);
   const isFeed = variant === "feed";
 
   function handleClick(e: MouseEvent) {
@@ -170,12 +173,17 @@ export function DocCard({ record, variant = "grid", onOpen, search }: DocCardPro
         {isFeed && (
           <div className="font-mono text-[9px] tracking-[.4px] text-faint">{metaLine(record)}</div>
         )}
+        {tp.showId && (
+          <div className="truncate font-mono text-[9.5px] font-semibold tracking-[.3px]" style={{ color: accentColor }}>
+            {record.id}
+          </div>
+        )}
         <div
           className={
             "line-clamp-3 font-semibold leading-[1.3] text-ink " + (isFeed ? "text-[13px]" : "text-[12.5px]")
           }
         >
-          {record.title}
+          {tp.title}
         </div>
         {isFeed && isFeedRecord(record) && (
           <div className="mt-auto flex gap-3 pt-0.5 font-mono text-[10px] text-dim">

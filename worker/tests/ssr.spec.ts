@@ -65,7 +65,7 @@ describe("docBody", () => {
     expect(out).toContain('href="/api/file/FBI-UAP-D002"');
     expect(out).toContain('<a href="/doc/FBI-UAP-D003">Next: FBI-UAP-D003</a>');
     expect(out).toContain("<h2>Same location: Colorado Springs</h2>");
-    expect(out).toContain('<a href="/doc/ICA-UAP-D001">ICA thing</a>');
+    expect(out).toContain('<a href="/doc/ICA-UAP-D001">ICA-UAP-D001 — ICA thing</a>');
   });
   it("omits missing facts, N/A location, empty summary and empty sections", () => {
     const out = docBody(
@@ -111,7 +111,7 @@ describe("threadBody / caseBody / homeBody", () => {
     expect(out).toContain('<a href="/thread/t5">Talk</a>');
   });
   it("home lists latest files", () => {
-    expect(homeBody([{ id: "X-1", title: "One" }])).toContain('<a href="/doc/X-1">One</a>');
+    expect(homeBody([{ id: "X-1", title: "One" }])).toContain('<a href="/doc/X-1">X-1 — One</a>');
   });
 });
 
@@ -125,7 +125,7 @@ describe("hub pre-render", () => {
     const out = hubBody(hub);
     expect(out).toContain("<h1>UAP files: Washington, D.C. &amp; &lt;Area&gt;</h1>");
     expect(out).toContain("<p>2 declassified UAP files about incidents in Washington, D.C.: 2 PDFs.</p>");
-    expect(out).toContain('<a href="/doc/A%20B%231">First</a>');
+    expect(out).toContain('<a href="/doc/A%20B%231">A B#1 — First</a>');
     expect(out).toContain('<a href="/location/moon">The Moon (8)</a>');
     expect(out).toContain('<a href="/browse">Browse</a> › Locations');
   });

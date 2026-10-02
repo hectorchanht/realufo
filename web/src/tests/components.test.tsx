@@ -92,7 +92,7 @@ describe("VoteButton", () => {
 
 describe("DocCard", () => {
   const feedRecord: FeedRecordCard = {
-    id: "rec1",
+    id: "CIA-UAP-017",
     archive: "wargov",
     agency: "CIA",
     title: "CIA-UAP-017, Placement on High Alert",
@@ -108,6 +108,19 @@ describe("DocCard", () => {
     render(withRouter(<DocCard record={feedRecord} variant="feed" />));
     expect(screen.getByText(/CIA-UAP-017/)).toBeInTheDocument();
     expect(screen.getByText("CIA")).toBeInTheDocument();
+  });
+
+  it("shows the id once as a kicker and the title without the id prefix (Doc page rule)", () => {
+    render(withRouter(<DocCard record={feedRecord} variant="feed" />));
+    expect(screen.getAllByText(/CIA-UAP-017/)).toHaveLength(1);
+    expect(screen.getByText("CIA-UAP-017")).toBeInTheDocument();
+    expect(screen.getByText("Placement on High Alert")).toBeInTheDocument();
+  });
+
+  it("no kicker when the id only respells the title", () => {
+    render(withRouter(<DocCard record={{ ...feedRecord, id: "AARO-IMG-Go_Fast_UAP", title: "Go Fast UAP" }} variant="feed" />));
+    expect(screen.queryByText("AARO-IMG-Go_Fast_UAP")).toBeNull();
+    expect(screen.getByText("Go Fast UAP")).toBeInTheDocument();
   });
 
   it("falls back to var(--signal) for the badge color when bootstrap hasn't loaded", () => {
@@ -179,7 +192,7 @@ describe("DocCard", () => {
     const onOpen = vi.fn();
     render(withRouter(<DocCard record={feedRecord} variant="feed" onOpen={onOpen} />));
     fireEvent.click(screen.getByRole("link"));
-    expect(onOpen).toHaveBeenCalledWith("rec1");
+    expect(onOpen).toHaveBeenCalledWith("CIA-UAP-017");
   });
 });
 

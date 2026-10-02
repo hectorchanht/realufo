@@ -8,6 +8,7 @@ import { useRecord } from "../api/queries";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { formatMoment, recordMedia } from "../lib/recordMedia";
+import { docTitleParts } from "../lib/docTitle";
 
 export function RecordEmbed({ id, t, withMedia }: { id: string; t?: number; withMedia: boolean }) {
   const { data } = useRecord(id);
@@ -16,7 +17,7 @@ export function RecordEmbed({ id, t, withMedia }: { id: string; t?: number; with
   if (!data?.record) return <>{id}</>;
 
   const { media, fullUrl, thumbUrl } = recordMedia(data, isDesktop);
-  const label = data.record.title;
+  const label = docTitleParts(id, data.record.title).title;
   const box = "my-2 block w-full max-w-[360px] overflow-hidden rounded-[10px] border border-line2 bg-black";
 
   return (
