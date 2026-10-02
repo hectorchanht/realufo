@@ -164,6 +164,37 @@ jobs:
           else
             python -m ingest.highlights --dry-run --only release/6 | tee -a ingest-summary.txt
           fi
+      # TL;DR "懶人包" (ingest.tldr): new files + files whose input changed; after
+      # summaries/visuals/moments so new AI text feeds it
+      - name: tldr
+        if: ${{ !cancelled() }}
+        working-directory: crawler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          LIVE: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run == 'false' }}
+        run: |
+          set -o pipefail
+          if [ "$LIVE" = "true" ]; then
+            python -m ingest.tldr --limit 100 | tee -a ingest-summary.txt
+          else
+            python -m ingest.tldr --dry-run --limit 1 | tee -a ingest-summary.txt
+          fi
+      # Share PNGs for TL;DRs without one (ingest.cards)
+      - name: cards
+        if: ${{ !cancelled() }}
+        working-directory: crawler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          LIVE: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run == 'false' }}
+        run: |
+          set -o pipefail
+          if [ "$LIVE" = "true" ]; then
+            python -m ingest.cards | tee -a ingest-summary.txt
+          else
+            python -m ingest.cards --dry-run --limit 1 | tee -a ingest-summary.txt
+          fi
       # "Same topic" links (ingest.links): full rewrite of record_links, no API calls
       - name: links
         if: ${{ !cancelled() }}
