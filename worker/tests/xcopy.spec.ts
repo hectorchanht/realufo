@@ -56,6 +56,10 @@ describe("template", () => {
     ["pick, 400-char title", pick({ title: "Very long title ".repeat(25) })],
     ["pick, CJK title", pick({ title: "未確認飛行物体".repeat(40) })],
     ["pick, title with a domain", pick({ title: "Video posted on war.gov" })],
+    ["pick, 100-char real NARA id + long title", pick({
+      id: "341110448RecordsRelatingtotheCollectionandDisseminationofIntelligence1948-1955-TSCONTNo22-5300-2-5399",
+      title: "341_110448_Records_Relating_to_the_Collection_and_Dissemination_of_Intelligence_1948-1955-TS_CONT_No.2_2-5300-2-5399",
+      agency: "DoW", location: "Netherlands", incident_date: "11/8/48" })],
     ["release", release],
     ["highlight", highlight],
   ])("%s always passes finalize", (_n, c) => {
@@ -78,8 +82,29 @@ describe("draft", () => {
     expect(d.ai).toBe(false);
     expect(d.text).toContain("DOW-UAP-D012");
   });
+  it("never returns empty text, even when the template can't fit", async () => {
+    const d = await draft(fakeAI(new Error("AI down")), pick({ id: "X".repeat(300) }));
+    expect(d.text).toContain("X".repeat(300));
+  });
   it("strips qwen3 <think> blocks", async () => {
     const d = await draft(fakeAI({ response: "<think>hmm</think>Clip DOW-UAP-D012 from 2019." }), pick());
     expect(d).toEqual({ text: "Clip DOW-UAP-D012 from 2019.", ai: true });
+  });
+});
+
+describe("template on real archive data", () => {
+  it("every seeded record yields a valid pick post", async () => {
+    const { env } = await import("cloudflare:test");
+    const { seedTestDB } = await import("./helpers");
+    await seedTestDB(env.DB);
+    const { results } = await env.DB.prepare(
+      "SELECT id, archive, kind, title, agency, incident_date, location, summary, NULL duration FROM records"
+    ).all<PickRecord>();
+    expect(results.length).toBeGreaterThan(10);
+    const bad = results.filter((r) => {
+      const c: Candidate = { stream: "pick", ref: r.id, record: r, media: null };
+      return !finalize(c, template(c), true);
+    });
+    expect(bad.map((r) => r.id)).toEqual([]);
   });
 });

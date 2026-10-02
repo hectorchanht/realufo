@@ -28,7 +28,7 @@ const fit = (s: string, max: number) => {
   if (weightedLength(s) <= max) return s;
   let out = "";
   for (const ch of s) {
-    if (weightedLength(out + ch) > max - 1) break;
+    if (weightedLength(out + ch) > max - 2) break; // "…" (U+2026) weighs 2 on X
     out += ch;
   }
   return out.trimEnd() + "…";
@@ -44,8 +44,12 @@ export function template(c: Candidate): string {
   }
   if (c.stream === "pick") {
     const r = c.record;
-    const meta = [ARCHIVE_NAME[r.archive] ?? r.archive, r.agency, r.location, r.incident_date].filter(Boolean).join(" · ");
-    return `${r.id}: ${fit(stripLinks(r.title ?? ""), 120)}\n${fit(meta, 80)}\nFull file on RealUFO: ${r.id} #UAP`;
+    const meta = fit([ARCHIVE_NAME[r.archive] ?? r.archive, r.agency, r.location, r.incident_date].filter(Boolean).join(" · "), 80);
+    const foot = "Full file on RealUFO #UAP";
+    // ids run to ~100 chars (NARA): say it once, give the title what's left
+    const room = Math.min(120, 280 - weightedLength(`${r.id}: \n${meta}\n${foot}`));
+    const title = room > 10 ? fit(stripLinks(r.title ?? ""), room) : "";
+    return `${r.id}: ${title}\n${meta}\n${foot}`;
   }
   return `Top thread on RealUFO this week (${c.thread.votes} votes): ${fit(stripLinks(c.thread.title), 160)} #UAP`;
 }
@@ -93,5 +97,6 @@ export async function draft(env: Env, c: Candidate): Promise<{ text: string; ai:
   } catch {
     // AI down → template; the bot never skips a slot because of AI
   }
-  return { text: finalize(c, template(c), true)!, ai: false };
+  // last resorts keep text non-null; an over-long one is rejected by X as a 4xx → failed row
+  return { text: finalize(c, template(c), true) ?? finalize(c, mustContain(c), true) ?? mustContain(c), ai: false };
 }
