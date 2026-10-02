@@ -41,7 +41,7 @@ import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { recordMedia } from "../lib/recordMedia";
-import { RECORDS_PAGE_SIZE, recordsPage } from "../lib/recordsPage";
+import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
 
 // prototype line 522: `if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4)`.
 const SWIPE_MIN_DX = 55;
@@ -161,13 +161,7 @@ export function Doc() {
   // own URL, read here off THIS route's URL instead.
   const page = recordsPage(searchParams);
   const offset = (page - 1) * RECORDS_PAGE_SIZE;
-  const listParams: RecordsParams = {
-    q: searchParams.get("q") || undefined,
-    archive: searchParams.get("archive") || undefined,
-    type: searchParams.get("type") || undefined,
-    redacted: searchParams.get("redacted") === "1" || undefined,
-    limit: RECORDS_PAGE_SIZE,
-  };
+  const listParams: RecordsParams = { ...recordsFilter(searchParams), limit: RECORDS_PAGE_SIZE };
   const { data: listData } = useRecords({ ...listParams, offset });
   const ids = useMemo(() => (listData?.records ?? []).map((r) => r.id), [listData]);
   const idx = ids.indexOf(id);

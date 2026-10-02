@@ -11,7 +11,8 @@
 // (router.tsx).
 //
 // Filters are modeled as URL search params (`q`, `archive`, `type`,
-// `redacted`) via react-router's `useSearchParams`, so a filtered view is
+// `redacted`, plus `release`/`agency`/`decade`/`location` whose options come
+// from useFacets(); recordsFilter() maps them to useRecords params) via react-router's `useSearchParams`, so a filtered view is
 // shareable/back-button-friendly (the task brief's explicit requirement).
 // All four are read fresh from the URL on every render EXCEPT the search
 // box's own text, which needs a faster local echo than the ~250ms debounce
@@ -40,11 +41,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useBootstrap, useRecords } from "../api/queries";
+import { useBootstrap, useFacets, useRecords } from "../api/queries";
 import { AskAnswer } from "../components/AskAnswer";
 import { DocCard } from "../components/DocCard";
 import { useSetPageTitle } from "../lib/pageTitle";
-import { RECORDS_PAGE_SIZE, recordsPage } from "../lib/recordsPage";
+import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -207,13 +208,41 @@ function TypeChip({ selected, style, onClick, children }: ChipProps) {
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className="rounded-lg px-[10px] py-[5px] font-mono text-[10.5px] active:scale-[.96]"
+      className="whitespace-nowrap rounded-lg px-[10px] py-[5px] font-mono text-[10.5px] active:scale-[.96]"
       style={style}
     >
       {children}
     </button>
   );
 }
+
+// Native select for one facet; "" = no filter.
+function FacetSelect({ label, value, all, options, onChange }: {
+  label: string;
+  value: string;
+  all: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string | null) => void;
+}) {
+  return (
+    <select
+      aria-label={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value || null)}
+      className="min-w-0 flex-1 rounded-lg border bg-surface px-2 py-[5px] font-mono text-[10.5px] outline-none focus:border-signal"
+      style={{ borderColor: value ? "var(--signal)" : "var(--line2)", color: value ? "var(--signal)" : "var(--dim)" }}
+    >
+      <option value="">{all}</option>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+const FILTER_KEYS = ["archive", "type", "redacted", "release", "agency", "decade", "location"];
 
 export function Archive() {
   const { data: boot } = useBootstrap();
@@ -228,10 +257,16 @@ export function Archive() {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const q = searchParams.get("q") ?? "";
-  const archive = searchParams.get("archive") ?? "";
-  const type = searchParams.get("type") ?? "";
-  const redacted = searchParams.get("redacted") === "1";
+  const filter = recordsFilter(searchParams);
+  const q = filter.q ?? "";
+  const archive = filter.archive ?? "";
+  const type = filter.type ?? "";
+  const redacted = !!filter.redacted;
+  const release = filter.release ?? "";
+  const { data: facets } = useFacets();
+  // Releases are war.gov-only, so the chips only show for All / War.gov.
+  const showReleases = !!facets?.releases.length && (archive === "" || archive === "wargov");
+  const hasFilters = FILTER_KEYS.some((k) => searchParams.has(k));
   const page = recordsPage(searchParams);
 
   // Ask the Archive (Spec 3): `?ask=` is the submitted question; typing never
@@ -312,18 +347,22 @@ export function Archive() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputValue]);
 
-  function setParam(key: string, value: string | null) {
+  function setParams(updates: Record<string, string | null>) {
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
-        if (value) next.set(key, value);
-        else next.delete(key);
+        for (const [key, value] of Object.entries(updates)) {
+          if (value) next.set(key, value);
+          else next.delete(key);
+        }
         next.delete("page");
         return next;
       },
       { replace: true },
     );
   }
+
+  const setParam = (key: string, value: string | null) => setParams({ [key]: value });
 
   function goToPage(p: number) {
     setSearchParams((prev) => {
@@ -339,10 +378,7 @@ export function Archive() {
 
   const { data, isLoading, isPlaceholderData } = useRecords(
     {
-      q: q || undefined,
-      archive: archive || undefined,
-      type: type || undefined,
-      redacted: redacted || undefined,
+      ...filter,
       limit: RECORDS_PAGE_SIZE,
       offset: (page - 1) * RECORDS_PAGE_SIZE,
     },
@@ -418,12 +454,56 @@ export function Archive() {
             key={a.id}
             selected={archive === a.id}
             style={archiveChipStyle(archive === a.id, false, a.accent)}
-            onClick={() => setParam("archive", a.id)}
+            onClick={() => setParams({ archive: a.id, ...(a.id === "wargov" ? {} : { release: null }) })}
           >
             <span aria-hidden="true">{a.flag}</span>
             {chipLabel(a.label)} <span className="opacity-60">{abbreviateCount(a.count)}</span>
           </ArchiveChip>
         ))}
+      </div>
+
+      {/* war.gov release chips */}
+      {showReleases && (
+        <div data-scroll className="mb-1.5 flex gap-1.5 overflow-x-auto pb-1.5">
+          <TypeChip selected={release === ""} style={typeChipStyle(release === "")} onClick={() => setParam("release", null)}>
+            All releases
+          </TypeChip>
+          {facets!.releases.map((r) => {
+            const on = release === String(r.no);
+            return (
+              <span key={r.no} title={`war.gov release ${r.no} · ${r.date}`} className="flex-none">
+                <TypeChip selected={on} style={typeChipStyle(on)} onClick={() => setParam("release", String(r.no))}>
+                  R{String(r.no).padStart(2, "0")} <span className="opacity-60">{abbreviateCount(r.count)}</span>
+                </TypeChip>
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {/* agency / decade / location */}
+      <div className="mb-1.5 flex gap-1.5">
+        <FacetSelect
+          label="Agency"
+          all="All agencies"
+          value={filter.agency ?? ""}
+          options={(facets?.agencies ?? []).map((a) => ({ value: a.name, label: `${a.name} (${a.count})` }))}
+          onChange={(v) => setParam("agency", v)}
+        />
+        <FacetSelect
+          label="Decade"
+          all="Any decade"
+          value={filter.decade ?? ""}
+          options={(facets?.decades ?? []).map((d) => ({ value: String(d.decade), label: `${d.decade}s (${d.count})` }))}
+          onChange={(v) => setParam("decade", v)}
+        />
+        <FacetSelect
+          label="Location"
+          all="Any location"
+          value={filter.location ?? ""}
+          options={(facets?.locations ?? []).map((l) => ({ value: l.name, label: `${l.name} (${l.count})` }))}
+          onChange={(v) => setParam("location", v)}
+        />
       </div>
 
       {/* type chips + redacted toggle — lines 179-186 */}
@@ -463,6 +543,16 @@ export function Archive() {
           redacted only
         </button>
       </div>
+
+      {hasFilters && (
+        <button
+          type="button"
+          onClick={() => setParams(Object.fromEntries(FILTER_KEYS.map((k) => [k, null])))}
+          className="mx-0.5 mb-2.5 font-mono text-[10.5px] text-dim hover:text-signal"
+        >
+          ✕ clear filters
+        </button>
+      )}
 
       {isLoading ? (
         <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>

@@ -9,6 +9,7 @@ const useAskMock = vi.fn();
 let askFeature = true;
 vi.mock("../api/queries", () => ({
   useAsk: (q: string) => useAskMock(q),
+  useFacets: () => ({ data: undefined }),
   useBootstrap: () => ({
     data: { archives: [], boards: [], stats: { records: 2 }, ticker: [], sightings: [], cases: [], features: { ask: askFeature } },
     isLoading: false,

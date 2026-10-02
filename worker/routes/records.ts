@@ -17,6 +17,25 @@ export async function listRecords(req: Request, env: Env) {
     bind.push(type.toLowerCase());
   }
   if (u.searchParams.get("redacted") === "1") where.push("r.redacted=1");
+  const release = u.searchParams.get("release");
+  if (release) {
+    where.push("r.archive='wargov' AND r.doc_date IN (SELECT value FROM json_each(?))");
+    bind.push(JSON.stringify((await wargovReleases(env)).find((r) => String(r.no) === release)?.raw ?? []));
+  }
+  for (const col of ["agency", "location"]) {
+    const v = u.searchParams.get(col);
+    if (v) {
+      where.push(`r.${col}=?`);
+      bind.push(v);
+    }
+  }
+  const decade = Number(u.searchParams.get("decade"));
+  if (decade) {
+    // Free-text incident dates → match the distinct values whose year lands in the decade.
+    const rows = await env.DB.prepare("SELECT DISTINCT incident_date d FROM records WHERE incident_date IS NOT NULL").all<{ d: string }>();
+    where.push("r.incident_date IN (SELECT value FROM json_each(?))");
+    bind.push(JSON.stringify(rows.results.map((r) => r.d).filter((d) => decadeOf(d) === decade)));
+  }
   const q = (u.searchParams.get("q") || "").trim();
   if (q) {
     where.push("(lower(r.title||' '||r.agency||' '||coalesce(r.location,'')||' '||coalesce(r.summary,'')) LIKE ?)");
@@ -67,14 +86,29 @@ function isoDate(mdy: string): string | null {
   return m ? `20${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}` : null;
 }
 
+// All war.gov releases, oldest first: no, ISO date, the raw doc_date strings
+// that map to it, and how many files it holds.
+async function wargovReleases(env: Env) {
+  const rows = await env.DB.prepare(
+    "SELECT doc_date d, count(*) n FROM records WHERE archive='wargov' AND doc_date IS NOT NULL GROUP BY doc_date"
+  ).all<{ d: string; n: number }>();
+  const byDate = new Map<string, { raw: string[]; count: number }>();
+  for (const r of rows.results) {
+    const date = isoDate(r.d);
+    if (!date) continue;
+    const e = byDate.get(date) ?? { raw: [], count: 0 };
+    e.raw.push(r.d);
+    e.count += r.n;
+    byDate.set(date, e);
+  }
+  return [...byDate.keys()].sort().map((date, i) => ({ no: i + 1, date, ...byDate.get(date)! }));
+}
+
 async function releaseOf(env: Env, record: { archive: string; doc_date: string | null }) {
   const date = record.archive === "wargov" && record.doc_date ? isoDate(record.doc_date) : null;
   if (!date) return null;
-  const rows = await env.DB.prepare(
-    "SELECT DISTINCT doc_date d FROM records WHERE archive='wargov' AND doc_date IS NOT NULL"
-  ).all<{ d: string }>();
-  const dates = [...new Set(rows.results.map((r) => isoDate(r.d)).filter(Boolean))].sort();
-  return { no: dates.indexOf(date) + 1, date };
+  const rel = (await wargovReleases(env)).find((r) => r.date === date);
+  return rel ? { no: rel.no, date } : null;
 }
 
 // Related groups shown under a file, uapbrowser-style. Each group is a SQL
@@ -86,13 +120,20 @@ type RecordRow = {
 };
 const RELATED_PER_GROUP = 6;
 
-// "October, 2023" / "2023" → "2023"; "9/8/21" → "2021". Null when no year.
+// "October, 2023" / "2023" → "2023"; "9/8/21" → "2021", "12/30/47" → "1947"
+// (two-digit years past this year are last century). Null when no year.
 function yearOf(d: string | null): string | null {
   if (!d) return null;
   const y4 = /\b(19|20)\d{2}\b/.exec(d);
   if (y4) return y4[0];
   const yy = /^\d{1,2}\/\d{1,2}\/(\d{2})$/.exec(d.trim());
-  return yy ? "20" + yy[1] : null;
+  if (!yy) return null;
+  return (Number(yy[1]) > new Date().getFullYear() % 100 ? "19" : "20") + yy[1];
+}
+
+function decadeOf(d: string | null): number | null {
+  const y = yearOf(d);
+  return y ? Math.floor(Number(y) / 10) * 10 : null;
 }
 
 async function relatedOf(env: Env, r: RecordRow, release: { no: number } | null) {
@@ -130,6 +171,32 @@ async function relatedOf(env: Env, r: RecordRow, release: { no: number } | null)
       records: rows[i].results.filter((x) => !seen.has(x.id) && seen.add(x.id)).slice(0, RELATED_PER_GROUP),
     }))
     .filter((g) => g.records.length);
+}
+
+// Archive filter options with global counts (not narrowed by other filters).
+export async function recordFacets(_req: Request, env: Env) {
+  const groupBy = (col: string) =>
+    env.DB.prepare(
+      `SELECT ${col} name, count(*) count FROM records WHERE ${col} IS NOT NULL AND trim(${col}) NOT IN ('','N/A')
+       GROUP BY ${col} ORDER BY count DESC, name`
+    ).all<{ name: string; count: number }>();
+  const [releases, agencies, locations, dates] = await Promise.all([
+    wargovReleases(env),
+    groupBy("agency"),
+    groupBy("location"),
+    env.DB.prepare("SELECT incident_date d, count(*) n FROM records GROUP BY incident_date").all<{ d: string | null; n: number }>(),
+  ]);
+  const decades = new Map<number, number>();
+  for (const r of dates.results) {
+    const dec = decadeOf(r.d);
+    if (dec) decades.set(dec, (decades.get(dec) ?? 0) + r.n);
+  }
+  return json({
+    releases: releases.map(({ no, date, count }) => ({ no, date, count })),
+    agencies: agencies.results,
+    decades: [...decades].sort(([a], [b]) => a - b).map(([decade, count]) => ({ decade, count })),
+    locations: locations.results,
+  });
 }
 
 export async function getRecord(_req: Request, env: Env, p: Record<string, string>) {

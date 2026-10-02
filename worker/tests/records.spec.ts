@@ -80,6 +80,34 @@ describe("records", () => {
     expect(lone.every((g) => g.records.length > 0)).toBe(true);
     expect(lone.map((g) => g.key)).not.toContain("location"); // "N/A" isn't a location
   });
+  it("filters by release number, agency, decade and location; facets list them with counts", async () => {
+    const ins = (id: string, archive: string, agency: string, loc: string | null, inc: string | null, doc: string | null) =>
+      env.DB.prepare(
+        "INSERT INTO records (id,archive,agency,title,kind,location,incident_date,doc_date) VALUES (?,?,?,?,'pdf',?,?,?)"
+      ).bind(id, archive, agency, id, loc, inc, doc);
+    await env.DB.batch([
+      ins("FAC-1", "wargov", "FACAG", "Facville", "12/30/47", "1/1/90"), // m/d/yy before 2000 → 1947
+      ins("FAC-2", "wargov", "FACAG", "Facville", "November, 1949", "1/1/90"),
+      ins("FAC-3", "wargov", "OTHERAG", "Elsewhere", "1952-1953", "2/1/90"),
+      ins("FAC-4", "nara", "FACAG", "Facville", "1/9/50", "1/1/90"), // nara dates aren't releases
+    ]);
+    const ids = async (qs: string) =>
+      ((await (await get(`/api/records?${qs}&limit=100`)).json()) as any).records.map((r: any) => r.id).filter((i: string) => i.startsWith("FAC-")).sort();
+    const facets: any = await (await get("/api/records/facets")).json();
+    const rel = facets.releases.find((r: any) => r.date === "2090-01-01");
+    expect(rel.count).toBe(2);
+    expect(facets.releases.find((r: any) => r.date === "2090-02-01").no).toBe(rel.no + 1);
+    expect(await ids(`release=${rel.no}`)).toEqual(["FAC-1", "FAC-2"]);
+    expect(await ids("release=999")).toEqual([]);
+    expect(await ids("agency=FACAG")).toEqual(["FAC-1", "FAC-2", "FAC-4"]);
+    expect(await ids("location=Facville&agency=FACAG&archive=wargov")).toEqual(["FAC-1", "FAC-2"]);
+    expect(await ids("decade=1940")).toEqual(["FAC-1", "FAC-2"]);
+    expect(await ids("decade=1950")).toEqual(["FAC-3", "FAC-4"]);
+    expect(facets.agencies.find((a: any) => a.name === "FACAG").count).toBe(3);
+    expect(facets.locations.find((l: any) => l.name === "Facville").count).toBe(3);
+    expect(facets.locations.some((l: any) => l.name === "N/A" || l.name === "")).toBe(false);
+    expect(facets.decades.find((d: any) => d.decade === 1940).count).toBeGreaterThanOrEqual(2);
+  });
   it("404s unknown id", async () => {
     expect((await get("/api/records/NOPE")).status).toBe(404);
   });

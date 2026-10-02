@@ -18,6 +18,7 @@ import type {
   CreateThreadResponse,
   Feed,
   RecordDetail,
+  RecordFacets,
   RecordsListResponse,
   Stance,
   ThreadCard,
@@ -35,6 +36,10 @@ export interface RecordsParams {
   type?: string;
   redacted?: boolean;
   q?: string;
+  release?: string;
+  agency?: string;
+  decade?: string;
+  location?: string;
   limit?: number;
   offset?: number;
 }
@@ -43,6 +48,7 @@ export const qk = {
   bootstrap: ["bootstrap"] as const,
   feed: ["feed"] as const,
   records: (params: RecordsParams = {}) => ["records", params] as const,
+  facets: ["recordFacets"] as const,
   record: (id: string) => ["record", id] as const,
   comments: (recordId: string) => ["comments", recordId] as const,
   boardThreads: (boardId: string) => ["boardThreads", boardId] as const,
@@ -59,6 +65,7 @@ function recordsPath(params: RecordsParams): string {
   if (params.type) usp.set("type", params.type);
   if (params.redacted) usp.set("redacted", "1");
   if (params.q) usp.set("q", params.q);
+  for (const k of ["release", "agency", "decade", "location"] as const) if (params[k]) usp.set(k, params[k]);
   if (params.limit != null) usp.set("limit", String(params.limit));
   if (params.offset != null) usp.set("offset", String(params.offset));
   const qs = usp.toString();
@@ -91,6 +98,14 @@ export function useRecords(params: RecordsParams = {}, { enabled = true, keepPre
     queryFn: () => api.get<RecordsListResponse>(recordsPath(params)),
     enabled,
     placeholderData: keepPrevious ? keepPreviousData : undefined,
+  });
+}
+
+export function useFacets() {
+  return useQuery({
+    queryKey: qk.facets,
+    queryFn: () => api.get<RecordFacets>("/api/records/facets"),
+    staleTime: 5 * 60_000,
   });
 }
 

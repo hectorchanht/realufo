@@ -137,6 +137,14 @@ export interface RecordsListResponse {
   records: ListRecordCard[];
 }
 
+/** GET /api/records/facets — archive filter options with global counts. */
+export interface RecordFacets {
+  releases: { no: number; date: string; count: number }[];
+  agencies: { name: string; count: number }[];
+  decades: { decade: number; count: number }[];
+  locations: { name: string; count: number }[];
+}
+
 // ---------------------------------------------------------------------------
 // GET /api/records/:id — full record + assets + promoted threads
 // ---------------------------------------------------------------------------

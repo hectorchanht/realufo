@@ -14,7 +14,7 @@
 // here too.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
-import type { Bootstrap, RecordsListResponse } from "../api/types";
+import type { Bootstrap, RecordFacets, RecordsListResponse } from "../api/types";
 import { renderAppAt } from "./util";
 
 const mockBootstrap: Bootstrap = {
@@ -72,11 +72,22 @@ const allRecords: RecordsListResponse = { count: 2, records: [cardWargov, cardNa
 const naraOnly: RecordsListResponse = { count: 1, records: [cardNara] };
 const empty: RecordsListResponse = { count: 0, records: [] };
 
+const mockFacets: RecordFacets = {
+  releases: [
+    { no: 1, date: "2026-05-08", count: 158 },
+    { no: 2, date: "2026-05-22", count: 64 },
+  ],
+  agencies: [{ name: "FBI", count: 11 }],
+  decades: [{ decade: 1950, count: 40 }],
+  locations: [{ name: "Harare, Zimbabwe", count: 1 }],
+};
+
 const useRecordsMock = vi.fn();
 
 vi.mock("../api/queries", () => ({
   useBootstrap: () => ({ data: mockBootstrap, isLoading: false }),
   useRecords: (params: Record<string, unknown>) => useRecordsMock(params),
+  useFacets: () => ({ data: mockFacets }),
 }));
 
 beforeEach(() => {
@@ -197,6 +208,45 @@ describe("Archive", () => {
     renderAppAt("/archive?archive=wargov&page=3");
     const card = (await screen.findByText(/CIA-UAP-017/)).closest("a");
     expect(card).toHaveAttribute("href", "/doc/rec1?archive=wargov&page=3");
+  });
+
+  it("release chips and agency/decade/location selects write URL filters passed to useRecords", async () => {
+    renderAppAt("/archive?page=2");
+    await screen.findByText(/CIA-UAP-017/);
+
+    fireEvent.click(screen.getByRole("button", { name: /R02/ }));
+    await waitFor(() =>
+      expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ release: "2", offset: 0 })),
+    );
+    expect(screen.getByRole("button", { name: /R02/ })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.change(screen.getByLabelText("Agency"), { target: { value: "FBI" } });
+    fireEvent.change(screen.getByLabelText("Decade"), { target: { value: "1950" } });
+    fireEvent.change(screen.getByLabelText("Location"), { target: { value: "Harare, Zimbabwe" } });
+    await waitFor(() =>
+      expect(useRecordsMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ release: "2", agency: "FBI", decade: "1950", location: "Harare, Zimbabwe" }),
+      ),
+    );
+    const card = (await screen.findByText(/CIA-UAP-017/)).closest("a");
+    expect(card?.getAttribute("href")).toContain("release=2");
+
+    fireEvent.click(screen.getByRole("button", { name: /clear filters/ }));
+    await waitFor(() =>
+      expect(useRecordsMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ release: undefined, agency: undefined, decade: undefined, location: undefined }),
+      ),
+    );
+  });
+
+  it("picking a non-war.gov archive drops the release filter and hides release chips", async () => {
+    renderAppAt("/archive?release=1");
+    await screen.findByText(/CIA-UAP-017/);
+    fireEvent.click(screen.getByRole("button", { name: /NARA/ }));
+    await waitFor(() =>
+      expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ archive: "nara", release: undefined })),
+    );
+    expect(screen.queryByRole("button", { name: /R01/ })).not.toBeInTheDocument();
   });
 
   it("hides the pager when everything fits on one page", async () => {
