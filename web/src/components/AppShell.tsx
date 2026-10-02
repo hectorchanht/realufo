@@ -31,14 +31,14 @@ import SiteFooter from "./SiteFooter";
 import { FooterLinksProvider } from "../lib/footerLinks";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { useHideOnScroll } from "../lib/useHideOnScroll";
-import { useScrollMemory } from "../lib/useScrollMemory";
+import { scrollKey, useScrollMemory } from "../lib/useScrollMemory";
 import { useTheme } from "../theme/useTheme";
 import { PageTitleProvider } from "../lib/pageTitle";
 import { OverlayHost } from "../overlays/OverlayProvider";
 import { TopNav } from "./TopNav";
 import { AppBar } from "./AppBar";
 import { BottomTab } from "./BottomTab";
-import { activeTabForPath, canBackForPath, rememberTabUrl } from "./navItems";
+import { activeTabForPath, canBackForPath, goBack, rememberTabUrl } from "./navItems";
 
 export function AppShell() {
   const isDesktop = useMediaQuery("(min-width:900px)");
@@ -63,8 +63,9 @@ export function AppShell() {
   const bnavRef = useRef<HTMLDivElement>(null);
   // useScrollMemory runs first (layout effect) so the hide hook starts from
   // the restored scrollTop and doesn't read the jump as a scroll-down.
-  useScrollMemory(scrollRef, pathname + search);
-  const navHidden = useHideOnScroll(scrollRef, !isDesktop, pathname + search);
+  const key = scrollKey(pathname, search);
+  useScrollMemory(scrollRef, key);
+  const navHidden = useHideOnScroll(scrollRef, !isDesktop, key);
   useEffect(() => rememberTabUrl(pathname, search), [pathname, search]);
 
   useEffect(() => {
@@ -106,7 +107,7 @@ export function AppShell() {
             style={{ "--bnav-y": navHidden ? "0px" : "var(--bnav-h, 0px)" } as CSSProperties}
           >
             {isDesktop && (
-              <TopNav activeTab={activeTab} canBack={canBack} onBack={() => navigate(-1)} />
+              <TopNav activeTab={activeTab} canBack={canBack} onBack={() => goBack(navigate, pathname)} />
             )}
 
             <main
@@ -116,7 +117,7 @@ export function AppShell() {
               style={{ WebkitOverflowScrolling: "touch" }}
             >
               {!isDesktop && (
-                <AppBar canBack={canBack} onBack={() => navigate(-1)} showBrand={!canBack} hidden={navHidden} />
+                <AppBar canBack={canBack} onBack={() => goBack(navigate, pathname)} showBrand={!canBack} hidden={navHidden} />
               )}
 
               <div

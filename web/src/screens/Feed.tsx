@@ -30,6 +30,7 @@ import { Link } from "react-router-dom";
 import { useBootstrap, useFeed, useHubs } from "../api/queries";
 import type { HubSummary } from "../api/types";
 import { DocCard } from "../components/DocCard";
+import { LoadError } from "../components/LoadError";
 import { ThreadRow } from "../components/ThreadRow";
 import { useSetPageTitle } from "../lib/pageTitle";
 
@@ -80,10 +81,12 @@ export function Feed() {
   useSetPageTitle("REALUFO", "Declassified UAP archive + forum");
 
   const { data: boot } = useBootstrap();
-  const { data: feed, isLoading: feedLoading } = useFeed();
+  const { data: feed, isLoading: feedLoading, isError, error, refetch } = useFeed();
+  const feedFailed = isError && !feed;
 
   const featured = feed?.featured ?? [];
   const hot = feed?.hot ?? [];
+  const cases = boot?.cases ?? [];
 
   return (
     <div data-screen="feed" className="animate-[fadeup_.4s_ease_both]">
@@ -102,6 +105,8 @@ export function Feed() {
                 <div className="h-[100px]" />
               </div>
             ))
+          : feedFailed
+          ? <div className="col-span-full"><LoadError error={error} onRetry={() => void refetch()} /></div>
           : featured.map((record) => (
               // All six fit in about one phone screen and any of them can be the LCP
               // image (PageSpeed picked card 5 when only the first four were eager).
@@ -111,6 +116,30 @@ export function Feed() {
 
       <BrowseStrip />
 
+      {cases.length > 0 && (
+        <section aria-labelledby="feed-cases" className="mb-[26px]">
+          <div className="mx-0.5 mb-3 flex items-baseline justify-between">
+            <h2 id="feed-cases" className="font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
+              ◆ Cold cases
+            </h2>
+            <Link to="/cases" className="font-mono text-[11px] text-signal">
+              see all ›
+            </Link>
+          </div>
+          <div className="flex flex-wrap gap-[7px]">
+            {cases.slice(0, 6).map((c) => (
+              <Link
+                key={c.slug}
+                to={`/case/${c.slug}`}
+                className="rounded-[7px] border border-line px-[9px] py-1 font-mono text-[10px] text-dim hover:text-signal"
+              >
+                {c.name}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="mx-0.5 mb-3 flex items-baseline justify-between">
         <div className="font-pixel text-[9px] uppercase tracking-[1px] text-faint">◆ Trending threads</div>
         <Link to="/boards" className="font-mono text-[11px] text-signal">
@@ -119,7 +148,7 @@ export function Feed() {
       </div>
       {feedLoading ? (
         <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>
-      ) : (
+      ) : feedFailed ? null : (
         <div className="flex flex-col gap-[10px]">
           {hot.map((thread) => (
             <ThreadRow key={thread.id} thread={thread} />

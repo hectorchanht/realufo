@@ -380,6 +380,12 @@ describe("pre-rendered body", () => {
     expect(await get("/boards")).toContain('<a href="/board/uap">');
   });
 
+  it("cases index renders and links each case", async () => {
+    const html = await get("/cases");
+    expect(html).toContain("Cold Cases");
+    expect(html).toContain('<a href="/case/kaikoura">');
+  });
+
   it("case renders lede and its discussion thread", async () => {
     const html = await get("/case/kaikoura");
     expect(html).toContain("<h1>The Kaikoura Lights</h1>");

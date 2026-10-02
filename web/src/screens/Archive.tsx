@@ -46,6 +46,7 @@ import { useBootstrap, useFacets, useHubs, useRecords } from "../api/queries";
 import { hubForFilters } from "../lib/hubLink";
 import { useSetFooterLinks } from "../lib/footerLinks";
 import { DocCard } from "../components/DocCard";
+import { LoadError } from "../components/LoadError";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
 
@@ -380,7 +381,7 @@ export function Archive() {
     ...HAS_FLAGS.filter(([k]) => has.includes(k)).map(([k, label]) => ({ label, remove: { has: hasParam(has.filter((h) => h !== k)) } })),
   ] as (Pill | "" | undefined)[]).filter((p): p is Pill => !!p);
 
-  const { data, isLoading, isPlaceholderData } = useRecords(
+  const { data, isLoading, isError, error, refetch, isPlaceholderData } = useRecords(
     {
       ...filter,
       limit: RECORDS_PAGE_SIZE,
@@ -575,12 +576,16 @@ export function Archive() {
           </div>
 
           {/* empty state — line 204 */}
-          {count === 0 && (
-            <div className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
-              no records match.
-              <br />
-              the truth is elsewhere.
-            </div>
+          {isError && !data ? (
+            <LoadError error={error} onRetry={() => void refetch()} />
+          ) : (
+            count === 0 && (
+              <div className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
+                no records match.
+                <br />
+                the truth is elsewhere.
+              </div>
+            )
           )}
 
           {totalPages > 1 && (

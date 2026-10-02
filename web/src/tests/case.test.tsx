@@ -14,6 +14,7 @@ const useCaseMock = vi.fn();
 const useCaseCommentsMock = vi.fn();
 
 vi.mock("../api/queries", () => ({
+  isVotedLocally: () => false,
   useCase: (slug: string) => useCaseMock(slug),
   useCaseComments: (slug: string) => useCaseCommentsMock(slug),
   useVote: () => ({ mutate: vi.fn(), isPending: false }),
@@ -114,6 +115,17 @@ describe("Case", () => {
       name: /Roswell debris field — anyone mapped the actual GPS coords from the '94 report\?/,
     });
     expect(link).toHaveAttribute("href", "/thread/t5");
+  });
+
+  it("lists every thread from `threads`", () => {
+    const mk = (id: string, title: string) => ({ id, title, boardSlug: "/cases/", accent: "#fff", ago: "1h", replies: 2 });
+    useCaseMock.mockReturnValue({
+      data: { ...roswellCase, threads: [mk("t5", "First thread"), mk("t9", "Second thread")] },
+      isLoading: false,
+    });
+    renderCase();
+    expect(screen.getByRole("link", { name: /First thread/ })).toHaveAttribute("href", "/thread/t5");
+    expect(screen.getByRole("link", { name: /Second thread/ })).toHaveAttribute("href", "/thread/t9");
   });
 
   it("omits the pull-quote blockquote when pull is empty", () => {

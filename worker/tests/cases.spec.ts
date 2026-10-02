@@ -25,4 +25,12 @@ describe("cases", () => {
     expect(j.relatedThread.accent).toBe("#c8a2ff");
     expect(j.relatedThread.ago).toBeDefined();
   });
+  it("returns all threads for a case, newest first", async () => {
+    const j: any = await (await call("/api/cases/kaikoura")).json();
+    expect(Array.isArray(j.threads)).toBe(true);
+    expect(j.threads.length).toBeGreaterThanOrEqual(1);
+    expect(j.threads[0].id).toBe("t5");
+    expect(j.threads[0]).toHaveProperty("replies");
+    expect(j.threads[0].ago).toBeDefined();
+  });
 });

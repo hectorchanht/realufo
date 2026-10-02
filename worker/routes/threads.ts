@@ -21,6 +21,9 @@ export async function getThread(_req: Request, env: Env, p: Record<string, strin
         .bind(thread.source_record_id)
         .first()
     : null;
+  const sourceCase = thread.case_slug
+    ? await env.DB.prepare("SELECT slug,name,accent FROM cases WHERE slug=?").bind(thread.case_slug).first()
+    : null;
   const rows = await env.DB.prepare("SELECT * FROM posts WHERE thread_id=? ORDER BY is_op DESC, created_at ASC")
     .bind(p.id)
     .all<any>();
@@ -32,7 +35,7 @@ export async function getThread(_req: Request, env: Env, p: Record<string, strin
     image_url: uploadUrl(env, x.image_r2_key),
     reply_to: JSON.parse(x.reply_to || "[]"),
   }));
-  return json({ thread, sourceRecord, posts });
+  return json({ thread, sourceRecord, sourceCase, posts });
 }
 
 // Global search: title/OP or any reply contains q (case-insensitive, LIKE

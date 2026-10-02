@@ -12,6 +12,7 @@
 // value instead of a purely path-based lookup (which had no way to reflect a
 // detail screen's actually-loaded data).
 
+import type { NavigateFunction } from "react-router-dom";
 import { useBootstrap } from "../api/queries";
 
 export type NavTab = "feed" | "archive" | "ask" | "boards" | "map";
@@ -54,6 +55,23 @@ export function useNavItems(): NavItem[] {
  */
 export function canBackForPath(pathname: string): boolean {
   return !NAV_ITEMS.some((item) => item.path === pathname);
+}
+
+/** Where "back" goes when this page was the first one opened in the tab. */
+export function parentPath(pathname: string): string {
+  if (pathname.startsWith("/doc/")) return "/archive";
+  if (pathname.startsWith("/thread/") || pathname.startsWith("/board/")) return "/boards";
+  if (pathname.startsWith("/case/")) return "/cases";
+  if (/^\/(release|agency|location|decade)\//.test(pathname)) return "/browse";
+  if (pathname === "/browse") return "/archive";
+  return "/";
+}
+
+/** In-app back: history when there is an earlier in-app page, else the parent page. */
+export function goBack(navigate: NavigateFunction, pathname: string): void {
+  const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+  if (idx > 0) navigate(-1);
+  else navigate(parentPath(pathname), { replace: true });
 }
 
 export function activeTabForPath(pathname: string): NavTab {

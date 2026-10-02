@@ -58,13 +58,20 @@ const data = {
 };
 
 describe("askThread", () => {
-  it("builds the thread body: ids for citations, unknown citations dropped, sources deduped", () => {
+  it("builds the thread body: [n] markers kept, unknown citations dropped, one doc URL per source", () => {
     expect(askThreadBody("What did radar see?", data)).toBe(
       "Q: What did radar see?\n\n" +
-        "Radar tracked it CIA-UAP-017 and pilots saw it CIA-UAP-017, see also.\n\n" +
-        "Sources: CIA-UAP-017\n\n" +
-        "— via Ask the Archive",
+        "Radar tracked it [1] and pilots saw it [2], see also.\n\n" +
+        "Sources:\n" +
+        "[1] https://realufo.org/doc/CIA-UAP-017\n" +
+        "[2] https://realufo.org/doc/CIA-UAP-017\n\n" +
+        "\u2014 via Ask the Archive",
     );
+  });
+
+  it("encodes ids with odd characters in the doc URL", () => {
+    const odd = { answer: "x [1]", sources: [{ ...data.sources[0], record_id: "AARO-Case_Resolution_of _Western" }] };
+    expect(askThreadBody("q", odd)).toContain("https://realufo.org/doc/AARO-Case_Resolution_of%20_Western");
   });
 
   it("Composer opts: new thread on uap, title cut to 120, first source referenced", () => {

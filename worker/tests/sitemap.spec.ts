@@ -17,6 +17,7 @@ describe("sitemap", () => {
     expect(xml).toContain("/board/uap</loc>");
     expect(xml).not.toContain("%2F");
     expect(xml).toContain("/case/");
+    expect(xml).toContain("/cases</loc>");
   });
 
   it("video docs carry video:video tags (thumbnail, title, content, date)", async () => {

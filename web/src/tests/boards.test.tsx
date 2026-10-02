@@ -28,6 +28,7 @@ const useBoardThreadsMock = vi.fn();
 const useSearchThreadsMock = vi.fn();
 
 vi.mock("../api/queries", () => ({
+  isVotedLocally: () => false,
   useBootstrap: () => useBootstrapMock(),
   useBoardThreads: (id: string) => useBoardThreadsMock(id),
   useSearchThreads: (q: string) => useSearchThreadsMock(q),

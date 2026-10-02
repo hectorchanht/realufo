@@ -11,6 +11,7 @@ import { useCase, useCaseComments } from "../api/queries";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
+import { LoadError } from "../components/LoadError";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { promoteCommentOpts } from "../lib/promoteComment";
 import type { Stance } from "../api/types";
@@ -33,12 +34,13 @@ function stanceColor(stance: Stance | null | undefined): string {
 
 export function Case() {
   const { slug = "" } = useParams();
-  const { data, isLoading } = useCase(slug);
+  const { data, isLoading, error, refetch } = useCase(slug);
   const { data: commentsData } = useCaseComments(slug);
   const { openComposer } = useOverlay();
 
   const caseDetail = data?.case;
   const relatedThread = data?.relatedThread ?? null;
+  const threads = data?.threads ?? (relatedThread ? [relatedThread] : []);
   const comments = commentsData?.comments ?? [];
 
   // AppBar title — prototype's case branch (RealUFO.dc.html:571):
@@ -56,8 +58,8 @@ export function Case() {
 
   if (!caseDetail) {
     return (
-      <div data-screen="case" className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
-        case not found.
+      <div data-screen="case">
+        <LoadError error={error} onRetry={() => void refetch()} notFound="case not found." />
       </div>
     );
   }
@@ -102,10 +104,11 @@ export function Case() {
       )}
 
       {/* "ACTIVE DISCUSSION" card — prototype lines 301-306 */}
-      {relatedThread && (
+      {threads.map((t, i) => (
         <Link
-          to={`/thread/${relatedThread.id}`}
-          className="flex items-center gap-3 rounded-2xl border border-line2 bg-surface p-[14px] text-left"
+          key={t.id}
+          to={`/thread/${t.id}`}
+          className="mb-2 flex items-center gap-3 rounded-2xl border border-line2 bg-surface p-[14px] text-left"
         >
           <span
             aria-hidden="true"
@@ -115,7 +118,7 @@ export function Case() {
             💬
           </span>
           <div className="min-w-0 flex-1">
-            <div className="font-mono text-[9.5px] text-faint">ACTIVE DISCUSSION · {relatedThread.boardSlug}</div>
+            <div className="font-mono text-[9.5px] text-faint">{i === 0 ? `ACTIVE DISCUSSION · ${t.boardSlug}` : `${t.boardSlug} · ${t.ago}`}</div>
             <div
               className="mt-[3px] text-[13px] font-semibold text-ink"
               style={{
@@ -125,14 +128,14 @@ export function Case() {
                 overflow: "hidden",
               }}
             >
-              {relatedThread.title}
+              {t.title}
             </div>
           </div>
           <span aria-hidden="true" className="flex-none text-faint">
             ›
           </span>
         </Link>
-      )}
+      ))}
 
       {/* Discussion — cases are discussion surfaces like records (add a
           comment, vote, promote a comment to a board, or start a thread). */}

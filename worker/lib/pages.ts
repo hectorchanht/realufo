@@ -46,6 +46,11 @@ const TAB = {
     description: "Anonymous discussion boards for UAP sightings, declassified files and cold cases.",
     type: "website" as const,
   },
+  cases: {
+    title: "Cold Cases",
+    description: "Famous UAP cases, what the official record says, and where to discuss them.",
+    type: "website" as const,
+  },
   map: { title: "Sighting Map", description: "Map of where the declassified UAP files come from.", type: "website" as const },
   // AI answers can be wrong: never indexed.
   ask: {
@@ -93,6 +98,13 @@ const boardsPage: Loader = async (env) => {
   const t = TAB.boards;
   const links = results.map((b) => ({ href: boardHref(b.slug), text: b.desc ? `${b.name} — ${b.desc}` : b.name }));
   return { meta: t, body: tabBody(t.title, t.description, section("Boards", links)) };
+};
+
+const casesPage: Loader = async (env) => {
+  const { results } = await env.DB.prepare("SELECT slug,name,lede FROM cases ORDER BY name").all<{ slug: string; name: string; lede: string | null }>();
+  const t = TAB.cases;
+  const links = results.map((c) => ({ href: `/case/${encodeURIComponent(c.slug)}`, text: c.lede ? `${c.name} — ${c.lede.slice(0, 140)}` : c.name }));
+  return { meta: t, body: tabBody(t.title, t.description, section("Cases", links)) };
 };
 
 const mapPage: Loader = async () => ({ meta: TAB.map, body: tabBody(TAB.map.title, TAB.map.description) });
@@ -293,6 +305,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/location/:slug" }), load: hubPage("location") },
   { pattern: new URLPattern({ pathname: "/decade/:slug" }), load: hubPage("decade") },
   { pattern: new URLPattern({ pathname: "/doc/:id" }), load: docPage },
+  { pattern: new URLPattern({ pathname: "/cases" }), load: casesPage },
   { pattern: new URLPattern({ pathname: "/case/:slug" }), load: casePage },
   { pattern: new URLPattern({ pathname: "/thread/:id" }), load: threadPage },
   { pattern: new URLPattern({ pathname: "/board/:slug" }), load: boardPage },

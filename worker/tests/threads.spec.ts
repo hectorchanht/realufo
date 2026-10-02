@@ -21,6 +21,13 @@ describe("threads", () => {
     expect((await call("/api/boards/nope/threads")).status).toBe(404);
   });
 
+  it("thread detail returns sourceCase for case threads, null otherwise", async () => {
+    const c: any = await (await call("/api/threads/t5")).json();
+    expect(c.sourceCase.slug).toBe("kaikoura");
+    const n: any = await (await call("/api/threads/t1")).json();
+    expect(n.sourceCase).toBeNull();
+  });
+
   it("thread detail returns source record chip when promoted", async () => {
     const j: any = await (await call("/api/threads/t1")).json(); // t1.rec = CIA-UAP-017
     expect(j.thread.id).toBe("t1");

@@ -5,6 +5,7 @@
 // immediate local-optimistic toggle in its own display.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within, fireEvent } from "@testing-library/react";
+import { ApiError } from "../api/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
@@ -18,6 +19,8 @@ import type {
 } from "../api/types";
 
 const mockMutate = vi.fn();
+const mockToast = vi.fn();
+vi.mock("../overlays/OverlayProvider", () => ({ useOverlay: () => ({ toast: mockToast }) }));
 // Mutable per-test bootstrap fixture for DocCard's `useBootstrap()` archive
 // -accent lookup — `undefined` (the default) exercises the "bootstrap hasn't
 // loaded yet" fallback-to-signal path; individual tests below override it to
@@ -25,6 +28,9 @@ const mockMutate = vi.fn();
 let mockBootstrapArchives: Archive[] | undefined;
 vi.mock("../api/queries", () => ({
   useVote: () => ({ mutate: mockMutate, isPending: false }),
+  // Mirrors the real reader of the localStorage voted-map (useVote itself is mocked).
+  isVotedLocally: (t: string, id: string) =>
+    !!(JSON.parse(localStorage.getItem("ufo_voted") ?? "{}") as Record<string, boolean>)[`${t}:${id}`],
   useBootstrap: () => ({ data: mockBootstrapArchives ? { archives: mockBootstrapArchives } : undefined }),
 }));
 
@@ -80,13 +86,41 @@ describe("VoteButton", () => {
   it("calls the useVote mutation with the target on click", () => {
     render(<VoteButton targetType="thread" targetId="th1" votes={5} voted />);
     fireEvent.click(screen.getByRole("button"));
-    expect(mockMutate).toHaveBeenCalledWith({ target_type: "thread", target_id: "th1" });
+    expect(mockMutate).toHaveBeenCalledWith({ target_type: "thread", target_id: "th1" }, expect.anything());
   });
 
   it("optimistically toggles the displayed count on click (5 -> 4 when already voted)", () => {
     render(<VoteButton targetType="thread" targetId="th1" votes={5} voted />);
     fireEvent.click(screen.getByRole("button"));
     expect(screen.getByText("4")).toBeInTheDocument();
+  });
+
+  it("reads stored vote when no prop", () => {
+    localStorage.setItem("ufo_voted", JSON.stringify({ "thread:th9": true }));
+    render(<VoteButton targetType="thread" targetId="th9" votes={3} />);
+    expect(screen.getByRole("button")).toHaveAttribute("aria-pressed", "true");
+    localStorage.removeItem("ufo_voted");
+  });
+
+  it("stays voted after the count prop catches up", () => {
+    localStorage.removeItem("ufo_voted");
+    const { rerender } = render(<VoteButton targetType="thread" targetId="th9" votes={3} />);
+    fireEvent.click(screen.getByRole("button"));
+    // simulate the (mocked) hook's voted-map write
+    localStorage.setItem("ufo_voted", JSON.stringify({ "thread:th9": true }));
+    rerender(<VoteButton targetType="thread" targetId="th9" votes={4} />);
+    expect(screen.getByRole("button")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("4")).toBeInTheDocument();
+    localStorage.removeItem("ufo_voted");
+  });
+
+  it("429 shows a toast", () => {
+    mockToast.mockClear();
+    render(<VoteButton targetType="thread" targetId="th9" votes={3} />);
+    fireEvent.click(screen.getByRole("button"));
+    const { onError } = mockMutate.mock.calls.at(-1)![1];
+    onError(new ApiError(429, "x"));
+    expect(mockToast).toHaveBeenCalledWith("slow down — too many votes");
   });
 });
 
@@ -258,7 +292,7 @@ describe("ThreadRow", () => {
   it("includes a vote pillar wired to the thread id", () => {
     render(withRouter(<ThreadRow thread={thread} />));
     fireEvent.click(screen.getByRole("button"));
-    expect(mockMutate).toHaveBeenCalledWith({ target_type: "thread", target_id: "th1" });
+    expect(mockMutate).toHaveBeenCalledWith({ target_type: "thread", target_id: "th1" }, expect.anything());
   });
 
   it("shows the op preview text", () => {
