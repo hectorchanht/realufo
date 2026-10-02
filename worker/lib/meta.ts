@@ -1,5 +1,6 @@
 import type { Env } from "../env";
 import { thumbSql } from "./db";
+import { uploadUrl } from "./upload";
 
 export interface MetaInput {
   title: string;
@@ -7,6 +8,8 @@ export interface MetaInput {
   image?: string | null;
   url: string;
   type?: "website" | "article";
+  // schema.org object; "@context", url and image are filled in by serveWithMeta.
+  jsonLd?: Record<string, unknown>;
 }
 
 // Same copy as the default block in web/index.html.
@@ -41,6 +44,8 @@ export function injectMeta(html: string, m: MetaInput): string {
     `<meta property="og:url" content="${u}">`,
     img && `<meta property="og:image" content="${img}">`,
     `<meta name="twitter:card" content="${img ? "summary_large_image" : "summary"}">`,
+    // `<` escaped so user text can't close the script element.
+    m.jsonLd && `<script type="application/ld+json">${JSON.stringify(m.jsonLd).replace(/</g, "\\u003c")}</script>`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -67,6 +72,15 @@ const STATIC_META: Record<string, Omit<MetaInput, "url">> = {
   },
 };
 
+// D1 "YYYY-MM-DD HH:MM:SS" (UTC) → ISO 8601.
+const iso = (d: string | null) => (d ? d.replace(" ", "T") + "Z" : undefined);
+const person = (handle: string | null) => ({ "@type": "Person", name: handle || "Anonymous" });
+// Same as Doc.tsx's shortTitle: drop a leading "<ID>, " prefix.
+const shortTitle = (t: string) => {
+  const c = t.indexOf(",");
+  return (c > 0 && c < 34 ? t.slice(c + 1).trim() : t).replace(/_/g, " ");
+};
+
 type Kind = "doc" | "case" | "thread" | "board";
 const META_ROUTES = [
   { pattern: new URLPattern({ pathname: "/doc/:id" }), kind: "doc" as const },
@@ -78,19 +92,29 @@ const META_ROUTES = [
 async function lookupMeta(env: Env, kind: Kind, groups: Record<string, string>): Promise<MetaInput | null> {
   if (kind === "doc") {
     const x = await env.DB.prepare(
-      `SELECT r.title,r.summary,r.agency,r.agency_full,r.incident_date,r.location,${thumbSql("r.id")} thumb
+      `SELECT r.id,r.title,r.summary,r.agency,r.agency_full,r.incident_date,r.location,r.doc_date,${thumbSql("r.id")} thumb
        FROM records r WHERE r.id=?`
     )
       .bind(groups.id)
       .first<{
-        title: string; summary: string | null; agency: string | null; agency_full: string | null;
-        incident_date: string | null; location: string | null; thumb: string | null;
+        id: string; title: string; summary: string | null; agency: string | null; agency_full: string | null;
+        incident_date: string | null; location: string | null; doc_date: string | null; thumb: string | null;
       }>();
     if (!x) return null;
     // No summary → build one from the record's facts rather than an empty description.
     const facts = [x.agency_full || x.agency, x.incident_date, x.location].filter(Boolean).join(" · ");
     const description = x.summary || (facts ? `Declassified UAP record — ${facts}.` : "");
-    return { title: x.title.replace(/_/g, " "), description, image: x.thumb, url: "" };
+    // Matches the SPA's tab title (Doc.tsx): "<short title> — UAP file <id>".
+    const title = `${shortTitle(x.title)} — UAP file ${x.id}`;
+    const agency = x.agency_full || x.agency;
+    return {
+      title, description, image: x.thumb, url: "",
+      jsonLd: {
+        "@type": "DigitalDocument", name: title, identifier: x.id, description,
+        dateCreated: x.doc_date || undefined, contentLocation: x.location || undefined,
+        publisher: agency ? { "@type": "GovernmentOrganization", name: agency } : undefined,
+      },
+    };
   }
   if (kind === "board") {
     // URL slug is bare ("uap"), the column is slash-wrapped ("/uap/").
@@ -98,20 +122,48 @@ async function lookupMeta(env: Env, kind: Kind, groups: Record<string, string>):
       .bind(`/${groups.slug}/`)
       .first<{ name: string; desc: string | null }>();
     if (!x) return null;
-    return { title: x.name, description: x.desc || "", url: "", type: "website" };
+    return {
+      title: x.name, description: x.desc || "", url: "", type: "website",
+      jsonLd: { "@type": "CollectionPage", name: x.name, description: x.desc || undefined },
+    };
   }
   if (kind === "case") {
     const x = await env.DB.prepare("SELECT name,lede FROM cases WHERE slug=?")
       .bind(groups.slug)
       .first<{ name: string; lede: string | null }>();
     if (!x) return null;
-    return { title: x.name, description: (x.lede || "").slice(0, 200), url: "" };
+    const description = (x.lede || "").slice(0, 200);
+    return { title: x.name, description, url: "", jsonLd: { "@type": "Article", headline: x.name, description } };
   }
-  const x = await env.DB.prepare("SELECT title,op_body FROM threads WHERE id=?")
+  const x = await env.DB.prepare(
+    `SELECT t.title,t.op_body,t.op_handle,t.reply_count,t.created_at,${thumbSql("t.source_record_id")} thumb FROM threads t WHERE t.id=?`
+  )
     .bind(groups.id)
-    .first<{ title: string; op_body: string | null }>();
+    .first<{ title: string; op_body: string | null; op_handle: string | null; reply_count: number; created_at: string | null; thumb: string | null }>();
   if (!x) return null;
-  return { title: x.title, description: (x.op_body || "").slice(0, 200), url: "" };
+  // ponytail: first 50 replies only; page the JSON-LD if threads get huge.
+  const { results: posts } = await env.DB.prepare(
+    "SELECT body,handle,image_r2_key,is_op,created_at FROM posts WHERE thread_id=? ORDER BY is_op DESC, created_at ASC LIMIT 51"
+  )
+    .bind(groups.id)
+    .all<{ body: string; handle: string | null; image_r2_key: string | null; is_op: number; created_at: string | null }>();
+  const op = posts.find((p) => p.is_op);
+  const replies = posts.filter((p) => !p.is_op);
+  return {
+    title: x.title,
+    description: (x.op_body || "").slice(0, 200),
+    image: uploadUrl(env, op?.image_r2_key ?? null) || x.thumb,
+    url: "",
+    jsonLd: {
+      "@type": "DiscussionForumPosting",
+      headline: x.title,
+      text: x.op_body || "",
+      author: person(x.op_handle),
+      datePublished: iso(x.created_at),
+      commentCount: x.reply_count,
+      comment: replies.map((p) => ({ "@type": "Comment", text: p.body, author: person(p.handle), datePublished: iso(p.created_at) })),
+    },
+  };
 }
 
 // Site share card (web/public/og.png) for pages without their own thumb.
@@ -140,7 +192,12 @@ export async function serveWithMeta(req: Request, env: Env): Promise<Response> {
       const idxRes = await env.ASSETS.fetch(new Request(new URL("/index.html", url)));
       const html = await idxRes.text();
       const meta = await lookupMeta(env, r.kind, groups);
-      const body = meta ? injectMeta(html, { ...meta, image: meta.image || shareCard(url), url: url.href }) : html;
+      let body = html;
+      if (meta) {
+        const image = meta.image || shareCard(url);
+        const jsonLd = meta.jsonLd && { "@context": "https://schema.org", ...meta.jsonLd, url: url.href, image };
+        body = injectMeta(html, { ...meta, image, url: url.href, jsonLd });
+      }
       return new Response(body, { headers: { "content-type": "text/html;charset=utf-8" } });
     }
   }

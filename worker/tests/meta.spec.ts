@@ -156,3 +156,61 @@ describe("serveWithMeta (via worker.fetch)", () => {
     expect(await res.text()).toBe("passthrough");
   });
 });
+
+describe("per-entity meta + JSON-LD", () => {
+  const fakeEnv = () =>
+    ({
+      ...env,
+      UPLOAD_BASE: "https://cdn/uploads/",
+      ASSETS: { fetch: async () => new Response("<html><head><!--META--></head></html>") },
+    }) as any;
+  const get = async (path: string) => {
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(new Request("https://x" + path, { headers: { accept: "text/html" } }), fakeEnv(), ctx);
+    await waitOnExecutionContext(ctx);
+    return res.text();
+  };
+  const ld = (html: string) => JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1]);
+
+  beforeAll(async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO threads(id,no,board_id,title,op_body,reply_count,created_at) VALUES('t_meta',1,'uap','Lights over lake','OP body text',1,'2026-10-02 08:00:05')"
+      ),
+      env.DB.prepare(
+        "INSERT INTO posts(id,no,thread_id,body,image_r2_key,is_op,created_at) VALUES('p_op',1,'t_meta','OP body text','uploads/abc.jpg',1,'2026-10-02 08:00:05')"
+      ),
+      env.DB.prepare(
+        "INSERT INTO posts(id,no,thread_id,body,handle,is_op,created_at) VALUES('p_r1',2,'t_meta','reply </script><b>x</b>','skeptic',0,'2026-10-02 09:00:00')"
+      ),
+    ]);
+  });
+
+  it("doc title carries the record id; JSON-LD has identifier", async () => {
+    const html = await get("/doc/CIA-UAP-017");
+    expect(html).toContain("— UAP file CIA-UAP-017 · RealUFO</title>");
+    expect(html).toContain('property="og:title" content="Placement on High Alert Due to Perceived Aggressive Foreign Posturing — UAP file CIA-UAP-017"');
+    const j = ld(html);
+    expect(j["@type"]).toBe("DigitalDocument");
+    expect(j.identifier).toBe("CIA-UAP-017");
+    expect(j.url).toBe("https://x/doc/CIA-UAP-017");
+  });
+
+  it("thread uses the OP image and lists replies as JSON-LD comments", async () => {
+    const html = await get("/thread/t_meta");
+    expect(html).toContain('property="og:image" content="https://cdn/uploads/abc.jpg"');
+    expect(html).not.toContain("</script><b>"); // user text can't break out of the ld+json script
+    const j = ld(html);
+    expect(j["@type"]).toBe("DiscussionForumPosting");
+    expect(j.headline).toBe("Lights over lake");
+    expect(j.text).toBe("OP body text");
+    expect(j.datePublished).toBe("2026-10-02T08:00:05Z");
+    expect(j.commentCount).toBe(1);
+    expect(j.comment[0]).toMatchObject({ "@type": "Comment", text: "reply </script><b>x</b>", author: { name: "skeptic" } });
+  });
+
+  it("case and board get JSON-LD", async () => {
+    expect(ld(await get("/case/roswell"))["@type"]).toBe("Article");
+    expect(ld(await get("/board/uap"))["@type"]).toBe("CollectionPage");
+  });
+});
