@@ -191,7 +191,10 @@ TDD throughout (red → green per behavior).
 
 ## 8. Rollout
 
-1. **User:** `npx wrangler login` (current OAuth token lacks D1/Workers scopes); add **Workers AI: Read** and **Vectorize: Edit** to the GitHub Actions `CLOUDFLARE_API_TOKEN`.
+1. **User — credentials:**
+   - Local: the account API token lives in **`.env`** (git-ignored, mode 0600) as `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`. Wrangler loads it automatically (it takes precedence over `wrangler login`), and `ingest.textindex` reads the same variables. `.dev.vars` holds Worker runtime vars only.
+   - Token permissions needed (Account scope): **Workers AI Read + Edit**, **Vectorize Edit**, **D1 Edit**; for deploys also **Workers Scripts Edit** and Zone **Workers Routes Edit** (realufo.org).
+   - GitHub Actions `CLOUDFLARE_API_TOKEN` secret: add **Workers AI Read + Edit** and **Vectorize Edit** to its existing R2 + D1 permissions.
 2. `npx wrangler vectorize create realufo-chunks --dimensions=1024 --metric=cosine`.
 3. Migration `0006_ask.sql`; `pnpm db:migrate` (also applies pending `0005`).
 4. Deploy Worker with bindings and `FEATURE_ASK=false`.

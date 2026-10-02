@@ -12,3 +12,7 @@ db/.seed.sql
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# local CLI credentials (wrangler + ingest indexer) — never commit
+.env
+.env.*
