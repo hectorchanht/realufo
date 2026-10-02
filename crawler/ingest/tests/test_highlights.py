@@ -75,7 +75,7 @@ def test_main_keeps_going_when_one_hub_fetch_fails(monkeypatch, capsys):
     monkeypatch.setattr(hl, "get_json", fake_get)
     monkeypatch.setattr(hl.d1, "_d1_json", lambda sql: [])
     monkeypatch.setattr(hl.d1, "execute", writes.append)
-    monkeypatch.setattr(hl.cfapi, "chat", lambda *a, **k: '{"lede": "L.", "picks": [{"id": "A-1", "why": "w"}, {"id": "B-2", "why": "w"}]}')
+    monkeypatch.setattr(hl.cfapi, "respond", lambda *a, **k: '{"lede": "L.", "picks": [{"id": "A-1", "why": "w"}, {"id": "B-2", "why": "w"}]}')
     try:
         hl.main([])
     except SystemExit:
@@ -130,3 +130,11 @@ def test_validate_drops_a_pick_that_is_all_jab():
     obj = {"lede": "L.", "picks": [{"id": "A-1", "why": "Someone really wanted attention."},
                                    {"id": "B-2", "why": "Radar track."}, {"id": "C-3", "why": "Film."}]}
     assert [p["id"] for p in hl.validate(obj, IDS)["picks"]] == ["B-2", "C-3"]
+
+def test_scrub_strips_a_leaked_joke_label():
+    assert hl.scrub("1952 film shot on a Bell & Howell camera. Joke: The real UFO was the paperwork.") == \
+        "1952 film shot on a Bell & Howell camera. The real UFO was the paperwork."
+    assert hl.scrub("Fact: Radar track over Iraq. Punchline: nobody filed the form.") == "Radar track over Iraq. nobody filed the form."
+
+def test_scrub_drops_kite_guess():
+    assert hl.scrub("Five soldiers saw an angular object. Could be a particularly obstinate kite.") == "Five soldiers saw an angular object."

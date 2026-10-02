@@ -80,3 +80,16 @@ def chat(system: str, user: str, max_tokens: int = 400):
     msg = ((out.get("choices") or [{}])[0].get("message") or {})
     # Qwen3 on Workers AI sometimes answers in reasoning_content with content null.
     return out.get("response") or msg.get("content") or msg.get("reasoning_content")
+
+RESPOND_MODEL = "@cf/openai/gpt-oss-120b"  # funnier + more exact than qwen3 for hub highlights
+
+def respond(instructions: str, text: str, effort: str = "low") -> str | None:
+    """Responses-API style call (gpt-oss): instructions + input -> the final message text."""
+    body = {"instructions": instructions, "input": text, "reasoning": {"effort": effort}}
+    out = _call(f"/ai/run/{RESPOND_MODEL}", json.dumps(body).encode())
+    for item in out.get("output") or []:
+        if item.get("type") == "message":
+            for c in item.get("content") or []:
+                if c.get("type") == "output_text":
+                    return c.get("text")
+    return None

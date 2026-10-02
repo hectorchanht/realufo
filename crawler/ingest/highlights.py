@@ -19,7 +19,7 @@ SYSTEM = """You write the "What stands out" blurb for one group of declassified 
 You get the group (a release, agency, place or decade) and its files: id, title, type, date/place and a summary for each.
 Return JSON only, nothing around it:
 {"lede": "<exactly 2 sentences: what this group contains and what is notable about it>",
- "picks": [{"id": "<file id copied exactly from the list>", "why": "<max 25 words, two short sentences: first the concrete fact, then the joke>"}]}
+ "picks": [{"id": "<file id copied exactly from the list>", "why": "<max 25 words: one sentence with the concrete fact, one short wisecrack>"}]}
 Voice: sarcastic, irreverent, fourth-wall-breaking, like a wisecracking antihero narrating a government document dump. Roast the bureaucracy, the redactions, the grainy footage, the sensors and the paperwork. PG-13, no slurs.
 Never mock or second-guess the people who filed, filmed or reported anything.
 Never guess what the object was (drone, balloon, bird, star, plane, aliens) unless the summary itself says so.
@@ -50,7 +50,7 @@ def build_prompt(title: str, files: list[dict], cap: int = INPUT_CAP, per_file: 
             break
         lines.append(line)
         size += len(line) + 1
-    return f"Group: {title}\n\nFiles:\n" + "\n".join(lines) + "\n/no_think"
+    return f"Group: {title}\n\nFiles:\n" + "\n".join(lines)
 
 def parse_reply(raw):
     t = re.sub(r"<think>[\s\S]*?(</think>|$)", "", str(raw or ""))
@@ -79,11 +79,14 @@ def sentences(text: str) -> list[str]:
 # was, is dropped (picks are "fact. joke." so the fact survives).
 _BANNED = re.compile(
     r"\bsomeone (really )?(wanted|needed)\b|\bcop'?s? with\b"
-    r"|\b(probably|definitely|clearly|obviously|just|likely|maybe)\b[^.?!]{0,25}?\b(drone|balloon|bird|star|plane|satellite|alien|spaceship)s?\b",
+    r"|\b(probably|definitely|clearly|obviously|just|likely|maybe|could be|might be)\b[^.?!]{0,40}?\b(drone|balloon|bird|star|plane|satellite|alien|spaceship|kite)s?\b",
     re.I)
 
+_LABEL = re.compile(r"\b(joke|punchline|fact|quip)\s*:\s*", re.I)
+
 def scrub(text: str) -> str:
-    return " ".join(t for t in sentences(" ".join(text.split())) if not _BANNED.search(t))
+    text = _LABEL.sub("", " ".join(text.split()))
+    return " ".join(t for t in sentences(text) if not _BANNED.search(t))
 
 def clip(text: str, max_words: int) -> str:
     """Cap at max_words, ending on the last whole sentence (else an ellipsis), never mid-thought."""
@@ -155,7 +158,7 @@ def main(argv=None):
                 skipped += 1
                 continue
             files = [{**r, "text": ai.get(r["id"]) or r.get("summary")} for r in hub["records"]]
-            out = validate(parse_reply(cfapi.chat(SYSTEM, build_prompt(hub["title"], files), max_tokens=600)), set(ids))
+            out = validate(parse_reply(cfapi.respond(SYSTEM, build_prompt(hub["title"], files))), set(ids))
             if not out:
                 raise ValueError("no valid lede / < 2 valid picks")
         except Exception as e:
