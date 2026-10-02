@@ -41,6 +41,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useBootstrap, useRecords } from "../api/queries";
+import { AskAnswer } from "../components/AskAnswer";
 import { DocCard } from "../components/DocCard";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { RECORDS_PAGE_SIZE, recordsPage } from "../lib/recordsPage";
@@ -232,6 +233,47 @@ export function Archive() {
   const type = searchParams.get("type") ?? "";
   const redacted = searchParams.get("redacted") === "1";
   const page = recordsPage(searchParams);
+
+  // Ask the Archive (Spec 3): `?ask=` is the submitted question; typing never
+  // asks (each answer costs money) — only Enter / the ASK button do.
+  const ask = searchParams.get("ask") ?? "";
+  const [askMode, setAskMode] = useState(!!ask);
+  const [askInput, setAskInput] = useState(ask);
+  useEffect(() => {
+    if (ask) {
+      setAskMode(true);
+      setAskInput(ask);
+    }
+  }, [ask]);
+
+  function submitAsk(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!askMode) return;
+    const q = askInput.replace(/\s+/g, " ").trim();
+    if (q.length < 3) return;
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("ask", q);
+        return next;
+      },
+      { replace: false },
+    );
+  }
+
+  function toggleAsk() {
+    if (askMode) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("ask");
+          return next;
+        },
+        { replace: true },
+      );
+    }
+    setAskMode(!askMode);
+  }
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Local echo of the search box so every keystroke feels instant; only the
@@ -312,25 +354,47 @@ export function Archive() {
 
   return (
     <div ref={rootRef} data-screen="archive" className="animate-[fadeup_.35s_ease_both]">
-      {/* search bar — lines 169-173 */}
-      <div className="mb-3.5 flex items-center gap-[9px] rounded-xl border border-line2 bg-surface px-[13px] py-2.5">
+      {/* search bar — lines 169-173; ASK toggle replaces the "AI-RAG soon" chip */}
+      <form
+        onSubmit={submitAsk}
+        className="mb-3.5 flex items-center gap-[9px] rounded-xl border border-line2 bg-surface px-[13px] py-2.5"
+      >
         <span aria-hidden="true" className="text-[15px] text-faint">
-          ⌕
+          {askMode ? "◉" : "⌕"}
         </span>
         <input
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          value={askMode ? askInput : inputValue}
+          onChange={(e) => (askMode ? setAskInput(e.target.value) : setInputValue(e.target.value))}
+          enterKeyHint={askMode ? "go" : "search"}
           placeholder={
-            totalRecords != null
-              ? `search ${totalRecords.toLocaleString()} records — title, agency, location…`
-              : "search the archive — title, agency, location…"
+            askMode
+              ? "ask the archive — e.g. what did the 1949 Los Alamos conference conclude?"
+              : totalRecords != null
+                ? `search ${totalRecords.toLocaleString()} records — title, agency, location…`
+                : "search the archive — title, agency, location…"
           }
-          className="flex-1 border-0 bg-transparent font-mono text-[12.5px] text-ink outline-none placeholder:text-faint"
+          className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[12.5px] text-ink outline-none placeholder:text-faint"
         />
-        <span className="rounded-md border border-line px-1.5 py-0.5 font-mono text-[9px] text-faint">
-          AI-RAG soon
-        </span>
-      </div>
+        {askMode && (
+          <button type="submit" className="flex-none rounded-md bg-signal px-2 py-0.5 font-mono text-[10px] font-bold text-[#04140c]">
+            ↵ ASK
+          </button>
+        )}
+        {boot?.features?.ask && (
+          <button
+            type="button"
+            onClick={toggleAsk}
+            aria-label="Ask the archive"
+            aria-pressed={askMode}
+            className="flex-none rounded-md border px-1.5 py-0.5 font-mono text-[9px]"
+            style={{ borderColor: askMode ? "var(--signal)" : "var(--line)", color: askMode ? "var(--signal)" : "var(--faint)" }}
+          >
+            ASK
+          </button>
+        )}
+      </form>
+
+      {askMode && ask && <AskAnswer question={ask} />}
 
       {/* static predecessor archive (war-gov-ufo-release repo) */}
       <a

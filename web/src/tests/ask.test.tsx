@@ -3,9 +3,18 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { AskAnswer } from "../components/AskAnswer";
+import { renderAppAt } from "./util";
 
 const useAskMock = vi.fn();
-vi.mock("../api/queries", () => ({ useAsk: (q: string) => useAskMock(q) }));
+let askFeature = true;
+vi.mock("../api/queries", () => ({
+  useAsk: (q: string) => useAskMock(q),
+  useBootstrap: () => ({
+    data: { archives: [], boards: [], stats: { records: 2 }, ticker: [], sightings: [], cases: [], features: { ask: askFeature } },
+    isLoading: false,
+  }),
+  useRecords: () => ({ data: { count: 0, records: [] }, isLoading: false, isPlaceholderData: false }),
+}));
 
 const answered = {
   data: {
@@ -80,5 +89,53 @@ describe("AskAnswer", () => {
     rerender(<MemoryRouter><AskAnswer question="q?" /></MemoryRouter>);
     expect(screen.getByText(/doesn't seem to cover that/)).toBeInTheDocument();
     expect(screen.queryByRole("list")).toBeNull();
+  });
+});
+
+describe("Archive ASK toggle", () => {
+  beforeEach(() => {
+    askFeature = true;
+    useAskMock.mockReturnValue({ data: undefined, isLoading: false, error: null, refetch: vi.fn() });
+  });
+
+  it("is hidden when the ask feature is off", async () => {
+    askFeature = false;
+    renderAppAt("/archive");
+    await screen.findByPlaceholderText(/search/i);
+    expect(screen.queryByRole("button", { name: "Ask the archive" })).toBeNull();
+    expect(screen.queryByText("AI-RAG soon")).toBeNull();
+  });
+
+  it("typing in ask mode sends nothing; Enter submits ?ask= and shows the card", async () => {
+    useAskMock.mockReturnValue({ data: undefined, isLoading: true, error: null, refetch: vi.fn() });
+    renderAppAt("/archive");
+    fireEvent.click(await screen.findByRole("button", { name: "Ask the archive" }));
+    const box = screen.getByPlaceholderText(/ask the archive — e\.g\./);
+    fireEvent.change(box, { target: { value: "  what did radar see?  " } });
+    expect(useAskMock).not.toHaveBeenCalledWith(expect.stringContaining("radar"));
+    fireEvent.submit(box.closest("form")!);
+    expect(await screen.findByText("◉ consulting the archive…")).toBeInTheDocument();
+    expect(useAskMock).toHaveBeenLastCalledWith("what did radar see?");
+  });
+
+  it("a ?ask= link opens in ask mode with the question filled in", async () => {
+    renderAppAt("/archive?ask=los%20alamos%201949");
+    const toggle = await screen.findByRole("button", { name: "Ask the archive" });
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByDisplayValue("los alamos 1949")).toBeInTheDocument();
+    expect(useAskMock).toHaveBeenCalledWith("los alamos 1949");
+  });
+
+  it("turning ask mode off clears the answer", async () => {
+    useAskMock.mockReturnValue({
+      data: { answer: "Discussed green fireballs [1].", cached: false,
+              sources: [{ n: 1, record_id: "DOE-UAP-D004", title: "Los Alamos", page: 2, kind: "pdf", thumb: null }] },
+      isLoading: false, error: null, refetch: vi.fn(),
+    });
+    renderAppAt("/archive?ask=los%20alamos%201949");
+    expect(await screen.findByLabelText("archive answer")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ask the archive" }));
+    expect(screen.getByRole("button", { name: "Ask the archive" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByLabelText("archive answer")).toBeNull();
   });
 });
