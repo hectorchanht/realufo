@@ -7,7 +7,7 @@ import { ApiError } from "../api/client";
 import { docTitleParts } from "../lib/docTitle";
 
 // Same title rule as cards: id prefix stripped, id shown once unless it only respells the title.
-const srcTitle = (s: { record_id: string; title: string }) => docTitleParts(s.record_id, s.title);
+const srcTitle = (s: { record_id: string; title: string; kind?: string }) => docTitleParts(s.record_id, s.title, s.kind);
 import type { AskResponse, HubKind, HubLinks } from "../api/types";
 
 const CARD = "mb-3.5 rounded-xl border border-line2 bg-surface px-[13px] py-3";

@@ -10,12 +10,14 @@ const squash = (s: string) =>
 // `id` in the result is the id to display: the record id, or the official
 // code the title leads with when the record id is an internal slug
 // (WARGOV-VID-111688723 / "DOW-UAP-PR019, Unresolved UAP Report…").
-export function docTitleParts(id: string, raw: string | null | undefined): { id: string; title: string; showId: boolean } {
+export function docTitleParts(id: string, raw: string | null | undefined, kind?: string): { id: string; title: string; showId: boolean } {
   let t = raw || "";
   let label = id;
   const code = t.match(/^([A-Z]{2,6}-UAP-[A-Za-z0-9-]+?)(?=[,_\s:])/)?.[1];
   if (t.startsWith(id) && /^[,_\s:]/.test(t.slice(id.length))) t = t.slice(id.length);
-  else if (code) [label, t] = [code, t.slice(code.length)];
+  // A video/image slug borrowing its PDF twin's code (DOW-UAP-PR019 is both) gets
+  // the kind appended, so the pair doesn't share one id and one title.
+  else if (code) [label, t] = [kind && kind !== "pdf" ? `${code} (${kind})` : code, t.slice(code.length)];
   t = t.replace(/_/g, " ").replace(/\s+/g, " ").replace(/^[\s,:;]+|[\s,]+$/g, "");
   if (!t) return { id: label, title: label, showId: false };
   const [a, b] = [squash(t), squash(label)];
@@ -29,7 +31,7 @@ export function docTitleParts(id: string, raw: string | null | undefined): { id:
 }
 
 // Tab / search title: "<id> — <title>", or the title alone when the id only repeats it.
-export const docPageTitle = (id: string, raw: string | null | undefined) => {
-  const p = docTitleParts(id, raw);
+export const docPageTitle = (id: string, raw: string | null | undefined, kind?: string) => {
+  const p = docTitleParts(id, raw, kind);
   return p.showId ? `${p.id} — ${p.title}` : p.title;
 };

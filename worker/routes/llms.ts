@@ -71,7 +71,7 @@ function fileMd(r: FullRow, origin: string): string {
   ].filter(([, v]) => v).map(([k, v]) => `- ${k}: ${v}`);
   const pages = r.pages ? (JSON.parse(r.pages) as { n: number; text: string }[]) : [];
   return [
-    `## ${docTitle(r.title, r.id)}`, "",
+    `## ${docTitle(r.title, r.id, r.kind)}`, "",
     `- Page: ${origin}/doc/${encodeURIComponent(r.id)}`, `- Original file: ${origin}/api/file/${encodeURIComponent(r.id)}`, ...facts, "",
     ...(r.summary ? ["### Official summary", "", r.summary.trim(), ""] : []),
     ...(r.ai_summary ? ["### AI summary", "", r.ai_summary.trim(), ""] : []),

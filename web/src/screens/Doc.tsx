@@ -347,7 +347,7 @@ export function Doc() {
   // title alone. Called unconditionally (before the loading/not-found returns
   // below) so hook order never varies; "FILE" while the record loads.
   // Tab title matches the worker's docTitle.
-  const tp = record ? docTitleParts(record.id, record.title) : null;
+  const tp = record ? docTitleParts(record.id, record.title, record.kind) : null;
   useSetPageTitle(
     !tp ? "FILE" : tp.showId ? tp.id : tp.title,
     tp?.showId ? tp.title : "",
@@ -425,7 +425,7 @@ export function Doc() {
 
   // The "⤴ to a board" promote flow (prototype lines 631-632's `onPromote`).
   function handlePromote(c: Comment) {
-    openComposer(promoteCommentOpts(c, { title: docPageTitle(record!.id, record!.title), boardId: DEFAULT_BOARD, recordId: id }));
+    openComposer(promoteCommentOpts(c, { title: docPageTitle(record!.id, record!.title, record!.kind), boardId: DEFAULT_BOARD, recordId: id }));
   }
 
   // "◈ Start a board thread about this file" (prototype line 630's
@@ -697,10 +697,10 @@ export function Doc() {
       {(detail.series?.prev || detail.series?.next) && (
         <div className="mb-[22px] grid grid-cols-2 gap-2 font-mono">
           {[
-            { id: detail.series.prev, t: detail.series.prevTitle, label: "← PREVIOUS IN SERIES", align: "text-left" },
-            { id: detail.series.next, t: detail.series.nextTitle, label: "NEXT IN SERIES →", align: "text-right" },
-          ].map(({ id: sid, t, label, align }) => {
-            const sp = sid ? docTitleParts(sid, t) : null;
+            { id: detail.series.prev, t: detail.series.prevTitle, k: detail.series.prevKind, label: "← PREVIOUS IN SERIES", align: "text-left" },
+            { id: detail.series.next, t: detail.series.nextTitle, k: detail.series.nextKind, label: "NEXT IN SERIES →", align: "text-right" },
+          ].map(({ id: sid, t, k, label, align }) => {
+            const sp = sid ? docTitleParts(sid, t, k ?? undefined) : null;
             return sid && sp ? (
               <Link
                 key={label}

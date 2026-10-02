@@ -259,6 +259,8 @@ export function Archive() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const filter = recordsFilter(searchParams);
+  // RecordsParams.location may be a list (map places, b2cfba0); the Archive select is single.
+  const location = [filter.location ?? []].flat()[0] ?? "";
   const q = filter.q ?? "";
   const archive = filter.archive ?? "";
   const type = filter.type ?? "";
@@ -268,7 +270,7 @@ export function Archive() {
   // One active tag filter that belongs to a hub → offer its landing page.
   const { data: hubsData } = useHubs();
   const tagHub = hubForFilters(
-    { release: filter.release, agency: filter.agency, location: filter.location, decade: filter.decade },
+    { release: filter.release, agency: filter.agency, location: location || undefined, decade: filter.decade },
     hubsData?.hubs ?? []
   );
   useSetFooterLinks(tagHub && { title: "This filter", links: [{ to: `/${tagHub.kind}/${tagHub.slug}`, text: `${tagHub.label} page` }] });
@@ -442,7 +444,7 @@ export function Archive() {
         <FacetSelect
           label="Location"
           all="Any location"
-          value={filter.location ?? ""}
+          value={location}
           options={(facets?.locations ?? []).map((l) => ({ value: l.name, label: `${l.name} (${l.count})` }))}
           onChange={(v) => setParam("location", v)}
         />

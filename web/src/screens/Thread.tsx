@@ -69,7 +69,7 @@ function postImage(post: Post, sourceRecord: ThreadSourceRecord | null): PostIma
     return { kind: "upload", url: post.image_url, label: "attached image" };
   }
   if (post.source_record_id && sourceRecord && post.source_record_id === sourceRecord.id) {
-    return { kind: "record", recordKind: sourceRecord.kind, thumb: sourceRecord.thumb, label: docTitleParts(sourceRecord.id, sourceRecord.title).title };
+    return { kind: "record", recordKind: sourceRecord.kind, thumb: sourceRecord.thumb, label: docTitleParts(sourceRecord.id, sourceRecord.title, sourceRecord.kind).title };
   }
   if (post.image_kind === "placeholder") {
     return { kind: "placeholder", label: post.image_label || "image" };
@@ -271,7 +271,7 @@ export function Thread() {
             <div className="font-mono text-[8.5px] uppercase tracking-[.5px] text-faint">
               from record · {sourceRecord.agency}
             </div>
-            <div className="truncate text-xs text-ink">{docPageTitle(sourceRecord.id, sourceRecord.title)}</div>
+            <div className="truncate text-xs text-ink">{docPageTitle(sourceRecord.id, sourceRecord.title, sourceRecord.kind)}</div>
           </div>
         </Link>
       )}

@@ -7,7 +7,7 @@ import { loadHub, listHubsCached } from "../routes/hubs";
 import type { HubKind } from "./hubs";
 import {
   DEFAULT_DESCRIPTION, type DocData, type Link, docBody, docFooter, threadBody, boardBody, caseBody, homeBody, tabBody,
-  section, docLinks, countList, docTitle, boardHref, docHref, hubBody, browseBody, hubHref,
+  section, docLinks, countList, docTitle, docTitleParts, boardHref, docHref, hubBody, browseBody, hubHref,
 } from "./ssr";
 
 // One SPA route's pre-render: <head> meta (url is filled in by serveWithMeta)
@@ -30,8 +30,8 @@ export { docTitle }; // sitemap + llms import it from here
 
 const latest = async (env: Env) =>
   (
-    await env.DB.prepare("SELECT id,title FROM records WHERE status='live' ORDER BY created_at DESC, id LIMIT 30").all<{
-      id: string; title: string;
+    await env.DB.prepare("SELECT id,title,kind FROM records WHERE status='live' ORDER BY created_at DESC, id LIMIT 30").all<{
+      id: string; title: string; kind: string;
     }>()
   ).results;
 
@@ -104,11 +104,16 @@ const docPage: Loader = async (env, g, url) => {
   const agency = x.agency_full || x.agency;
   // Official summary unless it's a one-liner (AARO/NARA) and an AI summary exists;
   // no summary at all → build one from the record's facts.
-  const facts = [agency, x.incident_date, x.location].filter(Boolean).join(" · ");
   const ai = d.fullText?.aiSummary;
-  const description =
-    (ai && (x.summary ?? "").length < 80 ? ai : x.summary) || (facts ? `Declassified UAP record — ${facts}.` : "");
-  const title = docTitle(x.title, x.id);
+  const base = ((ai && (x.summary ?? "").length < 80 ? ai : x.summary) || "").trim();
+  // Under ~100 chars (AARO videos with no summary, one-line image captions): add a
+  // sentence from the facts so the search snippet says what and where the file is.
+  const what = { pdf: "document", video: "video", image: "image" }[x.kind] ?? "file";
+  const verb = { pdf: "Read the original document", video: "Watch the original footage", image: "View the full-resolution image" }[x.kind] ?? "Open the original file";
+  const when = [x.incident_date, x.location && x.location !== "N/A" ? x.location : null].filter(Boolean).join(", ");
+  const lead = `Declassified UAP ${what}${agency ? ` from ${agency}` : ""}${base ? "" : `: ${docTitleParts(x.id, x.title, x.kind).title}`}${when ? ` (${when})` : ""}.`;
+  const description = base.length >= 100 ? base : [base && (/[.!?]$/.test(base) ? base : base + "."), lead, `${verb} on RealUFO.`].filter(Boolean).join(" ");
+  const title = docTitle(x.title, x.id, x.kind);
   // Same pick as thumbSql, from the assets already loaded.
   const thumb =
     d.assets.find((a) => a.role === "thumb") ?? d.assets.find((a) => a.role === "full" && a.mime?.startsWith("image/"));
@@ -240,7 +245,7 @@ const hubPage =
           mainEntity: {
             "@type": "ItemList",
             numberOfItems: h.records.length,
-            itemListElement: h.records.map((r, i) => ({ "@type": "ListItem", position: i + 1, url: `${url.origin}${docHref(r.id)}`, name: docTitle(r.title, r.id) })),
+            itemListElement: h.records.map((r, i) => ({ "@type": "ListItem", position: i + 1, url: `${url.origin}${docHref(r.id)}`, name: docTitle(r.title, r.id, r.kind) })),
           },
         },
         breadcrumbs: [

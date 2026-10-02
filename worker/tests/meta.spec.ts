@@ -297,8 +297,16 @@ describe("pre-rendered body", () => {
       .run();
     const html = await get("/doc/AARO-956955");
     expect(html).toContain(`<section><h2>AI summary</h2><p>${ai}</p></section><section><h2>Full text</h2>`);
-    expect(html).toContain(`<meta name="description" content="${ai}">`);
+    expect(html).toContain(`<meta name="description" content="${ai} Declassified UAP video from All-domain Anomaly Resolution Office.`); // short → facts sentence appended
     expect(await get("/doc/ICA-UAP-D001")).toContain('<meta name="description" content="This document contains analysis');
+  });
+
+  it("short or missing summaries get a facts sentence so the description says what the file is", async () => {
+    await env.DB.prepare("INSERT INTO records(id,archive,agency,kind,title,summary,location,status) VALUES ('XD-V1','aaro','AARO','video','XD-V1, GOFAST - UAP','', 'Atlantic Ocean','live')").run();
+    const html = await get("/doc/XD-V1");
+    const d = html.match(/<meta name="description" content="([^"]*)"/)![1];
+    expect(d).toBe("Declassified UAP video from AARO: GOFAST - UAP (Atlantic Ocean). Watch the original footage on RealUFO.");
+    expect(d.length).toBeGreaterThanOrEqual(70);
   });
 
   it("video doc: VideoObject JSON-LD and a <video> in the body", async () => {

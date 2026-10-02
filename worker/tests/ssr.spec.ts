@@ -182,4 +182,11 @@ describe("docTitleParts (same cases as web/src/tests/docTitle.test.ts)", () => {
   it.each(CASES)("%s", (id, raw, title, showId, shown) => {
     expect(docTitleParts(id, raw)).toEqual({ id: shown, title, showId });
   });
+
+  it("a video slug borrowing its PDF twin's code is told apart by kind", () => {
+    const raw = "DOW-UAP-PR019, Unresolved UAP Report, Middle East, May 2022";
+    expect(docTitleParts("WARGOV-VID-111688723", raw, "video").id).toBe("DOW-UAP-PR019 (video)");
+    expect(docTitleParts("DOW-UAP-PR019", raw, "pdf").id).toBe("DOW-UAP-PR019");
+    expect(docTitleParts("WARGOV-VID-111688723", raw).id).toBe("DOW-UAP-PR019"); // kind unknown: unchanged
+  });
 });

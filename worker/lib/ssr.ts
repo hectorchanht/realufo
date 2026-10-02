@@ -22,12 +22,14 @@ const squash = (s: string) =>
 // `id` in the result is the id to display: the record id, or the official
 // code the title leads with when the record id is an internal slug
 // (WARGOV-VID-111688723 / "DOW-UAP-PR019, Unresolved UAP Report…").
-export function docTitleParts(id: string, raw: string | null | undefined): { id: string; title: string; showId: boolean } {
+export function docTitleParts(id: string, raw: string | null | undefined, kind?: string): { id: string; title: string; showId: boolean } {
   let t = raw || "";
   let label = id;
   const code = t.match(/^([A-Z]{2,6}-UAP-[A-Za-z0-9-]+?)(?=[,_\s:])/)?.[1];
   if (t.startsWith(id) && /^[,_\s:]/.test(t.slice(id.length))) t = t.slice(id.length);
-  else if (code) [label, t] = [code, t.slice(code.length)];
+  // A video/image slug borrowing its PDF twin's code (DOW-UAP-PR019 is both) gets
+  // the kind appended, so the pair doesn't share one id and one title.
+  else if (code) [label, t] = [kind && kind !== "pdf" ? `${code} (${kind})` : code, t.slice(code.length)];
   t = t.replace(/_/g, " ").replace(/\s+/g, " ").replace(/^[\s,:;]+|[\s,]+$/g, "");
   if (!t) return { id: label, title: label, showId: false };
   const [a, b] = [squash(t), squash(label)];
@@ -40,7 +42,7 @@ export function docTitleParts(id: string, raw: string | null | undefined): { id:
   return { id: label, title: t, showId: !respelled };
 }
 
-export type RecordLink = { id: string; title: string };
+export type RecordLink = { id: string; title: string; kind?: string };
 
 export const docHref = (id: string) => `/doc/${encodeURIComponent(id)}`;
 export const threadHref = (id: string) => `/thread/${encodeURIComponent(id)}`;
@@ -93,11 +95,11 @@ const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).
 export const section = (heading: string, items: Link[]) =>
   items.length ? `<section><h2>${esc(heading)}</h2>${ul(items)}</section>` : "";
 // "<id> — <title>", or the title alone when the id only respells it (same as the SPA tab title).
-export const docTitle = (t: string, id: string) => {
-  const p = docTitleParts(id, t);
+export const docTitle = (t: string, id: string, kind?: string) => {
+  const p = docTitleParts(id, t, kind);
   return p.showId ? `${p.id} — ${p.title}` : p.title;
 };
-export const docLinks = (rs: RecordLink[]): Link[] => rs.map((r) => ({ href: docHref(r.id), text: docTitle(r.title, r.id) }));
+export const docLinks = (rs: RecordLink[]): Link[] => rs.map((r) => ({ href: docHref(r.id), text: docTitle(r.title, r.id, r.kind) }));
 export const countList = (heading: string, items: { name: string; count: number }[]) =>
   items.length
     ? `<section><h2>${esc(heading)}</h2><ul>${items.map((x) => `<li>${esc(x.name)} (${x.count})</li>`).join("")}</ul></section>`
@@ -146,7 +148,7 @@ export type DocData = {
   };
   assets: { role: string; cdn_url: string; mime: string | null; duration?: number | null }[];
   promotedThreads: { id: string; title: string }[];
-  series: { prev: string | null; next: string | null; prevTitle?: string | null; nextTitle?: string | null };
+  series: { prev: string | null; next: string | null; prevTitle?: string | null; nextTitle?: string | null; prevKind?: string | null; nextKind?: string | null };
   release: { no: number; date: string } | null;
   related: { key: string; label: string; records: RecordLink[] }[];
   fullText?: { pages: { n: number; text: string }[]; truncated: boolean; total_pages: number; aiSummary?: string | null } | null;
@@ -181,7 +183,7 @@ function media(d: DocData): string {
   const full = d.assets.find((x) => x.role === "full");
   const thumb = d.assets.find((x) => x.role === "thumb");
   if (!full) return "";
-  if (d.record.kind === "image") return `<p><img src="${esc(full.cdn_url)}" alt="${esc(docTitleParts(d.record.id, d.record.title).title)}" style="max-width:100%"></p>`;
+  if (d.record.kind === "image") return `<p><img src="${esc(full.cdn_url)}" alt="${esc(docTitleParts(d.record.id, d.record.title, d.record.kind).title)}" style="max-width:100%"></p>`;
   if (d.record.kind === "video")
     return `<p><video controls preload="none" src="${esc(full.cdn_url)}"${thumb ? ` poster="${esc(thumb.cdn_url)}"` : ""} style="max-width:100%"></video></p>`;
   return "";
@@ -212,12 +214,12 @@ export function docBody(d: DocData): string {
     ["Length", dur ? mmss(dur) : null],
   ];
   const series = [
-    d.series.prev && a({ href: docHref(d.series.prev), text: `Previous: ${docTitle(d.series.prevTitle ?? "", d.series.prev)}` }),
-    d.series.next && a({ href: docHref(d.series.next), text: `Next: ${docTitle(d.series.nextTitle ?? "", d.series.next)}` }),
+    d.series.prev && a({ href: docHref(d.series.prev), text: `Previous: ${docTitle(d.series.prevTitle ?? "", d.series.prev, d.series.prevKind ?? undefined)}` }),
+    d.series.next && a({ href: docHref(d.series.next), text: `Next: ${docTitle(d.series.nextTitle ?? "", d.series.next, d.series.nextKind ?? undefined)}` }),
   ].filter(Boolean);
   return [
     `<p>${a({ href: "/", text: "Home" })} › ${a({ href: "/archive", text: "Archive" })}${r.agency ? ` › ${esc(r.agency)}` : ""}</p>`,
-    `<h1>${esc(docTitleParts(r.id, r.title).title)}</h1>`,
+    `<h1>${esc(docTitleParts(r.id, r.title, r.kind).title)}</h1>`,
     media(d),
     `<dl>${facts
       .filter(([, v]) => v)

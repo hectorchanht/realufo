@@ -73,10 +73,10 @@ function seriesKey(id: string): [string, number, string] | null {
 
 async function seriesNav(env: Env, id: string) {
   const key = seriesKey(id);
-  if (!key) return { prev: null, next: null, prevTitle: null, nextTitle: null };
-  const rows = await env.DB.prepare("SELECT id, title FROM records WHERE substr(id,1,?)=?")
+  if (!key) return { prev: null, next: null, prevTitle: null, nextTitle: null, prevKind: null, nextKind: null };
+  const rows = await env.DB.prepare("SELECT id, title, kind FROM records WHERE substr(id,1,?)=?")
     .bind(key[0].length, key[0])
-    .all<{ id: string; title: string | null }>();
+    .all<{ id: string; title: string | null; kind: string }>();
   const sorted = rows.results
     .map((r) => [r, seriesKey(r.id)] as const)
     .filter(([, k]) => k && k[0] === key[0])
@@ -85,7 +85,10 @@ async function seriesNav(env: Env, id: string) {
   const i = sorted.findIndex((r) => r.id === id);
   const [p, n] = [sorted[i - 1], sorted[i + 1]];
   // Titles so the prev/next links read like every other file link (docTitleParts).
-  return { prev: p?.id ?? null, next: n?.id ?? null, prevTitle: p?.title ?? null, nextTitle: n?.title ?? null };
+  return {
+    prev: p?.id ?? null, next: n?.id ?? null, prevTitle: p?.title ?? null, nextTitle: n?.title ?? null,
+    prevKind: p?.kind ?? null, nextKind: n?.kind ?? null,
+  };
 }
 
 async function releaseOf(env: Env, record: { archive: string; doc_date: string | null }) {

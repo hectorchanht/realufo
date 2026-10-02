@@ -17,7 +17,7 @@ export function RecordEmbed({ id, t, withMedia }: { id: string; t?: number; with
   if (!data?.record) return <>{id}</>;
 
   const { media, fullUrl, thumbUrl } = recordMedia(data, isDesktop);
-  const label = docTitleParts(id, data.record.title).title;
+  const label = docTitleParts(id, data.record.title, data.record.kind).title;
   const box = "my-2 block w-full max-w-[360px] overflow-hidden rounded-[10px] border border-line2 bg-black";
 
   return (

@@ -14,7 +14,7 @@ function media(r: Rec): string {
   if (!r.file) return "";
   if (r.kind === "image") return `<image:image><image:loc>${esc(r.file)}</image:loc></image:image>`;
   if (r.kind !== "video" || !r.thumb) return "";
-  const title = docTitle(r.title, r.id);
+  const title = docTitle(r.title, r.id, r.kind);
   return (
     `<video:video><video:thumbnail_loc>${esc(r.thumb)}</video:thumbnail_loc><video:title>${esc(title)}</video:title>` +
     `<video:description>${esc((r.summary || title).slice(0, 2048))}</video:description><video:content_loc>${esc(r.file)}</video:content_loc>` +

@@ -90,7 +90,7 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
   // back to var(--signal) until bootstrap loads or for an unknown archive id.
   const accentColor = boot?.archives.find((a) => a.id === record.archive)?.accent ?? "var(--signal)";
   // Same title rule as the Doc page: id once as a kicker (unless it only respells the title).
-  const tp = docTitleParts(record.id, record.title);
+  const tp = docTitleParts(record.id, record.title, record.kind);
   const isFeed = variant === "feed";
 
   function handleClick(e: MouseEvent) {

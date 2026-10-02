@@ -248,7 +248,7 @@ export interface RecordDetail {
   assets: Asset[];
   promotedThreads: PromotedThread[];
   /** Neighbours in the id series (NASA-UAP-D029 ← D030 → D031). */
-  series?: { prev: string | null; next: string | null; prevTitle?: string | null; nextTitle?: string | null };
+  series?: { prev: string | null; next: string | null; prevTitle?: string | null; nextTitle?: string | null; prevKind?: RecordKind | null; nextKind?: RecordKind | null };
   /** war.gov release this file came out in (null for other archives). */
   release?: { no: number; date: string } | null;
   /** Files sharing this one's location / period / release / agency (each file in one group only). */
