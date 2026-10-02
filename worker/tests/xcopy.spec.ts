@@ -6,7 +6,10 @@ const record = (over: Partial<PickRecord> = {}): PickRecord => ({
   id: "DOW-UAP-D012", archive: "wargov", kind: "video", title: "Object over Gulf", agency: "Navy",
   incident_date: "2019", location: "Gulf of Mexico", summary: "FLIR footage.", duration: 42, ...over,
 });
-const pick = (over: Partial<PickRecord> = {}): Candidate => ({ stream: "pick", ref: "DOW-UAP-D012", record: record(over), media: null });
+const pick = (over: Partial<PickRecord> = {}): Candidate => {
+  const r = record(over);
+  return { stream: "pick", ref: r.id, record: r, link: `https://realufo.org/doc/${r.id}`, media: null };
+};
 const release: Candidate = {
   stream: "release", ref: "wargov:R7", label: "Dept. of War UAP Release 07", link: "https://realufo.org/archive?release=7",
   kinds: { pdf: 24, video: 5 }, titles: ["A", "B"], media: null,
@@ -32,10 +35,19 @@ describe("stripLinks", () => {
 });
 
 describe("finalize", () => {
-  it("no-link streams never contain a URL or domain", () => {
+  it("AI text is stripped of its own URLs/domains, mentions and extra hashtags", () => {
     const t = finalize(pick(), "Navy FLIR clip DOW-UAP-D012 from realufo.org https://realufo.org/doc/x #UAP #aliens @someone")!;
-    expect(t).not.toMatch(/https?:|\.org|@someone|#aliens/);
+    const body = t.slice(0, t.lastIndexOf("\n"));
+    expect(body).not.toMatch(/https?:|\.org|@someone|#aliens/);
     expect(t).toContain("#UAP");
+  });
+  it("pick posts end with exactly one link: their doc page", () => {
+    const t = finalize(pick(), "Navy FLIR clip DOW-UAP-D012 https://evil.example/x")!;
+    expect(t.endsWith("\nhttps://realufo.org/doc/DOW-UAP-D012")).toBe(true);
+    expect(t.match(/https:\/\//g)).toHaveLength(1);
+  });
+  it("highlight posts carry no link", () => {
+    expect(finalize(highlight, template(highlight))).not.toMatch(/https?:/);
   });
   it("release posts get exactly their link appended", () => {
     const t = finalize(release, "Dept. of War UAP Release 07 is out: 29 new files")!;
@@ -67,14 +79,21 @@ describe("template", () => {
     expect(t).not.toBeNull();
     expect(t).toContain(mustContain(c));
     expect(weightedLength(t)).toBeLessThanOrEqual(280);
-    if (c.stream !== "release") expect(t).not.toMatch(/https?:|\b[a-z0-9-]+\.(gov|mil|org|com)\b/i);
+    const body = c.stream === "highlight" ? t : t.slice(0, t.lastIndexOf("\n")); // last line = our link
+    expect(body).not.toMatch(/https?:|\b[a-z0-9-]+\.(gov|mil|org|com)\b/i);
+  });
+});
+
+describe("template meta line", () => {
+  it("doesn't repeat a name when source and agency match", () => {
+    expect(template(pick({ archive: "aaro", agency: "AARO" }))).not.toContain("AARO · AARO");
   });
 });
 
 describe("draft", () => {
   it("uses AI copy when it validates", async () => {
     const d = await draft(fakeAI({ response: "Navy FLIR clip DOW-UAP-D012, Gulf of Mexico, 2019. #UAP" }), pick());
-    expect(d).toEqual({ text: "Navy FLIR clip DOW-UAP-D012, Gulf of Mexico, 2019. #UAP", ai: true });
+    expect(d).toEqual({ text: "Navy FLIR clip DOW-UAP-D012, Gulf of Mexico, 2019. #UAP\nhttps://realufo.org/doc/DOW-UAP-D012", ai: true });
   });
   it("falls back to template on bad AI output or AI error", async () => {
     expect((await draft(fakeAI({ response: "aliens!" }), pick())).ai).toBe(false);
@@ -95,7 +114,7 @@ describe("draft", () => {
   });
   it("strips qwen3 <think> blocks", async () => {
     const d = await draft(fakeAI({ response: "<think>hmm</think>Clip DOW-UAP-D012 from 2019." }), pick());
-    expect(d).toEqual({ text: "Clip DOW-UAP-D012 from 2019.", ai: true });
+    expect(d).toEqual({ text: "Clip DOW-UAP-D012 from 2019.\nhttps://realufo.org/doc/DOW-UAP-D012", ai: true });
   });
 });
 
@@ -109,7 +128,7 @@ describe("template on real archive data", () => {
     ).all<PickRecord>();
     expect(results.length).toBeGreaterThan(10);
     const bad = results.filter((r) => {
-      const c: Candidate = { stream: "pick", ref: r.id, record: r, media: null };
+      const c: Candidate = { stream: "pick", ref: r.id, record: r, link: `https://realufo.org/doc/${r.id}`, media: null };
       return !finalize(c, template(c), true);
     });
     expect(bad.map((r) => r.id)).toEqual([]);

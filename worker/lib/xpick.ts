@@ -10,7 +10,7 @@ export type PickRecord = {
 };
 export type Candidate =
   | { stream: "release"; ref: string; label: string; link: string; kinds: Record<string, number>; titles: string[]; media: Media }
-  | { stream: "pick"; ref: string; record: PickRecord; media: Media }
+  | { stream: "pick"; ref: string; record: PickRecord; link: string; media: Media }
   | { stream: "highlight"; ref: string; thread: { id: string; title: string; body: string; votes: number }; media: Media };
 
 // No dots: X auto-links bare domains like war.gov and bills them as URLs.
@@ -23,7 +23,7 @@ const SETTLE_MS = 2 * 3600_000; // ingest may still be adding files to a release
 
 export const sqlTime = (d: Date) => d.toISOString().slice(0, 19).replace("T", " ");
 
-export const costOf = (c: Candidate) => (c.stream === "release" ? 0.2 : 0.015) + (c.media ? 0.015 : 0); // ponytail: media upload unpriced on X's card; assume one post-create charge
+export const costOf = (c: Candidate) => ("link" in c ? 0.2 : 0.015) + (c.media ? 0.015 : 0); // ponytail: media upload unpriced on X's card; assume one post-create charge
 
 // Rows that may have cost money: everything but failed.
 export async function withinBudget(env: Env, cost: number, now: Date): Promise<boolean> {
@@ -100,7 +100,9 @@ async function releaseCandidate(env: Env, now: Date): Promise<Candidate | null> 
 
 const PICK_COLS = `r.id, r.archive, r.kind, r.title, r.agency, r.incident_date, r.location, r.summary,
   (SELECT duration FROM assets d WHERE d.record_id=r.id AND d.role='full' AND d.duration IS NOT NULL LIMIT 1) duration`;
-const UNPOSTED = "r.status='live' AND NOT EXISTS (SELECT 1 FROM x_posts p WHERE p.stream='pick' AND p.ref=r.id)";
+// placeholder-titled records (no published title/metadata) make weak posts: skip
+const UNPOSTED = `r.status='live' AND coalesce(r.title,'') NOT LIKE '%original title not published%'
+  AND NOT EXISTS (SELECT 1 FROM x_posts p WHERE p.stream='pick' AND p.ref=r.id)`;
 
 async function clipIds(env: Env): Promise<string[]> {
   const ids: string[] = [];
@@ -121,7 +123,7 @@ async function pickCandidate(env: Env): Promise<Candidate | null> {
     `SELECT ${PICK_COLS} FROM records r WHERE r.kind IN ('image','pdf') AND ${UNPOSTED}
      AND EXISTS (SELECT 1 FROM assets a WHERE a.record_id=r.id AND a.role='thumb') ORDER BY r.kind='image' DESC, random() LIMIT 1`
   ).first<PickRecord>();
-  return r ? { stream: "pick", ref: r.id, record: r, media: await mediaFor(env, r) } : null;
+  return r ? { stream: "pick", ref: r.id, record: r, link: `${SITE}/doc/${encodeURIComponent(r.id)}`, media: await mediaFor(env, r) } : null;
 }
 
 async function highlightCandidate(env: Env, now: Date): Promise<Candidate | null> {

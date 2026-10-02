@@ -29,7 +29,7 @@ Success looks like:
 | Runtime | **Cron trigger on the existing Worker** (`scheduled()` next to `fetch()`) | D1, Workers AI and R2 are already bound in-process; one deploy; Workers Paid makes cron free. GHA was rejected: it already got auto-disabled once for inactivity. |
 | Clip cutting | **Python step in the existing ingest GHA** (`ingest.clips`), after `ingest.thumbs` | Worker can't run ffmpeg. ffmpeg is already installed in that job. |
 | Streams | **Release summary** · **Daily pick** · **Community highlight** | User choice. Per-file posts rejected: one summary per release, so a 50-file release is one post, not 50. |
-| Links | **Only release posts carry a URL.** Daily pick + highlight carry media, no URL | X pay-per-use: $0.015/post, **$0.20 if it contains a URL**. |
+| Links | **Release + daily pick carry one URL** (archive filter / `/doc/<id>`, appended by code); highlights carry none | X pay-per-use: $0.015/post, **$0.20 if it contains a URL**. User chose links on picks (2026-10-02) for traffic. |
 | Media | **Video clip if the record has one, else thumb image** | User: "people need videos to keep watching". |
 | Copy | **AI-written** (qwen3 via `env.AI`), validated, template fallback | User choice; validator is what makes it safe to run unattended. |
 | Autonomy | **Fully automatic**; `FEATURE_X` = `off` \| `dry` \| `on` | `dry` writes drafts to D1 without calling X, for copy review before launch. |
@@ -103,8 +103,9 @@ No column for clips: clip existence = `MEDIA.head('clips/<archive>/<id>.mp4')`.
 Random live record not in `x_posts` (stream `pick`), **videos with a clip
 first**, then image/pdf with a thumb. 165 videos ≈ 5 months of video picks
 before images. AI input: id, title, agency, incident date, location, kind,
-duration, summary (≤500 chars). Copy ends with "Full file on RealUFO: <id>",
-**no domain** (a bare `realufo.org` may be auto-linked and billed at $0.20).
+duration, summary (≤500 chars). Code appends `https://realufo.org/doc/<id>` as the
+last line (AI-written URLs/domains are stripped first, so exactly one link). Records
+titled "…original title not published" (no metadata) are skipped.
 
 ### 4.4 Community highlight
 
@@ -168,11 +169,11 @@ For every live video record with no `clips/<archive>/<id>.mp4` on the CDN:
 | Item | Volume / month | Cost |
 |---|---|---|
 | Release posts (URL) | ~1–2 | ~$0.40 |
-| Daily pick (no URL) | 30 | $0.45 |
+| Daily pick (URL + clip) | 30 | $6.45 |
 | Highlights (no URL) | ≤ 30 | ≤ $0.45 |
 | Media upload calls | ≤ 60 uploads | **unknown — verify in plan task 1** |
 | Workers AI copy | ~60 short generations | < $0.05 |
-| **Total** | | **≈ $1.50/mo + media**, capped at $10 |
+| **Total** | | **≈ $7.30/mo** incl. booked media, capped at $10 |
 
 ## 6. Error handling
 

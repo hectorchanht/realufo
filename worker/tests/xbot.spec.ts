@@ -55,7 +55,8 @@ describe("tick", () => {
     const r = await rows();
     expect(r).toHaveLength(1);
     expect(r[0]).toMatchObject({ stream: "pick", ref: "XT-V1", status: "draft", ai: 1, media: "clip:clips/wargov/XT-V1.mp4" });
-    expect(r[0].cost_usd).toBeCloseTo(0.03);
+    expect(r[0].cost_usd).toBeCloseTo(0.215); // link + media
+    expect(r[0].text.endsWith("\nhttps://realufo.org/doc/XT-V1")).toBe(true);
     expect(xCalls).toEqual([]);
   });
   it("on: uploads the clip in chunks and posts with its media id", async () => {

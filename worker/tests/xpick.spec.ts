@@ -72,9 +72,16 @@ describe("daily pick", () => {
     await clip("XT-V1");
     expect(await nextCandidate(E(), T("2026-10-10T13:00:00"))).toBeNull();
     const c = await nextCandidate(E(), NOW);
-    expect(c).toMatchObject({ stream: "pick", ref: "XT-V1", media: { key: "clips/wargov/XT-V1.mp4", mime: "video/mp4" } });
+    expect(c).toMatchObject({ stream: "pick", ref: "XT-V1", link: "https://realufo.org/doc/XT-V1", media: { key: "clips/wargov/XT-V1.mp4", mime: "video/mp4" } });
     await posted("pick", "XT-V1", NOW);
     expect(await nextCandidate(E(), T("2026-10-10T18:00:00"))).toBeNull();
+  });
+  it("skips records whose title is the 'original title not published' placeholder", async () => {
+    await rec("XT-V3", "video");
+    await env.DB.prepare("UPDATE records SET title='AARO video · DOD_1 (original title not published)' WHERE id='XT-V3'").run();
+    await clip("XT-V3");
+    const c = await nextCandidate(E(), NOW);
+    expect(c?.ref).not.toBe("XT-V3");
   });
   it("falls back to an image/pdf with its thumb when no clip is left", async () => {
     await rec("XT-I1", "image", { thumb: true });
@@ -120,7 +127,8 @@ describe("budget", () => {
   it("costs: URL $0.20, plain $0.015, +$0.015 with media", () => {
     const m = { key: "k", mime: "video/mp4", size: 1 };
     expect(costOf({ stream: "release", ref: "r", label: "", link: "", kinds: {}, titles: [], media: null })).toBeCloseTo(0.2);
-    expect(costOf({ stream: "pick", ref: "p", record: {} as any, media: m })).toBeCloseTo(0.03);
+    expect(costOf({ stream: "pick", ref: "p", record: {} as any, link: "https://realufo.org/doc/p", media: m })).toBeCloseTo(0.215);
+    expect(costOf({ stream: "highlight", ref: "h", thread: {} as any, media: m })).toBeCloseTo(0.03);
   });
   it("enforces the daily max and monthly cap; failed rows don't count", async () => {
     await posted("pick", "a", NOW);

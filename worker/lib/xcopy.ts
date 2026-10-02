@@ -46,10 +46,10 @@ export function template(c: Candidate): string {
   }
   if (c.stream === "pick") {
     const r = c.record;
-    const meta = fit([ARCHIVE_NAME[r.archive] ?? r.archive, r.agency, r.location, r.incident_date].filter(Boolean).join(" · "), 80);
+    const meta = fit([...new Set([ARCHIVE_NAME[r.archive] ?? r.archive, r.agency, r.location, r.incident_date].filter(Boolean))].join(" · "), 80);
     const foot = "Full file on RealUFO #UAP";
     // ids run to ~100 chars (NARA): say it once, give the title what's left
-    const room = Math.min(120, 280 - weightedLength(`${r.id}: \n${meta}\n${foot}`));
+    const room = Math.min(120, 280 - weightedLength(`${r.id}: \n${meta}\n${foot}\n${c.link}`)); // finalize appends the link
     const title = room > 10 ? fit(stripLinks(r.title ?? ""), room) : "";
     return `${r.id}: ${title}\n${meta}\n${foot}`;
   }
@@ -68,7 +68,7 @@ export function finalize(c: Candidate, raw: string, trusted = false): string | n
     .trim();
   if (!t || !t.includes(mustContain(c))) return null;
   if (!trusted && !isClean(t)) return null;
-  if (c.stream === "release") t += "\n" + c.link;
+  if (c.stream !== "highlight") t += "\n" + c.link; // ours, after stripping any the AI wrote
   return weightedLength(t) <= 280 ? t : null;
 }
 
