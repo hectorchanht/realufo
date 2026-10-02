@@ -84,6 +84,8 @@ export interface Bootstrap {
   ticker: TickerItem[];
   sightings: Sighting[];
   cases: CaseLite[];
+  /** Server feature flags. `ask` shows the Archive ASK toggle. */
+  features?: { ask: boolean };
 }
 
 // ---------------------------------------------------------------------------

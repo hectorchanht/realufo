@@ -7,4 +7,9 @@ export interface Env {
   RATE_MAX?: string;
   RATE_WINDOW_SEC?: string;
   UPLOAD_BASE?: string; // public URL prefix for uploads/<name>; default same-origin /api/u/
+  AI: Ai;
+  VECTORIZE: Vectorize;
+  FEATURE_ASK?: string; // off | hidden | on
+  ASK_DAILY_MAX?: string;
+  ASK_MIN_SCORE?: string;
 }

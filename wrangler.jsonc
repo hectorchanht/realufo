@@ -10,8 +10,14 @@
     "run_worker_first": ["/api/*", "/doc/*", "/case/*", "/thread/*", "/board/*", "/archive", "/boards", "/map"] },
   "vars": { "FEATURE_AUTH": "false", "RATE_MAX": "20", "RATE_WINDOW_SEC": "60",
     // Cached R2 custom domain: uploads must pass through the CDN cache for the CSAM Scanning Tool.
-    "UPLOAD_BASE": "https://assets.realufo.org/uploads/" },
+    "UPLOAD_BASE": "https://assets.realufo.org/uploads/",
+    // Ask the Archive: off | hidden (endpoint only, for pre-launch eval) | on
+    "FEATURE_ASK": "off", "ASK_DAILY_MAX": "2000", "ASK_MIN_SCORE": "0.45" },
   "d1_databases": [{ "binding": "DB", "database_name": "realufo-db", "database_id": "a8836cc9-9f49-42bd-ad99-4162b410bcd9", "migrations_dir": "db/migrations" }],
+  // No `remote: true`: it breaks the vitest workers pool. Vectorize has no local
+  // simulator, so /api/ask returns 503 under `wrangler dev`.
+  "ai": { "binding": "AI" },
+  "vectorize": [{ "binding": "VECTORIZE", "index_name": "realufo-chunks" }],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "realufo" }],
   "routes": [{ "pattern": "realufo.org/*", "zone_name": "realufo.org" }]
 }

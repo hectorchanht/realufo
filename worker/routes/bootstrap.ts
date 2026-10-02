@@ -102,5 +102,6 @@ export async function bootstrap(req: Request, env: Env) {
     ticker: ticker.results,
     sightings: sightings.results,
     cases: cases.results,
+    features: { ask: env.FEATURE_ASK === "on" },
   });
 }

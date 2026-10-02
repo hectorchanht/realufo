@@ -27,3 +27,24 @@ describe("bootstrap+feed", () => {
     expect(f.hot.every((t: any) => t.boardSlug)).toBe(true);
   });
 });
+
+describe("ask schema + feature flag", () => {
+  const boot = (FEATURE_ASK?: string) =>
+    worker
+      .fetch(new Request("https://x/api/bootstrap"), { ...env, FEATURE_ASK } as any, {} as any)
+      .then((r) => r.json() as any);
+
+  it("migration 0006 creates text_index and ask_cache", async () => {
+    const t = await env.DB.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('text_index','ask_cache') ORDER BY name"
+    ).all<{ name: string }>();
+    expect(t.results.map((r) => r.name)).toEqual(["ask_cache", "text_index"]);
+  });
+
+  it("features.ask is true only when FEATURE_ASK is 'on'", async () => {
+    expect((await boot("on")).features).toEqual({ ask: true });
+    expect((await boot("hidden")).features).toEqual({ ask: false });
+    expect((await boot("off")).features).toEqual({ ask: false });
+    expect((await boot(undefined)).features).toEqual({ ask: false });
+  });
+});
