@@ -35,6 +35,7 @@ import type { RecordsParams } from "../api/queries";
 import type { RecordKind, RelatedGroup } from "../api/types";
 import { DocCard } from "../components/DocCard";
 import { DEFAULT_ADJUST, ImageToolbar, ZoomLens, adjustFilter } from "../components/ImageTools";
+import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
@@ -609,6 +610,7 @@ export function Doc() {
             <div className="text-[13px] leading-[1.55] text-ink" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
               {c.body}
             </div>
+            {c.image_url && <UploadThumb url={c.image_url} />}
             <div className="mt-[9px] flex items-center gap-4">
               {/* Task 19 brief names VoteButton explicitly for this control —
                   the prototype's own comment-vote affordance (line 380) is a

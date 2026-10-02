@@ -9,6 +9,7 @@
 import { Link, useParams } from "react-router-dom";
 import { useCase, useCaseComments } from "../api/queries";
 import { useOverlay } from "../overlays/OverlayProvider";
+import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
 import { useSetPageTitle } from "../lib/pageTitle";
 import type { Stance } from "../api/types";
@@ -171,6 +172,7 @@ export function Case() {
               <span className="ml-auto font-mono text-[9px] text-faint">{c.ago}</span>
             </div>
             <div className="whitespace-pre-wrap break-words text-[13px] leading-[1.55] text-ink">{c.body}</div>
+            {c.image_url && <UploadThumb url={c.image_url} />}
             <div className="mt-2.5 flex items-center gap-4">
               <VoteButton targetType="comment" targetId={c.id} votes={c.votes} />
               <button

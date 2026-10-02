@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { useVote, useAddComment, qk } from "../api/queries";
+import { useVote, useAddComment, useAddCaseComment, qk } from "../api/queries";
 import { api } from "../api/client";
 
 // The client itself is covered by client.test.ts — here we mock it entirely so these
@@ -96,3 +96,26 @@ describe("useAddComment", () => {
     expect(data?.comments.map((c) => c.id)).toEqual(["c1", "c0"]);
   });
 });
+
+describe("comment image uploads", () => {
+  for (const [name, hook, path] of [
+    ["useAddComment", () => useAddComment("rec1"), "/api/records/rec1/comments"],
+    ["useAddCaseComment", () => useAddCaseComment("roswell"), "/api/cases/roswell/comments"],
+  ] as const) {
+    it(`${name} sends multipart FormData when an image is attached`, async () => {
+      vi.mocked(api.post).mockClear().mockResolvedValue({ comment: { id: "c9" } });
+      const qc = new QueryClient();
+      const { result } = renderHook(hook, { wrapper: makeWrapper(qc) });
+      const image = new File([new Uint8Array([1])], "pic.png", { type: "image/png" });
+      await act(async () => {
+        await result.current.mutateAsync({ body: "look", stance: "analyst", image });
+      });
+      const [calledPath, sent] = vi.mocked(api.post).mock.calls[0];
+      expect(calledPath).toBe(path);
+      expect(sent).toBeInstanceOf(FormData);
+      expect((sent as FormData).get("body")).toBe("look");
+      expect((sent as FormData).get("image")).toBeInstanceOf(File);
+    });
+  }
+});
+

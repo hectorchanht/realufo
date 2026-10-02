@@ -20,8 +20,9 @@ vi.mock("../api/queries", () => ({
 }));
 
 const mockOpenComposer = vi.fn();
+const mockOpenViewer = vi.fn();
 vi.mock("../overlays/OverlayProvider", () => ({
-  useOverlay: () => ({ openComposer: mockOpenComposer }),
+  useOverlay: () => ({ openComposer: mockOpenComposer, openViewer: mockOpenViewer }),
 }));
 
 // roswell-like fixture (realufo-handoff/data.js's "roswell" cold case),
@@ -152,4 +153,22 @@ describe("Case", () => {
     fireEvent.click(screen.getByRole("button", { name: /Start a board thread about this case/i }));
     expect(mockOpenComposer).toHaveBeenCalledWith(expect.objectContaining({ mode: "newThread", caseSlug: "roswell" }));
   });
+
+  it("shows a comment's uploaded image and opens it in the image viewer", () => {
+    useCaseCommentsMock.mockReturnValue({
+      data: {
+        comments: [
+          { id: "C1", no: 1, body: "my photo", handle: null, stance: "neutral", votes: 0, created_at: "", ago: "1m", handleShow: null, image_url: "/api/u/a.png" },
+          { id: "C2", no: 2, body: "no photo", handle: null, stance: "neutral", votes: 0, created_at: "", ago: "2m", handleShow: null, image_url: null },
+        ],
+      },
+    });
+    renderCase();
+    const thumbs = screen.getAllByRole("button", { name: /open attached image/i });
+    expect(thumbs).toHaveLength(1);
+    expect(thumbs[0].querySelector("img")).toHaveAttribute("src", "/api/u/a.png");
+    fireEvent.click(thumbs[0]);
+    expect(mockOpenViewer).toHaveBeenCalledWith(expect.objectContaining({ kind: "image", url: "/api/u/a.png" }));
+  });
 });
+

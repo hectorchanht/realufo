@@ -134,6 +134,15 @@ describe("Composer", () => {
     revoke.mockRestore();
   });
 
+  it("comment mode offers attach image and sends it with the comment", () => {
+    renderComposer({ mode: "comment", recordId: "rec1" });
+    const file = new File([new Uint8Array([1])], "c.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText(/attach image/i), { target: { files: [file] } });
+    fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "pic read" } });
+    fireEvent.click(screen.getByRole("button", { name: /post/i }));
+    expect(mockAddCommentMutate.mock.calls[0][0]).toMatchObject({ body: "pic read", image: file });
+  });
+
   it("frees the preview blob URL when the composer closes", () => {
     vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:preview-2");
     const revoke = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});

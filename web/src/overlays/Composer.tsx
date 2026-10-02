@@ -137,7 +137,7 @@ export function Composer() {
       // A comment targets either a cold case or a record.
       const mutation = composer!.caseSlug ? addCaseComment : addComment;
       mutation.mutate(
-        { body: trimmedBody, stance, handle: trimmedHandle },
+        { body: trimmedBody, stance, handle: trimmedHandle, image: img ?? undefined },
         {
           onSuccess: () => {
             toast("Posted");
@@ -286,41 +286,40 @@ export function Composer() {
             placeholder="handle (optional)"
             className="min-w-0 flex-1 rounded-[10px] border border-line2 bg-surface px-[11px] py-[9px] font-mono text-xs text-ink outline-none"
           />
-          {composer.mode !== "comment" &&
-            (img ? (
-              <div className="flex flex-none items-center gap-1.5">
-                {preview && (
-                  <img
-                    src={preview}
-                    alt="attached image preview"
-                    className="h-[38px] w-[38px] rounded-[8px] border border-line2 object-cover"
-                  />
-                )}
-                <button
-                  type="button"
-                  onClick={() => setImg(null)}
-                  aria-label="Remove image"
-                  className="flex h-[38px] w-[30px] items-center justify-center rounded-[8px] border border-line2 text-sm text-dim active:scale-[.94]"
-                >
-                  ✕
-                </button>
-              </div>
-            ) : (
-              <label className="max-w-[45%] flex-none cursor-pointer truncate rounded-[10px] border border-dashed border-line2 px-3 py-[9px] font-mono text-[11px] text-dim active:scale-[.96]">
-                ＋ attach image
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif,image/webp"
-                  className="sr-only"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] ?? null;
-                    e.target.value = ""; // allow re-picking the same file
-                    if (f && f.size > 8 * 1024 * 1024) return toast("image too large (max 8 MB)");
-                    setImg(f);
-                  }}
+          {img ? (
+            <div className="flex flex-none items-center gap-1.5">
+              {preview && (
+                <img
+                  src={preview}
+                  alt="attached image preview"
+                  className="h-[38px] w-[38px] rounded-[8px] border border-line2 object-cover"
                 />
-              </label>
-            ))}
+              )}
+              <button
+                type="button"
+                onClick={() => setImg(null)}
+                aria-label="Remove image"
+                className="flex h-[38px] w-[30px] items-center justify-center rounded-[8px] border border-line2 text-sm text-dim active:scale-[.94]"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <label className="max-w-[45%] flex-none cursor-pointer truncate rounded-[10px] border border-dashed border-line2 px-3 py-[9px] font-mono text-[11px] text-dim active:scale-[.96]">
+              ＋ attach image
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  e.target.value = ""; // allow re-picking the same file
+                  if (f && f.size > 8 * 1024 * 1024) return toast("image too large (max 8 MB)");
+                  setImg(f);
+                }}
+              />
+            </label>
+          )}
         </div>
 
         <div className="mt-[14px] flex items-center gap-3">

@@ -216,6 +216,8 @@ export interface Comment {
   ago: string;
   /** `"!" + handle` when a handle was given, else null — display-ready label. */
   handleShow: string | null;
+  /** Uploaded image (same-origin /api/u/… or the R2 CDN), else null. */
+  image_url?: string | null;
 }
 
 export interface CommentsResponse {

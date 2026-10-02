@@ -145,8 +145,8 @@ export function useCaseComments(slug: string) {
 export function useAddComment(recordId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { body: string; stance?: Stance; handle?: string }) =>
-      api.post<AddCommentResponse>(`/api/records/${recordId}/comments`, vars),
+    mutationFn: (vars: { body: string; stance?: Stance; handle?: string; image?: File }) =>
+      api.post<AddCommentResponse>(`/api/records/${recordId}/comments`, withImage(vars)),
     onSuccess: (data) => {
       queryClient.setQueryData<CommentsResponse>(qk.comments(recordId), (old) => ({
         comments: [data.comment, ...(old?.comments ?? [])],
@@ -162,8 +162,8 @@ export function useAddComment(recordId: string) {
 export function useAddCaseComment(slug: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { body: string; stance?: Stance; handle?: string }) =>
-      api.post<AddCommentResponse>(`/api/cases/${slug}/comments`, vars),
+    mutationFn: (vars: { body: string; stance?: Stance; handle?: string; image?: File }) =>
+      api.post<AddCommentResponse>(`/api/cases/${slug}/comments`, withImage(vars)),
     onSuccess: (data) => {
       queryClient.setQueryData<CommentsResponse>(qk.caseComments(slug), (old) => ({
         comments: [data.comment, ...(old?.comments ?? [])],
