@@ -28,7 +28,8 @@ export function RecordEmbed({ id, withMedia }: { id: string; withMedia: boolean 
         <span data-record-embed={id} className="block">
           {media === "image" && (
             <button type="button" onClick={() => openViewer({ kind: "image", url: fullUrl, label })} aria-label={`open ${id}`} className={box}>
-              <img src={fullUrl} alt={label} loading="lazy" className="max-h-[260px] w-full object-contain" />
+              {/* 640px thumb inline (originals run to MBs); full file opens in the viewer */}
+              <img src={thumbUrl ?? fullUrl} alt={label} loading="lazy" className="max-h-[260px] w-full object-contain" />
             </button>
           )}
           {media === "video" && (

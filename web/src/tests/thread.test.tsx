@@ -33,7 +33,10 @@ vi.mock("../api/queries", () => ({
       id === "NASA-UAP-D030"
         ? {
             record: { id, kind: "image", title: "NASA-UAP-D030, STS-80 Image 1" },
-            assets: [{ role: "full", cdn_url: "https://cdn.example/d030.jpg", mime: "image/jpeg" }],
+            assets: [
+              { role: "full", cdn_url: "https://cdn.example/d030.jpg", mime: "image/jpeg" },
+              { role: "thumb", cdn_url: "https://cdn.example/d030-thumb.jpg", mime: "image/jpeg" },
+            ],
           }
         : undefined,
   }),
@@ -175,7 +178,9 @@ describe("Thread", () => {
     expect(links).toHaveLength(2);
     expect(links[0]).toHaveAttribute("href", "/doc/NASA-UAP-D030");
     expect(screen.queryByRole("link", { name: "NASA-UAP-D999" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "open NASA-UAP-D030" }));
+    const embed = screen.getByRole("button", { name: "open NASA-UAP-D030" });
+    expect(embed.querySelector("img")).toHaveAttribute("src", "https://cdn.example/d030-thumb.jpg");
+    fireEvent.click(embed);
     expect(mockOpenViewer).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "image", url: "https://cdn.example/d030.jpg" }),
     );
