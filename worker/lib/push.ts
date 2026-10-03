@@ -3,6 +3,11 @@
 import type { Env } from "../env";
 import { send, type PushSub } from "./webpush";
 import { followUrl } from "./follows";
+import { docHref } from "./ssr";
+import { AGENCY_HUBS, LOCATION_HUBS } from "./hubs";
+import { TOPIC_RULES, topicWhere } from "./topics";
+import { THREAD_SEP } from "./x";
+import { stripLinks } from "./xcopy";
 
 export interface PushMsg {
   title: string;
@@ -83,5 +88,82 @@ export async function pushActivity(env: Env, kind: "thread" | "record" | "case",
     body: snippet,
     url: followUrl(kind, key),
     tag: `${kind}:${key}`,
+  });
+}
+
+// SQL selecting a followed hub's records (alias r) — same membership rules as routes/hubs.ts
+// (topics by rule only: hand-picked `include` ids are older records, never "new").
+function hubWhere(key: string): { sql: string; binds: string[] } | null {
+  const [kind, slug] = key.split("/");
+  if (kind === "topic") {
+    const t = TOPIC_RULES.find((x) => x.slug === slug);
+    return t ? topicWhere(t.rule) : null;
+  }
+  const h = (kind === "agency" ? AGENCY_HUBS : kind === "location" ? LOCATION_HUBS : []).find((x) => x.slug === slug);
+  return h ? { sql: `r.${kind} IN (SELECT value FROM json_each(?))`, binds: [JSON.stringify(h.values)] } : null;
+}
+
+// Cron: one digest per subscriber for records that went live since the last run.
+// ponytail: hub followers get the same all-files digest; per-hub digests if people ask.
+export async function pushNewFiles(env: Env) {
+  if (!pushOn(env)) return;
+  const newest = (await env.DB.prepare("SELECT max(created_at) m FROM records WHERE status='live'").first<{ m: string | null }>())?.m;
+  if (!newest) return;
+  const wm = await getState(env, "new_files");
+  await setState(env, "new_files", newest); // first: a crash mid-send never repeats the digest
+  if (!wm || newest <= wm) return; // first run starts from now: no backlog flood
+  const range = [wm, newest];
+  const { results: recs } = await env.DB.prepare(
+    `SELECT r.id, coalesce(a.label, r.archive) src FROM records r LEFT JOIN archives a ON a.id=r.archive
+     WHERE r.status='live' AND r.created_at>? AND r.created_at<=? ORDER BY r.created_at DESC`,
+  )
+    .bind(...range)
+    .all<{ id: string; src: string }>();
+  if (!recs.length) return;
+  const { results: keys } = await env.DB.prepare("SELECT DISTINCT key FROM follows WHERE kind='hub'").all<{ key: string }>();
+  const hit: string[] = [];
+  for (const { key } of keys) {
+    const w = hubWhere(key);
+    if (!w) continue;
+    const any = await env.DB.prepare(`SELECT 1 FROM records r WHERE r.status='live' AND r.created_at>? AND r.created_at<=? AND ${w.sql} LIMIT 1`)
+      .bind(...range, ...w.binds)
+      .first();
+    if (any) hit.push(key);
+  }
+  const { results: subs } = await env.DB.prepare(
+    `SELECT endpoint, p256dh, auth FROM push_subs
+     WHERE new_files=1 OR actor_id IN (SELECT actor_id FROM follows WHERE kind='hub' AND key IN (SELECT value FROM json_each(?)))`,
+  )
+    .bind(JSON.stringify(hit))
+    .all<PushSub>();
+  if (!subs.length) return;
+  const one = recs.length === 1;
+  await notify(env, subs, {
+    title: one ? "New file in the archive" : `${recs.length} new files`,
+    body: one ? recs[0].id : [...new Set(recs.map((r) => r.src))].slice(0, 3).join(", "),
+    url: one ? docHref(recs[0].id) : "/archive",
+    tag: "new-files",
+  });
+}
+
+// Cron: the X bot's newest posted pick/showcase/highlight, to "daily" subscribers, ≤ once per 20 h.
+export async function pushDaily(env: Env) {
+  if (!pushOn(env)) return;
+  const row = await env.DB.prepare(
+    `SELECT x.id, x.stream, x.ref, x.text FROM x_posts x
+     WHERE x.status='posted' AND x.stream IN ('pick','showcase','highlight') AND x.created_at > datetime('now','-1 day')
+       AND NOT EXISTS (SELECT 1 FROM push_state WHERE k='daily:' || x.id)
+       AND NOT EXISTS (SELECT 1 FROM push_state WHERE k LIKE 'daily:%' AND v > datetime('now','-20 hours'))
+     ORDER BY x.id DESC LIMIT 1`,
+  ).first<{ id: number; stream: string; ref: string; text: string }>();
+  if (!row) return;
+  await setState(env, `daily:${row.id}`, new Date().toISOString().slice(0, 19).replace("T", " "));
+  const { results: subs } = await env.DB.prepare("SELECT endpoint, p256dh, auth FROM push_subs WHERE daily=1").all<PushSub>();
+  if (!subs.length) return;
+  await notify(env, subs, {
+    title: "RealUFO pick",
+    body: stripLinks(row.text.split(THREAD_SEP)[0]).split("\n")[0],
+    url: row.stream === "highlight" ? `/thread/${encodeURIComponent(row.ref)}` : docHref(row.ref),
+    tag: "daily",
   });
 }

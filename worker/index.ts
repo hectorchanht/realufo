@@ -28,6 +28,7 @@ import { releasesApi } from "./routes/releases";
 import { tick } from "./lib/xbot";
 import { tick as socialTick } from "./lib/social/tick";
 import { pollTick } from "./lib/xpoll";
+import { pushNewFiles, pushDaily } from "./lib/push";
 import { pushConfig, subscribe, setPrefs, unsubscribe, pushMe, getFollow, toggleFollow } from "./routes/push";
 
 on("GET", "/api/health", health);
@@ -77,6 +78,8 @@ async function runTick(env: Env) {
   await tick(env).catch(logErr("xbot"));
   await socialTick(env).catch(logErr("social"));
   await pollTick(env).catch(logErr("xpoll"));
+  await pushNewFiles(env).catch(logErr("pushFiles"));
+  await pushDaily(env).catch(logErr("pushDaily"));
 }
 
 // POST /__tick (Authorization: Bearer ADMIN_TOKEN): one cron tick on demand, for
