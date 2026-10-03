@@ -13,7 +13,7 @@ ROW = {"id": "DOW-UAP-D084", "title": "Navy encounter off San Diego", "agency": 
 GOOD = {"bullets": ["Navy pilots in two F/A-18 jets film an object off San Diego",
                     "They watch it for 5 minutes at 2000 feet",
                     "No official conclusion in the file"],
-        "one_liner": "The paperwork took longer than the encounter."}
+        "one_liner": "The object left; the filing cabinet stayed."}
 
 def test_build_input_has_facts_and_texts():
     s = tldr.build_input(ROW)
@@ -155,3 +155,14 @@ def test_check_rejects_big_spelled_numbers_not_in_source():
     assert "fourteen" in tldr.check(liner("Fourteen jets, one form."), src)
     assert "dozen" in tldr.check(liner("A dozen pages, all redacted."), src)
     assert tldr.check(liner("Fourteen jets, one form."), tldr.build_input(ROW)) is None
+
+def test_check_rejects_crutch_openers():
+    for o in ("Paperwork so thick, even ghosts need clearance.", "Bureaucracy: 25 forms later.", "The paperwork won again."):
+        assert "opener" in tldr.check({**GOOD, "one_liner": o}, tldr.build_input(ROW))
+    assert tldr.check({**GOOD, "one_liner": "Five minutes of footage, a lifetime of paperwork."}, tldr.build_input(ROW)) is None
+
+def test_generate_defaults_to_gpt_oss(monkeypatch):
+    seen = []
+    monkeypatch.setattr(tldr.cfapi, "respond", lambda instructions, text: seen.append((instructions, text)) or json.dumps(GOOD))
+    assert tldr.generate(ROW) == GOOD
+    assert seen and seen[0][0] == tldr.SYSTEM and "/no_think" not in seen[0][1]
