@@ -1,36 +1,32 @@
 ---
 name: publish
-description: Use when the user wants to post / publish / share a specific RealUFO archive record (e.g. "post DOW-UAP-PR104 on all platforms") to X and the social accounts (Bluesky, Facebook, Instagram, Threads, YouTube, TikTok) now, instead of waiting for the bot's daily picks.
+description: Use when the user wants to post / publish / share a specific RealUFO archive record (e.g. "post DOW-UAP-PR104 on all platforms") to X and the social accounts (Bluesky, Facebook, Instagram, Threads, YouTube, TikTok) now, instead of waiting for the bot's daily picks — or to re-post rows a platform missed.
 ---
 
 # Publish a record to every platform
 
-`scripts/publish.sh RECORD_ID` does it end to end:
-
-1. **Preflight**: the record must be `live` and never posted as a pick (the X bot posts each record once). Prints today's X post count; `X_DAILY_MAX` / `X_MONTHLY_USD_CAP` in `wrangler.jsonc` still apply.
-2. Deploys HEAD from a clean worktree with an **every-minute cron** and `--var X_FORCE_PICK:RECORD_ID` (nothing committed). The X bot posts the record at the next minute; the social fan-out mirrors that X post to every `FEATURE_SOCIAL_* = "on"` platform in the same tick.
-3. Polls D1 until X is `posted` and every enabled platform has a final row, then prints a result table.
-4. **Always redeploys HEAD unchanged** (normal `0 */3 * * *` cron) on exit, Ctrl-C or error.
+`scripts/publish.sh` drives the Worker's `POST /__tick` endpoint: one cron tick on demand (X bot, then the social fan-out), authenticated with `ADMIN_TOKEN`. No deploys and no cron changes. (The old every-minute-cron trick was unreliable: Cloudflare can take many minutes to apply cron changes after rapid redeploys.)
 
 ```bash
-scripts/publish.sh DOW-UAP-PR104
+scripts/publish.sh DOW-UAP-PR104   # post this record to X, then mirror it everywhere
+scripts/publish.sh --drain         # re-post soft-deleted rows / anything a platform missed
 ```
 
-**Re-posting rows** (a platform missed some posts, e.g. after fixing an account): soft-delete those `social_posts` rows (`UPDATE … SET deleted_at=datetime('now')`; never hard `DELETE`, the user wants history kept), then `scripts/publish.sh --drain` runs the fan-out every minute until every posted X post since `SOCIAL_SINCE` is on every enabled platform (one post per platform per minute), then restores the normal deploy.
+- **RECORD_ID**: preflight (record `live`, never posted as a pick). It then ticks with `?force=ID` (X_FORCE_PICK for that call only) every 30 s until X is `posted` and every enabled platform has a final row. `X_DAILY_MAX` and `X_MONTHLY_USD_CAP` still apply.
+- **--drain**: ticks until every posted X post since `SOCIAL_SINCE` has a live row on every enabled platform. The fan-out posts one X post per platform per tick.
+- To re-post: **soft-delete** the rows first (`UPDATE social_posts SET deleted_at=datetime('now') WHERE …`). **Never hard `DELETE`**; the user wants the history kept.
 
-## Before running
+## One-time setup
 
-- Deploy rules still hold: it deploys **HEAD** (or the git ref given as the 2nd arg). Other chats share this checkout, so check `git log origin/build/app-foundation..HEAD` for commits that shouldn't ship.
-- Takes 2–5 min. Instagram, YouTube and TikTok upload asynchronously and finish on a later minute tick.
-- Media: videos need `clips/<archive>/<id>.mp4` (X, Facebook, Threads, Bluesky) and `clips-v/...` (vertical, for Instagram, YouTube, TikTok); without a clip, image or pdf records use the thumbnail and YouTube and TikTok skip them ("no video").
+`ADMIN_TOKEN` must be in the repo-root `.env` and set as the Worker secret. The auto-mode classifier blocks Claude from writing secrets, so the **user** runs this:
 
-## After
+```bash
+t=$(openssl rand -hex 32) && printf '\nADMIN_TOKEN=%s\n' "$t" >> .env && printf %s "$t" | npx wrangler secret put ADMIN_TOKEN --env-file /dev/null
+```
 
-- Report each platform's row. Known non-bugs:
-  - **YouTube** uploads stay *private* until Google's YouTube API audit passes.
-  - **TikTok** posts are SELF_ONLY, and fail with `unaudited_client_can_only_post_to_private_accounts` unless the authorized TikTok account is set to private, until TikTok approves the app.
-- **Retrying one platform**: failed rows are never retried automatically. Soft-delete that row (migration 0023: live rows are `deleted_at IS NULL`; never hard `DELETE`), and the next cron tick or `scripts/publish.sh --drain` re-posts it:
-  ```bash
-  npx wrangler d1 execute realufo-db --remote --env-file /dev/null --command "UPDATE social_posts SET deleted_at=datetime('now') WHERE deleted_at IS NULL AND platform='tiktok' AND x_post_id=(SELECT id FROM x_posts WHERE stream='pick' AND ref='RECORD_ID')"
-  ```
+## Known non-bugs
+
+- **YouTube**: `YT_DAILY_MAX` (5) is a rolling 24 h window that also counts soft-deleted rows, because those uploads really happened. Over the cap, the item is skipped and goes out on a later tick; it is not failed.
+- **TikTok**: the sandbox app posts SELF_ONLY, and fails with `unaudited_client_can_only_post_to_private_accounts` unless the authorized TikTok account is private, until TikTok approves the app.
+- **After any social account re-auth, verify the target account** (e.g. YouTube: the watch page's `ownerChannelName`). Instagram and YouTube both first went to the owner's personal accounts.
 - After any live data change, push changed pages to IndexNow (`crawler/indexnow.py`).
