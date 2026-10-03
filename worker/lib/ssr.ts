@@ -268,7 +268,7 @@ export function docBody(d: DocData): string {
   ].filter(Boolean);
   return [
     `<p>${a({ href: "/", text: "Home" })} › ${a({ href: "/archive", text: "Archive" })}${r.agency ? ` › ${esc(r.agency)}` : ""}</p>`,
-    `<h1>${esc(docTitleParts(r.id, r.title, r.kind).title)}</h1>`,
+    `<h1>${esc(docTitle(r.title, r.id, r.kind))}</h1>`,
     media(d),
     `<dl>${facts
       .filter(([, v]) => v)

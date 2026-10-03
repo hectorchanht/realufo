@@ -89,7 +89,7 @@ describe("docBody", () => {
   });
   it("renders full-title h1, facts, summary paragraphs, file link, series and related", () => {
     const out = docBody(doc());
-    expect(out).toContain("<h1>FD-1057, Unresolved UAP Report</h1>");
+    expect(out).toContain("<h1>FBI-UAP-D002 — FD-1057, Unresolved UAP Report</h1>");
     expect(out).toContain("<dt>Agency</dt><dd>Federal Bureau of Investigation</dd>");
     expect(out).toContain("<dt>Released in</dt><dd>Release 03 (2026-06-12)</dd>");
     expect(out).toContain("<dt>File type</dt><dd>PDF</dd>");
@@ -117,7 +117,7 @@ describe("docBody", () => {
     expect(out).toContain("<dt>Length</dt><dd>2:05</dd>");
   });
   it("escapes record text", () => {
-    expect(docBody(doc({ title: "<img src=x>" }))).toContain("<h1>&lt;img src=x&gt;</h1>");
+    expect(docBody(doc({ title: "<img src=x>" }))).toContain("&lt;img src=x&gt;</h1>");
   });
 });
 

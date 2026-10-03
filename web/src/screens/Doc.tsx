@@ -387,6 +387,15 @@ export function Doc() {
   const { media, fullUrl, thumbUrl } = recordMedia(detail, isDesktop);
   const badge = record.agency || "DOC";
   const location = record.location && record.location !== "N/A" ? record.location : "";
+  // link back to the official source (crawler/source-links.py fills source_url)
+  const src = record.source_url || "";
+  const sourceLinks = [
+    src.startsWith("https://www.dvidshub.net/") && { label: "DVIDS", href: src },
+    record.archive === "wargov" && {
+      label: "WAR.GOV",
+      href: src.startsWith("https://www.war.gov/") ? src : "https://www.war.gov/UFO/",
+    },
+  ].filter((l): l is { label: string; href: string } => !!l);
 
   function handleOpenOriginal() {
     if (!fullUrl) return;
@@ -452,15 +461,16 @@ export function Doc() {
   // mobile keeps it under the media, with the AppBar carrying the short title.
   const titleBlock = (
     <>
-      {/* record id kicker (uapbrowser-style) — only when the id isn't just the title respelled */}
-      {tp!.showId && (
-        <div className="mb-2 font-pixel text-[10px]" style={{ color: accent }}>
-          {tp!.id}
-        </div>
-      )}
-
-      {/* title — id prefix and underscores stripped (the id is the kicker above) */}
+      {/* title — id prefix and underscores stripped; the id rides inside the h1 as a
+          kicker (uapbrowser-style) so "DOW-UAP-D006" searches match the heading.
+          Kicker only when the id isn't just the title respelled. */}
       <h1 className="mb-3.5 text-[19px] font-bold leading-[1.3] text-ink" style={{ overflowWrap: "anywhere" }}>
+        {tp!.showId && (
+          <span className="mb-2 block font-pixel text-[10px] font-normal leading-normal" style={{ color: accent }}>
+            {tp!.id}
+            <span className="sr-only">, </span>
+          </span>
+        )}
         {title}
       </h1>
     </>
@@ -734,6 +744,15 @@ export function Doc() {
       >
         ⛶ OPEN ORIGINAL {glyph}
       </button>
+      {sourceLinks.length > 0 && (
+        <div className="-mt-3 mb-[22px] flex flex-wrap justify-center gap-x-5 gap-y-1 font-mono text-[11px]">
+          {sourceLinks.map((l) => (
+            <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="py-1 text-dim hover:text-ink">
+              ↗ {l.label} page
+            </a>
+          ))}
+        </div>
+      )}
 
       <FullText data={detail.fullText} kind={record.kind} onOpenOriginal={handleOpenOriginal} />
 

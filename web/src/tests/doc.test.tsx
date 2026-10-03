@@ -343,10 +343,10 @@ describe("Doc", () => {
     expect(screen.getByText(/unusual radar contact over restricted airspace/)).toBeInTheDocument();
   });
 
-  it("shows the id once as a kicker; the h1 drops the id prefix (no stray // text)", () => {
+  it("shows the id once as a kicker inside the h1; the title drops the id prefix (no stray // text)", () => {
     renderDoc();
     expect(screen.getByText("rec1")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Placement on High Alert near Roswell");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("rec1, Placement on High Alert near Roswell");
     expect(document.body.textContent).not.toContain("//");
   });
 
