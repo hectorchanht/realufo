@@ -92,7 +92,7 @@ export function AskAnswer({ question, onPost }: { question: string; onPost?: (da
       footer={
         canShare || canPost ? (
           <>
-            {canShare && <ShareControls question={question} logId={data.log_id!} />}
+            {canShare && <ShareControls key={data.log_id} question={question} logId={data.log_id!} />}
             {canPost && (
               <button type="button" onClick={() => onPost!(data)} className={ACTION}>
                 ⤴ post to a board

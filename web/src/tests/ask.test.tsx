@@ -138,6 +138,19 @@ describe("AskAnswer", () => {
     expect(screen.getByRole("button", { name: "share" })).toBeInTheDocument();
   });
 
+  it("share state resets when the card switches to a different answer", async () => {
+    shareLinkMock.mockResolvedValue("copied");
+    useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, log_id: 7 } });
+    const { rerender } = renderCard();
+    fireEvent.click(screen.getByRole("button", { name: "share" }));
+    await act(() => shareMutate.mock.calls[0][1].onSuccess({ public: true, url: "/ask/7-what-did-radar-see" }));
+    expect(screen.getByText("✓ shared")).toBeInTheDocument();
+    useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, log_id: 8 } });
+    rerender(<MemoryRouter><AskAnswer question="another?" /></MemoryRouter>);
+    expect(screen.queryByText("✓ shared")).toBeNull();
+    expect(screen.getByRole("button", { name: "share" })).toBeInTheDocument();
+  });
+
   it("when neither share sheet nor clipboard works, the link is shown to copy by hand", async () => {
     shareLinkMock.mockResolvedValue("failed");
     useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, log_id: 7 } });
