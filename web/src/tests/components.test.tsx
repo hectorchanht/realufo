@@ -194,6 +194,17 @@ describe("DocCard", () => {
     expect(img.getAttribute("sizes")).toBeTruthy();
   });
 
+  it("portrait-cropped video gets a tall thumb box; landscape crops stay 4:3", () => {
+    const thumb = "https://assets.realufo.org/thumbs/aaro/V.jpg";
+    const box = (crop: string) =>
+      render(withRouter(<DocCard record={{ ...feedRecord, kind: "video", thumb, crop }} variant="feed" />)).container.querySelector("img")!
+        .parentElement!;
+    const tall = box("616:1080:652:0");
+    expect(tall.style.aspectRatio).toBe(`${616 / 1080} / 1`);
+    expect(tall.className).not.toContain("aspect-[4/3]");
+    expect(box("960:720:160:0").className).toContain("aspect-[4/3]");
+  });
+
   it("drops the srcset and retries the JPEG when the small image fails, then shows the glyph", () => {
     const thumb = "https://assets.realufo.org/thumbs/wargov/X.jpg";
     const { container } = render(withRouter(<DocCard record={{ ...feedRecord, thumb }} variant="feed" />));

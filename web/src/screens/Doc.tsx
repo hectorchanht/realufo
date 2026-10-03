@@ -894,7 +894,7 @@ export function Doc() {
           <div className="mb-2.5 font-mono text-[9px] uppercase tracking-[.6px] text-faint">
             {RELATED_HEAD[g.key]} · <span className="text-dim">{g.label}</span>
           </div>
-          <div className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
+          <div className="grid grid-flow-row-dense grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
             {g.records.map((r) => (
               <DocCard key={r.id} record={r} />
             ))}

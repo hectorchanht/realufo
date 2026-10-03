@@ -60,7 +60,7 @@ function PlacePanel({ place, onClose }: { place: MapPlace; onClose: () => void }
       {isLoading ? (
         <div className="font-mono text-[11px] text-faint">Loading files…</div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-flow-row-dense grid-cols-2 gap-3">
           {(data?.records ?? []).map((r) => (
             <DocCard key={r.id} record={r} variant="grid" />
           ))}

@@ -179,7 +179,7 @@ export function Feed() {
       <div
         data-grid
         aria-busy={feedLoading}
-        className="mb-[26px] grid grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]"
+        className="mb-[26px] grid grid-flow-row-dense grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]"
       >
         {feedLoading
           ? // Card-sized placeholders (the feed returns 6): reserving the grid's height

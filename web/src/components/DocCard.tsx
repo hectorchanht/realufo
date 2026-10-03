@@ -32,7 +32,7 @@ import type { MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import { useBootstrap } from "../api/queries";
 import { docTitleParts } from "../lib/docTitle";
-import { smallThumb } from "../lib/recordMedia";
+import { parseCrop, smallThumb } from "../lib/recordMedia";
 import type { FeedRecordCard, ListRecordCard, RecordCard } from "../api/types";
 
 export type DocCardVariant = "feed" | "grid";
@@ -97,6 +97,10 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
   // Same title rule as the Doc page: id once as a kicker (unless it only respells the title).
   const tp = docTitleParts(record.id, record.title, record.kind);
   const isFeed = variant === "feed";
+  // portrait video (phone clip padded to 16:9): the thumb is already cropped tall, so the card spans two
+  // grid rows (parents use grid-flow-row-dense) and the thumb grows to fill them, its own shape as the floor
+  const crop = record.kind === "video" ? parseCrop(record.crop) : null;
+  const tall = crop && crop.w < crop.h ? crop.w / crop.h : null;
 
   function handleClick(e: MouseEvent) {
     if (onOpen) {
@@ -113,10 +117,14 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
       data-variant={variant}
       className={
         "flex flex-col overflow-hidden border border-line bg-surface text-left hover:border-line2 active:scale-[.985] " +
-        (isFeed ? "rounded-[15px]" : "rounded-[14px]")
+        (isFeed ? "rounded-[15px]" : "rounded-[14px]") +
+        (tall ? " row-span-2" : "")
       }
     >
-      <div className="relative aspect-[4/3] overflow-hidden border-b border-line bg-bg2">
+      <div
+        className={`relative overflow-hidden border-b border-line bg-bg2 ${tall ? "flex-1" : "aspect-[4/3]"}`}
+        style={tall ? { aspectRatio: `${tall}` } : undefined}
+      >
         {showImg ? (
           <img
             src={record.thumb ?? undefined}
@@ -174,7 +182,7 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
         )}
       </div>
 
-      <div className={"flex flex-1 flex-col gap-[7px] " + (isFeed ? "px-3 pb-[13px] pt-[11px]" : "px-[11px] pb-3 pt-[10px]")}>
+      <div className={"flex flex-col gap-[7px] " + (tall ? "" : "flex-1 ") + (isFeed ? "px-3 pb-[13px] pt-[11px]" : "px-[11px] pb-3 pt-[10px]")}>
         {isFeed && (
           <div className="font-mono text-[9px] tracking-[.4px] text-faint">{metaLine(record)}</div>
         )}

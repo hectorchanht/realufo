@@ -7,6 +7,12 @@ export type RecordMediaKind = "image" | "video" | "audio" | "pdf" | "thumb";
 /** The picture inside a video's black pillar/letterbox bars, in video pixels. */
 export type VideoCrop = { w: number; h: number; x: number; y: number };
 
+/** assets.crop "w:h:x:y" → VideoCrop; null for '' / NULL (no bars, or not probed). */
+export function parseCrop(s: string | null | undefined): VideoCrop | null {
+  const [w, h, x, y] = (s ?? "").split(":").map(Number);
+  return w > 0 && h > 0 ? { w, h, x, y } : null;
+}
+
 export function recordMedia(detail: RecordDetail | undefined, isDesktop: boolean) {
   const assets = detail?.assets ?? [];
   const thumbUrl = assets.find((a) => a.role === "thumb")?.cdn_url ?? null;
@@ -27,8 +33,7 @@ export function recordMedia(detail: RecordDetail | undefined, isDesktop: boolean
           : isDesktop
             ? "pdf"
             : "thumb";
-  const [w, h, x, y] = (fullAsset?.crop ?? "").split(":").map(Number);
-  const crop: VideoCrop | null = media === "video" && w > 0 && h > 0 ? { w, h, x, y } : null;
+  const crop = media === "video" ? parseCrop(fullAsset?.crop) : null;
   return { media, fullUrl, thumbUrl, crop };
 }
 

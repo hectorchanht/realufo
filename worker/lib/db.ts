@@ -23,10 +23,14 @@ export const THREAD_THUMB_COLS = `(SELECT p.image_r2_key FROM posts p WHERE p.th
 export const durationSql = (recordId: string) =>
   `(SELECT duration FROM assets a WHERE a.record_id=${recordId} AND a.role='full' LIMIT 1)`;
 
+// Card video black-bar crop "w:h:x:y" (crawler thumbs.py); '' / NULL = none. Portrait crops make the card thumb tall.
+export const cropSql = (recordId: string) =>
+  `(SELECT crop FROM assets a WHERE a.record_id=${recordId} AND a.role='full' LIMIT 1)`;
+
 // Card one-liner from the TL;DR (crawler ingest.tldr); NULL until generated.
 export const oneLinerSql = (recordId: string) =>
   `(SELECT one_liner FROM record_tldr x WHERE x.record_id=${recordId} AND x.lang='en')`;
 
 // List-card columns (/api/records, related groups, hubs) for `records r`.
 export const CARD_COLS = `r.id,r.archive,r.agency,r.title,r.summary,r.kind,r.redacted,r.location,r.incident_date,r.doc_date,
-  ${thumbSql("r.id")} thumb, ${durationSql("r.id")} duration, ${oneLinerSql("r.id")} oneLiner`;
+  ${thumbSql("r.id")} thumb, ${durationSql("r.id")} duration, ${cropSql("r.id")} crop, ${oneLinerSql("r.id")} oneLiner`;

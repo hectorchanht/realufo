@@ -125,6 +125,7 @@ interface RecordCardBase {
   redacted: number; // 0|1
   thumb: string | null;
   duration?: number | null; // video length in seconds (full asset); null/absent = unknown
+  crop?: string | null; // video's black-bar crop "w:h:x:y" (see Asset.crop)
   oneLiner?: string | null; // TL;DR joke (Spec 7); null/absent until generated
 }
 

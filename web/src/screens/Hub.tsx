@@ -44,7 +44,7 @@ export default function Hub({ kind }: { kind: HubKind }) {
           {data.next ? <Link to={`/release/${data.next}`}>RELEASE {data.next.padStart(2, "0")} →</Link> : <span />}
         </div>
       )}
-      <div className="mb-6 grid grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]">
+      <div className="mb-6 grid grid-flow-row-dense grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]">
         {data.records.map((r) => (
           <DocCard key={r.id} record={r} variant="grid" />
         ))}

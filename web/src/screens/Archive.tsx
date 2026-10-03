@@ -566,7 +566,7 @@ export function Archive() {
           {/* grid — lines 188-203 */}
           <div
             data-grid
-            className={`transition-opacity ${isPlaceholderData ? "opacity-50" : ""} grid grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]`}
+            className={`transition-opacity ${isPlaceholderData ? "opacity-50" : ""} grid grid-flow-row-dense grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]`}
           >
             {records.map((record) => (
               <DocCard key={record.id} record={record} variant="grid" search={searchParams.toString()} />

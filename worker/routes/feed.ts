@@ -1,6 +1,6 @@
 import type { Env } from "../env";
 import { json } from "../lib/json";
-import { durationSql, oneLinerSql, relAgo, thumbSql, THREAD_THUMB_COLS } from "../lib/db";
+import { cropSql, durationSql, oneLinerSql, relAgo, thumbSql, THREAD_THUMB_COLS } from "../lib/db";
 import { withThreadThumb } from "../lib/upload";
 import { clipIds } from "../lib/xpick";
 
@@ -16,7 +16,7 @@ export async function feed(_req: Request, env: Env) {
   // "YYYY-MM-DD HH:MM:SS" strings).
   const featured = await env.DB.prepare(
     `SELECT r.id,r.archive,r.agency,r.title,r.summary,r.kind,r.redacted,
-      ${thumbSql("r.id")} thumb, ${durationSql("r.id")} duration, ${oneLinerSql("r.id")} oneLiner,
+      ${thumbSql("r.id")} thumb, ${durationSql("r.id")} duration, ${cropSql("r.id")} crop, ${oneLinerSql("r.id")} oneLiner,
       (SELECT count(*) FROM comments c WHERE c.record_id=r.id) commentN,
       (SELECT count(*) FROM record_verdicts v WHERE v.record_id=r.id) verdictN,
       max(COALESCE((SELECT max(created_at) FROM comments c WHERE c.record_id=r.id),''),
