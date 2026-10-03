@@ -28,6 +28,11 @@ describe("TOPIC_RULES", () => {
     ]);
     expect(TOPIC_RULES.every(validTopic)).toBe(true);
   });
+  it("every LIKE pattern fits D1's 50-byte limit (%word%)", () => {
+    for (const t of TOPIC_RULES)
+      for (const w of [...(t.rule.title ?? []), ...(t.rule.summary ?? []), ...(t.rule.notTitle ?? [])])
+        expect(new TextEncoder().encode(`%${w}%`).length, `${t.slug}: ${w}`).toBeLessThanOrEqual(50);
+  });
   it("validTopic rejects an entry with no positive rule and no includes", () => {
     expect(validTopic({ slug: "x", label: "X", title: "X", rule: { notTitle: ["a"] } })).toBe(false);
     expect(validTopic({ slug: "x", label: "X", title: "X", rule: {}, include: ["A-1"] })).toBe(true);

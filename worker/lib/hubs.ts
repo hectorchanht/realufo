@@ -3,9 +3,10 @@
 // D1 access lives in routes/hubs.ts. D1 values are never rewritten; aliases
 // merge duplicates and typos ("DoW" + "Department of War").
 import { decadeOf, yearOf } from "./facets";
+import { TOPIC_RULES } from "./topics";
 
-export type HubKind = "release" | "agency" | "location" | "decade";
-export const HUB_KINDS: HubKind[] = ["release", "agency", "location", "decade"];
+export type HubKind = "release" | "topic" | "agency" | "location" | "decade";
+export const HUB_KINDS: HubKind[] = ["release", "topic", "agency", "location", "decade"];
 export const MIN_HUB_FILES = 5;
 
 export interface HubSummary {
@@ -72,6 +73,7 @@ export function hubTitle(h: HubSummary): string {
   // "Release 06 · 18 Sep 2026" → "Pentagon UFO Files Release 06 (18 Sep 2026): 74 Files"
   // ("UFO" is what people search; the chip label stays short).
   if (h.kind === "release") return `Pentagon UFO Files ${h.label.replace(" · ", " (")}): ${h.count} Files`;
+  if (h.kind === "topic") return `${TOPIC_RULES.find((t) => t.slug === h.slug)?.title ?? h.label}: ${h.count} Declassified UFO Files`;
   if (h.kind === "location") return `UAP files: ${h.label}`;
   return `${h.label} UAP files`;
 }
@@ -95,7 +97,9 @@ export function hubIntro(h: HubSummary, release: { no: number; date: string } | 
       ? `the Department of War published on ${longDate(release.date)} (Release ${pad2(release.no)})`
       : h.kind === "decade"
         ? `about incidents in the ${h.slug}`
-        : entry(h.kind, h.slug)?.phrase ?? `about ${h.label}`;
+        : h.kind === "topic"
+          ? "on this topic"
+          : entry(h.kind, h.slug)?.phrase ?? `about ${h.label}`;
   const parts = [plural(s.pdf, "PDF"), plural(s.video, "video"), plural(s.image, "image")].filter((p) => !p.startsWith("0 "));
   const years = !s.from || !s.to ? "" : s.from === s.to ? ` Incidents date from ${s.from}.` : ` Incidents span ${s.from}–${s.to}.`;
   return `${plural(s.files, "declassified UAP file")} ${phrase}: ${parts.join(", ")}.${years}`;

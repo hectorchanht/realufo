@@ -1,8 +1,9 @@
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
 import { CARD_COLS } from "../lib/db";
-import { hubsFor } from "../lib/hubs";
-import { listHubsCached } from "./hubs";
+import { hubsFor, MIN_HUB_FILES } from "../lib/hubs";
+import { listHubsCached, topicMembers } from "./hubs";
+import { TOPIC_RULES } from "../lib/topics";
 import { isoDate, yearOf, decadeOf, wargovReleases, facetCounts } from "../lib/facets";
 import { verdictState } from "./verdicts";
 import { uploadUrl } from "../lib/upload";
@@ -251,7 +252,7 @@ export async function loadRecord(env: Env, id: string, origin: string) {
     .first<RecordRow>();
   if (!record) return null;
   const releaseP = releaseOf(env, record);
-  const [assets, promoted, series, release, related, text, hubList, tldrRow, articleRows] = await Promise.all([
+  const [assets, promoted, series, release, related, text, hubList, topicMap, tldrRow, articleRows] = await Promise.all([
     env.DB.prepare("SELECT role,cdn_url,mime,width,height,duration,crop FROM assets WHERE record_id=?").bind(id).all(),
     env.DB.prepare(
       `SELECT t.id,t.no,t.title,t.stance,t.votes,t.source_record_id,b.slug boardSlug,b.accent accent
@@ -269,6 +270,11 @@ export async function loadRecord(env: Env, id: string, origin: string) {
     listHubsCached(env, origin).catch((e) => {
       console.error("hub list failed", e);
       return [];
+    }),
+    // Topic links are garnish too: a failing topic query must not break the doc.
+    topicMembers(env, origin).catch((e) => {
+      console.error("topic members failed", e);
+      return {} as Record<string, string[]>;
     }),
     env.DB.prepare("SELECT bullets,one_liner,card_url FROM record_tldr WHERE record_id=? AND lang='en'")
       .bind(id)
@@ -299,6 +305,10 @@ export async function loadRecord(env: Env, id: string, origin: string) {
     record, assets: assets.results, promotedThreads: promoted.results, series, release, related, fullText, tldr,
     articles: groupArticles(env, articleRows.results),
     hubs: hubsFor(record, release?.no ?? null, live),
+    topics: TOPIC_RULES.filter((t) => {
+      const m = topicMap[t.slug] ?? [];
+      return m.length >= MIN_HUB_FILES && m.includes(id);
+    }).map((t) => ({ slug: t.slug, label: t.label })),
   };
 }
 

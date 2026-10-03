@@ -10,6 +10,8 @@ import {
 import { docTitle } from "../lib/ssr";
 import { releaseBlock } from "./releases";
 import type { ReleaseBlock } from "../lib/releases";
+import { TOPIC_RULES, topicWhere, type TopicBlock } from "../lib/topics";
+import { TOPIC_TEXT } from "../lib/topicText";
 
 export type CardRow = { id: string; title: string; kind: string; incident_date: string | null } & Record<string, unknown>;
 export type HighlightPick = { id: string; why: string; title: string; thumb: string | null; kind: string };
@@ -19,6 +21,7 @@ export interface Hub {
   records: CardRow[]; siblings: HubSummary[]; prev?: string | null; next?: string | null;
   highlights: Highlights | null;
   release?: ReleaseBlock | null;
+  topic?: TopicBlock;
 }
 
 // AI picks (crawler ingest.highlights) re-checked against the hub's current
@@ -42,12 +45,13 @@ export function highlightsOf(row: { lede: string; picks: string } | null, record
 }
 
 // Every hub with ≥ MIN_HUB_FILES files, from the Archive's grouped counts.
-export async function listHubs(env: Env): Promise<HubSummary[]> {
-  const f = await facetCounts(env);
+export async function listHubs(env: Env, origin: string): Promise<HubSummary[]> {
+  const [f, members] = await Promise.all([facetCounts(env), topicMembers(env, origin)]);
   const sum = (values: string[], rows: { name: string; count: number }[]) =>
     rows.filter((r) => values.includes(r.name)).reduce((n, r) => n + r.count, 0);
   return [
     ...f.releases.map((r) => ({ kind: "release" as const, slug: String(r.no), label: releaseLabel(r.no, r.date), count: r.count })),
+    ...TOPIC_RULES.map((t) => ({ kind: "topic" as const, slug: t.slug, label: t.label, count: (members[t.slug] ?? []).length })),
     ...AGENCY_HUBS.map((h) => ({ kind: "agency" as const, slug: h.slug, label: h.label, count: sum(h.values, f.agencies), values: h.values })),
     ...LOCATION_HUBS.map((h) => ({ kind: "location" as const, slug: h.slug, label: h.label, count: sum(h.values, f.locations), values: h.values })),
     ...f.decades.map((d) => ({ kind: "decade" as const, slug: `${d.decade}s`, label: `${d.decade}s`, count: d.count })),
@@ -56,10 +60,61 @@ export async function listHubs(env: Env): Promise<HubSummary[]> {
 
 // ponytail: 1h per colo; a new release/hub shows up within the hour.
 export const listHubsCached = async (env: Env, origin: string) =>
-  (await cachedJson(`${origin}/__hubs`, () => listHubs(env))) ?? [];
+  (await cachedJson(`${origin}/__hubs`, () => listHubs(env, origin))) ?? [];
+
+// One source of truth for topic membership: each rule runs once, include/exclude
+// applied, memoized like the hub list (1h per colo).
+export const topicMembers = async (env: Env, origin: string): Promise<Record<string, string[]>> =>
+  (await cachedJson(`${origin}/__topics`, async () => {
+    const out: Record<string, string[]> = {};
+    for (const t of TOPIC_RULES) {
+      const w = topicWhere(t.rule);
+      const ids = new Set(
+        (await env.DB.prepare(`SELECT r.id FROM records r WHERE r.status='live' AND ${w.sql}`).bind(...w.binds).all<{ id: string }>()).results.map((r) => r.id)
+      );
+      if (t.include?.length) {
+        const inc = await env.DB.prepare("SELECT id FROM records WHERE status='live' AND id IN (SELECT value FROM json_each(?))")
+          .bind(JSON.stringify(t.include))
+          .all<{ id: string }>();
+        for (const r of inc.results) ids.add(r.id);
+      }
+      for (const x of t.exclude ?? []) ids.delete(x);
+      out[t.slug] = [...ids].sort();
+    }
+    return out;
+  })) ?? {};
+
+async function topicBlock(env: Env, slug: string, members: string[]): Promise<TopicBlock> {
+  const text = TOPIC_TEXT[slug];
+  const srcIds = (text?.sources ?? []).map((s) => s.id);
+  const [recs, stories] = await Promise.all([
+    env.DB.prepare("SELECT id,title,kind FROM records WHERE status='live' AND id IN (SELECT value FROM json_each(?))")
+      .bind(JSON.stringify(srcIds))
+      .all<{ id: string; title: string; kind: string }>(),
+    env.DB.prepare(
+      `SELECT a.slug, a.title, a.thread_id threadId, max(a.created_at) c FROM articles a JOIN article_records ar ON ar.slug=a.slug
+        WHERE ar.record_id IN (SELECT value FROM json_each(?)) GROUP BY a.slug ORDER BY c DESC`
+    )
+      .bind(JSON.stringify(members))
+      .all<{ slug: string; title: string; threadId: string | null }>(),
+  ]);
+  const byId = new Map(recs.results.map((r) => [r.id, r]));
+  return {
+    background: text?.background ?? "", lore: text?.lore ?? null,
+    sources: (text?.sources ?? []).flatMap((s) => {
+      const r = byId.get(s.id);
+      return r ? [{ id: s.id, page: s.page ?? null, note: s.note, title: docTitle(r.title, r.id, r.kind) }] : [];
+    }),
+    stories: stories.results.map((s) => ({ slug: s.slug, title: s.title, threadId: s.threadId })),
+  };
+}
 
 // SQL filter selecting one hub's records (table alias r).
-async function hubFilter(env: Env, h: HubSummary) {
+async function hubFilter(env: Env, h: HubSummary, origin: string) {
+  if (h.kind === "topic") {
+    const members = (await topicMembers(env, origin))[h.slug] ?? [];
+    return { where: "r.id IN (SELECT value FROM json_each(?))", bind: [JSON.stringify(members)], release: null, members };
+  }
   if (h.kind === "release") {
     const rel = (await wargovReleases(env)).find((r) => String(r.no) === h.slug);
     if (!rel) return null;
@@ -81,7 +136,7 @@ export async function loadHub(env: Env, kind: string, slug: string, origin: stri
   const hubs = await listHubsCached(env, origin);
   const me = hubs.find((h) => h.kind === kind && h.slug === slug);
   if (!me) return null;
-  const sel = await hubFilter(env, me);
+  const sel = await hubFilter(env, me, origin);
   if (!sel) return null;
   const { results: records } = await env.DB.prepare(
     `SELECT ${CARD_COLS} FROM records r WHERE ${sel.where} AND r.status='live'
@@ -115,6 +170,7 @@ export async function loadHub(env: Env, kind: string, slug: string, origin: stri
     kind: me.kind, slug: me.slug, title: hubTitle(me), intro: hubIntro(me, sel.release, stats), stats, records, highlights,
     siblings: same.filter((h) => h !== me),
     ...(me.kind === "release" ? { prev: same[i - 1]?.slug ?? null, next: same[i + 1]?.slug ?? null, release } : {}),
+    ...(me.kind === "topic" ? { topic: await topicBlock(env, me.slug, (sel as { members: string[] }).members) } : {}),
   };
 }
 

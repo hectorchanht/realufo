@@ -33,7 +33,7 @@ export const TOPIC_RULES: TopicDef[] = [
   { slug: "aaro-case-resolutions", label: "AARO case resolutions", title: "AARO Case Resolutions", rule: { title: ["Case Resolution"] } },
   {
     slug: "congress", label: "Congress & hearings", title: "Congress, Hearings & the House Request",
-    rule: { summary: ["On March 6, 2026, eight members of the U.S. House", "open hearing"] },
+    rule: { summary: ["eight members of the U.S. House", "open hearing"] },
     include: ["CONGRESS-CHRG-119hhrg61718", "USG-UAP-D001"],
     exclude: ["059uap00013"], // Mexican Congress cable
   },
