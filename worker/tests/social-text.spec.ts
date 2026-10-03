@@ -43,7 +43,7 @@ describe("social text", () => {
   it("ig drops the dead link for 'link in bio' + tags", () => {
     const t = compose("ig", X, "wargov").text;
     expect(t).not.toContain("https://");
-    expect(t).toContain("🔗 link in bio");
+    expect(t).toContain("🔗 full file: realufo.org (link in bio)");
     expect(t.endsWith("#UFO #UAP #Pentagon #declassified #DeptOfWar")).toBe(true);
   });
 
@@ -76,6 +76,7 @@ describe("social text", () => {
   it("tiktok: no link, tags appended, ≤2200", () => {
     const t = compose("tiktok", X, "nasa").text;
     expect(t).not.toContain("https://");
+    expect(t).toContain("🔗 full file: realufo.org");
     expect(t.endsWith("#NASA")).toBe(true);
     expect(compose("tiktok", "b".repeat(5000), null).text.length).toBeLessThanOrEqual(2200);
   });

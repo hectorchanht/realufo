@@ -70,7 +70,7 @@ describe("social tick", () => {
     expect(seen[0].p.media!.url).toMatch(/^https:\/\/assets\.realufo\.org\/clips\/wargov\/ST-V1\.mp4\?v=\w{8}$/);
     expect(seen[0].p.text).toContain("\n\nhttps://realufo.org/doc/ST-V1\n\n#UFO #UAP");
     expect(seen[1].p.media!.key).toBe("clips-v/wargov/ST-V1.mp4");
-    expect(seen[1].p.text).toContain("🔗 link in bio");
+    expect(seen[1].p.text).toContain("🔗 full file: realufo.org (link in bio)");
   });
 
   it("X rows not yet posted (pending/processing) are not mirrored, and X can still delete them", async () => {

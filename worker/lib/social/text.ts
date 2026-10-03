@@ -77,12 +77,13 @@ export function compose(p: Platform, xText: string, archive: string | null, rec?
       return { text: room(500, `${linkPart}\n\n${tags}`), title, link };
     case "bsky": // 300 graphemes: keep the tag line short
       return { text: room(300, `${linkPart}\n\n${["#UFO #UAP", rec && idTag(rec.id)].filter(Boolean).join(" ")}`, graphemes), title, link };
+    // IG/TikTok captions can't hold a clickable link: name the site so viewers can find the file
     case "ig":
-      return { text: room(2200, `${link ? "\n\n🔗 link in bio" : ""}\n\n${tags}`), title, link };
+      return { text: room(2200, `${link ? "\n\n🔗 full file: realufo.org (link in bio)" : ""}\n\n${tags}`), title, link };
     case "yt":
       return { text: room(5000, `${linkPart}\n\n${tags}`), title: ytTitle(head ?? line), link };
     case "tiktok":
-      return { text: room(2200, `\n\n${tags}`), title, link };
+      return { text: room(2200, `${link ? "\n\n🔗 full file: realufo.org" : ""}\n\n${tags}`), title, link };
   }
 }
 
