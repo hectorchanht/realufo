@@ -162,3 +162,27 @@ def test_prompts_forbid_absence_claims_and_page_restating():
         assert "does not mention" in p          # the rule names the forbidden claim
     for p in (summaries.SECTION_SYSTEM, summaries.GROUP_SYSTEM):
         assert "page numbers" in p and "UFO" in p
+
+def test_absence_claims_are_dropped_from_model_text():
+    t = ("Legal provisions on military justice and recruitment, with no mention of UFOs, UAP or unidentified objects. "
+         "It covers funding and procurement. The text does not mention flying saucers elsewhere.")
+    assert summaries._drop_absence(t) == "It covers funding and procurement."
+    assert summaries._drop_absence("No mention of UFOs.") == "No mention of UFOs."   # never empty a reply
+
+def test_a_page_opener_that_repeats_the_section_range_is_stripped_but_narrower_refs_stay():
+    assert summaries._tidy("Pages 74–79 contain a letter to J. Edgar Hoover.", 74, 79) == "A letter to J. Edgar Hoover."
+    assert summaries._tidy("Pages describe a 1966 issue of a saucer magazine.", 9, 9) == "A 1966 issue of a saucer magazine."
+    assert summaries._tidy("Page 9 mentions a convention.", 9, 9) == "A convention."
+    assert summaries._tidy("Pages 564–567 discuss UAP records.", 533, 669) == "Pages 564–567 discuss UAP records."
+
+def test_final_reduce_says_the_list_describes_one_document():
+    calls = []
+    summaries.summarize("T", [(n, LONG) for n in range(1, 13)], chat=_fake_chat(calls))
+    assert "ONE document" in calls[-1][1]
+
+def test_final_summary_drops_absence_claims_too():
+    def chat(system, user, **_):
+        return ("This is the 2024 NDAA with UAP records disclosure rules and many defense provisions for the services and the budget. "
+                "It does not mention flying saucers anywhere else in the text at all.")
+    out, _ = summaries.summarize("T", [(1, LONG)], chat=chat)
+    assert "does not mention" not in out and out.startswith("This is the 2024 NDAA")

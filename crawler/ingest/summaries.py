@@ -91,6 +91,25 @@ def _short(raw, words: int) -> str:
     cut = head.rfind(". ")  # end on a full sentence, not mid-list ("Dates: August 31, 1966; July")
     return head[: cut + 1] if cut > 0 else head
 
+# qwen3 ignores "never claim absence" when also told to flag UFO mentions, so filter in code.
+ABSENT = re.compile(r"\b(?:no|not|without(?: any)?) (?:mention|reference)|\bdo(?:es)? not (?:mention|refer|discuss)", re.I)
+OPENER = re.compile(r"^(?:(?:these|the)\s+)?pages?\s*(?:(\d+)(?:\s*[\u2013-]\s*(\d+))?\s*)?(?:of\s+\S+\s+)?"
+                    r"(?:contains?|describes?|details?|mentions?|discuss(?:es)?|includes?|covers?|outlines?|shows?|presents?)\s+", re.I)
+
+def _drop_absence(text: str) -> str:
+    """Drop sentences claiming the document lacks something (the model saw only part of it)."""
+    sents = re.split(r"(?<=[.!?])\s+", text.strip())
+    kept = [x for x in sents if not ABSENT.search(x)]
+    return " ".join(kept) if kept else text.strip()
+
+def _tidy(text: str, a: int, b: int) -> str:
+    """'Pages 74–79 contain a letter' -> 'A letter' when it only repeats the section's own range."""
+    m = OPENER.match(text)
+    if m and (m.group(1) is None or (int(m.group(1)) == a and int(m.group(2) or m.group(1)) == b)):
+        rest = text[m.end():]
+        return rest[:1].upper() + rest[1:]
+    return text
+
 def _lines(secs: list[dict]) -> list[str]:
     return [f"[{page_label(s['from'], s['to'])}] {s['text']}" for s in secs]
 
@@ -116,10 +135,10 @@ def summarize(title: str, pages: list[tuple[int, str]], chat=cfapi.chat) -> tupl
                             max_words + 10)
         if not out:
             raise ValueError("empty or too-short reply")
-        return out, None
+        return _drop_absence(out), None
     mapped = [{"from": s["from"], "to": s["to"],
-               "text": _short(_ask(chat, SECTION_SYSTEM, f"Title: {title}\n{page_label(s['from'], s['to'])}:\n<<<\n{s['text']}\n>>>\n/no_think",
-                                   max_tokens=120), SECTION_WORDS)} for s in secs]
+               "text": _tidy(_drop_absence(_short(_ask(chat, SECTION_SYSTEM, f"Title: {title}\n{page_label(s['from'], s['to'])}:\n<<<\n{s['text']}\n>>>\n/no_think",
+                                   max_tokens=120), SECTION_WORDS)), s["from"], s["to"])} for s in secs]
     level, levels = mapped, [mapped]
     while len("\n".join(_lines(level))) > SECTION:  # layered reduce for very long files
         groups, cur, size = [], [], 0
@@ -131,13 +150,15 @@ def summarize(title: str, pages: list[tuple[int, str]], chat=cfapi.chat) -> tupl
             size += len(line) + 1
         groups.append(cur)
         level = [{"from": g[0]["from"], "to": g[-1]["to"],
-                  "text": _short(_ask(chat, GROUP_SYSTEM, f"Title: {title}\n<<<\n" + "\n".join(_lines(g)) + "\n>>>\n/no_think",
-                                      max_tokens=120), SECTION_WORDS)} for g in groups]
+                  "text": _tidy(_drop_absence(_short(_ask(chat, GROUP_SYSTEM, f"Title: {title}\n<<<\n" + "\n".join(_lines(g)) + "\n>>>\n/no_think",
+                                      max_tokens=120), SECTION_WORDS)), g[0]["from"], g[-1]["to"])} for g in groups]
         levels.append(level)
-    out = clean_summary(_ask(chat, system(max_words), f"Title: {title}\n\nSection summaries of the whole document:\n<<<\n"
+    out = clean_summary(_ask(chat, system(max_words), f"Title: {title}\n\nThe lines below summarize the sections of ONE document, in page order. "
+                             "Write the summary of that document, not of this list:\n<<<\n"
                              + "\n".join(_lines(level)) + "\n>>>\n/no_think", max_tokens=500), max_words + 10)
     if not out:
         raise ValueError("empty or too-short reply")
+    out = _drop_absence(out)
     # Finest level whose JSON fits one D1 statement (973-page NDAA: 260 sections is too big).
     fits = lambda lv: len(d1.sql_q(json.dumps(lv, ensure_ascii=False)).encode()) <= SECTIONS_MAX_BYTES
     return out, next((lv for lv in levels if fits(lv)), levels[-1])
