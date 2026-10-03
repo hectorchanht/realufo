@@ -86,6 +86,14 @@ export function AskCard({ question, data, footer }: { question: string; data: { 
                 </Link>
                 <HubChips hubs={s.hubs} labels={hubLabels} />
               </div>
+              {s.ai && (
+                <span
+                  title="Matched an AI-written description of this file, not the file's own text"
+                  className="flex-none rounded-[5px] border border-line px-1.5 py-px font-mono text-[9px] text-dim"
+                >
+                  {s.ai === "summary" ? "AI summary" : "AI moments"}
+                </span>
+              )}
               {s.kind === "pdf" && s.page > 0 && (
                 <a
                   href={`/api/file/${encodeURIComponent(s.record_id)}#page=${s.page}`}
@@ -101,7 +109,7 @@ export function AskCard({ question, data, footer }: { question: string; data: { 
         </ol>
       )}
       <p className="mt-2.5 font-mono text-[9.5px] text-faint">
-        AI answer drawn from archive text &amp; OCR — can be wrong. Check the sources.
+        AI answer drawn from archive text, OCR &amp; AI descriptions — can be wrong. Check the sources.
       </p>
       {footer && <div className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-line pt-2.5">{footer}</div>}
     </section>

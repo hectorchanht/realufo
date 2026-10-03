@@ -8,7 +8,7 @@ import { hubsFor } from "../lib/hubs";
 import { listHubsCached } from "./hubs";
 import {
   ASK_EMBED_MODEL, ASK_LLM_MODEL, ASK_TOP_K, NOT_COVERED, RESTING,
-  askHref, askIdOf, normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, type AskChunk,
+  askHref, askIdOf, normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, aiSourceOf, type AskChunk,
 } from "../lib/ask";
 
 type Hydrated = { id: string; title: string; kind: string; thumb: string | null };
@@ -160,7 +160,8 @@ async function answer(env: Env, q: string, min: number) {
     answer: text,
     sources: shown.map((c) => {
       const r = byId.get(c.record_id)!;
-      return { n: c.n, record_id: c.record_id, title: r.title, page: c.page, kind: r.kind, thumb: r.thumb ?? null };
+      const ai = aiSourceOf(c.text);
+      return { n: c.n, record_id: c.record_id, title: r.title, page: c.page, kind: r.kind, thumb: r.thumb ?? null, ...(ai && { ai }) };
     }),
   };
 }
@@ -183,7 +184,7 @@ export async function recentAsks(_req: Request, env: Env) {
   });
 }
 
-export type SharedAskSource = { n: number; record_id: string; title: string; page: number; kind: string; thumb: string | null };
+export type SharedAskSource = { n: number; record_id: string; title: string; page: number; kind: string; thumb: string | null; ai?: "summary" | "moments" };
 export type SharedAsk = { id: number; question: string; answer: string; sources: SharedAskSource[]; asked_at: string; url: string };
 
 // A shared answer exactly as frozen in ask_log (Spec 8 §1.5). Private rows, rows

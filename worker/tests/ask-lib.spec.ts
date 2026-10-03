@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, NOT_COVERED, askSlug, askHref, askIdOf } from "../lib/ask";
+import { normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, NOT_COVERED, askSlug, askHref, askIdOf, aiSourceOf } from "../lib/ask";
 
 describe("ask helpers", () => {
   it("normalizes whitespace and enforces 3–300 chars", () => {
@@ -12,6 +12,17 @@ describe("ask helpers", () => {
 
   it("cache key is case-insensitive on the normalized question", () => {
     expect(cacheKey(normalizeQuestion("  Los Alamos   1949 ")!)).toBe(cacheKey(normalizeQuestion("los alamos 1949")!));
+  });
+
+  it("aiSourceOf reads the AI label off a chunk's first line", () => {
+    expect(aiSourceOf("Go Fast UAP — AI summary\nThe image is an infrared frame.")).toBe("summary");
+    expect(aiSourceOf("Navy Flyby — AI key moments\n0:00 A light.")).toBe("moments");
+    expect(aiSourceOf("Doc — p.2\nAI summary of radar")).toBeUndefined();
+    expect(aiSourceOf("Doc — AARO\nsummary")).toBeUndefined();
+  });
+
+  it("prompt tells the model AI-labelled sources are machine descriptions", () => {
+    expect(buildMessages("q", [])[0].content).toMatch(/AI summary.*AI key moments/);
   });
 
   it("prompt numbers sources and fences the untrusted question", () => {

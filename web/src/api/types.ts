@@ -489,6 +489,8 @@ export interface AskSource {
   page: number; // 0 = record card, else 1-based PDF page
   kind: RecordKind;
   thumb: string | null;
+  /** Set when the match was the file's AI summary / AI key moments, not its own text. */
+  ai?: "summary" | "moments";
   /** Hubs this source links to; absent on answers from before hub pages. */
   hubs?: HubLinks;
 }

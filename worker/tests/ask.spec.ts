@@ -65,6 +65,17 @@ describe("GET /api/ask", () => {
     expect(llm.input.max_tokens).toBe(400);
   });
 
+  it("marks sources that matched an AI summary or AI key moments", async () => {
+    matches = [
+      { id: "a", score: 0.8, metadata: { record_id: "CIA-UAP-017", page: 0, text: "T — AI key moments\n0:00 A light." } },
+      hit("CIA-UAP-017", 2),
+    ];
+    llmOut = { response: "A light [1] on radar [2]." };
+    const b = await body(await ask("ai label question"));
+    expect(b.sources[0].ai).toBe("moments");
+    expect(b.sources[1]).not.toHaveProperty("ai");
+  });
+
   it("returns and caches the question in its original case", async () => {
     const b = await body(await ask("  What Did RADAR See?  "));
     expect(b.question).toBe("What Did RADAR See?");

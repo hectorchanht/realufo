@@ -81,6 +81,18 @@ describe("AskAnswer", () => {
     expect(second.querySelectorAll('a[href^="/agency/"], a[href^="/release/"], a[href^="/decade/"], a[href^="/location/"]').length).toBe(0);
   });
 
+  it("sources that matched AI-written text say so; the file's own text gets no label", () => {
+    useAskMock.mockReturnValue({
+      ...answered,
+      data: { ...answered.data, sources: [answered.data.sources[0], { ...answered.data.sources[1], ai: "moments" }] },
+    });
+    renderCard();
+    const label = screen.getByText("AI moments");
+    expect(label).toHaveAttribute("title", expect.stringMatching(/AI-written/));
+    expect(document.getElementById("ask-src-2")).toContainElement(label);
+    expect(document.getElementById("ask-src-1")!.textContent).not.toMatch(/AI /);
+  });
+
   it("renders the answer as text with citation buttons and numbered sources", () => {
     useAskMock.mockReturnValue(answered);
     renderCard();
