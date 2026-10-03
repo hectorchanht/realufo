@@ -450,4 +450,519 @@ export const CASE_STORY_TEXT_2: Record<string, CaseStory> = {
       ],
       updated: "2026-10-03"
     },
+  "cash-landrum": {
+      title: "Cash-Landrum 1980: injury claims, sworn denials and a dismissed lawsuit",
+      sections: [
+        {
+          heading: "A light over FM 1485",
+          paras: [
+            "The earliest official record of the encounter is a tape-recorded meeting at Bergstrom Air Force Base, near Austin, on 17 August 1981. The Computer UFO Network later transcribed it from a copy Betty Cash supplied. Cash told the base's lawyers that it happened on Farm Market Road 1485 between New Caney and Huffman, Texas, between nine and nine-thirty at night on 29 December 1980. With her were Vickie Landrum and Landrum's grandson Colby, who was seven. They had gone looking for a bingo game and were driving home [1][2].",
+            "The lawsuit the three later filed gives the same road and a time of about 9:00 pm, seven miles outside New Caney. It says the object glowed and gave off flames, blocked the road so that Cash had to stop, and hovered at treetop level about 135 feet from the witnesses, who felt intense and excruciating heat from it. After several minutes they got back in the car and the object rose [4].",
+            "In the interview Cash put the object 60 to 80 feet up and said it was as large as a water tower, if not larger. She said the car went dead although she had left the engine running, that Vickie's fingerprints were melted into the dashboard, and that the whole exposure lasted about 15 to 17 minutes [1]. The witnesses did not agree on the shape. Cash drew a diamond for the Air Force, but a 1984 court filing states that she could not discern any distinct shape, that Vickie Landrum saw an oblong with a rounded top and a point at the bottom, and that Colby saw a diamond [1][5]."
+          ],
+          quote: {
+            text: "I touched the door handle, and the door handle was so hot I couldn't stand it with my bare hand",
+            who: "Betty Cash, Bergstrom AFB interview, 17 August 1981",
+            src: 1
+          }
+        },
+        {
+          heading: "Twenty-three helicopters, or twenty-six",
+          paras: [
+            "Cash told the Bergstrom officers that the helicopters were her reason for coming. She described twin-rotor machines all around the object, said she pulled over and counted twenty-three, and said they were marked \"United States Air Force\" [1]. Later in the meeting Vickie Landrum disagreed about the markings. She said she saw no sign or name on them, only twin rotors like a National Guard helicopter she had seen land in Dayton. A crewman there, she said, told her his unit had been called out that night, but later told someone else that it had not been [2].",
+            "Cash's written damages claim puts the helicopters about three miles further down the road: approximately 23 military-type helicopters, several apparently double-rotor, in the general vicinity of the object [3]. The 1984 complaint went further. It said several of the helicopters were CH-47s that appeared to be escorting or safeguarding the object, and it called the object an experimental aerial device [4]."
+          ],
+          quote: {
+            text: "Yes, that I counted. Vicki says she counted 26. Who knows?",
+            who: "Betty Cash, Bergstrom AFB interview, 17 August 1981",
+            src: 1
+          }
+        },
+        {
+          heading: "Bergstrom: a claim, not an investigation",
+          paras: [
+            "Cash said she had written to Congressman Charles Wilson and to Senators Lloyd Bentsen and John Tower, and that Bentsen replied asking her to talk to the claims office at Bergstrom [1]. The Acting Staff Judge Advocate, Captain John Camp, told the witnesses he knew of no part of the Air Force that still investigated such reports, and that Congress and the President had told the service to stop. Cash answered that she had come to file a claim, and the officers offered to help with the paperwork [2].",
+            "The witnesses also described their injuries. Cash said that by the time she got home she had blisters all over her head, face, back and neck, and that she then spent a month or more in Parkway Hospital in Houston [1]. Landrum, who gave her age as 57, said her eyes were so badly burned that they watered for about three months, and that her hair started coming out about a month after the incident [1][2]."
+          ],
+          quote: {
+            text: "we're an agency that has not investigated UFO sightings in almost eleven years.",
+            who: "Captain John Camp, Acting Staff Judge Advocate, Bergstrom AFB",
+            src: 2
+          }
+        },
+        {
+          heading: "The lawsuit and the sworn denials",
+          paras: [
+            "An Air Force litigation record shows the claims were denied on 20 May 1983 and again on 21 August 1983. It also logs the suit that followed: Civil No. H-84-348 in the U.S. District Court for the Southern District of Texas, served on 18 January 1984, for $20 million [8]. The complaint lists Cash's injuries, starting with erythema, acute photophthalmia and impaired vision [4].",
+            "On the court's order, the plaintiffs' lawyer, Peter Gersten, filed a \"More Definite Statement\" describing the object [5]. Both services answered with sworn declarations comparing that description with their inventories. Richard L. Ballard, acting chief of the Army's Aviation Systems Division, declared on 19 April 1984 that no such craft was owned, operated or held by the Army on or about 29 December 1980 [7]. Colonel William E. Krebs of Air Force Systems Command said the same for the Air Force on 31 May 1984, and added that the CH-47 helicopter was not in the Air Force inventory at the time [6].",
+            "Because the description they were given covered only the object, these declarations say nothing about who might have flown the helicopters, apart from the Air Force's statement about the CH-47. The litigation record gives the outcome in four words, \"Case dismissed Oct 86\", and the released pages do not say why the court dismissed it [8]."
+          ],
+          quote: {
+            text: "No such craft was owned, operated, or in the inventory of the United States Air Force on or about December 29, 1980.",
+            who: "Col. William E. Krebs, USAF, declaration in Cash v. United States, 31 May 1984",
+            src: 6
+          }
+        },
+        {
+          heading: "Where the case turns up later",
+          paras: [
+            "The case comes up again in a March 2010 Defense Intelligence Reference Document written for the AAWSAP program, on anomalous field effects on human tissue. The paper says it will not discuss ionizing-radiation injuries except where they are \"Mixed Field\" effects, and it names Cash-Landrum as the example [9].",
+            "Popular retellings, including an earlier version of this page, say AARO's 2024 Historical Record Report cites Cash-Landrum as a key case of injury to witnesses. In fact the report never mentions the case: its text contains no reference to Cash, Landrum or Huffman [10].",
+            "The documents leave the main questions open. They record what the three witnesses described and the injuries they claimed, and they record sworn statements that the object was not an Army or Air Force craft. None of the released records identifies the object or the helicopters."
+          ],
+          quote: {
+            text: "e.g. the Cash-Landrum case, vide infra",
+            who: "AAWSAP DIRD, Anomalous Acute and Subacute Field Effects on Human Biological Tissues, 2010",
+            src: 9
+          }
+        }
+      ],
+      timeline: [
+        { date: "1980-12-29", event: "About 9:00 pm: Cash and the Landrums report a glowing, flaming object over FM 1485, seven miles from New Caney.", src: 4 },
+        { date: "1981-08-17", event: "The three witnesses are interviewed by Air Force lawyers at Bergstrom AFB and are offered help filing a claim.", src: 1 },
+        { date: "1983-05-20", event: "The Air Force denies the damages claims.", src: 8 },
+        { date: "1983-08-21", event: "The appeals are denied.", src: 8 },
+        { date: "1984-01-18", event: "Cash et al. v. United States, Civil No. H-84-348 (S.D. Tex.), is served for $20 million.", src: 8 },
+        { date: "1984-04-19", event: "Army declaration: no such craft owned, operated or held by the Army.", src: 7 },
+        { date: "1984-05-31", event: "Air Force declaration: no such craft, and no CH-47 in the Air Force inventory.", src: 6 },
+        { date: "1986-10", event: "The lawsuit is dismissed.", src: 8 },
+        { date: "2010-03", event: "An AAWSAP DIRD names Cash-Landrum as an example of a \"Mixed Field\" exposure.", src: 9 }
+      ],
+      sources: [
+        { url: "https://web.archive.org/web/2016/http://www.cufon.org/cufon/cashlani.htm", note: "Transcript of the Bergstrom AFB interview, 17 Aug 1981, part 1 (CUFON transcription of the tape)" },
+        { url: "https://web.archive.org/web/2016/http://www.cufon.org/cufon/cashlani2.htm", note: "Transcript of the Bergstrom AFB interview, 17 Aug 1981, part 2" },
+        { url: "https://web.archive.org/web/2016/http://www.cufon.org/cufon/cashlanC.pdf", page: 6, note: "Betty Cash's claim for damages (USAF FOIA release, 1993)" },
+        { url: "https://web.archive.org/web/2016/http://www.cufon.org/cufon/cashlanL.pdf", page: 22, note: "Complaint, Cash v. United States, H-84-348 (USAF FOIA release, 1993)" },
+        { url: "https://web.archive.org/web/2016/http://www.cufon.org/cufon/cashlanL.pdf", page: 16, note: "Plaintiffs' More Definite Statement, March 1984" },
+        { url: "https://web.archive.org/web/2016/http://www.cufon.org/cufon/cashlanL.pdf", page: 30, note: "Declaration of Col. William E. Krebs, USAF, 31 May 1984 (CH-47 statement on p.31)" },
+        { url: "https://web.archive.org/web/2016/http://www.cufon.org/cufon/cashlanL.pdf", page: 35, note: "Declaration of Richard L. Ballard, U.S. Army, 19 April 1984" },
+        { url: "https://web.archive.org/web/2016/http://www.cufon.org/cufon/cashlanL.pdf", page: 36, note: "Air Force litigation record card: denials, service, dismissal" },
+        { id: "DOW-UAP-D128", page: 8, note: "AAWSAP DIRD on anomalous field effects on human tissue, March 2010" },
+        { id: "AARO-AARO_Historical_Record_Report_Vol_1_2024.pdf", note: "AARO Historical Record Report Vol. 1 (2024): no mention of the case" }
+      ],
+      updated: "2026-10-03"
+    },
+  "condon-committee": {
+      title: "Condon Committee 1966: the study the Air Force ordered, and the cases it left open",
+      sections: [
+        {
+          heading: "Why the Air Force wanted outside scientists",
+          paras: [
+            "On 28 September 1965 the Air Force's Director of Information, Major General E. B. LeBailly, asked the Scientific Advisory Board to review Project Blue Book. His memorandum said that as of 30 June 1965 the Air Force had investigated 9,267 reports, of which 663 could not be explained. It had found no evidence of a threat to national security, but many of the unexplained reports came from credible witnesses, and he asked for a panel of physical and social scientists to review the project's resources, methods and findings [1].",
+            "The Board's ad hoc committee, chaired by Dr. Brian O'Brien, reported in March 1966. A memorandum for record of 20 April 1966 notes that on 5 April Secretary of the Air Force Harold Brown told the Chief of Staff that the committee's recommendations should be accepted and arrangements made for a scientific team to investigate certain selected sightings in depth [2]."
+          ],
+          quote: {
+            text: "many of the reports that cannot be explained have come from intelligent and technically well qualified individuals whose integrity cannot be doubted.",
+            who: "Maj. Gen. E. B. LeBailly, memorandum to the Scientific Advisory Board, 28 September 1965",
+            src: 1
+          }
+        },
+        {
+          heading: "Choosing a university",
+          paras: [
+            "The same memorandum records a meeting in the Pentagon on 19 April 1966 to work out how to carry out the recommendation. There was no agreement on whether the contract should go to a university or to individuals connected with one. The group suggested the University of Dayton as the probable lead university because it was close to the Foreign Technology Division, which would keep managing Blue Book. Colorado appeared only in a list of other universities that could give regional coverage [2].",
+            "The meeting's list of open questions is frank. The objective was impartial scientists from schools with good reputations who had never been involved with UFOs. It was proposed and accepted that J. Allen Hynek and Donald Menzel form the nucleus of a consultant team to help choose which sightings the university team should investigate. Members also debated whether a public information officer, perhaps incognito, should join the first few teams [3]."
+          ],
+          quote: {
+            text: "Since the problem is 99% public relations",
+            who: "Memorandum for record of the 19 April 1966 meeting, USAF Scientific Advisory Board",
+            src: 3
+          }
+        },
+        {
+          heading: "The Colorado project and the Low memorandum",
+          paras: [
+            "In the end the contract went to the University of Colorado. Condon wrote that its details were worked out with the staff of the Air Force Office of Scientific Research in September 1966, and that it was publicly announced on 7 October 1966, with work to begin soon after 1 November [6]. According to the report's preface, the National Academy of Sciences agreed in October 1966 to review the study when it was finished, and that same month Condon gathered a small staff on the university campus in Boulder [4].",
+            "The project's best-known controversy began before it existed. Condon wrote that several faculty members had grave misgivings about the university taking on so controversial a subject. Before a meeting with Air Force staff on 10 August 1966, Robert J. Low, then assistant dean of the graduate school, set down his thoughts in a memorandum dated 9 August 1966. Condon wrote that a copy was later stolen from Low's files, and that portions printed in an article by John G. Fuller misread it as evidence of a plan to give the Air Force the result it wanted [5].",
+            "Condon's answer, in the report itself, was that Low's suggestion to stress the psychology of witnesses ran exactly contrary to what the project actually did, which was to concentrate on physical phenomena. He also stated that he did not know the memorandum existed until 18 months after it was written [6]."
+          ],
+          quote: {
+            text: "to stress investigation, not of physical phenomena, but rather of the people who do the observing",
+            who: "Robert J. Low, memorandum of 9 August 1966, as quoted by Condon in the final report",
+            src: 6
+          }
+        },
+        {
+          heading: "What the report concluded",
+          paras: [
+            "Condon's own summary, which opens the report, is short. Nothing in 21 years of UFO study had added to scientific knowledge, and further extensive study probably could not be justified on the expectation that science would benefit. He added that well-defined research proposals should still be considered on their merits [7].",
+            "The detailed case chapters, written by project staff, are less tidy. Popular accounts often say the Condon Report explained every case away, but the documents do not support that: the study of the 1956 Lakenheath radar-visual sighting in England concluded that conventional explanations could not be ruled out but seemed unlikely, and that the chance at least one genuine UFO was involved was fairly high [8]."
+          ],
+          quote: {
+            text: "Our general conclusion is that nothing has come from the study of UFOs in the past 21 years that has added to scientific knowledge.",
+            who: "Edward U. Condon, Section I, Scientific Study of Unidentified Flying Objects",
+            src: 7
+          }
+        },
+        {
+          heading: "How the Air Force used it",
+          paras: [
+            "Inside the Air Force the report was welcomed. In February 1969 Lt. Col. Harold Steiner of the Scientific Advisory Board mailed three-volume copies to members of the original committee, recalling that the O'Brien committee had met in February 1966 without guessing it would become a springboard for such an effort [9].",
+            "On 17 December 1969 the Secretary of the Air Force announced the end of Project Blue Book. The Air Force fact sheet that NARA reproduces says the decision rested on the Colorado report, the National Academy of Sciences review of it, earlier studies and the Air Force's own experience. By then 12,618 sightings had been reported to Blue Book since 1947, and 701 remained unidentified [10]."
+          ],
+          quote: {
+            text: "I am satisfied with the results of the study and believe it puts the Air Force in an excellent position to counter criticism.",
+            who: "Lt. Col. Harold A. Steiner, USAF Scientific Advisory Board, letter of 12 February 1969",
+            src: 9
+          }
+        }
+      ],
+      timeline: [
+        { date: "1965-09-28", event: "Maj. Gen. LeBailly asks the Scientific Advisory Board to review Project Blue Book.", src: 1 },
+        { date: "1966-02", event: "The O'Brien committee of the Scientific Advisory Board meets.", src: 9 },
+        { date: "1966-04-05", event: "Secretary Harold Brown says the committee's recommendations should be accepted.", src: 2 },
+        { date: "1966-04-19", event: "Pentagon meeting on how to implement them; Dayton suggested as lead university.", src: 2 },
+        { date: "1966-08-09", event: "Robert J. Low writes his memorandum to two university administrators.", src: 5 },
+        { date: "1966-10-07", event: "The University of Colorado contract is publicly announced.", src: 6 },
+        { date: "1966-10", event: "Condon assembles the project staff in Boulder.", src: 4 },
+        { date: "1969-02-12", event: "Steiner mails copies of the Condon Report to committee members.", src: 9 },
+        { date: "1969-12-17", event: "The Secretary of the Air Force announces the termination of Project Blue Book.", src: 10 }
+      ],
+      sources: [
+        { id: "DOW-UAP-D092", page: 22, note: "LeBailly memorandum requesting a Blue Book review, 28 September 1965" },
+        { id: "DOW-UAP-D092", page: 9, note: "Memorandum for record, 20 April 1966: Brown's approval and the 19 April meeting" },
+        { id: "DOW-UAP-D092", page: 10, note: "Memorandum for record, 20 April 1966: open questions" },
+        { url: "https://archive.org/download/DTIC_AD0680975/DTIC_AD0680975.pdf", page: 8, note: "Condon Report vol. 1, Preface: NAS review and Boulder staff" },
+        { url: "https://archive.org/download/DTIC_AD0680976/DTIC_AD0680976.pdf", page: 494, note: "Condon Report vol. 2, Section V ch. 2: the Low memorandum" },
+        { url: "https://archive.org/download/DTIC_AD0680976/DTIC_AD0680976.pdf", page: 495, note: "Condon Report vol. 2, Section V ch. 2: Condon's reply; contract announced" },
+        { url: "https://archive.org/download/DTIC_AD0680975/DTIC_AD0680975.pdf", page: 15, note: "Condon Report vol. 1, Section I: Conclusions and Recommendations" },
+        { url: "https://archive.org/download/DTIC_AD0680975/DTIC_AD0680975.pdf", page: 334, note: "Condon Report vol. 1, Case 2 (Lakenheath): conclusion" },
+        { id: "DOW-UAP-D092", page: 26, note: "Steiner letter to H. Guyford Stever, 12 February 1969" },
+        { url: "https://www.archives.gov/research/military/air-force/ufos", note: "NARA, Project Blue Book research page with the USAF fact sheet" }
+      ],
+      updated: "2026-10-03"
+    },
+  "coyne": {
+      title: "Coyne helicopter 1973: an Army near-miss report, a climb and an unknown light",
+      sections: [
+        {
+          heading: "A red light off the east horizon",
+          paras: [
+            "The U.S. Army's own account of the incident is a Disposition Form headed \"Near Midair Collision with UFO Report\", sent from the USAR Flight Facility at Cleveland Hopkins Airport on 23 November 1973. It states that at 2305 hours on 18 October 1973, in the vicinity of Mansfield, Ohio, Army Helicopter 68-15444 encountered a near midair collision with an unidentified flying object. The crew were CPT Lawrence J. Coyne, pilot in command; 1LT Arrigo Jezzi, copilot; SSG Robert Yanacsek, crew chief; and SSG John Healey, flight medic, all members of the 316th Medical Detachment (Helicopter Ambulance), a reserve unit based at the Cleveland facility [1].",
+            "According to the form, the helicopter was returning from Columbus to Cleveland at 2,500 feet on a heading of 030 degrees when Yanacsek saw a red light on the east horizon, 90 degrees to the flight path. About 30 seconds later he reported that it was converging on the helicopter at the same altitude, at more than 600 knots, on a collision heading. Coyne took the controls and began a powered descent from 2,500 to 1,700 feet. Mansfield Tower acknowledged a radio call, but when Coyne asked whether any high-performance aircraft were flying near the airport, no response came [1]."
+          ],
+          quote: {
+            text: "Army Helicopter 68-15444 assigned to Cleveland USARFFAC encountered a near midair collision with a unidentified flying object.",
+            who: "U.S. Army Disposition Form, 23 November 1973",
+            src: 1
+          }
+        },
+        {
+          heading: "What the crew described",
+          paras: [
+            "The fullest account of the crew's testimony is the report Jennie Zeidman wrote for the Center for UFO Studies, published in 1979. Her summary says Coyne and Yanacsek watched the light from their seats while Healey got up and stooped in the aisle; Jezzi's view was obstructed. Coyne began a descent of about 500 feet per minute, later increased to 2,000, and the last altitude he noted was 1,700 feet above sea level. After the first contact with Mansfield, the radios malfunctioned on both VHF and UHF [2].",
+            "As a collision seemed imminent, the summary continues, the light slowed and held a position above and in front of the helicopter. Coyne, Healey and Yanacsek reported a cigar-shaped, gray, metallic object filling the front windshield, with a red light at the nose, a white light at the tail and a green beam from its underside that swung over the nose and bathed the cockpit in green light [2]. The Army form records that the object hesitated momentarily over the helicopter, then continued west, accelerating, cleared Mansfield Airport to the west and turned 45 degrees to the northwest [1]."
+          ],
+          quote: {
+            text: "As a collision appeared imminent, the light decelerated and assumed a hovering relationship above/in front of the helicopter.",
+            who: "Jennie Zeidman, summary of the crew's account, 1979",
+            src: 2
+          }
+        },
+        {
+          heading: "The climb nobody commanded",
+          paras: [
+            "The detail that made the case famous is in the Army form itself: Coyne indicated that the altimeter showed a climb of 1,000 feet per minute and read 3,500 feet with the collective in the full down position. He brought the aircraft back to 2,500 feet and flew on to Cleveland; after the flight plan was closed, the FAA Flight Service Station told him to report the incident to the FAA office at Cleveland Hopkins [1].",
+            "Zeidman recorded Coyne's statement that the collective was fully down when he noticed the climb, the cyclic set about 20 degrees nose-down and the power setting never changed from cruise. She also noted the limits of the evidence: no one knows at what altitude the dive turned into a climb, none of the crew felt the g-forces of a sudden change, and because the lake below lies at 997 feet, the 1,700-foot reading meant perhaps 650 to 670 feet above the trees [3]. Her conclusion leaves open how far, if at all, the object affected the helicopter's instruments or flight path [4]."
+          ],
+          quote: {
+            text: "Coyne says that the collective was in the full down position when he noticed the climb",
+            who: "Jennie Zeidman, A Helicopter-UFO Encounter Over Ohio, 1979",
+            src: 3
+          }
+        },
+        {
+          heading: "Reporting it: slow and unofficial",
+          paras: [
+            "The day after the flight, Coyne went to P.J. Vollmer, the FAA chief of operations at Hopkins Field, to ask how and where to report what had happened. Vollmer could not suggest an official agency. Coyne then told the story to his cousin, a reporter for the Cleveland Plain Dealer, but even after the newspaper account there was no official interest, so he filled out Operational Hazard reports a month later to put the incident on record [5]. The Army form notes that the 83d USARCOM was told of the incident at 1530 hours on 19 October [1].",
+            "Popular retellings say all four men gave sworn depositions to the Army within 48 hours; the documents do not show that. The Army form is dated 23 November 1973 and says only that the report had been read and attested to by the crew, with their signatures, and Zeidman writes that the hazard reports were completed a month after the event [1][5]."
+          ],
+          quote: {
+            text: "I don't know what happened, but I do know—I could tell from the tremor of his voice, which wasn't much—that he was shook.",
+            who: "P.J. Vollmer, FAA, in a taped interview with J. Allen Hynek",
+            src: 5
+          }
+        },
+        {
+          heading: "A family at the Route 430 bridge",
+          paras: [
+            "Ground witnesses surfaced almost three years later. On 19 August 1976 the Civil Commission on Aerial Phenomena, a small central Ohio group, published a story in the Mansfield News Journal calling for witnesses. That evening its director, Warren Nicholson, received a call from a youth, identified only as Charles C., who said that he, his mother and his siblings had seen the event. Nicholson and William E. Jones interviewed the family, and Zeidman later spent nearly two hours with them at the site; the mother asked that the family's name not be published [6].",
+            "Driving east on Route 430 toward the bridge over the Charles Mill Reservoir, they saw ahead a red and a green light moving together and coming down rapidly toward them; the red was brighter and seemed to lead [7]. With the car stopped at the roadside, they became aware of a second group of lights, some flashing, approaching from behind, and heard noise for the first time. Mrs. C. thought the two sets of lights were helicopters about to crash [8]."
+          ]
+        },
+        {
+          heading: "Verdicts, then and now",
+          paras: [
+            "Zeidman concluded that the object remained unidentified. Because the aircrew and the ground witnesses, who had never communicated with each other, gave substantially the same description and chronology, she judged it very probable that they had seen the same event, and she considered a meteor or a high-performance aircraft and rejected both. She proposed no theory of what the object was [4].",
+            "On 27 November 1978, by then a lieutenant colonel, Coyne addressed the United Nations Special Political Committee during the debate on Grenada's proposal for a UN study of unidentified flying objects [9].",
+            "The case is sometimes said to appear in AARO's 2024 Historical Record Report. Volume 1 of that report, cleared for publication in March 2024, does not mention Coyne, Mansfield or a 1973 helicopter encounter [10]."
+          ]
+        }
+      ],
+      timeline: [
+        { date: "1973-10-18", event: "2305 hours: near Mansfield, Ohio, the crew of Army Helicopter 68-15444 report a light converging on a collision heading.", src: 1 },
+        { date: "1973-10-19", event: "Coyne asks FAA chief of operations P.J. Vollmer at Hopkins Field how to report the incident.", src: 5 },
+        { date: "1973-10-19", event: "1530 hours: the 83d USARCOM is notified of the incident.", src: 1 },
+        { date: "1973-11-23", event: "The Cleveland USAR Flight Facility issues its \"Near Midair Collision with UFO Report\", attested by the four crewmen.", src: 1 },
+        { date: "1976-08-19", event: "A Mansfield News Journal story calls for ground witnesses; a family on Route 430 comes forward that evening.", src: 6 },
+        { date: "1978-11-27", event: "Coyne addresses the UN Special Political Committee on Grenada's UFO proposal.", src: 9 },
+        { date: "1979-03", event: "Jennie Zeidman's report for the Center for UFO Studies concludes the object remains unidentified.", src: 4 },
+        { date: "2024-03-06", event: "AARO's Historical Record Report Vol. 1 is cleared for publication; it does not discuss the case.", src: 10 }
+      ],
+      sources: [
+        { url: "https://cufos.org/PDFs/books/A%20Helicopter-UFO%20Encounter%20Over%20Ohio.pdf", page: 122, note: "U.S. Army Disposition Form, \"Near Midair Collision with UFO Report\", 23 Nov 1973 (reproduced as Zeidman's appendix)" },
+        { url: "https://cufos.org/PDFs/books/A%20Helicopter-UFO%20Encounter%20Over%20Ohio.pdf", page: 15, note: "Zeidman (CUFOS, 1979): summary of events reported by the crew" },
+        { url: "https://cufos.org/PDFs/books/A%20Helicopter-UFO%20Encounter%20Over%20Ohio.pdf", page: 95, note: "Zeidman: \"The Unexpected Ascent\"" },
+        { url: "https://cufos.org/PDFs/books/A%20Helicopter-UFO%20Encounter%20Over%20Ohio.pdf", page: 116, note: "Zeidman: conclusion" },
+        { url: "https://cufos.org/PDFs/books/A%20Helicopter-UFO%20Encounter%20Over%20Ohio.pdf", page: 17, note: "Zeidman: FAA visit, newspaper account, hazard reports a month later" },
+        { url: "https://cufos.org/PDFs/books/A%20Helicopter-UFO%20Encounter%20Over%20Ohio.pdf", page: 49, note: "Zeidman: how the ground witnesses were found" },
+        { url: "https://cufos.org/PDFs/books/A%20Helicopter-UFO%20Encounter%20Over%20Ohio.pdf", page: 51, note: "Zeidman: ground witnesses at the Route 430 bridge" },
+        { url: "https://cufos.org/PDFs/books/A%20Helicopter-UFO%20Encounter%20Over%20Ohio.pdf", page: 53, note: "Zeidman: ground witnesses see a second set of lights" },
+        { url: "https://media.un.org/photo/en/asset/oun7/oun7603835", note: "UN Photo, 27 Nov 1978: Lt. Col. Larry Coyne addressing the Special Political Committee" },
+        { id: "AARO-AARO_Historical_Record_Report_Vol_1_2024.pdf", note: "AARO Historical Record Report Vol. 1 (2024): no mention of the case" }
+      ],
+      updated: "2026-10-03"
+    },
+  "phoenix-lights": {
+    title: "Phoenix Lights 1997: a flare drop, an unidentified formation, no federal file",
+    sections: [
+      {
+        heading: "Two sets of lights, ninety minutes apart",
+        paras: [
+          "Many Arizonans were outdoors on the evening of 13 March 1997 because Comet Hale-Bopp was near its closest approach to Earth and bright in the northwest sky. According to a 1998 Phoenix New Times investigation, at about 8:15 p.m. a V-shaped pattern of five lights passed over the Prescott area; about 15 minutes later it crossed Phoenix, and at 8:45 it passed south of Tucson, having travelled nearly the length of the state [5].",
+          "A second, separate event began at about 10 p.m., when up to nine bright lights appeared, hovered for several minutes and disappeared southwest of Phoenix in the direction of the Sierra Estrella. Video cameras across the Valley recorded this string of lights [5]. Writers sympathetic to the UFO interpretation also keep the two apart: Leslie Kean, reporting in 2007, wrote that the 10 p.m. lights shown repeatedly on television most likely were flares, according to video analysts, and that people who saw the earlier objects saw something entirely different [1]."
+        ]
+      },
+      {
+        heading: "The 8:30 formation",
+        paras: [
+          "Accounts of the first event diverged. Kean wrote that thousands saw a vast triangular and V-shaped object, which witnesses estimated at up to a mile long [1]. The New Times found that some witnesses saw unconnected lights while others described a giant triangular craft, some placing it high and others barely overhead. A home video of the formation by Terry Proctor showed the five lights moving in relation to each other within a few seconds, which the paper took as evidence of five separate objects rather than one solid body [5].",
+          "In Scottsdale, Mitch Stanley aimed a 10-inch Dobsonian telescope, magnifying 60 times, at the leading three lights. He told the New Times that each light split into pairs on the tips of squarish wings, and that he followed the planes for about a minute. The Maryland Air National Guard's spokesman said its A-10s never went north of Phoenix and so could not have been the 8:30 formation [5].",
+          "Radar does not settle the question. Luke Air Force Base said its operators saw nothing unusual and that a high-altitude formation outside its restricted airspace would not have been considered unusual. Nobody asked the Federal Aviation Administration for its radar tapes in time; a request by 28 March would have preserved a permanent record. No base or airport ever identified the five aircraft [5]."
+        ],
+        quote: {
+          text: "They were planes. There’s no way I could have mistaken that.",
+          who: "Mitch Stanley, amateur astronomer, to Phoenix New Times",
+          src: 5
+        }
+      },
+      {
+        heading: "The 10 p.m. lights and the flare statement",
+        paras: [
+          "In June 1997 KPNX-TV reporter Blair Meeks filmed military flares over the gunnery ranges southwest of Phoenix that looked much like the 10 p.m. lights. Davis-Monthan Air Force Base in Tucson had told reporters it had no planes in the air at either time. Only after Captain Eileen Bienz of the Arizona National Guard heard from Guard helicopter pilots that A-10s had been seen heading for Tucson at about 10 p.m. did the base confirm that the Maryland Air National Guard had dropped flares southwest of Phoenix that night [5].",
+          "On 25 July 1997 Captain Drew Sullins, spokesman for the Maryland Air National Guard, told the Associated Press that eight of its A-10 jets had flown training missions that night over the Barry M. Goldwater Air Force Range, dropping high-intensity parachute flares from 15,000 feet, and had dumped their remaining flares at high altitude before returning to Davis-Monthan [4]. The published accounts differ on distance: the AP put the range 60 miles southwest of Phoenix, while Bienz placed the drop over the North Tac range 30 miles southwest [4][5]. The AP noted that the flare explanation did not cover sightings from northwestern Arizona [4].",
+          "Image analysts hired by the Discovery Channel, and ASU astronomer Paul Scowen working for the New Times, aligned frames of Mike Krzyston's video with daytime views of the Sierra Estrella and found the lights at or just above the ridgeline, blinking out as they reached it, as distant flares would. Krzyston maintained that the lights hovered in front of the mountains [5]."
+        ],
+        quote: {
+          text: "If that is their explanation then they need to do a re-enactment so people can say that's what they saw or not what they saw",
+          who: "Frances Emma Barwood, Phoenix city councilwoman, to the AP, July 1997",
+          src: 4
+        }
+      },
+      {
+        heading: "The governor's joke, and his reversal",
+        paras: [
+          "Phoenix city councilwoman Frances Emma Barwood raised the sightings at a council meeting on 6 May 1997 and became the only public official pressing for an inquiry; the Air Force told her it had got out of the business of investigating UFOs [5]. On 19 June 1997 Governor Fife Symington told a news conference that an alien had been captured, then brought out his chief of staff, Jay Heiler, in an alien costume, telling reporters they were entirely too serious [3].",
+          "Ten years later Symington said he had seen the formation himself. He told Kean it was a large triangular \"craft of unknown origin\" that could not have been flares because it was too symmetrical, and said he had called the commander at Luke Air Force Base, the general in charge of the National Guard and the head of the Department of Public Safety, none of whom had answers [1]. He told the Associated Press he had kept quiet to avoid panic at a time when he faced fraud charges, and had told no one but his wife [3]. To CNN he described the craft as \"enormous\" and said it felt \"otherworldly\" [2].",
+          "Tucson astronomer and retired Air Force pilot James McGaha, who investigated both sightings, told the AP that both were A-10s flying in formation and dropping flares [2], a view that sits awkwardly with the Guard's statement that its A-10s never flew north of Phoenix [5]."
+        ],
+        quote: {
+          text: "I'm a pilot and I know just about every machine that flies. It was bigger than anything that I've ever seen.",
+          who: "Fife Symington, former governor of Arizona, to the AP, March 2007",
+          src: 2
+        }
+      },
+      {
+        heading: "What the government record holds",
+        paras: [
+          "No military or civil investigation file on the Phoenix Lights is held in the realufo.org archive, and none has been published. According to Kean, in 2000 the Department of Defense said it could find no information about the triangular object after a search ordered by the U.S. District Court in Phoenix on behalf of witnesses; that year Senator John McCain said the lights had never been fully explained, but that he had no evidence of aliens or UFOs [1].",
+          "Popular retellings place the case in AARO's 2024 Historical Record Report and in the 2021 intelligence-community preliminary assessment on UAP, but neither document mentions Phoenix: the AARO report reviews official government investigative efforts from 1945 onward [6], and the 2021 assessment examined incidents that occurred between 2004 and 2021 [7].",
+          "What the records support is narrower than the legend: an Air National Guard flare drop that accounts for the 10 p.m. lights, and an 8:30 formation that one telescope observer saw as aircraft and that no agency ever identified [4][5]."
+        ],
+        quote: {
+          text: "These reports describe incidents that occurred between 2004 and 2021",
+          who: "ODNI, Preliminary Assessment: Unidentified Aerial Phenomena, June 2021",
+          src: 7
+        }
+      }
+    ],
+    timeline: [
+      { date: "1997-03-13", event: "About 8:15–8:45 p.m.: a V of five lights passes over Prescott, Phoenix and south of Tucson.", src: 5 },
+      { date: "1997-03-13", event: "About 10 p.m.: Maryland Air National Guard A-10s drop flares over the Goldwater range; hovering lights are videotaped from Phoenix.", src: 4 },
+      { date: "1997-03-28", event: "Last date on which a request would have preserved the FAA's radar tapes; none was made.", src: 5 },
+      { date: "1997-05-06", event: "Councilwoman Frances Emma Barwood raises the sightings at a Phoenix city council meeting.", src: 5 },
+      { date: "1997-06-19", event: "Governor Symington presents an aide in an alien costume at a news conference.", src: 3 },
+      { date: "1997-07-25", event: "Maryland Air National Guard spokesman Capt. Drew Sullins confirms the flare drop to the AP.", src: 4 },
+      { date: "1998-03-05", event: "Phoenix New Times publishes its investigation, including Mitch Stanley's telescope sighting.", src: 5 },
+      { date: "2000", event: "The Department of Defense reports no information on the object after a court-ordered search.", src: 1 },
+      { date: "2007-03-18", event: "Symington tells Leslie Kean he saw the craft himself.", src: 1 },
+      { date: "2007-03-22", event: "Symington repeats his account to the Arizona Daily Star; CNN and the AP report it.", src: 3 }
+    ],
+    sources: [
+      { url: "https://www.dcourier.com/news/symington-confirms-he-saw-ufo-10-years-ago/article_66cce73d-5347-5103-a330-6370b76f10cf.html", note: "Leslie Kean, Prescott Daily Courier, 18 Mar 2007: Symington interview" },
+      { url: "https://www.nbcnews.com/id/wbna17761943", note: "Associated Press via NBC News, 23 Mar 2007: Symington's reversal, McGaha" },
+      { url: "https://www.deseret.com/2007/3/25/20009206/former-governor-says-he-saw-ufo/", note: "Associated Press via Deseret News, 25 Mar 2007: 1997 news conference, Symington's silence" },
+      { url: "https://www.deseret.com/1997/7/26/19325702/flares-not-ufos-caused-light-show-military-says/", note: "Associated Press via Deseret News, 26 Jul 1997: Maryland ANG flare statement" },
+      { url: "https://www.phoenixnewtimes.com/news/the-hack-and-the-quack-6445593/", note: "Tony Ortega, Phoenix New Times, 5 Mar 1998: timeline, telescope sighting, radar, flares" },
+      { id: "AARO-AARO_Historical_Record_Report_Vol_1_2024.pdf", page: 6, note: "AARO Historical Record Report Vol. I (2024), introduction: scope" },
+      { url: "https://www.dni.gov/files/ODNI/documents/assessments/Prelimary-Assessment-UAP-20210625.pdf", page: 4, note: "ODNI Preliminary Assessment on UAP, 25 Jun 2021: period covered" }
+    ],
+    updated: "2026-10-03"
+  },
+  "robertson-panel": {
+      title: "Robertson Panel 1953: no threat found, and a call to strip UFOs of their mystery",
+      sections: [
+        {
+          heading: "Why the CIA called in scientists",
+          paras: [
+            "The panel grew out of a meeting of the Intelligence Advisory Committee on 4 December 1952. According to the minutes kept by Frederick C. Durant, the committee agreed that the Director of Central Intelligence would enlist selected scientists to review and appraise the available evidence in the light of pertinent scientific theories, and the task was delegated to the CIA's Assistant Director for Scientific Intelligence [4].",
+            "Five scientists signed the eventual report: H. P. Robertson of the California Institute of Technology as chairman, Luis W. Alvarez of the University of California, Lloyd V. Berkner of Associated Universities, Inc., S. A. Goudsmit of Brookhaven National Laboratories and Thornton Page of Johns Hopkins University [2]. Durant's minutes record eight sessions, from 9:30 a.m. on Wednesday, 14 January 1953, to the afternoon of Saturday, 17 January. Berkner was absent until the Friday afternoon session [4]."
+          ]
+        },
+        {
+          heading: "What the panel was shown",
+          paras: [
+            "The list of evidence attached to the report begins with seventy-five case histories from 1951 and 1952, chosen by the Air Technical Intelligence Center as the best documented. It also includes the status reports of Projects GRUDGE and BLUE BOOK, the motion-picture films taken at Tremonton, Utah, on 2 July 1952 and at Great Falls, Montana, in August 1950, charts of balloon flight paths, a sample polyethylene balloon and a film of seagulls in bright sunlight [3].",
+            "On the first afternoon, Lt. R. S. Neasham and Harry Woo of the Navy's Photo Interpretation Laboratory at Anacostia presented their analysis of the two films, and Captain E. J. Ruppelt of ATIC spoke for about 40 minutes on how reports were handled and evaluated [4]."
+          ]
+        },
+        {
+          heading: "Tremonton: the Navy's analysts against the panel",
+          paras: [
+            "Durant wrote that the Navy team had spent approximately 1,000 man-hours, at Air Force request, plotting individual frames of the Tremonton film. Its representatives concluded that the objects were not birds, balloons or aircraft, and, because they did not blink through 60 degrees of arc, that they were self-luminous [5].",
+            "The panel was impressed by the effort but could not accept the conclusions. Among its reasons, it noted that a semi-spherical object can reflect sunlight without blinking, and that the objects' motions, sizes and brightness strongly suggested birds, particularly after members watched a short film of seagulls [5]. The bird idea was not new: in October 1952 an ATIC officer had already proposed sending the original film to an ornithologist, perhaps at the Smithsonian, to judge whether the objects might be birds in flight [8]."
+          ],
+          quote: {
+            text: "It was the opinion of the P.I.L. representatives that the objects sighted were not birds, balloons or aircraft",
+            who: "F. C. Durant, report of the panel's meetings",
+            src: 5
+          }
+        },
+        {
+          heading: "The two-page report",
+          paras: [
+            "The formal report, stamped 17 January 1953, says the panel received evidence from the intelligence agencies, mainly ATIC, and reviewed a selection of the best documented incidents. It concludes that the evidence showed no indication of a direct physical threat to national security, no residuum of cases attributable to foreign artifacts capable of hostile acts, and no need to revise current scientific concepts [1].",
+            "The danger the panel did see was indirect: channels of communication clogged by irrelevant reports, real indications of hostile action ignored after continued false alarms, and the cultivation of a morbid national psychology that hostile propaganda could exploit [1][2]. It recommended that the national security agencies strip UFOs of their special status, and that they institute policies on intelligence, training and public education, through an integrated program designed to reassure the public of the total lack of evidence of inimical forces behind the phenomena [2]."
+          ],
+          quote: {
+            text: "take immediate steps to strip the Unidentified Flying Objects of the special status they have been given and the aura of mystery they have unfortunately acquired",
+            who: "Report of the Scientific Panel on Unidentified Flying Objects, 1953",
+            src: 2
+          }
+        },
+        {
+          heading: "\"Debunking\" was in the minutes, not the report",
+          paras: [
+            "Durant's memorandum of 16 February 1953 carried a second part: an unofficial supplement setting out comments and suggestions that panel members believed were inappropriate for the formal report [4]. That supplement describes a broad educational program with two major aims, training and \"debunking\". Training would teach service personnel to recognise balloons, aircraft reflections and natural phenomena; debunking would reduce public interest in flying saucers through television, motion pictures and popular articles built on solved cases. Members suggested psychologists, an advertising expert, the Jam Handy Co. and Walt Disney animated cartoons as possible help [6].",
+            "Popular accounts often quote the panel's report as recommending a national policy of \"debunking\"; the two-page report the five scientists signed never uses the word, which appears only in Durant's unofficial record of their side comments [2][6]."
+          ],
+          quote: {
+            text: "it should have two major aims: training and \"debunking\".",
+            who: "F. C. Durant, report of the panel's meetings",
+            src: 6
+          }
+        },
+        {
+          heading: "Distribution, secrecy and release",
+          paras: [
+            "On 18 February 1953 the Intelligence Advisory Committee's secretary circulated the report, proposed sending copies to the Secretary of Defense, the Federal Civil Defense Administration and the National Security Resources Board, and recorded that the panel's work had moved CIA to conclude that no National Security Council Intelligence Directive on the subject was warranted [7]. The civil defense administrator, Val Peterson, replied that the recommendations, particularly on public education, were of considerable interest to the civil defense program [9].",
+            "The CIA's own history says officials later agreed that the Condon Committee could release the full Durant report with only minor deletions, and that in 1975, after William Spaulding of Ground Saucer Watch wrote on 7 June, the agency gave him copies of the panel report and the Durant report [10]."
+          ]
+        }
+      ],
+      timeline: [
+        {
+          date: "1952-10-15",
+          event: "An ATIC officer suggests showing the Tremonton film to an ornithologist.",
+          src: 8
+        },
+        {
+          date: "1952-12-04",
+          event: "The Intelligence Advisory Committee agrees that selected scientists should review the evidence.",
+          src: 4
+        },
+        {
+          date: "1953-01-14",
+          event: "The panel's first session opens at 9:30 a.m.; the Tremonton and Great Falls films are shown.",
+          src: 4
+        },
+        {
+          date: "1953-01-16",
+          event: "Lloyd Berkner attends for the first time; the chairman is asked to draft the report that evening.",
+          src: 4
+        },
+        {
+          date: "1953-01-17",
+          event: "The report of the Scientific Panel on Unidentified Flying Objects is dated and signed.",
+          src: 1
+        },
+        {
+          date: "1953-02-16",
+          event: "Durant submits his report of the meetings, with the panel's unofficial comments.",
+          src: 4
+        },
+        {
+          date: "1953-02-18",
+          event: "IAC-D-67 circulates the report; CIA sees no need for an intelligence directive.",
+          src: 7
+        },
+        {
+          date: "1975-06-07",
+          event: "Ground Saucer Watch asks the CIA for the panel report; it receives the report and the Durant report.",
+          src: 10
+        }
+      ],
+      sources: [
+        {
+          id: "CIA-UAP-002",
+          page: 8,
+          note: "Report of the Scientific Panel, 17 January 1953, page 1"
+        },
+        {
+          id: "CIA-UAP-002",
+          page: 9,
+          note: "Report, page 2: recommendations and signatures"
+        },
+        {
+          id: "CIA-UAP-002",
+          page: 10,
+          note: "Tab B: evidence presented to the panel"
+        },
+        {
+          url: "https://files.ncas.org/condon/text/appndx-u.htm",
+          note: "Durant report, Part I: history of meetings (Condon Report, Appendix U)"
+        },
+        {
+          id: "CIA-UAP-002",
+          page: 22,
+          note: "Durant report: Tremonton film"
+        },
+        {
+          id: "CIA-UAP-002",
+          page: 29,
+          note: "Durant report: educational program (pp. 29-31)"
+        },
+        {
+          id: "CIA-UAP-002",
+          page: 14,
+          note: "IAC-D-67, 18 February 1953"
+        },
+        {
+          id: "DOW-UAP-D102",
+          page: 9,
+          note: "ATIC disposition form on the Tremonton film, 15 October 1952"
+        },
+        {
+          id: "CIA-UAP-002",
+          page: 2,
+          note: "Federal Civil Defense Administration reply, April 1953"
+        },
+        {
+          url: "https://www.cia.gov/resources/csi/static/cia-role-study-UFOs.pdf",
+          page: 11,
+          note: "Gerald K. Haines, CIA's Role in the Study of UFOs, 1947-90 (1997)"
+        }
+      ],
+      updated: "2026-10-03"
+    },
 };
