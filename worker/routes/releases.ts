@@ -13,13 +13,14 @@ import {
 // ponytail: 1h per colo like listHubsCached; a new drop shows up within the hour.
 export const loadSeries = async (env: Env, origin: string): Promise<ReleaseInfo[]> =>
   (await cachedJson(`${origin}/__releases`, async () => {
-    const [releases, rows] = await Promise.all([
-      wargovReleases(env),
-      env.DB.prepare(
+    // Both entries are promises before Promise.all sees them: a synchronous
+    // prepare() throw must not orphan the other (unhandled) rejection.
+    const counts = async () =>
+      (await env.DB.prepare(
         "SELECT doc_date, agency, kind, count(*) n FROM records WHERE archive='wargov' AND status='live' AND doc_date IS NOT NULL GROUP BY 1,2,3"
-      ).all<CountRow>(),
-    ]);
-    return releaseSeries(releases, rows.results, AGENCY_HUBS);
+      ).all<CountRow>()).results;
+    const [releases, rows] = await Promise.all([wargovReleases(env), counts()]);
+    return releaseSeries(releases, rows, AGENCY_HUBS);
   })) ?? [];
 
 export async function trackerData(env: Env, origin: string, today = todayIso()): Promise<TrackerData> {
