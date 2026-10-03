@@ -1380,7 +1380,7 @@ export const CASE_STORY_TEXT: Record<string, CaseStory> = {
         paras: [
           "The document index that follows the summary shows how the inquiry began. A teletype sent at 08:10Z on 12 November by the head of the Valencia air sector reported that a TAE aircraft on a Palma-Tenerife flight plan had landed at Valencia because of the dangerously close presence of an unidentified object. The same day the general commanding Air Transport Command ordered the colonel in charge of the Valencia air sector to open an information file, and the regional air commander reported the incident and the order to the Chief of the Air Staff [5].",
           "Barcelona control's log and tape transcript, forwarded on 13 November, were later included in the report of the investigating officer, the Juez Informador [5].",
-          "Stamps on the summary show it was declassified on 11 August 1994 and logged by the Air Force's central library on 1 September 1994 [3]. The Ministry of Defence's virtual library now holds the file, catalogued as covering 1979 to 1994 and distributed under a CC BY 4.0 licence [1]. This account rests on the opening summary and index; the investigating officer's full report appears later in the file."
+          "Stamps on the summary show it was declassified on 11 August 1994 and logged by the Air Force's central library on 1 September 1994 [3]. The Ministry of Defence's virtual library now holds the file, catalogued as covering 1968 to 1980 and distributed under a CC BY 4.0 licence [1]. This account rests on the opening summary and index; the investigating officer's full report appears later in the file."
         ]
       }
     ],
@@ -1423,27 +1423,27 @@ export const CASE_STORY_TEXT: Record<string, CaseStory> = {
     ],
     sources: [
       {
-        id: "SPAIN-BVD-38290-Valencia-Motril-Madrid-1979",
+        id: "SPAIN-BVD-38287-Manises-791111-1979",
         note: "Defence Virtual Library catalogue record"
       },
       {
-        id: "SPAIN-BVD-38290-Valencia-Motril-Madrid-1979",
+        id: "SPAIN-BVD-38287-Manises-791111-1979",
         page: 1,
         note: "File cover: case numbers and dates"
       },
       {
-        id: "SPAIN-BVD-38290-Valencia-Motril-Madrid-1979",
+        id: "SPAIN-BVD-38287-Manises-791111-1979",
         page: 2,
         note: "Air Operations Command summary, page 1"
       },
       {
-        id: "SPAIN-BVD-38290-Valencia-Motril-Madrid-1979",
+        id: "SPAIN-BVD-38287-Manises-791111-1979",
         page: 3,
         note: "Air Operations Command summary, page 2"
       },
       {
-        id: "SPAIN-BVD-38290-Valencia-Motril-Madrid-1979",
-        page: 4,
+        id: "SPAIN-BVD-38287-Manises-791111-1979",
+        page: 5,
         note: "Summary, page 3, and document index"
       }
     ],
