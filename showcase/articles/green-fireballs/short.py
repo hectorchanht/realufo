@@ -1,4 +1,4 @@
-"""Short for the "green fireballs" article: 1948-50 green fireballs over the New Mexico atomic labs;
+"""Short for the "green fireballs" article (angle: "do UFOs watch our nukes?"; D094 p.10, D154 p.3, D004 p.2/7/9/25, D017 p.4): 1948-50 green fireballs over the New Mexico atomic labs;
 the secret Los Alamos conference of 16 Feb 1949 (DOE-UAP-D004: Teller, Bradbury, Reines, LaPaz, the
 FBI); LaPaz's case (copper-green, flat paths, silent at 400 miles); Teller's "electron phenomenon";
 plot twists (DOW-UAP-D017: no copper dispersion, the one sample "of local origin"; FBI file 1950:
@@ -42,27 +42,29 @@ def page(img, lines, secs, say):
     c.seg(["-loop", "1", "-i", img], ",".join(vf), secs, say=say)
 
 c = Cut()
-fireball(top("1949: green fireballs", "over the A-bomb labs"), 4,
-         "Nineteen forty-nine. Green fireballs keep streaking over America's atomic bomb labs.")
-page(P("d004-room.jpg"), top("A SECRET meeting", "Edward Teller in the room"), 4,
+fireball(top("Do UFOs watch", "our NUKES?"), 3.5,
+         "The theory: UFOs keep showing up where the nukes are.")
+page(P("d094-sites.jpg"), top("1949 Air Force report:", "Oak Ridge, Hanford...", c="the A-bomb sites · p.10"), 4,
+     "A 1949 Air Force report: sightings near Oak Ridge and Hanford, the atomic bomb plants.")
+page(P("d154-ruppelt.jpg"), top("Blue Book chief, 1952:", "\"around Los Alamos\"", c="Ruppelt's talk · p.3"), 3.5,
+     "The Air Force's UFO chief: concentrations around Los Alamos.")
+fireball(top("1949: green fireballs", "over the A-bomb labs"), 3.5,
+         "Then green fireballs streak over the A-bomb labs.")
+page(P("d004-room.jpg"), top("A SECRET meeting", "Edward Teller in the room", c="Los Alamos, 16 Feb 1949 · p.2"), 4,
      "So the bomb scientists held a secret meeting. Edward Teller was in the room.")
-page(P("d004-dec12.jpg"), top("The meteor expert:", "\"not a conventional meteor\""), 3.5,
-     "The top meteor expert saw one himself. No ordinary meteor, he said.")
-page(P("d004-copper.jpg"), top("Its green =", "copper in a Bunsen burner", c="meteors barely contain copper"), 3.5,
-     "Its green matched copper. Meteors barely have any.")
-page(P("d004-sound.jpg"), top("Seen 400 miles away", "...but no sound"), 3,
-     "Seen four hundred miles away, yet silent.")
-page(P("d004-teller.jpg"), top("Teller's guess:", "\"an electron phenomenon\""), 3,
+page(P("d004-roswell.jpg"), top("It even mentions", "ROSWELL", c="5 men watched one go by · p.7"), 4,
+     "The transcript even mentions Roswell, home of the world's only atomic bomb unit.")
+page(P("d004-copper.jpg"), top("Its green =", "copper in a Bunsen burner", c="\"not a conventional meteor\" · p.9"), 3.5,
+     "The meteor expert said: green like copper. No ordinary meteor.")
+page(P("d004-teller.jpg"), top("Teller's guess:", "\"an electron phenomenon\"", c="p.25"), 3,
      "Teller's guess: an electron phenomenon.")
-page(P("d017-copper.jpg"), top("Plot twist:", "the copper? local dust", c="\"two automobiles\" drove past"), 4,
-     "Plot twist: the copper sample? Probably local dust. Two cars drove past.")
-page(P("fbi-missiles.jpg"), top("1950, the expert again:", "half meteors, half", c="\"U.S. guided missiles\""), 4,
-     "By 1950, the expert thought half were meteors, and the rest American missiles.")
-fireball(top("Today's best guess:", "bright meteors", c="many glow green (magnesium, nickel)"), 3.5,
-         "Today's best guess: bright meteors. Many glow green.")
+page(P("d017-copper.jpg"), top("Plot twist:", "the copper? local dust", c="\"two automobiles\" drove past · p.4"), 4,
+     "Plot twist: the copper sample? Probably local dust.")
+fireball(top("Skeptics:", "the most watched skies", c="get the most reports"), 3.5,
+         "Skeptics say: the most watched skies get the most reports.")
 c.seg(["-loop", "1", "-i", P("app-search.png")], ",".join(["crop=860:1080:0:140,scale=1080:1356,fps=30,pad=1080:1920:0:450:black",
       txt("Read the secret transcript:", 215, 62), txt("search \"green fireballs\"", 300, 56, "yellow")]), 3.5,
       say="Read the secret transcript on real U F O dot org.")
-page(P("d004-teller.jpg"), [txt("Meteors, missiles or...?", 215, 68), txt("realufo.org", 300, 70, "yellow"), txt("the 1949 transcript, free", 380, 46)], 3,
-     "Meteors, missiles, or something else? You decide.")
+page(P("d004-roswell.jpg"), [txt("Watching our nukes,", 215, 66), txt("or watching too hard?", 300, 62, "yellow"), txt("realufo.org", 380, 50)], 3,
+     "Watching our nukes, or watching too hard? You decide.")
 c.save(OUT, bed=True)

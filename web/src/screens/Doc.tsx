@@ -219,6 +219,9 @@ export function Doc() {
     onShiftWheel: lens ? (d) => setMag((m) => LENS_MAGS[Math.min(LENS_MAGS.length - 1, Math.max(0, LENS_MAGS.indexOf(m) + d))]) : undefined,
   });
   const startAt = parseMoment(searchParams.get("t")) ?? undefined;
+  // ?p=N: a PDF page, the document equivalent of ?t= (article evidence links use it).
+  const pdfPage = Math.max(0, Math.floor(Number(searchParams.get("p")))) || undefined;
+  const fileHref = `/api/file/${id}${pdfPage ? `#page=${pdfPage}` : ""}`;
   // VideoTransport portals its speed/loop chips into MediaToolbar's Adjust panel.
   const [speedSlot, setSpeedSlot] = useState<HTMLDivElement | null>(null);
   // Official time-coded "Video Description" lines → key moments (the rest stays as summary prose).
@@ -262,6 +265,7 @@ export function Doc() {
     if (!target) return null;
     const sp = new URLSearchParams(searchParams);
     sp.delete("t"); // a moment belongs to this file, not the next
+    sp.delete("p"); // so does a page
     if (targetPage > 1) sp.set("page", String(targetPage));
     else sp.delete("page");
     const qs = sp.toString();
@@ -407,7 +411,7 @@ export function Doc() {
     // cross-origin URL directly makes mobile browsers *download* the PDF
     // instead of viewing it; routing through our origin renders it inline in
     // the browser's PDF viewer. (An in-app <iframe> renders blank on mobile.)
-    window.open(`/api/file/${id}`, "_blank", "noopener,noreferrer");
+    window.open(fileHref, "_blank", "noopener,noreferrer");
   }
 
   function handleShare(t: number) {
@@ -542,7 +546,7 @@ export function Doc() {
           </div>
         )}
         {media === "pdf" && (
-          <iframe title={title} src={`/api/file/${id}`} className="h-full w-full border-0 bg-white" />
+          <iframe title={title} src={fileHref} className="h-full w-full border-0 bg-white" />
         )}
         {(media === "thumb" || media === "audio") &&
           (thumbUrl && !thumbFailed ? (
@@ -755,7 +759,7 @@ export function Doc() {
         </div>
       )}
 
-      <FullText data={detail.fullText} kind={record.kind} onOpenOriginal={handleOpenOriginal} />
+      <FullText data={detail.fullText} kind={record.kind} page={pdfPage} onOpenOriginal={handleOpenOriginal} />
 
       {/* series prev/next — id neighbours (D029 ← D030 → D031), uapbrowser-style */}
       {(detail.series?.prev || detail.series?.next) && (

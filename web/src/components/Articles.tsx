@@ -23,6 +23,7 @@ export function Articles({ articles, currentId, onSeek }: { articles: Article[];
                     <span className="block font-mono text-[10px] text-dim">
                       {e.id}
                       {e.t != null && <span className="text-signal"> ▶ {formatMoment(e.t)}</span>}
+                      {e.page != null && <span className="text-signal"> · p.{e.page}</span>}
                       {here && " · this file"}
                     </span>
                     <span className="block font-body text-[13px] leading-snug text-ink">{e.label}</span>
@@ -35,7 +36,7 @@ export function Articles({ articles, currentId, onSeek }: { articles: Article[];
                   {here && e.t != null ? (
                     <button type="button" className={cls} onClick={() => onSeek(e.t!)}>{body}</button>
                   ) : (
-                    <Link className={cls} to={`/doc/${encodeURIComponent(e.id)}${e.t != null ? `?t=${e.t}` : ""}`}>{body}</Link>
+                    <Link className={cls} to={`/doc/${encodeURIComponent(e.id)}${e.t != null ? `?t=${e.t}` : e.page != null ? `?p=${e.page}` : ""}`}>{body}</Link>
                   )}
                 </li>
               );

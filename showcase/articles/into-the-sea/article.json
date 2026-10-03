@@ -14,11 +14,25 @@
     "6/ Check it yourself, free:\n• realufo.org/archive → search \"USO\" → Video\n• PR067 at 0:49: press , and . to step frames. No splash, no wake: it fades.\n• read AARO's Puerto Rico case resolution in full"
   ],
   "evidence": [
-    {"id": "AARO-DOD_110692805-1920x1080-9000k", "t": 124, "label": "Puerto Rico, 2013: the \"UFO that dove into the Atlantic\"", "image": "AARO-DOD_110692805-1920x1080-9000k.jpg",
-     "evidence": "Black-hot IR (dark = hot). Tracked at the crosshair from 2:04; at 2:05.5 it shrinks and by 2:06 it is gone from the whole frame. No splash, no wake. The HUD's \"TGT … 3FT\" is the height of the point where the line of sight meets the surface, not the object's altitude."},
-    {"id": "AARO-AARO_Puerto_Rico_UAP_Case_Resolution.pdf", "label": "AARO's case resolution: two lanterns, over land",
-     "evidence": "\"The objects did not enter the water. Rather, the sensor could not distinguish the objects from their environment due to a lack of thermal contrast between them and the ocean.\" \"The objects remained over land throughout the video.\" Drift ~3.6 m/s (8 mph) vs wind 4.4 m/s (9.8 mph); assessed altitude 656 ft; sunset 7:48 p.m., recorded 9:22 p.m. (thermal crossover window). \"Moderate confidence that the objects were a pair of sky lanterns.\""},
-    {"id": "DOW-UAP-PR067", "t": 49.6, "label": "2022: \"Multiple Spherical UAP USO near Sub … in and out of water\"", "image": "DOW-UAP-PR067.jpg",
-     "evidence": "White-hot IR near a surfaced submarine. A bright speck enters at 0:49, glides across, and by 0:55 has faded into the waves. AARO's own description lists objects entering and leaving the field of view; it never says they enter the water. Officially unresolved."}
+    {
+      "id": "AARO-DOD_110692805-1920x1080-9000k",
+      "t": 124,
+      "label": "Puerto Rico, 2013: the \"UFO that dove into the Atlantic\"",
+      "image": "AARO-DOD_110692805-1920x1080-9000k.jpg",
+      "evidence": "Black-hot IR (dark = hot). Tracked at the crosshair from 2:04; at 2:05.5 it shrinks and by 2:06 it is gone from the whole frame. No splash, no wake. The HUD's \"TGT … 3FT\" is the height of the point where the line of sight meets the surface, not the object's altitude."
+    },
+    {
+      "id": "AARO-AARO_Puerto_Rico_UAP_Case_Resolution.pdf",
+      "label": "AARO's case resolution: two lanterns, over land",
+      "evidence": "\"The objects did not enter the water. Rather, the sensor could not distinguish the objects from their environment due to a lack of thermal contrast between them and the ocean.\" (p.5) \"The objects remained over land throughout the video.\" (p.3) Drift ~3.6 m/s (8 mph) vs wind 4.4 m/s (9.8 mph) (p.3); assessed altitude 656 ft (p.1); sunset 7:48 p.m., recorded 9:22 p.m., thermal crossover window (p.6). \"Moderate confidence that the objects were a pair of sky lanterns.\" (p.1)",
+      "page": 5
+    },
+    {
+      "id": "DOW-UAP-PR067",
+      "t": 49.6,
+      "label": "2022: \"Multiple Spherical UAP USO near Sub … in and out of water\"",
+      "image": "DOW-UAP-PR067.jpg",
+      "evidence": "White-hot IR near a surfaced submarine. A bright speck enters at 0:49, glides across, and by 0:55 has faded into the waves. AARO's own description lists objects entering and leaving the field of view; it never says they enter the water. Officially unresolved."
+    }
   ]
 }

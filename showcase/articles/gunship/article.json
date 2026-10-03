@@ -14,13 +14,32 @@
     "6/ See it yourself, free:\n• realufo.org/archive → search \"gunship\" → Video\n• DOW-UAP-PR121 at 0:14: press , and . to catch the pair\n• read the crew's report in full: DOW-UAP-D101"
   ],
   "evidence": [
-    {"id": "DOW-UAP-D101", "label": "The crew's intelligence report",
-     "evidence": "\"two approximately four-foot diameter cold orbs between 0 to 20 feet above the surface of the water stationary over the flare for approximately 15 seconds.\" \"the CSO pulled the trigger firing the aircraft's 105mm cannon … the CSO observed the pair of UAPs rapidly fly away from the flare and out of the sensor feed without changing altitude.\" \"similar to how dolphins playfully swim in a pod (SOURCE COMMENT: They [the UAPs] knew they were flying together).\" \"the aircraft's Digital Video Recorder (DVR) inexplicably failed and the video data became corrupted.\" Speeds 250-1,300 mph (OCR of the scan, lightly cleaned)."},
-    {"id": "DOW-UAP-PR121", "t": 14.1, "label": "Two orbs cross the whole screen in about 0.3 seconds", "image": "DOW-UAP-PR121.jpg",
-     "evidence": "Between 0:14.1 and 0:14.3 two dark blobs streak across the top right as a pair, smeared by their speed. At normal playback you barely see them; step frame by frame. Single orbs are clearest at 0:02.5 and 0:27.5."},
-    {"id": "DOW-UAP-PR118", "t": 1.5, "label": "A \"cold orb\" near the crosshair", "image": "DOW-UAP-PR118.jpg",
-     "evidence": "A small dark orb sits just off the reticle. AARO: \"secondary capture, recorded via a cellular device, of an infrared sensor display aboard a U.S. Special Operations Forces AC-130J Gunship\"; expect blur, flicker and tilt."},
-    {"id": "DOW-UAP-PR117", "t": 4, "label": "What a phone filming a cockpit screen looks like", "image": "DOW-UAP-PR117.jpg",
-     "evidence": "Tilted reticle, glare, screen-door noise: the footage that survived after the recorder failed. PR117-PR122 were all captured the same night."}
+    {
+      "id": "DOW-UAP-D101",
+      "label": "The crew's intelligence report",
+      "evidence": "\"two approximately four-foot diameter cold orbs between 0 to 20 feet above the surface of the water stationary over the flare for approximately 15 seconds.\" \"the CSO pulled the trigger firing the aircraft's 105mm cannon … the CSO observed the pair of UAPs rapidly fly away from the flare and out of the sensor feed without changing altitude.\" \"similar to how dolphins playfully swim in a pod (SOURCE COMMENT: They [the UAPs] knew they were flying together).\" \"the aircraft's Digital Video Recorder (DVR) inexplicably failed and the video data became corrupted.\" Speeds 250-1,300 mph (p.2; OCR of the scan, lightly cleaned).",
+      "page": 2
+    },
+    {
+      "id": "DOW-UAP-PR121",
+      "t": 14.1,
+      "label": "Two orbs cross the whole screen in about 0.3 seconds",
+      "image": "DOW-UAP-PR121.jpg",
+      "evidence": "Between 0:14.1 and 0:14.3 two dark blobs streak across the top right as a pair, smeared by their speed. At normal playback you barely see them; step frame by frame. Single orbs are clearest at 0:02.5 and 0:27.5."
+    },
+    {
+      "id": "DOW-UAP-PR118",
+      "t": 1.5,
+      "label": "A \"cold orb\" near the crosshair",
+      "image": "DOW-UAP-PR118.jpg",
+      "evidence": "A small dark orb sits just off the reticle. AARO: \"secondary capture, recorded via a cellular device, of an infrared sensor display aboard a U.S. Special Operations Forces AC-130J Gunship\"; expect blur, flicker and tilt."
+    },
+    {
+      "id": "DOW-UAP-PR117",
+      "t": 4,
+      "label": "What a phone filming a cockpit screen looks like",
+      "image": "DOW-UAP-PR117.jpg",
+      "evidence": "Tilted reticle, glare, screen-door noise: the footage that survived after the recorder failed. PR117-PR122 were all captured the same night."
+    }
   ]
 }

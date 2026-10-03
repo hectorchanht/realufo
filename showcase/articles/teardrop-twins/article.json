@@ -31,17 +31,20 @@
     {
       "id": "DOW-UAP-D025",
       "label": "Mission report for the Greece video",
-      "evidence": "\"ROUND DIAMOND SHAPE WITH STRAIGHT, NON MANUEVERABLE 'TAIL'\" … \"APPROX 434 KNOTS\" … \"THE UAP ONLY APPEARED ON THE SWIR CAMERA\". The event lasted about 2 minutes."
+      "evidence": "\"ROUND DIAMOND SHAPE WITH STRAIGHT, NON MANUEVERABLE 'TAIL'\" … \"APPROX 434 KNOTS\" … \"THE UAP ONLY APPEARED ON THE SWIR CAMERA\" (p.7). The event lasted about 2 minutes.",
+      "page": 7
     },
     {
       "id": "DOW-UAP-D027",
       "label": "Mission report for the Gulf of Oman video",
-      "evidence": "\"GLOWING HOT SPHERICAL UNIDENTIFIED OBJECT WITH A VERTICAL UNWAVERING CYLINDRICAL POLE/BAR ATTACHED ON THE BOTTOM\" … \"MOVING AT 140KNOTS\". The observing aircraft was at 23,999 ft, 163 kts. Observer assessment: Benign."
+      "evidence": "\"GLOWING HOT SPHERICAL UNIDENTIFIED OBJECT WITH A VERTICAL UNWAVERING CYLINDRICAL POLE/BAR ATTACHED ON THE BOTTOM\" … \"MOVING AT 140KNOTS\" (p.7). The observing aircraft was at 23,999 ft, 163 kts; observer assessment: Benign (p.6).",
+      "page": 7
     },
     {
       "id": "AARO-AARO_GoFast_Case_Resolution_Card_Methodology_Final.pdf",
       "label": "Why a far, slow object can look fast",
-      "evidence": "AARO's GoFast resolution: reported \"near ocean's surface\" at \"high speeds\"; assessed at about 13,000 ft doing 5-92 mph. \"The object's apparent high speed is attributable to motion parallax.\" The same effect applies to any speed called out from a moving jet without a range."
+      "evidence": "AARO's GoFast resolution: reported \"near ocean's surface\" at \"high speeds\"; assessed at about 13,000 ft doing 5-92 mph (p.1). \"The object's apparent high speed is attributable to motion parallax.\" (p.3) The same effect applies to any speed called out from a moving jet without a range.",
+      "page": 3
     }
   ]
 }

@@ -1,17 +1,20 @@
-import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import FullText from "../components/FullText";
 
-describe("FullText", () => {
-  it("image with only an AI visual description: labelled AI section, no FULL TEXT tab", () => {
-    render(<FullText data={{ pages: [], truncated: false, total_pages: 0, aiSummary: "A grayscale infrared frame." }} kind="image" onOpenOriginal={() => {}} />);
-    expect(screen.getByRole("heading", { name: "AI VISUAL DESCRIPTION" })).toBeInTheDocument();
-    expect(screen.getByText("A grayscale infrared frame.")).toBeInTheDocument();
-    expect(screen.getByText(/AI-generated from the image · may contain errors/)).toBeInTheDocument();
-    expect(screen.queryByText("FULL TEXT")).toBeNull();
+const data = { pages: [{ n: 1, text: "one" }, { n: 2, text: "two" }], truncated: true, total_pages: 9, aiSummary: "summary" };
+
+describe("FullText ?p= page deep-link", () => {
+  it("opens the text view and marks the page", () => {
+    const { container } = render(<FullText data={data} page={2} onOpenOriginal={() => {}} />);
+    expect(screen.queryByText("summary")).toBeNull();
+    expect(container.querySelector('[data-page="2"]')?.className).toContain("ring-signal");
+    expect(container.querySelector('[data-page="1"]')?.className).not.toContain("ring-signal");
   });
-  it("nothing at all without pages or an AI summary", () => {
-    const { container } = render(<FullText data={{ pages: [], truncated: false, total_pages: 0, aiSummary: null }} kind="image" onOpenOriginal={() => {}} />);
-    expect(container).toBeEmptyDOMElement();
+  it("a page beyond the extracted text offers the original file", () => {
+    const open = vi.fn();
+    render(<FullText data={data} page={7} onOpenOriginal={open} />);
+    screen.getByText(/Page 7 isn't in the extracted text/).click();
+    expect(open).toHaveBeenCalled();
   });
 });

@@ -235,8 +235,8 @@ export interface Article {
   image_url: string | null;
   /** Site thread the article is published as (OP = story, replies = evidence). */
   thread_id: string | null;
-  /** Each record's best moment (seconds into its video, null for documents) and close-up. */
-  evidence: { id: string; t: number | null; label: string; image_url: string | null }[];
+  /** Each record's best moment (seconds into its video) or PDF page, and a close-up. */
+  evidence: { id: string; t: number | null; page?: number | null; label: string; image_url: string | null }[];
 }
 
 /** Quality-filtered PDF text (crawler ingest.fulltext), capped ~30k chars. */

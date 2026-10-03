@@ -275,7 +275,7 @@ export async function loadRecord(env: Env, id: string, origin: string) {
       .first<{ bullets: string; one_liner: string; card_url: string | null }>(),
     // Articles this record is evidence in (migration 0025), each with all its evidence rows.
     env.DB.prepare(
-      `SELECT a.slug, a.title, a.image_key, a.thread_id, e.record_id, e.t, e.label, e.image_key e_image
+      `SELECT a.slug, a.title, a.image_key, a.thread_id, e.record_id, e.t, e.page, e.label, e.image_key e_image
          FROM articles a JOIN article_records e ON e.slug=a.slug
         WHERE a.slug IN (SELECT slug FROM article_records WHERE record_id=?) ORDER BY a.created_at DESC, e.pos`
     )
@@ -304,19 +304,19 @@ export async function loadRecord(env: Env, id: string, origin: string) {
 
 type ArticleRow = {
   slug: string; title: string; image_key: string | null; thread_id: string | null;
-  record_id: string; t: number | null; label: string; e_image: string | null;
+  record_id: string; t: number | null; page: number | null; label: string; e_image: string | null;
 };
 
 export type Article = {
   slug: string; title: string; image_url: string | null; thread_id: string | null;
-  evidence: { id: string; t: number | null; label: string; image_url: string | null }[];
+  evidence: { id: string; t: number | null; page: number | null; label: string; image_url: string | null }[];
 };
 
 function groupArticles(env: Env, rows: ArticleRow[]): Article[] {
   const out = new Map<string, Article>();
   for (const r of rows) {
     const a = out.get(r.slug) ?? { slug: r.slug, title: r.title, image_url: uploadUrl(env, r.image_key), thread_id: r.thread_id, evidence: [] };
-    a.evidence.push({ id: r.record_id, t: r.t, label: r.label, image_url: uploadUrl(env, r.e_image) });
+    a.evidence.push({ id: r.record_id, t: r.t, page: r.page, label: r.label, image_url: uploadUrl(env, r.e_image) });
     out.set(r.slug, a);
   }
   return [...out.values()];

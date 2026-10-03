@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FullText as FullTextData } from "../api/types";
 import { chip, off, on } from "./ImageTools";
 
@@ -10,13 +10,27 @@ import { chip, off, on } from "./ImageTools";
 export default function FullText({
   data,
   kind,
+  page,
   onOpenOriginal,
 }: {
   data: FullTextData | null | undefined;
   kind?: string;
+  /** ?p=N: open the text view scrolled to (and marking) page N. */
+  page?: number;
   onOpenOriginal: () => void;
 }) {
-  const [view, setView] = useState<"summary" | "text">("summary");
+  const [view, setView] = useState<"summary" | "text">(page ? "text" : "summary");
+  const box = useRef<HTMLDivElement>(null);
+  const hasPage = !!page && !!data?.pages.some((p) => p.n === page);
+  useEffect(() => {
+    if (!page) return;
+    setView("text");
+    const el = box.current?.querySelector<HTMLElement>(`[data-page="${page}"]`);
+    if (el && box.current) {
+      box.current.scrollTo?.({ top: el.offsetTop - box.current.offsetTop - 8 });
+      el.closest("section")?.scrollIntoView?.({ block: "start" });
+    }
+  }, [page, data]);
   if (!data?.pages.length) {
     if (!data?.aiSummary) return null;
     const label = kind === "image" ? "AI VISUAL DESCRIPTION" : "AI SUMMARY";
@@ -65,14 +79,28 @@ export default function FullText({
         <p className="text-[13.5px] leading-[1.65] text-dim">{data.aiSummary}</p>
       ) : (
         <>
+          {page && !hasPage && (
+            <button
+              type="button"
+              onClick={onOpenOriginal}
+              className="mb-2 w-full rounded-xl border border-signal px-3 py-2 text-left font-mono text-[11px] text-signal"
+            >
+              Page {page} isn't in the extracted text: open it in the original file →
+            </button>
+          )}
           <div
+            ref={box}
             tabIndex={0}
             aria-label="Full text pages"
             className="max-h-[420px] overflow-y-auto overscroll-contain rounded-xl border border-line bg-surface px-3.5 pt-3"
           >
             {data.pages.map((p) => (
-              <div key={p.n} className="mb-4">
-                <div className="mb-1 font-mono text-[9px] tracking-[.5px] text-faint">PAGE {p.n}</div>
+              <div
+                key={p.n}
+                data-page={p.n}
+                className={`mb-4 ${p.n === page ? "-mx-2 rounded-lg px-2 py-1 ring-1 ring-signal" : ""}`}
+              >
+                <div className={`mb-1 font-mono text-[9px] tracking-[.5px] ${p.n === page ? "text-signal" : "text-faint"}`}>PAGE {p.n}</div>
                 <p className="text-[13.5px] leading-[1.65] text-dim" style={{ whiteSpace: "pre-line", overflowWrap: "anywhere" }}>
                   {p.text}
                 </p>

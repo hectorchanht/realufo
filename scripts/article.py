@@ -52,6 +52,8 @@ def upload(slug, name):
 
 def doc_link(e):
     t = e.get("t")
+    if e.get("page") is not None:
+        return f"{SITE}/doc/{e['id']}?p={e['page']}"
     return f"{SITE}/doc/{e['id']}" + (f"?t={t:g}" if t is not None else "")
 
 
@@ -74,7 +76,7 @@ def main():
     sql = [f"""INSERT INTO articles(slug,title,body,image_key) VALUES({q(slug)},{q(a['title'])},{q(SEP.join(a['parts']))},{q(hero)})
                ON CONFLICT(slug) DO UPDATE SET title=excluded.title, body=excluded.body, image_key=excluded.image_key;""",
            f"DELETE FROM article_records WHERE slug={q(slug)};"]  # the article's own evidence list, rewritten as a whole
-    sql += [f"INSERT INTO article_records(slug,record_id,pos,t,label,evidence,image_key) VALUES({q(slug)},{q(e['id'])},{i},{q(e.get('t'))},{q(e['label'])},{q(e['evidence'])},{q(imgs[e['id']])});"
+    sql += [f"INSERT INTO article_records(slug,record_id,pos,t,page,label,evidence,image_key) VALUES({q(slug)},{q(e['id'])},{i},{q(e.get('t'))},{q(e.get('page'))},{q(e['label'])},{q(e['evidence'])},{q(imgs[e['id']])});"
             for i, e in enumerate(a["evidence"])]
     d1("\n".join(sql))
 
