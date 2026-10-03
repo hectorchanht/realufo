@@ -17,6 +17,10 @@ export const thumbSql = (recordId: string) =>
 export const durationSql = (recordId: string) =>
   `(SELECT duration FROM assets a WHERE a.record_id=${recordId} AND a.role='full' LIMIT 1)`;
 
+// Card one-liner from the TL;DR (crawler ingest.tldr); NULL until generated.
+export const oneLinerSql = (recordId: string) =>
+  `(SELECT one_liner FROM record_tldr x WHERE x.record_id=${recordId} AND x.lang='en')`;
+
 // List-card columns (/api/records, related groups, hubs) for `records r`.
 export const CARD_COLS = `r.id,r.archive,r.agency,r.title,r.summary,r.kind,r.redacted,r.location,r.incident_date,r.doc_date,
-  ${thumbSql("r.id")} thumb, ${durationSql("r.id")} duration`;
+  ${thumbSql("r.id")} thumb, ${durationSql("r.id")} duration, ${oneLinerSql("r.id")} oneLiner`;

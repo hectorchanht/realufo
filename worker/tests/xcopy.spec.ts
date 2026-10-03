@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { weightedLength, stripLinks, finalize, template, draft, mustContain, FORMATS, HOOKS } from "../lib/xcopy";
+import { weightedLength, stripLinks, finalize, template, draft, mustContain, FORMATS, HOOKS, facts } from "../lib/xcopy";
 import type { Candidate, PickRecord } from "../lib/xpick";
 
 const record = (over: Partial<PickRecord> = {}): PickRecord => ({
@@ -230,6 +230,17 @@ describe("draft", () => {
   it("strips qwen3 <think> blocks", async () => {
     const d = await draft(fakeAI({ response: "<think>hmm</think>Clip DOW-UAP-D012 from 2019." }), pick());
     expect(d).toEqual({ text: "Clip DOW-UAP-D012 from 2019.\nhttps://realufo.org/doc/DOW-UAP-D012", ai: true });
+  });
+});
+
+describe("facts", () => {
+  it("facts include the TL;DR when the file has one, nothing otherwise", () => {
+    const r = record({ tldr_bullets: JSON.stringify(["a", "b", "c"]), tldr_joke: "Even the redactions look nervous." });
+    const withT: any = facts({ stream: "pick", ref: r.id, record: r, link: "https://realufo.org/doc/x", media: null });
+    expect(withT.tldr).toEqual({ bullets: ["a", "b", "c"], joke: "Even the redactions look nervous." });
+    const r2 = record();
+    const without: any = facts({ stream: "pick", ref: r2.id, record: r2, link: "https://realufo.org/doc/x", media: null });
+    expect("tldr" in without).toBe(false);
   });
 });
 

@@ -44,12 +44,15 @@ describe("sitemap", () => {
     await env.DB.prepare(
       `INSERT OR REPLACE INTO record_text(record_id,pages,truncated,total_pages,ai_summary) VALUES('CIA-UAP-017','[{"n":1,"text":"Harare tower log"}]',1,9,'AI says hi')`
     ).run();
+    await env.DB.prepare("INSERT INTO record_tldr (record_id,lang,bullets,one_liner,input_hash) VALUES ('CIA-UAP-017','en',?,'Paperwork wins again.','h')")
+      .bind(JSON.stringify(["Bullet one", "Bullet two", "Bullet three"])).run();
     const res = await worker.fetch(new Request("https://realufo.org/llms-full.txt"), env as any, {} as any);
     expect(res.headers.get("content-type")).toMatch(/text\/markdown/);
     const md = await res.text();
     expect(md).toMatch(/^# RealUFO\n/);
     expect(md).toContain("## CIA-UAP-017 — Placement on High Alert");
     expect(md).toContain("- Page: https://realufo.org/doc/CIA-UAP-017");
+    expect(md).toContain("### TL;DR\n\nPaperwork wins again.\n\n- Bullet one\n- Bullet two\n- Bullet three\n");
     expect(md).toContain("### AI summary\n\nAI says hi");
     expect(md).toContain("#### Page 1\n\nHarare tower log");
     expect(md).toContain("(Text continues in the original file: 9 pages.)");

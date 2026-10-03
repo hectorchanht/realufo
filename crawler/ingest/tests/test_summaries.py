@@ -38,3 +38,7 @@ def test_chat_body_disables_thinking(monkeypatch):
     assert seen["path"] == "/ai/run/@cf/qwen/qwen3-30b-a3b-fp8"
     assert seen["body"]["chat_template_kwargs"] == {"enable_thinking": False}
     assert seen["body"]["messages"][0] == {"role": "system", "content": "sys"}
+
+def test_system_prompt_has_date_rules():
+    s = summaries.SYSTEM
+    assert "redacted" in s and "290141Z OCT25" in s and "29 October 2025" in s

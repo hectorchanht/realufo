@@ -200,7 +200,8 @@ const docPage: Loader = async (env, g, url) => {
         : { "@type": "DigitalDocument" };
   return {
     meta: {
-      title, description, image: thumb?.cdn_url ?? null,
+      title, description, image: thumb?.cdn_url ?? null, ogImage: d.tldr?.cardUrl ?? null,
+      ogDescription: d.tldr ? `${d.tldr.oneLiner} — ${d.tldr.bullets[0]}` : undefined,
       jsonLd: {
         ...media, name: title, identifier: x.id, description,
         dateCreated: isoDate(x.doc_date), contentLocation: x.location || undefined,

@@ -84,9 +84,27 @@ _BANNED = re.compile(
 
 _LABEL = re.compile(r"\b(joke|punchline|fact|quip)\s*:\s*", re.I)
 
-def scrub(text: str) -> str:
+_MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+_MON = r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?"
+_DAY_MON = re.compile(rf"\b(\d{{1,2}})\s+{_MON}|\b{_MON}\s+(\d{{1,2}})\b(?!\d)", re.I)
+
+def _date_in(source: str, day: int, mon: str) -> bool:
+    """A day+month date counts as sourced if the files show it in any common form."""
+    m, src = _MONTHS.index(mon) + 1, source.lower()
+    return bool(re.search(rf"\b0?{day}\s*{mon}|\b{mon}[a-z]*\.?\s*0?{day}\b(?!\d)|\b0?{m}/0?{day}/\d", src))
+
+def unsourced_date(sentence: str, source: str) -> bool:
+    for g in _DAY_MON.finditer(sentence):
+        day, mon = (g.group(1), g.group(2)) if g.group(1) else (g.group(4), g.group(3))
+        if 1 <= int(day) <= 31 and not _date_in(source, int(day), mon.lower()[:3]):
+            return True
+    return False
+
+def scrub(text: str, source: str | None = None) -> str:
+    """Drop jab/guess sentences, and (given the prompt material) sentences citing a date the files don't show."""
     text = _LABEL.sub("", " ".join(text.split()))
-    return " ".join(t for t in sentences(text) if not _BANNED.search(t))
+    return " ".join(t for t in sentences(text)
+                    if not _BANNED.search(t) and not (source is not None and unsourced_date(t, source)))
 
 def clip(text: str, max_words: int) -> str:
     """Cap at max_words, ending on the last whole sentence (else an ellipsis), never mid-thought."""
@@ -99,13 +117,13 @@ def clip(text: str, max_words: int) -> str:
     ends = _ends(head)
     return head[: ends[-1]] if ends else head.rstrip(",;:—-") + "…"
 
-def validate(obj, member_ids):
+def validate(obj, member_ids, source: str | None = None):
     if not isinstance(obj, dict):
         return None
     lede = obj.get("lede")
     if not isinstance(lede, str) or not lede.strip():
         return None
-    lede = clip(scrub(lede), LEDE_WORDS)
+    lede = clip(scrub(lede, source), LEDE_WORDS)
     if not lede:
         return None
     picks, seen = [], set()
@@ -115,7 +133,7 @@ def validate(obj, member_ids):
         pid, why = p.get("id"), p.get("why")
         if not isinstance(pid, str) or not isinstance(why, str):
             continue
-        pid, why = pid.strip(), clip(scrub(why), WHY_WORDS)
+        pid, why = pid.strip(), clip(scrub(why, source), WHY_WORDS)
         if pid not in member_ids or pid in seen or not why:
             continue
         seen.add(pid)
@@ -158,7 +176,8 @@ def main(argv=None):
                 skipped += 1
                 continue
             files = [{**r, "text": ai.get(r["id"]) or r.get("summary")} for r in hub["records"]]
-            out = validate(parse_reply(cfapi.respond(SYSTEM, build_prompt(hub["title"], files))), set(ids))
+            prompt = build_prompt(hub["title"], files)
+            out = validate(parse_reply(cfapi.respond(SYSTEM, prompt)), set(ids), prompt)
             if not out:
                 raise ValueError("no valid lede / < 2 valid picks")
         except Exception as e:
