@@ -168,11 +168,16 @@ export function Case() {
         {comments.map((c) => (
           <div key={c.id} className="rounded-xl border border-line bg-surface px-[13px] py-3">
             <div className="mb-[7px] flex flex-wrap items-center gap-2">
-              {c.handleShow && (
-                <span className="font-mono text-[10px] font-bold" style={{ color: stanceColor(c.stance) }}>
-                  {c.handleShow}
-                </span>
-              )}
+              {c.handleShow && <span className="font-mono text-[10px] text-cyan">{c.handleShow}</span>}
+              <span
+                role="img"
+                aria-label={c.stance ?? "neutral"}
+                title={c.stance ?? "neutral"}
+                className="text-[9px]"
+                style={{ color: stanceColor(c.stance) }}
+              >
+                ●
+              </span>
               <span className="font-mono text-[9px] text-faint">ID:{c.id}</span>
               <span className="ml-auto font-mono text-[9px] text-faint">{c.ago}</span>
             </div>

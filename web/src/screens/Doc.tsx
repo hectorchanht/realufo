@@ -90,7 +90,7 @@ function typeGlyph(kind: RecordKind): string {
 
 // FRONTEND-CONTEXT.md "Stance colors" — same map StanceTag.tsx encodes as
 // Tailwind classes, but the doc-comment author label (prototype line 377's
-// `c.stanceColor`) colors the bare handle text rather than a StanceTag
+// `c.stanceColor`) colors a bare stance dot rather than a StanceTag
 // dot+label, so it needs the raw color value, not a class.
 const STANCE_COLOR: Record<string, string> = {
   believer: "var(--grn)",
@@ -843,11 +843,16 @@ export function Doc() {
         {comments.map((c) => (
           <div key={c.id} className="rounded-xl border border-line bg-surface p-[13px]">
             <div className="mb-[7px] flex flex-wrap items-center gap-2">
-              {c.handleShow && (
-                <span className="font-mono text-[10px] font-bold" style={{ color: stanceColor(c.stance) }}>
-                  {c.handleShow}
-                </span>
-              )}
+              {c.handleShow && <span className="font-mono text-[10px] text-cyan">{c.handleShow}</span>}
+              <span
+                role="img"
+                aria-label={c.stance ?? "neutral"}
+                title={c.stance ?? "neutral"}
+                className="text-[9px]"
+                style={{ color: stanceColor(c.stance) }}
+              >
+                ●
+              </span>
               <span className="font-mono text-[9px] text-faint">ID:{c.id}</span>
               <span className="ml-auto font-mono text-[9px] text-faint">{c.ago}</span>
             </div>
