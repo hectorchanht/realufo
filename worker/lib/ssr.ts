@@ -5,6 +5,7 @@
 // esc(): thread bodies and handles are anonymous user input.
 
 import { parseAiMoments, parseKeyMoments, type KeyMoment } from "../../web/src/lib/keyMoments";
+import { sourceLinks } from "../../web/src/lib/sourceLinks";
 
 // Same copy as the default block in web/index.html.
 export const DEFAULT_DESCRIPTION =
@@ -163,7 +164,7 @@ export type DocData = {
   record: {
     id: string; title: string; summary: string | null; agency: string | null; agency_full: string | null;
     incident_date: string | null; location: string | null; doc_date: string | null; kind: string;
-    created_at?: string | null; ai_moments?: string | null;
+    created_at?: string | null; ai_moments?: string | null; archive?: string; source_url?: string | null;
   };
   assets: { role: string; cdn_url: string; mime: string | null; duration?: number | null }[];
   promotedThreads: { id: string; title: string }[];
@@ -276,7 +277,7 @@ export function docBody(d: DocData): string {
       .join("")}</dl>`,
     paras(moments.prose),
     momentsSection(d, moments),
-    `<p>${a({ href: `/api/file/${encodeURIComponent(r.id)}`, text: "Open original file" })}</p>`,
+    `<p>${[{ href: `/api/file/${encodeURIComponent(r.id)}`, text: "Open original file" }, ...sourceLinks(r).map((l) => ({ href: l.href, text: `${l.label} page` }))].map(a).join(" · ")}</p>`,
     tldrSection(d),
     fullTextSection(d),
     series.length ? `<p>${series.join(" · ")}</p>` : "",

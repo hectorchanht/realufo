@@ -51,6 +51,7 @@ import { docPageTitle, docTitleParts } from "../lib/docTitle";
 import { useSetFooterLinks, type FooterLinks } from "../lib/footerLinks";
 import { promoteCommentOpts } from "../lib/promoteComment";
 import { useMediaQuery } from "../lib/useMediaQuery";
+import { sourceLinks } from "../lib/sourceLinks";
 import { formatMoment, parseMoment, recordMedia } from "../lib/recordMedia";
 import { DEFAULT_VIEW, viewTransform } from "../lib/mediaView";
 import { useZoomPan } from "../lib/useZoomPan";
@@ -387,15 +388,7 @@ export function Doc() {
   const { media, fullUrl, thumbUrl } = recordMedia(detail, isDesktop);
   const badge = record.agency || "DOC";
   const location = record.location && record.location !== "N/A" ? record.location : "";
-  // link back to the official source (crawler/source-links.py fills source_url)
-  const src = record.source_url || "";
-  const sourceLinks = [
-    src.startsWith("https://www.dvidshub.net/") && { label: "DVIDS", href: src },
-    record.archive === "wargov" && {
-      label: "WAR.GOV",
-      href: src.startsWith("https://www.war.gov/") ? src : "https://www.war.gov/UFO/",
-    },
-  ].filter((l): l is { label: string; href: string } => !!l);
+  const srcLinks = sourceLinks(record);
 
   function handleOpenOriginal() {
     if (!fullUrl) return;
@@ -744,9 +737,9 @@ export function Doc() {
       >
         ⛶ OPEN ORIGINAL {glyph}
       </button>
-      {sourceLinks.length > 0 && (
+      {srcLinks.length > 0 && (
         <div className="-mt-3 mb-[22px] flex flex-wrap justify-center gap-x-5 gap-y-1 font-mono text-[11px]">
-          {sourceLinks.map((l) => (
+          {srcLinks.map((l) => (
             <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="py-1 text-dim hover:text-ink">
               ↗ {l.label} page
             </a>

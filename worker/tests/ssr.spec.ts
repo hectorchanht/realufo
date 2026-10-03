@@ -45,6 +45,13 @@ describe("docBody", () => {
     expect(html.indexOf("TL;DR")).toBeLessThan(html.indexOf("AI summary"));
   });
 
+  it("links back to the DVIDS / war.gov source next to the original file", () => {
+    const out = docBody(doc({ kind: "video", archive: "wargov", source_url: "https://www.dvidshub.net/video/1007707" }));
+    expect(out).toContain(
+      '<a href="/api/file/FBI-UAP-D002">Open original file</a> · <a href="https://www.dvidshub.net/video/1007707">DVIDS page</a> · <a href="https://www.war.gov/UFO/">WAR.GOV page</a>'
+    );
+    expect(docBody(doc({ archive: "nara", source_url: "https://assets.realufo.org/x.pdf" }))).not.toContain(" page</a>");
+  });
   it("renders full text pages escaped, with continuation link only when truncated", () => {
     const ft = { pages: [{ n: 3, text: "Para one line\nline two\n\n\n\n<script>x</script>\n\n  \n" }], truncated: true, total_pages: 40 };
     const out = docBody(doc({}, { fullText: ft }));
