@@ -4,8 +4,9 @@
 // Researched against primary documents 2026-10-03; see the per-story evidence
 // lists in the session that wrote them. Reviewed by the owner before deploy.
 import type { CaseStory } from "./caseStories";
+import { CASE_STORY_TEXT_2 } from "./caseStoryText2";
 
-export const CASE_STORY_TEXT: Record<string, CaseStory> = {
+const BATCH_1: Record<string, CaseStory> = {
   roswell: {
     title: "Roswell 1947: a ranch, a 'flying disc' and a balloon project",
     sections: [
@@ -1589,3 +1590,5 @@ export const CASE_STORY_TEXT: Record<string, CaseStory> = {
     updated: "2026-10-03"
   }
 };
+
+export const CASE_STORY_TEXT: Record<string, CaseStory> = { ...BATCH_1, ...CASE_STORY_TEXT_2 };

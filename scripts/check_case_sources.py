@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Verify case story sources (worker/lib/caseStoryText.ts): every id exists and is
+"""Verify case story sources (worker/lib/caseStoryText.ts + caseStoryText2.ts): every id exists and is
 live in prod D1 with page <= its page count; every url answers HTTP < 400."""
 import json, re, subprocess, sys, urllib.error, urllib.request
 
-src = open("worker/lib/caseStoryText.ts").read()
+src = open("worker/lib/caseStoryText.ts").read() + open("worker/lib/caseStoryText2.ts").read()
 ids = re.findall(r'\{\s*id:\s*"([^"]+)"(?:,\s*page:\s*(\d+))?', src)
 urls = sorted(set(re.findall(r'url:\s*"([^"]+)"', src)))
 bad = []

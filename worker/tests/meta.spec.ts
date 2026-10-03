@@ -229,12 +229,13 @@ describe("serveWithMeta (via worker.fetch)", () => {
     expect(map.headers.get("location")).toBe("https://realufo.org/map");
   });
 
-  it("moved overview stories 301 straight to their agency hub", async () => {
+  it("moved stories 301 straight to their new page", async () => {
     const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
     for (const [from, to] of [
       ["https://realufo.org/stories/aaro-overview/", "https://realufo.org/agency/aaro"],
       ["https://realufo.org/stories/nara-overview", "https://realufo.org/agency/nara"],
       ["https://realufo.org/stories/nasa-overview/", "https://realufo.org/agency/nasa"],
+      ["https://realufo.org/stories/gimbal/", "https://realufo.org/case/gimbal"],
     ]) {
       const res = await worker.fetch(new Request(from), fakeEnv, createExecutionContext());
       expect(res.status).toBe(301);

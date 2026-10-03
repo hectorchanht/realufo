@@ -19,6 +19,10 @@ export interface StoryView extends Omit<CaseStory, "sources"> {
 export const CASE_SLUGS = [
   "roswell", "kaikoura", "jal-1628", "tehran", "socorro", "travis-walton",
   "shag-harbour", "ohare-2006", "stephenville", "trans-en-provence", "manises", "falcon-lake",
+  // batch 2 (spec 2026-10-03-realufo-case-stories-batch2-design)
+  "belgian-wave", "cash-landrum", "coyne", "gimbal", "phoenix-lights", "tic-tac", "operacao-prato",
+  "trindade", "varginha", "el-bosque", "valensole", "chiles-whitted", "condon-committee", "levelland",
+  "lubbock-lights", "mantell", "mcminnville", "robertson-panel", "cosford", "rendlesham",
 ];
 
 // "[n]" with 1 ≤ n ≤ max becomes a citation; any other bracket ("[sic]", "[9]") stays text.

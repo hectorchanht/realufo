@@ -44,7 +44,7 @@ describe("story validation", () => {
     expect(p).toMatch(/updated/);
   });
   it("CASE_SLUGS is the batch", () => {
-    expect(CASE_SLUGS).toEqual(["roswell", "kaikoura", "jal-1628", "tehran", "socorro", "travis-walton", "shag-harbour", "ohare-2006", "stephenville", "trans-en-provence", "manises", "falcon-lake"]);
+    expect(CASE_SLUGS).toEqual(["roswell", "kaikoura", "jal-1628", "tehran", "socorro", "travis-walton", "shag-harbour", "ohare-2006", "stephenville", "trans-en-provence", "manises", "falcon-lake", "belgian-wave", "cash-landrum", "coyne", "gimbal", "phoenix-lights", "tic-tac", "operacao-prato", "trindade", "varginha", "el-bosque", "valensole", "chiles-whitted", "condon-committee", "levelland", "lubbock-lights", "mantell", "mcminnville", "robertson-panel", "cosford", "rendlesham"]);
   });
 });
 
@@ -53,7 +53,7 @@ describe("CASE_STORY_TEXT", () => {
     expect(Object.keys(CASE_STORY_TEXT).length).toBeGreaterThan(0);
     for (const [slug, s] of Object.entries(CASE_STORY_TEXT)) expect(storyProblems(slug, s), slug).toEqual([]);
   });
-  it("covers all 12 batch cases", () => {
+  it("covers all batch cases", () => {
     expect(Object.keys(CASE_STORY_TEXT).sort()).toEqual([...CASE_SLUGS].sort());
   });
 });
