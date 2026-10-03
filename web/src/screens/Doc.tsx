@@ -446,8 +446,27 @@ export function Doc() {
     });
   }
 
+  // Desktop: title sits above the media (uapbrowser-style) and TopNav drops its copy;
+  // mobile keeps it under the media, with the AppBar carrying the short title.
+  const titleBlock = (
+    <>
+      {/* record id kicker (uapbrowser-style) — only when the id isn't just the title respelled */}
+      {tp!.showId && (
+        <div className="mb-1 font-mono text-[11px] font-semibold tracking-[.4px]" style={{ color: accent }}>
+          {tp!.id}
+        </div>
+      )}
+
+      {/* title — id prefix and underscores stripped (the id is the kicker above) */}
+      <h1 className="mb-3.5 text-[19px] font-bold leading-[1.3] text-ink" style={{ overflowWrap: "anywhere" }}>
+        {title}
+      </h1>
+    </>
+  );
+
   return (
     <div data-screen="doc" className="pb-5" style={{ animation: "fadeup .28s ease both" }}>
+      {isDesktop && titleBlock}
       {/* media panel — prototype lines 348-357 */}
       <MediaFilters />
       <div
@@ -667,17 +686,7 @@ export function Doc() {
         )}
       </div>
 
-      {/* record id kicker (uapbrowser-style) — only when the id isn't just the title respelled */}
-      {tp!.showId && (
-        <div className="mb-1 font-mono text-[11px] font-semibold tracking-[.4px]" style={{ color: accent }}>
-          {tp!.id}
-        </div>
-      )}
-
-      {/* title — id prefix and underscores stripped (the id is the kicker above) */}
-      <h1 className="mb-3.5 text-[19px] font-bold leading-[1.3] text-ink" style={{ overflowWrap: "anywhere" }}>
-        {title}
-      </h1>
+      {!isDesktop && titleBlock}
 
       <TldrCard
         tldr={detail.tldr}

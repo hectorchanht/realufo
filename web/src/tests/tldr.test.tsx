@@ -27,7 +27,7 @@ describe("TldrCard", () => {
     expect(p).toHaveClass("text-ink");
     expect(screen.getByText("“")).toHaveStyle({ color: "var(--signal)" });
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
-    expect(screen.getByText("懶人包").getAttribute("lang")).toBe("zh-Hant");
+    expect(screen.getByText("AI-written with facts")).toBeInTheDocument();
   });
 
   it("share refused (not cancelled) falls back to copying the link", async () => {

@@ -29,10 +29,8 @@ export function TldrCard({ tldr, title, onBoring }: { tldr?: Tldr | null; title:
   return (
     <section aria-label="TL;DR" className="mb-3 rounded-xl border border-line p-3">
       <div className="mb-2 flex items-baseline justify-between gap-2 font-mono text-[11px] font-semibold tracking-[.4px]">
-        <span className="text-faint">
-          TL;DR · <span lang="zh-Hant">懶人包</span>
-        </span>
-        <span className="text-[10.5px] font-normal text-dim">AI-written · facts from the file</span>
+        <span className="text-faint">TL;DR</span>
+        <span className="text-[9.5px] font-normal text-faint">AI-written with facts</span>
       </div>
       <p className="mb-2.5 text-[17px] font-bold leading-[1.35] text-ink">
         <span style={{ color: "var(--signal)" }}>“</span>

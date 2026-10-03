@@ -7,11 +7,13 @@
 // On desktop the separate AppBar is NOT rendered (see AppShell) — its
 // contextual page title/sub (and back affordance for detail screens) are
 // folded into this single bar instead, so desktop shows one nav, not two.
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Saucer } from "./Saucer";
 import { tabHref, useNavItems, type NavTab } from "./navItems";
 import { ThemeToggle } from "./ThemeToggle";
 import { usePageTitle, DEFAULT_PAGE_TITLE } from "../lib/pageTitle";
+
+const OWN_H1 = /^\/(doc|case|browse|release|agency|location|decade)(\/|$)/;
 
 export interface TopNavProps {
   activeTab: NavTab;
@@ -24,9 +26,11 @@ export function TopNav({ activeTab, canBack = false, onBack }: TopNavProps) {
   // No Feed item: the brand logo already links to "/" and the bar needs the room.
   const navItems = useNavItems().filter((i) => i.tab !== "feed");
   const { title, sub } = usePageTitle();
+  const { pathname } = useLocation();
   // Suppress the contextual block on the root/Feed tab — its title is
-  // "REALUFO", which the brand wordmark already shows (avoids a dupe).
-  const showContext = title !== DEFAULT_PAGE_TITLE.title;
+  // "REALUFO", which the brand wordmark already shows (avoids a dupe) — and on
+  // pages that open with their own full <h1> (doc, case, browse, hubs).
+  const showContext = title !== DEFAULT_PAGE_TITLE.title && !OWN_H1.test(pathname);
 
   return (
     <nav data-topnav className="flex flex-none items-center gap-5 border-b border-line bg-bg2 px-[26px] py-3">

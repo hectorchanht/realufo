@@ -102,6 +102,15 @@ describe("AppShell", () => {
     await waitFor(() => expect(within(topnav).getByText("THE ARCHIVE")).toBeInTheDocument());
   });
 
+  it("desktop: no Feed item (logo links home), and no nav title on pages with their own h1", async () => {
+    stubDesktopMatchMedia();
+    renderAppAt("/browse");
+    await screen.findByRole("heading", { level: 1, name: "Browse the archive" });
+    const topnav = within(document.querySelector("[data-topnav]") as HTMLElement);
+    expect(topnav.queryByRole("link", { name: /Feed/i })).toBeNull();
+    expect(topnav.queryByText("BROWSE")).toBeNull();
+  });
+
   it("hides the AppBar back button on tab-root destinations (/, /archive, /boards, /map)", async () => {
     renderAppAt("/archive");
     await screen.findByPlaceholderText(/search (the archive|[0-9,]+ records)/i);
