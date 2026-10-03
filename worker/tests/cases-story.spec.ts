@@ -49,8 +49,8 @@ describe("case story view", () => {
     const moved = await call("/stories/socorro/");
     expect(moved.status).toBe(301);
     expect(moved.headers.get("location")).toBe("https://cases.test/case/socorro");
-    const other = await call("/stories/tic-tac/");
-    expect(other.headers.get("location")).toBe("https://release.realufo.org/stories/tic-tac/");
+    const other = await call("/stories/uk-overview/");
+    expect(other.headers.get("location")).toBe("https://release.realufo.org/stories/uk-overview/");
   });
 
   it("inherited object keys are not stories (no bogus redirect, no story view)", async () => {
