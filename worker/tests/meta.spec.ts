@@ -458,3 +458,94 @@ describe("final-review fixes", () => {
     expect(doc).not.toContain("archive=wargov");
   });
 });
+
+describe("shared Ask answer pages", () => {
+  const fakeEnv = () => ({ ...env, FEATURE_ASK: "off", ASSETS: { fetch: async () => new Response("<html><head><!--META--></head><body><div id=\"root\"></div></body></html>") } }) as any;
+  const get = async (path: string) => {
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(new Request("https://x" + path, { headers: { accept: "text/html" } }), fakeEnv(), ctx);
+    await waitOnExecutionContext(ctx);
+    return { status: res.status, html: await res.text() };
+  };
+  const ld = (html: string) => JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1]);
+  const frozen = (answer: string) =>
+    JSON.stringify({
+      answer,
+      sources: [
+        { n: 1, record_id: "CIA-UAP-017", title: "Harare airport report", page: 2, kind: "pdf", thumb: null },
+        { n: 2, record_id: "CIA-UAP-017", title: "Harare airport report", page: 5, kind: "pdf", thumb: "https://cdn/t.jpg" },
+      ],
+    });
+  const put = (id: number, question: string, pub: number, answer: string | null) =>
+    env.DB.prepare("INSERT INTO ask_log(id,question,actor_id,sources,public,answer,created_at) VALUES(?,?,'a',2,?,?,'2026-10-02 08:00:00')").bind(
+      id, question, pub, answer
+    );
+
+  beforeAll(async () => {
+    await env.DB.batch([
+      put(9101, "What did radar see at Harare?", 1, frozen("Radar tracked it [1] and pilots saw lights [2].")),
+      put(9102, "what did radar see at harare?", 1, frozen("Later answer [1].")),
+      put(9103, "Private question", 0, frozen("x [1]")),
+      put(9104, "罗斯威尔事件是什么？", 1, frozen("Roswell [1].")),
+      put(9105, 'Bad <script>alert(1)</script> "q" $& here?', 1, frozen("Has <b>tags</b> and $& [1].")),
+    ]);
+  });
+
+  it("indexed page: question title, answer description, source thumb, canonical, body", async () => {
+    const { status, html } = await get("/ask/9101-what-did-radar-see-at-harare");
+    expect(status).toBe(200);
+    expect(html).toContain("<title>What did radar see at Harare? · RealUFO</title>");
+    expect(html).toContain('content="AI answer from 1 declassified UAP file: Radar tracked it and pilots saw lights."');
+    expect(html).toContain('property="og:image" content="https://cdn/t.jpg"');
+    expect(html).not.toContain('name="robots"');
+    expect(html).toContain('rel="canonical" href="https://x/ask/9101-what-did-radar-see-at-harare"');
+    expect(html).toContain("<h1>What did radar see at Harare?</h1>");
+    expect(html).toContain('<a href="/doc/CIA-UAP-017">[1]</a>');
+    expect(html).toContain("it can be wrong");
+    expect(html).toContain('<a href="/ask">Ask the archive your own question →</a>');
+  });
+
+  it("JSON-LD is a WebPage citing each source file once, with breadcrumbs", async () => {
+    const { html } = await get("/ask/9101");
+    const page = ld(html);
+    expect(page["@type"]).toBe("WebPage");
+    expect(page.name).toBe("What did radar see at Harare?");
+    expect(page.datePublished).toBe("2026-10-02T08:00:00Z");
+    expect(page.citation).toEqual([{ "@type": "CreativeWork", name: "Harare airport report", url: "https://x/doc/CIA-UAP-017" }]);
+    expect(html).toContain('"@type":"BreadcrumbList"');
+    expect(html).not.toContain("QAPage");
+  });
+
+  it("a wrong slug and a later duplicate share both canonicalise to the earliest row", async () => {
+    expect((await get("/ask/9101-wrong-slug")).html).toContain('rel="canonical" href="https://x/ask/9101-what-did-radar-see-at-harare"');
+    const dup = await get("/ask/9102-what-did-radar-see-at-harare");
+    expect(dup.html).toContain("<h1>what did radar see at harare?</h1>"); // the duplicate shows its own frozen answer
+    expect(dup.html).toContain('rel="canonical" href="https://x/ask/9101-what-did-radar-see-at-harare"');
+  });
+
+  it("question with no latin letters lives at /ask/<id>", async () => {
+    const { status, html } = await get("/ask/9104");
+    expect(status).toBe(200);
+    expect(html).toContain('rel="canonical" href="https://x/ask/9104"');
+  });
+
+  it("hostile question and answer text is escaped everywhere", async () => {
+    const { html } = await get("/ask/9105");
+    expect(html).not.toContain("<script>alert(1)");
+    expect(html).not.toContain("<b>tags</b>");
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt; &quot;q&quot; $&amp; here?");
+    expect(html).toContain("$&amp; ");
+  });
+
+  it("private, unknown and non-numeric ids are 404 + noindex", async () => {
+    for (const p of ["/ask/9103", "/ask/9199", "/ask/abc"]) {
+      const { status, html } = await get(p);
+      expect(status).toBe(404);
+      expect(html).toContain('<meta name="robots" content="noindex">');
+    }
+  });
+
+  it("the /ask tab itself stays noindex", async () => {
+    expect((await get("/ask")).html).toContain('<meta name="robots" content="noindex">');
+  });
+});

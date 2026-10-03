@@ -7,13 +7,17 @@ import { loadHub, listHubsCached } from "../routes/hubs";
 import type { HubKind } from "./hubs";
 import {
   DEFAULT_DESCRIPTION, type DocData, type Link, docBody, docFooter, threadBody, boardBody, caseBody, homeBody, tabBody,
-  section, docLinks, countList, docTitle, docTitleParts, boardHref, docHref, hubBody, browseBody, hubHref, docMoments, snippet,
+  section, docLinks, countList, docTitle, docTitleParts, boardHref, docHref, hubBody, browseBody, hubHref, docMoments, snippet, askBody,
 } from "./ssr";
+import { loadSharedAsk } from "../routes/ask";
+import { askHref, askIdOf } from "./ask";
 
 // One SPA route's pre-render: <head> meta (url is filled in by serveWithMeta)
 // and the HTML that goes inside #root. A loader returns null when the entity
 // doesn't exist; serveWithMeta then serves index.html untouched.
-export type Page = { meta: Omit<MetaInput, "url">; body: string; footer?: Link[] };
+// canonicalPath: overrides the request path as the canonical URL (a shared
+// answer's duplicates point at the earliest copy).
+export type Page = { meta: Omit<MetaInput, "url">; body: string; footer?: Link[]; canonicalPath?: string };
 export type Loader = (env: Env, groups: Record<string, string>, url: URL) => Promise<Page | null>;
 
 // records.doc_date is "M/D/YY" (war.gov) or a bare year (AARO) → ISO 8601 date.
@@ -109,6 +113,43 @@ const casesPage: Loader = async (env) => {
 
 const mapPage: Loader = async () => ({ meta: TAB.map, body: tabBody(TAB.map.title, TAB.map.description) });
 const askPage: Loader = async () => ({ meta: TAB.ask, body: tabBody(TAB.ask.title, TAB.ask.description) });
+
+// A shared Ask answer (Spec 8 §2): indexed, unlike the /ask tab. Duplicate
+// shares of one question canonicalise to the earliest public copy.
+const sharedAskPage: Loader = async (env, g, url) => {
+  const x = await loadSharedAsk(env, askIdOf(g.id));
+  if (!x) return null;
+  // ponytail: lower(question) scans ask_log; add an expression index ON ask_log(lower(question)) WHERE public=1 if it grows large.
+  const first = await env.DB.prepare(
+    "SELECT min(id) id, question FROM ask_log WHERE public=1 AND answer IS NOT NULL AND lower(question)=lower(?)"
+  )
+    .bind(x.question)
+    .first<{ id: number | null; question: string }>();
+  const canonicalPath = first?.id ? askHref(first.id, first.question) : x.url;
+  const files = [...new Map(x.sources.map((s) => [s.record_id, s])).values()];
+  const n = files.length;
+  return {
+    meta: {
+      title: x.question,
+      description: `AI answer from ${n} declassified UAP ${n === 1 ? "file" : "files"}: ${x.answer.replace(/\s*\[\d+\]/g, "")}`,
+      image: x.sources.find((s) => s.thumb)?.thumb ?? null,
+      type: "article",
+      jsonLd: {
+        "@type": "WebPage",
+        name: x.question,
+        datePublished: iso(x.asked_at),
+        citation: files.map((s) => ({ "@type": "CreativeWork", name: s.title, url: url.origin + docHref(s.record_id) })),
+      },
+      breadcrumbs: [
+        { name: "Home", href: "/" },
+        { name: "Ask the Archive", href: "/ask" },
+        { name: x.question, href: canonicalPath },
+      ],
+    },
+    body: askBody(x),
+    canonicalPath,
+  };
+};
 
 const docPage: Loader = async (env, g, url) => {
   const d = (await loadRecord(env, g.id, url.origin)) as DocData | null;
@@ -299,6 +340,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/boards" }), load: boardsPage },
   { pattern: new URLPattern({ pathname: "/map" }), load: mapPage },
   { pattern: new URLPattern({ pathname: "/ask" }), load: askPage },
+  { pattern: new URLPattern({ pathname: "/ask/:id" }), load: sharedAskPage },
   { pattern: new URLPattern({ pathname: "/browse" }), load: browsePage },
   { pattern: new URLPattern({ pathname: "/release/:slug" }), load: hubPage("release") },
   { pattern: new URLPattern({ pathname: "/agency/:slug" }), load: hubPage("agency") },

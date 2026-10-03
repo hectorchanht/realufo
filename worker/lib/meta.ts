@@ -119,7 +119,7 @@ export async function serveWithMeta(req: Request, env: Env): Promise<Response> {
       }
       if (!page) return notFound(html, url);
       // Query strings (archive filters, fbclid) never make a separate canonical page.
-      const canonical = url.origin + url.pathname;
+      const canonical = url.origin + (page.canonicalPath ?? url.pathname);
       const image = page.meta.image || shareCard(url);
       const jsonLd = page.meta.jsonLd && { "@context": "https://schema.org", ...page.meta.jsonLd, url: canonical, image };
       return htmlResponse(injectBody(injectMeta(html, { ...page.meta, image, url: canonical, jsonLd }), page.body, page.footer));

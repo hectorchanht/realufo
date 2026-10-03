@@ -305,3 +305,30 @@ export function caseBody(c: {
   const discussion = c.thread ? section("Discussion", [{ href: threadHref(c.thread.id), text: c.thread.title }]) : "";
   return tabBody(c.name, c.lede || "", quote, discussion);
 }
+
+// Shared Ask answer page (Spec 8 §2.4). [n] links to source n's file; an [n]
+// with no source stays plain text.
+export function askBody(x: {
+  question: string;
+  answer: string;
+  sources: { n: number; record_id: string; title: string; page: number; kind: string }[];
+}): string {
+  const byN = new Map(x.sources.map((s) => [s.n, s]));
+  const answer = x.answer
+    .split(/(\[\d+\])/)
+    .map((p) => {
+      const s = /^\[\d+\]$/.test(p) ? byN.get(Number(p.slice(1, -1))) : undefined;
+      return s ? a({ href: docHref(s.record_id), text: p }) : esc(p);
+    })
+    .join("");
+  const sources = x.sources
+    .map((s) => `<li>${a({ href: docHref(s.record_id), text: docTitle(s.title, s.record_id, s.kind) })}${s.kind === "pdf" && s.page > 0 ? ` — p. ${s.page}` : ""}</li>`)
+    .join("");
+  return [
+    `<h1>${esc(x.question)}</h1>`,
+    "<p>AI answer drawn from the declassified files — it can be wrong. Check the sources.</p>",
+    `<p>${answer}</p>`,
+    sources ? `<section><h2>Sources</h2><ol>${sources}</ol></section>` : "",
+    `<p>${a({ href: "/ask", text: "Ask the archive your own question →" })}</p>`,
+  ].join("");
+}
