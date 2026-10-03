@@ -148,6 +148,15 @@ describe("serveWithMeta (via worker.fetch)", () => {
     expect(out).toContain('property="og:description" content="Plain"');
   });
 
+  it("/shorts/:id serves the doc page's meta with the doc URL as canonical", async () => {
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(new Request("https://x/shorts/CIA-UAP-017", { headers: { accept: "text/html" } }), { ...env, ASSETS: fakeAssets } as any, ctx);
+    await waitOnExecutionContext(ctx);
+    const html = await res.text();
+    expect(html).toContain('<link rel="canonical" href="https://x/doc/CIA-UAP-017">');
+    expect(html).toContain("CIA-UAP-017");
+  });
+
   it("/doc/:id percent-decodes the id (a live AARO id has a space; it 404'd)", async () => {
     await env.DB.prepare("INSERT OR IGNORE INTO records(id,archive,agency,title,kind,status) VALUES('SP ACE-1','aaro','AARO','SP ACE-1','pdf','live')").run();
     const ctx = createExecutionContext();

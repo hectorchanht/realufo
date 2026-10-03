@@ -409,6 +409,12 @@ const termsPage: Loader = async () => ({
   body: `<h1>Terms</h1>${TERMS_HTML}`,
 });
 
+// A Short is the doc's video cut 9:16: same page for crawlers, canonical = the doc.
+const shortPage: Loader = async (env, g, url) => {
+  const p = await docPage(env, g, url);
+  return p && { ...p, canonicalPath: docHref(g.id) };
+};
+
 export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/" }), load: homePage },
   { pattern: new URLPattern({ pathname: "/archive" }), load: archivePage },
@@ -425,6 +431,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/location/:slug" }), load: hubPage("location") },
   { pattern: new URLPattern({ pathname: "/decade/:slug" }), load: hubPage("decade") },
   { pattern: new URLPattern({ pathname: "/doc/:id" }), load: docPage },
+  { pattern: new URLPattern({ pathname: "/shorts/:id" }), load: shortPage },
   { pattern: new URLPattern({ pathname: "/cases" }), load: casesPage },
   { pattern: new URLPattern({ pathname: "/case/:slug" }), load: casePage },
   { pattern: new URLPattern({ pathname: "/thread/:id" }), load: threadPage },
