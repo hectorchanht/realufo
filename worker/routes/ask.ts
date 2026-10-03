@@ -20,9 +20,9 @@ export async function ask(req: Request, env: Env) {
   if (env.FEATURE_ASK !== "on" && env.FEATURE_ASK !== "hidden") return error(503, RESTING);
   const q = normalizeQuestion(new URL(req.url).searchParams.get("q"));
   if (!q) return error(400, "question must be 3–300 characters");
-  // Threshold is part of the key so re-tuning ASK_MIN_SCORE never serves stale answers.
+  // Threshold and prompt version are part of the key so re-tuning either never serves stale answers.
   const min = Number(env.ASK_MIN_SCORE) || 0.45;
-  const key = `${min}|${cacheKey(q)}`;
+  const key = `${min}|p2|${cacheKey(q)}`;
 
   const hit = await env.DB.prepare("SELECT answer FROM ask_cache WHERE key=? AND created_at >= datetime('now','-7 days')")
     .bind(key)

@@ -35,6 +35,19 @@ describe("ask helpers", () => {
     expect(m[1].content.endsWith("/no_think")).toBe(true); // Qwen3 soft switch: no reasoning tokens
   });
 
+  it("flattens markdown to one plain paragraph", () => {
+    const md = "Two images match:\n\n- **[1] Go Fast** has a *white* crosshair.\n- __Puerto Rico__ too [6].\n\n### Summary\n1. `Go Fast` [1]";
+    expect(answerText({ response: md })).toBe("Two images match: [1] Go Fast has a white crosshair. Puerto Rico too [6]. Summary Go Fast [1]");
+    expect(answerText({ response: "Seen in 1947. Radar 3 * 4 [1]" })).toBe("Seen in 1947. Radar 3 * 4 [1]");
+    expect(answerText({ response: "AARO-IMG-Go_Fast_UAP and FBI_a__b show it [1]." })).toBe("AARO-IMG-Go_Fast_UAP and FBI_a__b show it [1].");
+  });
+
+  it("prompt asks for short plain prose", () => {
+    const s = buildMessages("q", [])[0].content;
+    expect(s).toMatch(/80 words/);
+    expect(s).toMatch(/no markdown/i);
+  });
+
   it("reads both output shapes and strips thinking", () => {
     expect(answerText({ response: "A [1]" })).toBe("A [1]");
     expect(answerText({ choices: [{ message: { content: "<think>hmm</think>\nB [2]" } }] })).toBe("B [2]");
