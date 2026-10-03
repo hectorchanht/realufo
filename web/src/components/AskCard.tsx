@@ -74,7 +74,7 @@ export function AskCard({ question, data, footer }: { question: string; data: { 
               data-flash={flash === s.n ? "true" : "false"}
               className="flex items-center gap-2 rounded-lg border border-line px-2 py-1.5 transition-colors data-[flash=true]:border-signal"
             >
-              <Link to={`/doc/${s.record_id}`}>
+              <Link to={`/doc/${s.record_id}`} className="flex items-center gap-2">
                 <span className="w-5 flex-none font-mono text-[10px] text-faint">[{s.n}]</span>
                 {s.thumb && <img src={s.thumb} alt="" loading="lazy" className="h-8 w-8 flex-none rounded object-cover" />}
               </Link>
