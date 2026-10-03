@@ -35,9 +35,9 @@ describe("listShorts", () => {
   it("showcase wins over its twin, once, served from showcase/; ids are URL-encoded", async () => {
     const s = await listShorts(env as any);
     expect(s.filter((x) => x.id === "SH-1")).toHaveLength(1);
-    expect(s.find((x) => x.id === "SH-1")).toMatchObject({ showcase: true, clip: "https://assets.realufo.org/showcase/wargov/SH-1.mp4" });
-    expect(s.find((x) => x.id === "SH 7")!.clip).toBe("https://assets.realufo.org/showcase/wargov/SH%207.mp4");
-    expect(s.find((x) => x.id === "SH-2")).toMatchObject({ showcase: false, clip: "https://assets.realufo.org/clips-v/wargov/SH-2.mp4" });
+    expect(s.find((x) => x.id === "SH-1")).toMatchObject({ showcase: true, clip: expect.stringMatching(/^https:\/\/assets\.realufo\.org\/showcase\/wargov\/SH-1\.mp4\?v=/) });
+    expect(s.find((x) => x.id === "SH 7")!.clip).toMatch(/^https:\/\/assets\.realufo\.org\/showcase\/wargov\/SH%207\.mp4\?v=/);
+    expect(s.find((x) => x.id === "SH-2")).toMatchObject({ showcase: false, clip: expect.stringMatching(/^https:\/\/assets\.realufo\.org\/clips-v\/wargov\/SH-2\.mp4\?v=/) });
   });
 
   it("q matches record title and showcase post text; punctuation-only q matches nothing", async () => {
@@ -53,6 +53,17 @@ describe("listShorts", () => {
 
   it("limit caps the list", async () => {
     expect(await listShorts(env as any, { limit: 2 })).toHaveLength(2);
+  });
+
+  it("clip URLs carry the object's etag so a replaced Short busts the 1-month CDN cache", async () => {
+    const etag = (await env.MEDIA.head("showcase/wargov/SH-1.mp4"))!.etag;
+    const s = await listShorts(env as any);
+    expect(s.find((x) => x.id === "SH-1")!.clip).toBe(`https://assets.realufo.org/showcase/wargov/SH-1.mp4?v=${etag.slice(0, 8)}`);
+  });
+
+  it("offset pages through the same order", async () => {
+    const all = ids(await listShorts(env as any));
+    expect(ids(await listShorts(env as any, { limit: 2, offset: 2 }))).toEqual(all.slice(2, 4));
   });
 
   it("a fractional limit is floored, not a SQLite error", async () => {

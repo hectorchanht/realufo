@@ -101,4 +101,22 @@ describe("Shorts player", () => {
     expect(screen.getByRole("button", { name: "‹ Back" })).toBeInTheDocument();
     expect(document.querySelector("[data-screen=shorts] [data-scroll]")).toHaveClass("overscroll-contain");
   });
+
+  it("deep link to a Short past the first page: keeps fetching pages until it's found", async () => {
+    const fetchNextPage = vi.fn();
+    useShortsMock.mockImplementation(() => ({ data: all, isFetched: true, hasNextPage: true, isFetchingNextPage: false, fetchNextPage }));
+    renderAppAt("/shorts/Z-99");
+    expect(await screen.findByText(/loading signal/i)).toBeInTheDocument();
+    await waitFor(() => expect(fetchNextPage).toHaveBeenCalled());
+  });
+
+  it("nearing the end of the loaded Shorts fetches the next page", async () => {
+    const fetchNextPage = vi.fn();
+    useShortsMock.mockImplementation(() => ({ data: all, isFetched: true, hasNextPage: true, isFetchingNextPage: false, fetchNextPage }));
+    renderAppAt("/shorts/A-1");
+    const videos = await screen.findAllByTestId("short-video");
+    expect(fetchNextPage).not.toHaveBeenCalled();
+    act(() => fire([{ target: videos[2], isIntersecting: true } as unknown as IntersectionObserverEntry], {} as IntersectionObserver));
+    expect(fetchNextPage).toHaveBeenCalledTimes(1);
+  });
 });

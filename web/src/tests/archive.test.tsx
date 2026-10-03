@@ -341,6 +341,16 @@ describe("Archive Shorts strip", () => {
     expect(screen.getByRole("link", { name: /two stars/i })).toHaveAttribute("href", "/shorts/DOW-UAP-PR104?q=star");
   });
 
+  it("says n+ when more matching Shorts are on later pages", async () => {
+    useRecordsMock.mockImplementation(records);
+    useShortsMock.mockImplementation((() => ({
+      data: [{ id: "DOW-UAP-PR104", title: "Two stars", thumb: null, clip: "https://c/x.mp4" }],
+      hasNextPage: true,
+    })) as any);
+    renderAppAt("/archive?q=star");
+    expect(await screen.findByRole("heading", { name: /shorts \(1\+\)/i })).toBeInTheDocument();
+  });
+
   it("no strip without a search", async () => {
     useRecordsMock.mockImplementation(records);
     renderAppAt("/archive");

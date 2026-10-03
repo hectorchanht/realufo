@@ -394,7 +394,7 @@ export function Archive() {
   );
   // Searching: matching Shorts (title/summary/page text or the posted Short's
   // text) as a strip above the files; tap → the player, queue = this search.
-  const { data: shorts = [] } = useShorts(q, { enabled: !!q });
+  const { data: shorts = [], hasNextPage: moreShorts } = useShorts(q, { enabled: !!q });
   const records = data?.records ?? [];
   const count = data?.count ?? 0;
   const totalPages = Math.ceil(count / RECORDS_PAGE_SIZE);
@@ -564,7 +564,7 @@ export function Archive() {
           {q && page === 1 && shorts.length > 0 && (
             <section aria-labelledby="archive-shorts" className="mb-[18px]">
               <h2 id="archive-shorts" className="mx-0.5 mb-3 font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
-                ◆ Shorts ({shorts.length})
+                ◆ Shorts ({shorts.length}{moreShorts ? "+" : ""})
               </h2>
               <ShortsRow shorts={shorts} href={(s) => shortHref(s, q)} />
             </section>

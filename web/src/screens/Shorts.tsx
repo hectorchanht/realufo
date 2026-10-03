@@ -1,7 +1,8 @@
 // Shorts player (/shorts/:id[?q=]): full-screen vertical scroll-snap list of the
 // 9:16 Shorts we post to social, opened at :id. The slide ≥60% on screen plays;
 // the URL follows it (replace) so the address bar is always the shareable Short.
-// Queue = the ?q= search results when they contain :id, else every Short.
+// Queue = the ?q= search results when they contain :id, else every Short;
+// pages load until :id turns up, and again as the viewer nears the end.
 // Starts muted (autoplay policy); the sound button / tapping a video toggles all.
 // Portaled to <body> with the app behind it made inert, so Tab/screen readers
 // stay in the player.
@@ -25,9 +26,21 @@ export default function Shorts() {
   const { pathname } = useLocation();
   const searched = useShorts(q, { enabled: !!q });
   const inQ = !!searched.data?.some((s) => s.id === id);
-  const all = useShorts("", { enabled: !q || (searched.isFetched && !inQ) });
-  const shorts = inQ ? searched.data! : all.data;
-  const pending = (q && !searched.isFetched) || (!inQ && !all.isFetched);
+  // The search is "done" once :id is in it or it has no more pages.
+  const searchDone = !q || (searched.isFetched && (inQ || !searched.hasNextPage));
+  const all = useShorts("", { enabled: searchDone && !inQ });
+  const queue = inQ ? searched : all;
+  const shorts = queue.data;
+  const hunting = !shorts?.some((s) => s.id === id) && !!queue.hasNextPage;
+  const pending = !searchDone || (!inQ && (!all.isFetched || hunting));
+  const more = (src: typeof queue) => {
+    if (src.hasNextPage && !src.isFetchingNextPage) src.fetchNextPage();
+  };
+  // Deep link past the loaded pages: keep paging until :id shows up (or pages run out).
+  useEffect(() => {
+    if (q && searched.isFetched && !inQ && searched.hasNextPage) more(searched);
+    else if (searchDone && !inQ && all.isFetched && hunting) more(all);
+  });
 
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const [muted, setMuted] = useState(true);
@@ -55,6 +68,8 @@ export default function Shorts() {
 
   useAutoplayInView(root, [shorts], (v) => {
     const sid = v.dataset.id;
+    const at = shorts?.findIndex((s) => s.id === sid) ?? -1;
+    if (at >= (shorts?.length ?? 0) - 3) more(queue);
     if (opened.current && sid && sid !== id) navigate(path(sid, inQ ? q : ""), { replace: true });
   });
 
