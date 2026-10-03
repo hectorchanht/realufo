@@ -5,3 +5,4 @@ Content-Signal: search=yes, ai-input=yes, ai-train=yes
 Allow: /
 
 Sitemap: https://realufo.org/sitemap.xml
+Sitemap: https://realufo.org/rss.xml

@@ -16,6 +16,7 @@ const FILES = [
   ["llms.txt", "/llms.txt"],
   ["llms-full.txt", "/llms-full.txt"],
   ["sitemap.xml", "/sitemap.xml"],
+  ["RSS feed", "/rss.xml"],
 ];
 
 const linkCls = "text-dim hover:text-ink";
