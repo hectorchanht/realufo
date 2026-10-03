@@ -19,10 +19,10 @@
 // precomputed `x`/`y` (data.js's Roswell entry: x:0.20966666666666667,
 // y:0.3145).
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import type { Bootstrap, MapPlace, Sighting } from "../api/types";
-import { project } from "../lib/map";
+import { placesNear, project } from "../lib/map";
 import MapScreen from "../screens/Map";
 
 const mockNavigate = vi.fn();
@@ -119,6 +119,21 @@ describe("project", () => {
   });
 });
 
+describe("placesNear", () => {
+  const colorado: MapPlace = { name: "Colorado", lat: 39.0, lng: -105.5, values: ["Colorado"], count: 8, hub: null };
+  const springs: MapPlace = { name: "Colorado Springs, Colorado", lat: 38.8, lng: -104.8, values: ["Colorado Springs, Colorado"], count: 8, hub: null };
+
+  it("returns every dot under a tap, biggest first — overlapping dots stay reachable", () => {
+    // 1080×540 box = 3px per degree; tap right on Colorado (Western US is 11° off).
+    const hits = placesNear([harare, colorado, springs, western], (180 - 105.5) * 3, (90 - 39) * 3, 1080, 540);
+    expect(hits.map((p) => p.name)).toEqual(["Colorado", "Colorado Springs, Colorado"]);
+  });
+
+  it("returns nothing for a tap on empty ocean", () => {
+    expect(placesNear([harare, colorado], 10, 170, 360, 180)).toEqual([]);
+  });
+});
+
 describe("Map", () => {
   it("renders one dot per real place, titled with its real file count", () => {
     renderMap();
@@ -155,6 +170,22 @@ describe("Map", () => {
     expect(screen.getByRole("link", { name: /See all 56/ })).toHaveAttribute("href", "/location/western-united-states");
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(screen.queryByRole("region", { name: "Western United States" })).not.toBeInTheDocument();
+  });
+
+  it("a tap over overlapping dots lists them all to choose from", () => {
+    const vegas: MapPlace = { name: "Las Vegas, Nevada", lat: 36.2, lng: -115.1, values: ["Las Vegas, Nevada"], count: 37, hub: null };
+    useBootstrapMock.mockReturnValue({ data: { ...mockBootstrap, places: [western, vegas, harare] }, isLoading: false });
+    const { container } = renderMap();
+    const map = container.querySelector("[data-map]") as HTMLElement;
+    map.getBoundingClientRect = () => ({ left: 0, top: 0, width: 360, height: 180 }) as DOMRect;
+    // between Western US (-116.5, 39.5) and Las Vegas (-115.1, 36.2)
+    fireEvent.click(map, { detail: 1, clientX: 180 - 116, clientY: 90 - 38 });
+    const chooser = screen.getByRole("region", { name: "2 places here" });
+    expect(chooser).toHaveTextContent("Western United States");
+    expect(chooser).toHaveTextContent("Las Vegas, Nevada");
+    fireEvent.click(within(chooser).getByRole("button", { name: /Las Vegas, Nevada/ }));
+    expect(screen.getByRole("region", { name: "Las Vegas, Nevada" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "2 places here" })).not.toBeInTheDocument();
   });
 
   it("a place without a live hub links to the Archive filtered by its location", () => {

@@ -22,17 +22,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useBootstrap, useRecords } from "../api/queries";
-import { project } from "../lib/map";
+import { dotSize, placesNear, project } from "../lib/map";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { WorldMap } from "../components/WorldMap";
 import { DocCard } from "../components/DocCard";
 import type { MapPlace, Stats } from "../api/types";
-
-// Dot diameter in px: log-scaled so a 1-file place is still tappable and the
-// ~50-file regions don't swallow their neighbours.
-function dotSize(count: number): number {
-  return 8 + Math.min(14, Math.log2(count) * 2.5);
-}
 
 const files = (n: number) => `${n} file${n === 1 ? "" : "s"}`;
 
@@ -79,6 +73,38 @@ function PlacePanel({ place, onClose }: { place: MapPlace; onClose: () => void }
   );
 }
 
+// Shown when a tap lands on several overlapping dots: pick one to open.
+function PlaceChooser({ places, onPick, onClose }: { places: MapPlace[]; onPick: (name: string) => void; onClose: () => void }) {
+  const label = `${places.length} places here`;
+  return (
+    <section
+      aria-label={label}
+      className="mb-[14px] rounded-2xl border border-line2 bg-surface p-[14px]"
+      style={{ animation: "fadeup .25s ease both" }}
+    >
+      <div className="mb-2 flex items-center gap-2">
+        <h2 className="flex-1 font-mono text-[10px] uppercase tracking-[.6px] text-faint">{label}</h2>
+        <button type="button" aria-label="Close" onClick={onClose} className="px-1 font-mono text-[14px] text-faint hover:text-ink">
+          ✕
+        </button>
+      </div>
+      <div className="flex flex-col">
+        {places.map((p) => (
+          <button
+            key={p.name}
+            type="button"
+            onClick={() => onPick(p.name)}
+            className="flex items-center gap-3 border-t border-line py-[10px] text-left first:border-t-0 hover:text-signal"
+          >
+            <span className="min-w-0 flex-1 truncate text-[14px] text-ink">{p.name}</span>
+            <span className="flex-none font-mono text-[10px] text-faint">{files(p.count)}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function MapScreen() {
   // AppBar title — prototype's `titles.map` (RealUFO.dc.html:566).
   useSetPageTitle("SIGHTING MAP", "Where the files come from");
@@ -86,6 +112,7 @@ export function MapScreen() {
   const { data } = useBootstrap();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<string | null>(null);
+  const [choices, setChoices] = useState<MapPlace[] | null>(null);
 
   const cases = data?.sightings ?? [];
   const places = data?.places ?? [];
@@ -101,13 +128,32 @@ export function MapScreen() {
   const maxDecade = Math.max(1, ...byDecade.map(([, n]) => n));
   const maxLocation = Math.max(1, ...topLocations.map(([, n]) => n));
 
-  const toggle = (name: string) => setSelected((s) => (s === name ? null : name));
+  const toggle = (name: string) => {
+    setChoices(null);
+    setSelected((s) => (s === name ? null : name));
+  };
+
+  // Pointer taps anywhere on the map hit-test every dot near the finger, so
+  // overlapping dots and taps on a dot's glow still resolve. Keyboard
+  // activation (detail 0) is left to the focused dot's own onClick.
+  const pick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.detail === 0) return;
+    const box = e.currentTarget.getBoundingClientRect();
+    const hits = placesNear(onMap, e.clientX - box.left, e.clientY - box.top, box.width, box.height);
+    if (hits.length === 1) toggle(hits[0].name);
+    else if (hits.length > 1) {
+      setSelected(null);
+      setChoices(hits);
+    }
+  };
 
   return (
     <div data-screen="map" style={{ animation: "fadeup .35s ease both" }}>
-      <div className={place ? "items-start min-[900px]:grid min-[900px]:grid-cols-[minmax(0,1fr)_340px] min-[900px]:gap-[14px]" : ""}>
+      <div className={place || choices ? "items-start min-[900px]:grid min-[900px]:grid-cols-[minmax(0,1fr)_340px] min-[900px]:gap-[14px]" : ""}>
         {/* map panel — prototype lines 313-321 */}
         <div
+          data-map
+          onClick={pick}
           className="relative mb-[14px] aspect-[16/10] overflow-hidden rounded-2xl border border-line2"
           style={{ background: "radial-gradient(120% 120% at 50% 0%, var(--surface), var(--bg2))" }}
         >
@@ -126,14 +172,14 @@ export function MapScreen() {
           {onMap.map((p) => {
             const { x, y } = project(p.lat!, p.lng!);
             const size = dotSize(p.count);
-            const active = p.name === selected;
+            const active = p.name === selected || !!choices?.some((c) => c.name === p.name);
             return (
               <button
                 key={p.name}
                 type="button"
                 title={`${p.name} · ${files(p.count)}`}
                 aria-pressed={active}
-                onClick={() => toggle(p.name)}
+                onClick={(e) => e.detail === 0 && toggle(p.name)}
                 className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full hover:scale-150"
                 style={{
                   left: `${x * 100}%`,
@@ -155,7 +201,10 @@ export function MapScreen() {
                 key={c.id}
                 type="button"
                 title={`Case: ${c.name}`}
-                onClick={() => c.case_slug && navigate(`/case/${c.case_slug}`)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (c.case_slug) navigate(`/case/${c.case_slug}`);
+                }}
                 className="absolute z-[3] h-[9px] w-[9px] -translate-x-1/2 -translate-y-1/2 rotate-45 border border-bg hover:scale-150"
                 style={{ left: `${x * 100}%`, top: `${y * 100}%`, background: c.accent }}
               />
@@ -168,7 +217,10 @@ export function MapScreen() {
                   key={p.name}
                   type="button"
                   aria-pressed={p.name === selected}
-                  onClick={() => toggle(p.name)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggle(p.name);
+                  }}
                   className={`rounded-full border bg-surface px-2 py-[3px] font-mono text-[9px] hover:text-ink ${
                     p.name === selected ? "border-signal text-signal" : "border-line2 text-dim"
                   }`}
@@ -186,6 +238,7 @@ export function MapScreen() {
           </div>
         </div>
         {place && <PlacePanel place={place} onClose={() => setSelected(null)} />}
+        {choices && <PlaceChooser places={choices} onPick={toggle} onClose={() => setChoices(null)} />}
       </div>
       {!!data?.unmappedFiles && (
         <div className="-mt-2 mb-[14px] font-mono text-[9px] text-faint">
