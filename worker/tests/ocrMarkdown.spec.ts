@@ -87,6 +87,17 @@ describe("formatPage", () => {
     expect(formatPage(tty).filter((b) => b.kind === "heading")).toEqual([]);
   });
 
+  it("a title after a finished sentence isn't reflowed into it; a 2-line title stays one heading", () => {
+    const t = `New York Office, the office of origin of the publishing company.
+Apparently they have not .come within the sedition statute.
+REPORTING AND EXCHANGING OF INFORMATION CONCERNING
+PLYING SAUCERS
+Extended discussion was had concerning the reporting of`; // FBI-UAP-D013 p.5
+    const md = toMarkdown(formatPage(t));
+    expect(md).toContain("within the sedition statute.\n\n### REPORTING AND EXCHANGING OF INFORMATION CONCERNING PLYING SAUCERS\n\nExtended discussion");
+    expect(words(plain(md))).toEqual(words(t));
+  });
+
   it("empty text is no blocks", () => {
     expect(formatPage("  \n ")).toEqual([]);
   });

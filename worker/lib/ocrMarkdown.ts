@@ -43,20 +43,29 @@ export function formatPage(text: string): Block[] {
   const blocks: Block[] = [];
   let para: Line[] | null = null;
   let prev = ""; // previous raw line ("" after a blank line or a heading)
+  let heading: { kind: "heading"; text: string } | null = null; // the block the previous line made
   const lines = text.split("\n").map((l) => l.trim());
   lines.forEach((line, i) => {
     if (!line) {
       para = null;
       prev = "";
+      heading = null;
       return;
     }
     const label = labelOf(line);
-    if (para && prev.length >= LONG && !prev.endsWith(":") && !LIST.test(line) && !label) {
+    // "…CONCERNING" / "FLYING SAUCERS": a title wrapped over two lines stays one heading
+    if (heading && !label && isHeading(line)) {
+      heading.text += ` ${line}`;
+      return;
+    }
+    heading = null;
+    const title = !label && isHeading(line) && !capsBody(lines[i - 1]) && !capsBody(lines[i + 1]);
+    if (para && prev.length >= LONG && !prev.endsWith(":") && !LIST.test(line) && !label && !(title && /[.?!]$/.test(prev))) {
       const last = para[para.length - 1];
       // "sub-" + "versive": rejoin the hyphenated wrap without inventing a space
       last.text += /[A-Za-z]-$/.test(last.text) && /^[a-z]/.test(line) ? line : ` ${line}`;
-    } else if (!label && isHeading(line) && !capsBody(lines[i - 1]) && !capsBody(lines[i + 1])) {
-      blocks.push({ kind: "heading", text: line });
+    } else if (title) {
+      blocks.push((heading = { kind: "heading", text: line }));
       para = null;
       prev = "";
       return;
