@@ -177,11 +177,11 @@ def test_summarize_single_section_is_one_call_without_sections():
 
 def test_summarize_maps_then_reduces_and_returns_sections():
     calls = []
-    pages = [(n, LONG) for n in range(1, 13)]                      # ~29k chars -> 3 sections
+    pages = [(n, LONG) for n in range(1, 13)]                      # 12 x 2,440 chars -> 4 pages per 12k section
     summary, secs = summaries.summarize("T", pages, chat=_fake_chat(calls))
-    assert [(s["from"], s["to"]) for s in secs] == [(1, 5), (6, 10), (11, 12)]
+    assert [(s["from"], s["to"]) for s in secs] == [(1, 4), (5, 8), (9, 12)]
     assert sum("pages contain" in c[0] for c in calls) == 3
-    assert "[pp. 1–5]" in calls[-1][1] and "FBI investigative file" in summary
+    assert "[pp. 1–4]" in calls[-1][1] and "FBI investigative file" in summary
 
 def test_summarize_reduces_in_layers_when_the_section_list_is_long(monkeypatch):
     monkeypatch.setattr(summaries, "SECTION", 3000)                 # force many sections + a long list
@@ -377,8 +377,7 @@ def main(argv=None):
     pending, ok, failed = [], 0, 0
     with tempfile.TemporaryDirectory() as work:
         def one(row):
-            import os, tempfile as tf
-            with tf.TemporaryDirectory(dir=work) as w:  # pdf_pages writes a fixed file name per dir
+            with tempfile.TemporaryDirectory(dir=work) as w:  # pdf_pages uses a fixed file name per dir
                 return summarize(row["title"], _pages(row, w))
         with ThreadPoolExecutor(max_workers=max(1, args.workers)) as pool:
             futures = [(row, pool.submit(one, row)) for row in rows]
@@ -401,8 +400,6 @@ def main(argv=None):
     print(f"{'dry-run ' if args.dry_run else ''}summaries ok={ok} failed={failed}")
     sys.exit(1 if failed else 0)
 ```
-
-(Drop the now-unused `import os, tempfile as tf` names if your linter flags them: write `with tempfile.TemporaryDirectory(dir=work) as w:` directly.)
 
 `.github/workflows/ingest.yml` summaries step: `python -m ingest.summaries --limit 50` → `python -m ingest.summaries --limit 50 --workers 4`.
 
@@ -436,13 +433,14 @@ git commit -m "feat(summaries): map-reduce over the whole text, section summarie
 - Consumes: `record_fts(record_id, page, body)`; trigger guard (Task 1); `textindex.pdf_pages(url, work, ocr_id)`.
 - Produces: `FTS_CAP = 90000`; `fts_sql(rid: str, pages: list[dict]) -> str`; `marker_sql` output now ends with `fts_sql(...)`; CLI `--fts-only`.
 
-- [ ] **Step 1: Write the failing tests** (append to `test_ocr.py`)
+- [ ] **Step 1: Write the failing tests**
+
+In `test_ocr.py`'s `_db()`, add `CREATE TABLE record_fts(record_id TEXT, page INT, body TEXT);` to its `executescript` (marker_sql now always writes FTS rows). Then append:
 
 ```python
 def _fts_db():
     db = _db()
-    db.executescript("CREATE TABLE record_fts(record_id TEXT, page INT, body TEXT);"
-                     "INSERT INTO record_fts VALUES('O''Hare 1.pdf', 1, 'old capped text');")
+    db.execute("INSERT INTO record_fts VALUES('O''Hare 1.pdf', 1, 'old capped text')")
     return db
 
 def test_marker_sql_writes_one_fts_row_per_non_empty_page_escaped_and_capped():
@@ -529,7 +527,7 @@ Update the module docstring usage block with `python -m ingest.ocr --fts-only   
 - [ ] **Step 4: Run the crawler suite**
 
 Run: `cd crawler && python3 -m pytest ingest/tests/ -q`
-Expected: all pass (existing marker tests still pass — their sqlite fixture has no `record_fts` table only where `_db()` is used without `_fts_db()`; if `test_marker_sql_*` fail with "no such table: record_fts", add the `record_fts` table to `_db()` instead).
+Expected: all pass.
 
 - [ ] **Step 5: Commit**
 
