@@ -50,6 +50,17 @@ describe("record_fts (search inside documents)", () => {
     expect(ids).toContain("FBI-UAP-D002");
   });
 
+  it("metadata search matches every word anywhere, in any field, including the id", async () => {
+    const ids = async (q: string) =>
+      ((await (await get("/api/records?q=" + encodeURIComponent(q))).json()) as any).records.map((x: any) => x.id);
+    expect(await ids("uap d009")).toContain("FBI-UAP-D009"); // last two parts of the id, space-separated
+    expect(await ids("uap-d009")).toContain("FBI-UAP-D009");
+    expect(await ids("orb d010")).toContain("FBI-UAP-D010"); // title word + id part
+    expect(await ids("orb d011")).not.toContain("FBI-UAP-D011"); // every word must hit
+    expect(await ids("zimbabwe cia")).toContain("CIA-UAP-017"); // location + agency
+    expect(await ids("defensewhat")).toContain("255413270UFOsandDefenseWhatShouldwePrepareFor"); // id-only text
+  });
+
   it("hostile search syntax never errors", async () => {
     for (const q of ['"tic', "a*b", "-x OR", "NEAR(", "^^^", '""']) {
       const res = await get("/api/records?q=" + encodeURIComponent(q));

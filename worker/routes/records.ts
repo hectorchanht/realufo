@@ -26,8 +26,14 @@ export function ftsQuery(q: string): string | null {
   return words.map((w) => `"${w}"`).join(" ") + (words[words.length - 1].length >= 3 ? "*" : "");
 }
 
-// Title/agency/location/summary substring match (the original search).
-const META_LIKE = "lower(r.title||' '||r.agency||' '||coalesce(r.location,'')||' '||coalesce(r.summary,'')) LIKE ?";
+// Metadata match: every word of q is a substring of id/title/agency/location/
+// summary/date, in any field and order ("uap pr104" finds DOW-UAP-PR104).
+// Words are letters/digits only, so they carry no LIKE wildcards.
+const META_HAY = "lower(r.id||' '||r.title||' '||r.agency||' '||coalesce(r.location,'')||' '||coalesce(r.summary,'')||' '||coalesce(r.incident_date,''))";
+function metaMatch(q: string): { sql: string; bind: string[] } {
+  const words = (q.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).slice(0, 8);
+  return words.length ? { sql: words.map(() => `${META_HAY} LIKE ?`).join(" AND "), bind: words.map((w) => `%${w}%`) } : { sql: "0", bind: [] };
+}
 
 export async function listRecords(req: Request, env: Env) {
   const u = new URL(req.url);
@@ -70,12 +76,12 @@ export async function listRecords(req: Request, env: Env) {
     bind.push(JSON.stringify(rows.results.map((r) => r.d).filter((d) => decadeOf(d) === decade)));
   }
   const q = (u.searchParams.get("q") || "").trim();
-  const like = "%" + q.toLowerCase() + "%";
+  const meta = metaMatch(q);
   const fts = q ? ftsQuery(q) : null;
   if (q) {
     // Metadata OR page text (record_fts, migration 0020).
-    where.push(fts ? `(${META_LIKE} OR r.id IN (SELECT record_id FROM record_fts WHERE record_fts MATCH ?))` : `(${META_LIKE})`);
-    bind.push(like, ...(fts ? [fts] : []));
+    where.push(fts ? `((${meta.sql}) OR r.id IN (SELECT record_id FROM record_fts WHERE record_fts MATCH ?))` : `(${meta.sql})`);
+    bind.push(...meta.bind, ...(fts ? [fts] : []));
   }
   const w = where.length ? "WHERE " + where.join(" AND ") : "";
   const sort = u.searchParams.get("sort");
@@ -83,8 +89,8 @@ export async function listRecords(req: Request, env: Env) {
   const orderBind: unknown[] = [];
   // Searching with no explicit sort: title/summary hits before text-only hits.
   if (q && !sort) {
-    order = `CASE WHEN ${META_LIKE} THEN 0 ELSE 1 END, ${order}`;
-    orderBind.push(like);
+    order = `CASE WHEN ${meta.sql} THEN 0 ELSE 1 END, ${order}`;
+    orderBind.push(...meta.bind);
   }
   let join = "";
   const joinBind: unknown[] = [];
