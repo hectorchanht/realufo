@@ -680,3 +680,41 @@ describe("release tracker pages (crawler HTML)", () => {
     expect(html).not.toContain("What's new in");
   });
 });
+
+describe("topic pages (crawler HTML)", () => {
+  const fakeAssets = {
+    fetch: async () =>
+      new Response('<html><head><!--META--></head><body><div id="root"></div></body></html>', { headers: { "content-type": "text/html" } }),
+  };
+  const get = async (path: string) => {
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(new Request("https://topicpages.test" + path, { headers: { accept: "text/html" } }), { ...env, ASSETS: fakeAssets } as any, ctx);
+    await waitOnExecutionContext(ctx);
+    return res.text();
+  };
+  beforeAll(async () => {
+    const ins = env.DB.prepare("INSERT INTO records(id,archive,agency,title,summary,kind,status) VALUES (?,?,?,?,?,?,?)");
+    await env.DB.batch([1, 2, 3, 4, 5].map((n) => ins.bind(`TP-${n}`, "wargov", "DoW", `TP-${n}, AAWSAP DIRD, Page test ${n}`, "x", "pdf", "live")));
+  });
+
+  it("topic page: title with count, data line, about JSON-LD", async () => {
+    const html = await get("/topic/aawsap");
+    expect(html).toMatch(/<h1>AAWSAP &amp; the DIRD Reports: \d+ Declassified UFO Files<\/h1>/);
+    expect(html).toContain("declassified UAP files on this topic");
+    expect(html).toContain('"about":{"@type":"Thing","name":"AAWSAP & DIRDs"}'); // JSON-LD: only "<" is escaped
+    expect(html).toContain('<a href="/doc/TP-1">');
+  });
+
+  it("doc page lists its topics with links", async () => {
+    const html = await get("/doc/TP-1");
+    expect(html).toContain('Topics: <a href="/topic/aawsap">AAWSAP &amp; DIRDs</a>');
+  });
+
+  it("browse lists topics first; agency hubs get no about", async () => {
+    const browse = await get("/browse");
+    expect(browse.indexOf("<h2>Topics</h2>")).toBeGreaterThan(-1);
+    expect(browse.indexOf("<h2>Topics</h2>")).toBeLessThan(browse.indexOf("<h2>Releases</h2>"));
+    const agency = await get("/agency/fbi");
+    expect(agency).not.toContain('"about"');
+  });
+});

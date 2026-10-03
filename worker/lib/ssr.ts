@@ -7,6 +7,7 @@
 import { parseAiMoments, parseKeyMoments, type KeyMoment } from "../../web/src/lib/keyMoments";
 import { caseStoryUrl, RELEASES_TITLE } from "./shared";
 import { agencyList, longDate, pad2, shortDate, type FaqItem, type ReleaseBlock, type TrackerData } from "./releases";
+import type { TopicBlock } from "./topics";
 import { sourceLinks } from "../../web/src/lib/sourceLinks";
 
 // Same copy as the default block in web/index.html.
@@ -94,7 +95,7 @@ export const threadHref = (id: string) => `/thread/${encodeURIComponent(id)}`;
 export const boardHref = (slug: string) => `/board/${encodeURIComponent(slug.replace(/^\/|\/$/g, ""))}`;
 
 export const hubHref = (kind: string, slug: string) => `/${kind}/${encodeURIComponent(slug)}`;
-const KIND_HEADING: Record<string, string> = { release: "Releases", agency: "Agencies", location: "Locations", decade: "Decades" };
+const KIND_HEADING: Record<string, string> = { release: "Releases", topic: "Topics", agency: "Agencies", location: "Locations", decade: "Decades" };
 type HubLinkData = { kind: string; slug: string; label: string; count: number };
 const hubLinks = (hs: HubLinkData[]) => hs.map((s) => ({ href: hubHref(s.kind, s.slug), text: `${s.label} (${s.count})` }));
 
@@ -103,6 +104,7 @@ export type HubPageData = {
   prev?: string | null; next?: string | null;
   highlights?: { lede: string; picks: { id: string; why: string; title: string; kind?: string }[] } | null;
   release?: ReleaseBlock | null;
+  topic?: TopicBlock | null;
 };
 
 const highlightsHtml = (h: HubPageData["highlights"]) =>
@@ -127,6 +129,20 @@ const releaseNav = (b: ReleaseBlock) =>
   ].filter(Boolean);
 
 const listAnd = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
+
+const topicHtml = (t: TopicBlock) =>
+  [
+    paras(t.background),
+    t.lore ? `<p><strong>Where the lore differs:</strong> ${esc(t.lore)}</p>` : "",
+    t.sources.length
+      ? `<section><h2>Sources in the archive</h2><ul>${t.sources
+          .map((s) => `<li>${a({ href: `${docHref(s.id)}${s.page ? `?p=${s.page}` : ""}`, text: `${s.title}${s.page ? ` — p. ${s.page}` : ""}` })}: ${esc(s.note)}</li>`)
+          .join("")}</ul></section>`
+      : "",
+  ].join("");
+
+const storiesHtml = (t: TopicBlock) =>
+  section("Related stories", t.stories.filter((s) => s.threadId).map((s) => ({ href: threadHref(s.threadId as string), text: s.title })));
 
 export const releaseBlockHtml = (b: ReleaseBlock) => {
   const items = [
@@ -171,9 +187,11 @@ export function hubBody(h: HubPageData): string {
   return [
     `<p>${a({ href: "/browse", text: "Browse" })} › ${esc(KIND_HEADING[h.kind] ?? "")}</p>`,
     `<h1>${esc(h.title)}</h1>`,
+    h.topic ? topicHtml(h.topic) : "",
     paras(h.intro),
     h.release ? releaseBlockHtml(h.release) : "",
     highlightsHtml(h.highlights),
+    h.topic ? storiesHtml(h.topic) : "",
     nav.length ? `<p>${nav.join(" · ")}</p>` : "",
     h.release ? `<p>${a({ href: "/releases", text: "All releases & next-release estimate" })}</p>` : "",
     section(`Files (${h.records.length})`, docLinks(h.records)),
@@ -187,7 +205,7 @@ export const browseBody = (hubs: HubLinkData[]) =>
     "Browse the archive",
     "Every declassified UAP file, grouped by release, agency, location and decade.",
     `<p>${a({ href: "/releases", text: "Release tracker: dates, schedule and next release" })}</p>`,
-    ...["release", "agency", "location", "decade"].map((k) => section(KIND_HEADING[k], hubLinks(hubs.filter((h) => h.kind === k))))
+    ...["topic", "release", "agency", "location", "decade"].map((k) => section(KIND_HEADING[k], hubLinks(hubs.filter((h) => h.kind === k))))
   );
 
 const a = (l: Link) => `<a href="${esc(l.href)}">${esc(l.text)}</a>`;
@@ -262,6 +280,7 @@ export type DocData = {
   related: { key: string; label: string; records: RecordLink[] }[];
   fullText?: { pages: { n: number; text: string }[]; truncated: boolean; total_pages: number; aiSummary?: string | null } | null;
   hubs?: Partial<Record<"release" | "agency" | "location" | "decade", string>>;
+  topics?: { slug: string; label: string }[];
   tldr?: { bullets: string[]; oneLiner: string; cardUrl: string | null } | null;
   articles?: { title: string; thread_id: string | null; evidence: { id: string; label: string }[] }[];
 };
@@ -331,6 +350,7 @@ export function docFooter(d: DocData): Link[] {
     h.agency && { href: hubHref("agency", h.agency), text: `More from ${r.agency_full || r.agency}` },
     h.location && { href: hubHref("location", h.location), text: `More from ${r.location}` },
     h.decade && { href: hubHref("decade", h.decade), text: `More from the ${h.decade}` },
+    ...(d.topics ?? []).map((t) => ({ href: hubHref("topic", t.slug), text: `More on ${t.label}` })),
   ].filter((l): l is Link => !!l);
 }
 
@@ -365,6 +385,7 @@ export function docBody(d: DocData): string {
       .filter(([, v]) => v)
       .map(([k, v]) => `<dt>${k}</dt><dd>${esc(String(v))}</dd>`)
       .join("")}</dl>`,
+    d.topics?.length ? `<p>Topics: ${d.topics.map((t) => a({ href: hubHref("topic", t.slug), text: t.label })).join(" · ")}</p>` : "",
     paras(moments.prose),
     momentsSection(d, moments),
     `<p>${[{ href: `/api/file/${encodeURIComponent(r.id)}`, text: "Open original file" }, ...sourceLinks(r).map((l) => ({ href: l.href, text: `${l.label} page` }))].map(a).join(" · ")}</p>`,

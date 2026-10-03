@@ -17,6 +17,7 @@ import { SOCIAL_PROFILES } from "./profiles";
 import { MAP_INTRO, RELEASES_DESCRIPTION, RELEASES_TITLE } from "./shared";
 import { trackerData } from "../routes/releases";
 import { agencyList, longDate } from "./releases";
+import { TOPIC_RULES } from "./topics";
 
 // One SPA route's pre-render: <head> meta (url is filled in by serveWithMeta)
 // and the HTML that goes inside #root. A loader returns null when the entity
@@ -328,13 +329,16 @@ const hubPage =
     return {
       meta: {
         title: h.title,
-        description: h.release ? `${h.intro} Agencies: ${agencyList(h.release.info, 3)}.` : h.intro,
+        description: h.topic
+          ? `${h.topic.background.split(/(?<=\.)\s/)[0]} ${h.intro}`
+          : h.release ? `${h.intro} Agencies: ${agencyList(h.release.info, 3)}.` : h.intro,
         image: (h.records.find((r) => r.thumb)?.thumb as string | undefined) ?? null,
         type: "website",
         jsonLd: {
           "@type": "CollectionPage",
           name: h.title,
           description: h.intro,
+          ...(h.topic ? { about: { "@type": "Thing", name: TOPIC_RULES.find((t) => t.slug === h.slug)?.label ?? h.title } } : {}),
           mainEntity: {
             "@type": "ItemList",
             numberOfItems: h.records.length,
@@ -427,6 +431,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/privacy" }), load: privacyPage },
   { pattern: new URLPattern({ pathname: "/terms" }), load: termsPage },
   { pattern: new URLPattern({ pathname: "/release/:slug" }), load: hubPage("release") },
+  { pattern: new URLPattern({ pathname: "/topic/:slug" }), load: hubPage("topic") },
   { pattern: new URLPattern({ pathname: "/agency/:slug" }), load: hubPage("agency") },
   { pattern: new URLPattern({ pathname: "/location/:slug" }), load: hubPage("location") },
   { pattern: new URLPattern({ pathname: "/decade/:slug" }), load: hubPage("decade") },
