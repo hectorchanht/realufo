@@ -8,5 +8,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/tests/setup.ts"],
     passWithNoTests: true,
+    // room for a few 5 s waits (src/tests/setup.ts asyncUtilTimeout) in one test
+    testTimeout: 20000,
   },
 });
