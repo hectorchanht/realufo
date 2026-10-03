@@ -48,24 +48,28 @@ export async function feed(_req: Request, env: Env) {
   });
 }
 
-// "Short clips" row: newest live videos that have a 9:16 twin in R2 (clips-v/ has no
-// D1 row; the object's existence is the flag, same as the X bot's clips/). Portrait
+// "Short clips" row: every operator showcase Short (R2 showcase/, newest post first) leads,
+// then the newest live videos that have a 9:16 twin in R2 (clips-v/ has no D1 row; the
+// object's existence is the flag, same as the X bot's clips/). Among those, portrait
 // videos (assets.crop w < h: phone clips padded to 16:9) lead — their twin is the whole picture.
 // Never fails the feed: an R2/D1 error just hides the row.
 export async function feedClips(env: Env) {
   try {
-    const ids = await clipIds(env, "clips-v/");
-    if (!ids.length) return [];
+    const [showcase, ids] = await Promise.all([clipIds(env, "showcase/"), clipIds(env, "clips-v/")]);
+    if (!showcase.length && !ids.length) return [];
     const { results } = await env.DB.prepare(
-      `SELECT r.id, r.archive, r.title, ${thumbSql("r.id")} thumb FROM records r
-       WHERE r.status='live' AND r.id IN (SELECT value FROM json_each(?))
-       ORDER BY (SELECT CAST(substr(a.crop, 1, instr(a.crop, ':') - 1) AS INT) < CAST(substr(a.crop, instr(a.crop, ':') + 1) AS INT)
+      `SELECT r.id, r.archive, r.title, ${thumbSql("r.id")} thumb, r.id IN (SELECT value FROM json_each(?1)) showcase FROM records r
+       WHERE r.status='live' AND (r.id IN (SELECT value FROM json_each(?1)) OR r.id IN (SELECT value FROM json_each(?2)))
+       ORDER BY (SELECT max(x.created_at) FROM x_posts x WHERE x.stream='showcase' AND x.ref=r.id AND r.id IN (SELECT value FROM json_each(?1))) DESC,
+                showcase DESC,
+                (SELECT CAST(substr(a.crop, 1, instr(a.crop, ':') - 1) AS INT) < CAST(substr(a.crop, instr(a.crop, ':') + 1) AS INT)
                  FROM assets a WHERE a.record_id=r.id AND a.role='full') DESC,
-                r.created_at DESC, r.id DESC LIMIT 12`
-    ).bind(JSON.stringify(ids)).all<{ id: string; archive: string; title: string | null; thumb: string | null }>();
-    return results.map(({ archive, ...r }) => ({
+                r.created_at DESC, r.id DESC LIMIT ?3`
+    ).bind(JSON.stringify(showcase), JSON.stringify(ids), 12 + showcase.length)
+      .all<{ id: string; archive: string; title: string | null; thumb: string | null; showcase: number }>();
+    return results.map(({ archive, showcase, ...r }) => ({
       ...r,
-      clip: `https://assets.realufo.org/clips-v/${archive}/${encodeURIComponent(r.id)}.mp4`,
+      clip: `https://assets.realufo.org/${showcase ? "showcase" : "clips-v"}/${archive}/${encodeURIComponent(r.id)}.mp4`,
     }));
   } catch {
     return [];

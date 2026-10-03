@@ -49,6 +49,16 @@ describe("feedClips", () => {
     expect((await feedClips(env as any)).map((c) => c.id)).toEqual(["FC-1", "FC-2"]);
   });
 
+  it("puts every showcase Short first (newest post first), served from showcase/", async () => {
+    await rec("FC-5"); await rec("FC-6");
+    for (const id of ["FC-5", "FC-6", "FC-1"]) await env.MEDIA.put(`showcase/wargov/${id}.mp4`, new Uint8Array(1));
+    await env.DB.prepare("INSERT INTO x_posts(stream,ref,text,ai,cost_usd,status,created_at) VALUES ('showcase','FC-5','t',0,0,'posted','2026-10-03 10:00:00'),('showcase','FC-6','t',0,0,'posted','2026-10-03 11:00:00')").run();
+    const clips = await feedClips(env as any);
+    expect(clips.map((c) => c.id)).toEqual(["FC-6", "FC-5", "FC-1", "FC-2"]); // FC-1: showcase (no post row) beats its clips-v twin
+    expect(clips[0].clip).toBe("https://assets.realufo.org/showcase/wargov/FC-6.mp4");
+    expect(clips.filter((c) => c.id === "FC-1")).toHaveLength(1);
+  });
+
   it("degrades to [] when R2 listing fails", async () => {
     const broken = { ...env, MEDIA: { list: () => Promise.reject(new Error("r2 down")) } };
     expect(await feedClips(broken as any)).toEqual([]);
