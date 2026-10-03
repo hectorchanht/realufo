@@ -10,10 +10,11 @@ highlighted. ElevenLabs narration over a synthesized ambient bed; app-screenshot
 """
 import os, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "..", ".."))
+sys.path.insert(0, os.path.join(HERE, "..", "..", ".."))
+IMG = os.path.join(HERE, "..", "images")  # stills; app-*.png + short.mp4 live here in short/
 from lib import Cut, txt, FFMPEG, TMP
 
-P = lambda f: os.path.join(HERE, f)
+P = lambda f: os.path.join(IMG if f.endswith(".jpg") else HERE, f)
 OUT = P("short.mp4")
 STARS, BALL = os.path.join(TMP, "stars.png"), os.path.join(TMP, "ball.png")
 subprocess.run([FFMPEG, "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=black:s=360x360", "-vf",

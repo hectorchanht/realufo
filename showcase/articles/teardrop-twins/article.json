@@ -1,8 +1,8 @@
 {
   "slug": "teardrop-twins",
   "title": "Teardrop twins: two crews, 3,000 km apart, filmed the same \"tail\" UAP",
-  "hero": "hero.jpg",
-  "short": "short.mp4",
+  "hero": "images/hero.jpg",
+  "short": "short/short.mp4",
   "showcase_record": "DOW-UAP-PR028",
   "parts": [
     "Two military crews. 3,000+ km apart. Five months apart.\nBoth filmed a round object with a rigid \"tail\" hanging straight down 👀\nDOW-UAP-PR028 vs DOW-UAP-PR029 🧵",
@@ -18,14 +18,14 @@
       "id": "DOW-UAP-PR028",
       "t": 15,
       "label": "Greece, Jan 2024: the \"tail\" hangs straight down",
-      "image": "DOW-UAP-PR028.jpg",
+      "image": "images/DOW-UAP-PR028.jpg",
       "evidence": "SWIR video. AARO's description: \"an inverted teardrop with a vertically linear trailing mass suspended below\". At 0:56 the operator switches to visible light and loses it."
     },
     {
       "id": "DOW-UAP-PR029",
       "t": 5.4,
       "label": "Gulf of Oman, Jun 2024: same shape, same straight-down tail",
-      "image": "DOW-UAP-PR029.jpg",
+      "image": "images/DOW-UAP-PR029.jpg",
       "evidence": "IR video over the sea. AARO uses the exact same words: \"an inverted teardrop with a vertically linear trailing mass suspended below\"."
     },
     {

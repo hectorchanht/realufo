@@ -8,13 +8,14 @@ the surface. ElevenLabs narration over a synthesized ambient bed; app-screenshot
 """
 import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "..", ".."))
+sys.path.insert(0, os.path.join(HERE, "..", "..", ".."))
+IMG = os.path.join(HERE, "..", "images")  # stills; app-*.png + short.mp4 live here in short/
 from lib import Cut, txt, SITE
 
 PR = "https://assets.realufo.org/videos/aaro/DOD_110692805-1920x1080-9000k.mp4"  # 1920x1080 (4:3 + bars); object at crosshair ~(936,531) 2:04-2:05.5
 PR067 = "https://assets.realufo.org/videos/wargov/DOD_111720696.mp4"  # 1280x720; speck enters ~(922,648) at 0:49, fades by 0:55
-CLOSE = os.path.join(HERE, "AARO-DOD_110692805-1920x1080-9000k.jpg")
-BRIGHT, FADED = os.path.join(HERE, "pr067-0524.jpg"), os.path.join(HERE, "pr067-0552.jpg")
+CLOSE = os.path.join(IMG, "AARO-DOD_110692805-1920x1080-9000k.jpg")
+BRIGHT, FADED = os.path.join(IMG, "pr067-0524.jpg"), os.path.join(IMG, "pr067-0552.jpg")
 APP = os.path.join(HERE, "app-search.png")  # /archive?q=USO&type=video
 OUT = os.path.join(HERE, "short.mp4")
 
@@ -46,7 +47,7 @@ c.seg_fc(["-loop", "1", "-i", BRIGHT, "-loop", "1", "-i", FADED], fc, 4,
 c.seg(["-loop", "1", "-i", APP], ",".join(["crop=860:1080:0:140,scale=1080:1356,fps=30,pad=1080:1920:0:450:black",
       txt("Check it yourself:", 215, 70), txt("search \"USO\" on realufo.org", 300, 56, "yellow")]), 3.5,
       say="Check it yourself. Search U S O on real U F O dot org.")
-c.seg(["-loop", "1", "-i", os.path.join(HERE, "DOW-UAP-PR067.jpg")], ",".join(["scale=1080:1080,fps=30,pad=1080:1920:0:470:black",
+c.seg(["-loop", "1", "-i", os.path.join(IMG, "DOW-UAP-PR067.jpg")], ",".join(["scale=1080:1080,fps=30,pad=1080:1920:0:470:black",
       txt("Diving UFO or fading heat?", 215, 66), txt("realufo.org", 300, 70, "yellow"), txt("step it frame by frame, free", 380, 46)]), 3,
       say="Diving UFO, or fading heat? You decide.")
 c.save(OUT, bed=True)

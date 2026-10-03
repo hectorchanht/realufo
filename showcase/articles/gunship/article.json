@@ -1,8 +1,8 @@
 {
   "slug": "gunship",
   "title": "The gunship that fired at UFOs: \"cold orbs\", a 105mm cannon and a recorder that \"inexplicably failed\"",
-  "hero": "hero.jpg",
-  "short": "short.mp4",
+  "hero": "images/hero.jpg",
+  "short": "short/short.mp4",
   "showcase_record": "DOW-UAP-PR121",
   "parts": [
     "A US gunship fired its 105mm cannon at two UFOs.\nThen its video recorder \"inexplicably failed\".\nSomeone filmed the screen with a phone 📱\nThe Pentagon just released it all 🧵",
@@ -24,21 +24,21 @@
       "id": "DOW-UAP-PR121",
       "t": 14.1,
       "label": "Two orbs cross the whole screen in about 0.3 seconds",
-      "image": "DOW-UAP-PR121.jpg",
+      "image": "images/DOW-UAP-PR121.jpg",
       "evidence": "Between 0:14.1 and 0:14.3 two dark blobs streak across the top right as a pair, smeared by their speed. At normal playback you barely see them; step frame by frame. Single orbs are clearest at 0:02.5 and 0:27.5."
     },
     {
       "id": "DOW-UAP-PR118",
       "t": 1.5,
       "label": "A \"cold orb\" near the crosshair",
-      "image": "DOW-UAP-PR118.jpg",
+      "image": "images/DOW-UAP-PR118.jpg",
       "evidence": "A small dark orb sits just off the reticle. AARO: \"secondary capture, recorded via a cellular device, of an infrared sensor display aboard a U.S. Special Operations Forces AC-130J Gunship\"; expect blur, flicker and tilt."
     },
     {
       "id": "DOW-UAP-PR117",
       "t": 4,
       "label": "What a phone filming a cockpit screen looks like",
-      "image": "DOW-UAP-PR117.jpg",
+      "image": "images/DOW-UAP-PR117.jpg",
       "evidence": "Tilted reticle, glare, screen-door noise: the footage that survived after the recorder failed. PR117-PR122 were all captured the same night."
     }
   ],

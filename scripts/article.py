@@ -9,7 +9,8 @@
 Idempotent: image keys are uuid5(slug/file), rows are upserts, the site thread is made once
 (articles.thread_id), and publish.sh posts a showcase once per record.
 
-article.json: slug, title, hero (image), short (mp4, for --social), showcase_record (the record
+Layout: <slug>/article.json, research.md, images/ (hero + evidence crops, uploaded), short/ (short.py,
+app-*.png, short.mp4). article.json: slug, title, hero ("images/hero.jpg"), short ("short/short.mp4", for --social), showcase_record (the record
 the X post hangs off), parts (the story; X thread tweets, each ≤280), evidence: [{id, t?, label,
 evidence, image?}].
 poll (optional): {q, opts} — the story's crowd question (q ≤100, 2-4 opts ≤25 chars, unique); site
@@ -45,7 +46,8 @@ def d1(sql, read=False):
 def upload(slug, name):
     if not name:
         return None
-    key = f"uploads/{uuid.uuid5(uuid.NAMESPACE_URL, f'realufo-article/{slug}/{name}')}.jpg"
+    # key from the file name only (not "images/…"): stable across folder moves, same as before the layout change
+    key = f"uploads/{uuid.uuid5(uuid.NAMESPACE_URL, f'realufo-article/{slug}/{os.path.basename(name)}')}.jpg"
     subprocess.run([*WR, "r2", "object", "put", f"realufo/{key}", "--file", os.path.join(ROOT, "showcase/articles", slug, name),
                     "--content-type", "image/jpeg", "--cache-control", "public, max-age=2592000", *WR_OPTS],
                    cwd=ROOT, check=True, capture_output=True)

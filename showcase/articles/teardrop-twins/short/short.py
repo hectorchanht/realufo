@@ -7,12 +7,13 @@ it on realufo.org (real app screenshot) → end card. ElevenLabs narration (lib.
 """
 import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "..", ".."))
+sys.path.insert(0, os.path.join(HERE, "..", "..", ".."))
+IMG = os.path.join(HERE, "..", "images")  # stills; app-*.png + short.mp4 live here in short/
 from lib import Cut, txt, SITE
 
 PR028 = "https://assets.realufo.org/videos/wargov/DOD_111688954.mp4"  # 1920x1080, object ~(970,470) at 15 s
 PR029 = "https://assets.realufo.org/videos/wargov/DOD_111688964.mp4"  # 1920x1080, object ~(1090,518) at 5.4 s
-A, B = os.path.join(HERE, "DOW-UAP-PR028.jpg"), os.path.join(HERE, "DOW-UAP-PR029.jpg")
+A, B = os.path.join(IMG, "DOW-UAP-PR028.jpg"), os.path.join(IMG, "DOW-UAP-PR029.jpg")
 APP = os.path.join(HERE, "app-search.png")  # 860x1864 mobile screenshot of /archive?q=teardrop&type=video
 OUT = os.path.join(HERE, "short.mp4")
 

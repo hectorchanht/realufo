@@ -1,8 +1,8 @@
 {
   "slug": "two-stars",
   "title": "Two \"star\" UAPs, 12 years apart: 8 points vs 6 points. Object or optics?",
-  "hero": "hero.jpg",
-  "short": "short.mp4",
+  "hero": "images/hero.jpg",
+  "short": "short/short.mp4",
   "showcase_record": "DOW-UAP-PR104",
   "parts": [
     "Two Pentagon UAP videos. 12 years and thousands of km apart.\nBoth show a black \"star\": one with 8 points, one with 6 ⭐\nDOW-UAP-PR038 vs DOW-UAP-PR104 🧵",
@@ -18,14 +18,14 @@
       "id": "DOW-UAP-PR038",
       "t": 25.5,
       "label": "Middle East, 2013: eight points, arms of alternating length",
-      "image": "DOW-UAP-PR038.jpg",
+      "image": "images/DOW-UAP-PR038.jpg",
       "evidence": "AARO's description: \"an area of contrast resembling an eight-pointed star with arms of alternating length\"; \"the reporter did not provide any oral or written description\". At 0:26, 0:50 and 1:14 the star is in three different places on screen with the arms at the same angles, and it gets smaller as it fades."
     },
     {
       "id": "DOW-UAP-PR104",
       "t": 6,
       "label": "Yellow Sea, 2025: six points, same black core",
-      "image": "DOW-UAP-PR104.jpg",
+      "image": "images/DOW-UAP-PR104.jpg",
       "evidence": "AARO's description: \"an area of contrast resembling a six-pointed star\", tracked for 15 seconds. The spike angles stay the same for the whole clip. Black-hot infrared: the black centre is the hottest spot; invert it and it shows white."
     }
   ],

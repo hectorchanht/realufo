@@ -1,8 +1,8 @@
 {
   "slug": "into-the-sea",
   "title": "Into the sea? Two \"UFOs that dive into the ocean\": one solved, one not",
-  "hero": "hero.jpg",
-  "short": "short.mp4",
+  "hero": "images/hero.jpg",
+  "short": "short/short.mp4",
   "showcase_record": "DOW-UAP-PR067",
   "parts": [
     "Two \"UFOs that dive into the ocean\" in the Pentagon files.\nOne got solved. One didn't. Same camera trick? 👀\nPuerto Rico 2013 vs DOW-UAP-PR067 🧵",
@@ -18,7 +18,7 @@
       "id": "AARO-DOD_110692805-1920x1080-9000k",
       "t": 124,
       "label": "Puerto Rico, 2013: the \"UFO that dove into the Atlantic\"",
-      "image": "AARO-DOD_110692805-1920x1080-9000k.jpg",
+      "image": "images/AARO-DOD_110692805-1920x1080-9000k.jpg",
       "evidence": "Black-hot IR (dark = hot). Tracked at the crosshair from 2:04; at 2:05.5 it shrinks and by 2:06 it is gone from the whole frame. No splash, no wake. The HUD's \"TGT … 3FT\" is the height of the point where the line of sight meets the surface, not the object's altitude."
     },
     {
@@ -31,7 +31,7 @@
       "id": "DOW-UAP-PR067",
       "t": 49.6,
       "label": "2022: \"Multiple Spherical UAP USO near Sub … in and out of water\"",
-      "image": "DOW-UAP-PR067.jpg",
+      "image": "images/DOW-UAP-PR067.jpg",
       "evidence": "White-hot IR near a surfaced submarine. A bright speck enters at 0:49, glides across, and by 0:55 has faded into the waves. AARO's own description lists objects entering and leaving the field of view; it never says they enter the water. Officially unresolved."
     }
   ],

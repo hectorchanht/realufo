@@ -9,12 +9,13 @@ ElevenLabs narration (lib.tts) over a synthesized ambient bed; app-screenshot ho
 """
 import os, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "..", ".."))
+sys.path.insert(0, os.path.join(HERE, "..", "..", ".."))
+IMG = os.path.join(HERE, "..", "images")  # stills; app-*.png + short.mp4 live here in short/
 from lib import Cut, txt, SITE, IRONBOW, FFMPEG, TMP
 
 PR104 = "https://assets.realufo.org/videos/wargov/DOD_111830027.mp4"  # 1920x1080, star centred ~(930,460)
 PR038 = "https://assets.realufo.org/videos/wargov/DOD_111689051.mp4"  # 1920x1080 (4:3 + bars), star ~(1364,508) at 25.5 s
-F26, F50, F74 = (os.path.join(HERE, f"pr038-{t}.jpg") for t in (26, 50, 74))  # 4:3 picture, 1080x810
+F26, F50, F74 = (os.path.join(IMG, f"pr038-{t}.jpg") for t in (26, 50, 74))  # 4:3 picture, 1080x810
 APP = os.path.join(HERE, "app-search.png")  # 860x1864 mobile screenshot of /archive?q=pointed star&type=video
 OUT = os.path.join(HERE, "short.mp4")
 HOT = "negate," + IRONBOW

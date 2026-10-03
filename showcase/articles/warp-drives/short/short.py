@@ -10,10 +10,11 @@ ElevenLabs narration over a synthesized ambient bed. 9:16.
 """
 import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "..", ".."))
+sys.path.insert(0, os.path.join(HERE, "..", "..", ".."))
+IMG = os.path.join(HERE, "..", "images")  # stills; app-*.png + short.mp4 live here in short/
 from lib import Cut, txt
 
-P = lambda f: os.path.join(HERE, f)
+P = lambda f: os.path.join(IMG if f.endswith(".jpg") else HERE, f)
 OUT = P("short.mp4")
 
 def top(a, b, b_color="yellow", c=None):

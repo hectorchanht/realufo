@@ -10,10 +10,11 @@ ElevenLabs narration over a synthesized ambient bed; app-screenshot how-to. 9:16
 """
 import os, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "..", ".."))
+sys.path.insert(0, os.path.join(HERE, "..", "..", ".."))
+IMG = os.path.join(HERE, "..", "images")  # stills; app-*.png + short.mp4 live here in short/
 from lib import Cut, txt, FFMPEG, TMP
 
-P = lambda f: os.path.join(HERE, f)
+P = lambda f: os.path.join(IMG if f.endswith(".jpg") else HERE, f)
 OUT = P("short.mp4")
 SKY, GLINT = os.path.join(TMP, "dusk.png"), os.path.join(TMP, "glint.png")
 # dusk: deep blue above, orange glow at the horizon (sun just set), a dark ridge line

@@ -1,8 +1,8 @@
 {
   "slug": "green-fireballs",
   "title": "Do UFOs watch our nukes? Green fireballs over the A-bomb labs, a secret meeting with Edward Teller, and Roswell",
-  "hero": "hero.jpg",
-  "short": "short.mp4",
+  "hero": "images/hero.jpg",
+  "short": "short/short.mp4",
   "showcase_record": "DOE-UAP-D004",
   "parts": [
     "The theory: UFOs keep showing up where the nukes are ☢️\n1947: Roswell, home of the world's only atomic bomb unit.\n1949: green fireballs over the A-bomb labs, and a SECRET meeting with Edward Teller.\nThe files 🧵 DOE-UAP-D004",
@@ -19,35 +19,35 @@
     {
       "id": "DOW-UAP-D094",
       "page": 10,
-      "image": "d094-sites.jpg",
+      "image": "images/d094-sites.jpg",
       "label": "1949: sightings near Oak Ridge, Las Cruces and Hanford (the A-bomb sites)",
       "evidence": "Air Intelligence report, 1949 (p.10): \"sightings of flying objects have been made near Oak Ridge, Tenn., Las Cruces, N. M., and in the general area of the Hanford Works in Oregon\" (Hanford is actually in Washington). Its concern was Soviet reconnaissance: these establishments \"were not, and are not, accessible to Soviet collectors of photographic intelligence\"."
     },
     {
       "id": "DOW-UAP-D154",
       "page": 3,
-      "image": "d154-ruppelt.jpg",
+      "image": "images/d154-ruppelt.jpg",
       "label": "Ruppelt, 1952: \"Around Los Alamos and the Albuquerque area, there's concentrations\"",
       "evidence": "Project Blue Book chief Capt. Edward J. Ruppelt (p.3): \"Around Los Alamos and the Albuquerque area, there's concentrations. Around White Sands, there's concentrations.\" He also lists the big ports, and says the Dayton cluster was partly because \"the people in that area knew that all the activity in this project was taking place in that area\" (p.3): more watchers, more reports."
     },
     {
       "id": "DOE-UAP-D004",
       "label": "The secret meeting, 16 Feb 1949, room P-162: Teller, Bradbury, Reines, LaPaz, the FBI",
-      "image": "d004-room.jpg",
+      "image": "images/d004-room.jpg",
       "evidence": "Opening: the subject of Aerial Phenomena \"was classified Secret within the meaning of AR 380-5\" (p.2). LaPaz on Dec 12, 1948: \"not, in my opinion, a conventional meteor fall\" (p.4); colour \"very close to 5218 which is about the color you get when you have copper salts in the Bunsen burner\" (p.9); \"although it produces light visible at distances of the order of 400 miles, it doesn't make a sound\" (p.5). Teller: \"it ought to be a material body - might be an electron phenomenon.\" LaPaz: \"Nothing like this, to my knowledge, has ever been observed in the case of meteorite drops.\" (p.25) On Roswell: \"In the case of the Roswell observation ... We have a group of five men - there were near a steel smokestack - and every last one of them swears that they heard at the same time they were watching the green fireball go by, a noise like, say, a gasoline blowtorch\" (p.7).",
       "page": 2
     },
     {
       "id": "DOW-UAP-D017",
       "label": "The copper test: \"no widespread significant dispersion\"",
-      "image": "d017-copper.jpg",
+      "image": "images/d017-copper.jpg",
       "evidence": "116 pages from the Armed Forces Special Weapons Project and the Air Force on 209 sightings of green orbs, discs and fireballs near Sandia Base, 1948-1950. The air-sampling report (p.4): \"My tentative conclusion is that no widespread significant dispersion of copper-bearing particles was present in the atmosphere\"; the one heavy copper collection \"should be presumed to be of local origin\"; \"The passage of two automobiles while this collection was being made is a complicating factor.\"",
       "page": 4
     },
     {
       "id": "65-hs1-834228961-62-hq-83894-section-6",
       "label": "FBI file, 1950: the expert changes his mind",
-      "image": "fbi-missiles.jpg",
+      "image": "images/fbi-missiles.jpg",
       "evidence": "LaPaz's analysis of May 23, 1950 (p.4): \"approximately half of the phenomena recorded were of meteoric origin. The other phenomena commonly referred to as green fireballs or discs he believed to be U.S. guided missiles being tested in the neighborhood of the installations.\" Also: OSI concern about \"green fireballs, discs and meteors in the vicinity of sensitive installations in New Mexico\" (p.2); Project Twinkle (p.4).",
       "page": 4
     },

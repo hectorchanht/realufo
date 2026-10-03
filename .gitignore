@@ -26,6 +26,6 @@ crawler/seed_asks.json
 
 # showcase Short renders (posted copies live in R2)
 showcase/*.mp4
-showcase/articles/*/*.mp4
+showcase/articles/*/short/*.mp4
 showcase/.tts/
 crawler/.venv-ocr/

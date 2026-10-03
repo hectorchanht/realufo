@@ -1,6 +1,6 @@
 ---
 name: making-shorts
-description: Use when making, re-cutting, narrating or reviewing a vertical 9:16 Short (YouTube Shorts, TikTok, Instagram Reels, X video) about a RealUFO record or article: showcase/<ID>.py recipes, showcase/articles/<slug>/short.py, scripts/clips.py cuts.
+description: Use when making, re-cutting, narrating or reviewing a vertical 9:16 Short (YouTube Shorts, TikTok, Instagram Reels, X video) about a RealUFO record or article: showcase/<ID>.py recipes, showcase/articles/<slug>/short/short.py, scripts/clips.py cuts.
 ---
 
 # Making Shorts

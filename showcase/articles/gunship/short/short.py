@@ -9,12 +9,13 @@ ElevenLabs narration over a synthesized ambient bed; app-screenshot how-to. 9:16
 """
 import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "..", ".."))
+sys.path.insert(0, os.path.join(HERE, "..", "..", ".."))
+IMG = os.path.join(HERE, "..", "images")  # stills; app-*.png + short.mp4 live here in short/
 from lib import Cut, txt, SITE
 
 V = "https://assets.realufo.org/videos/wargov/DOD_{}.mp4"
 PR117, PR118, PR121 = V.format(111887401), V.format(111887407), V.format(111887439)  # all 1920x1080 phone captures
-ORB, PAIR, ORB2 = (os.path.join(HERE, f) for f in ("DOW-UAP-PR118.jpg", "DOW-UAP-PR121.jpg", "pr121-orb.jpg"))
+ORB, PAIR, ORB2 = (os.path.join(IMG, f) for f in ("DOW-UAP-PR118.jpg", "DOW-UAP-PR121.jpg", "pr121-orb.jpg"))
 APP = os.path.join(HERE, "app-search.png")  # /archive?q=gunship&type=video
 OUT = os.path.join(HERE, "short.mp4")
 
