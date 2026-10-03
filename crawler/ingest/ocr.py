@@ -3,6 +3,7 @@
     python -m ingest.ocr --dry-run --limit 3      # OCR + print stats, no writes
     python -m ingest.ocr --ids A,B                # only these records
     python -m ingest.ocr                          # every live PDF without a record_ocr row
+    python -m ingest.ocr --shard 0/8              # one of 8 parallel workers (Paddle uses one core)
 
 Pages whose pdftotext layer already reads as text keep it (src "pdf"); the rest
 are rendered with pdftoppm and OCR'd (src "ocr"). All pages, uncapped, go to R2
@@ -11,7 +12,7 @@ record's record_text row is deleted and its text_index row marked failed, so
 fulltext / summaries / tldr / cards / textindex rebuild it from the new text.
 Needs Paddle (crawler/.venv-ocr or requirements-ocr.txt); nothing else does.
 """
-import argparse, json, os, re, subprocess, sys, tempfile, time
+import argparse, json, os, re, subprocess, sys, tempfile, time, zlib
 from . import d1, fetch, r2
 from .chunking import split_pages
 from .fulltext import clean_page, keep_page
@@ -110,8 +111,7 @@ def put_text(rid: str, pages: list[dict], work: str) -> None:
     r2.put(f"text/{rid}.json", path, "application/json; charset=utf-8")
 
 BENCH = [("PP-OCRv5_mobile_det", "en_PP-OCRv5_mobile_rec"),
-         ("PP-OCRv5_server_det", "en_PP-OCRv5_mobile_rec"),
-         ("PP-OCRv5_server_det", "PP-OCRv5_server_rec")]
+         ("PP-OCRv5_server_det", "en_PP-OCRv5_mobile_rec")]
 BENCH_DPI = (200, 300)
 SNIP = 400
 
@@ -171,6 +171,7 @@ def main(argv=None):
     ap.add_argument("--dry-run", action="store_true", help="OCR + print stats; no R2/D1 writes")
     ap.add_argument("--limit", type=int, default=None, help="max records this run")
     ap.add_argument("--ids", default=None, help="comma-separated record ids")
+    ap.add_argument("--shard", default=None, help="I/N: only records with crc32(id) %% N == I")
     ap.add_argument("--bench", action="store_true", help="time model/dpi variants on failing pages of --ids")
     ap.add_argument("--bench-pages", type=int, default=3, help="--bench: failing pages per file")
     ap.add_argument("--out", default="../docs/launch/ocr-bench.md", help="--bench report path")
@@ -179,6 +180,9 @@ def main(argv=None):
     if args.bench:
         bench(rows, args.bench_pages, args.out)
         sys.exit(0)
+    if args.shard:
+        i, n = map(int, args.shard.split("/"))
+        rows = [r for r in rows if zlib.crc32(r["id"].encode()) % n == i]
     engine = paddle_engine() if rows else None
     ok = failed = 0
     with tempfile.TemporaryDirectory() as work:

@@ -128,3 +128,15 @@ def test_bench_report_tables_speed_and_readability_per_config():
     assert "| detM + recM @200 | 2.0 | 1/2 |" in md
     assert "| detS + recS @300 | 5.0 | 2/2 |" in md
     assert "## A p.2" in md and "## B p.1" in md
+
+def test_shard_splits_rows_disjointly_by_id(world):
+    ids = [f"R{i}" for i in range(20)]
+    seen = []
+    for shard in ("0/3", "1/3", "2/3"):
+        world["rows"] = [{"id": i, "url": f"https://cdn/{i}.pdf"} for i in ids]
+        world["put"].clear()
+        run("--shard", shard)
+        seen.append({k[5:-5] for k, _, _ in world["put"]})
+    assert set().union(*seen) == set(ids)
+    assert sum(len(s) for s in seen) == len(ids)
+    assert all(seen)
