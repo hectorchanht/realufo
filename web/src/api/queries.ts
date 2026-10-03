@@ -31,6 +31,7 @@ import type {
   HubSummary,
   Verdict,
   VerdictState,
+  PollState,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -71,6 +72,7 @@ export const qk = {
   askRecent: ["askRecent"] as const,
   sharedAsk: (id: number) => ["sharedAsk", id] as const,
   thread: (id: string) => ["thread", id] as const,
+  poll: (slug: string) => ["poll", slug] as const,
   case: (slug: string) => ["case", slug] as const,
   caseComments: (slug: string) => ["caseComments", slug] as const,
 };
@@ -282,6 +284,24 @@ export function useCastVerdict(recordId: string) {
     onSuccess: (data) => {
       queryClient.setQueryData<RecordDetail>(key, (old) => (old ? { ...old, verdicts: data } : old));
     },
+  });
+}
+
+// Story poll (Spec 9). 404 = the story has no poll → no retry, the card hides.
+export function usePoll(slug: string) {
+  return useQuery({
+    queryKey: qk.poll(slug),
+    queryFn: () => api.get<PollState>(`/api/articles/${encodeURIComponent(slug)}/poll`),
+    enabled: !!slug,
+    retry: false,
+  });
+}
+
+export function useCastPoll(slug: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (opt: number) => api.post<PollState>(`/api/articles/${encodeURIComponent(slug)}/poll`, { opt }),
+    onSuccess: (data) => queryClient.setQueryData(qk.poll(slug), data),
   });
 }
 
