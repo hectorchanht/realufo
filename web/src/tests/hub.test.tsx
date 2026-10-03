@@ -186,6 +186,13 @@ describe("topic hub blocks", () => {
     expect(screen.getByRole("link", { name: "Socorro 1964" }).getAttribute("href")).toBe("/case/socorro");
   });
 
+  it("splits a multi-paragraph background into paragraphs", () => {
+    useHubMock.mockReturnValue({ data: { ...aawsap, topic: { ...aawsap.topic!, background: "First paragraph.\n\nSecond paragraph." } }, isLoading: false });
+    renderAt("/topic/aawsap");
+    expect(screen.getByText("First paragraph.").tagName).toBe("P");
+    expect(screen.getByText("Second paragraph.").tagName).toBe("P");
+  });
+
   it("Browse shows Topics first", () => {
     useHubsMock.mockReturnValue({ data: { hubs: [
       { kind: "release", slug: "6", label: "Release 06 · 18 Sep 2026", count: 74 },

@@ -161,7 +161,9 @@ function ReleaseNav({ b }: { b: ReleaseBlock }) {
 function TopicIntro({ t }: { t: TopicBlock }) {
   return (
     <div className="mb-4">
-      <p className="mb-2 text-[14.5px] leading-[1.65] text-ink">{t.background}</p>
+      {t.background.split(/\n+/).filter((p) => p.trim()).map((p, i) => (
+        <p key={i} className="mb-2 text-[14.5px] leading-[1.65] text-ink">{p}</p>
+      ))}
       {t.lore && (
         <p className="mb-2 text-[13.5px] leading-[1.6] text-dim">
           <span className="font-semibold text-amber">Where the lore differs:</span> {t.lore}
