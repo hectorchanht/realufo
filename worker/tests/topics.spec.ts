@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TOPIC_RULES, topicWhere, validTopic } from "../lib/topics";
+import { TOPIC_RULES, firstSentence, topicWhere, validTopic } from "../lib/topics";
 import { TOPIC_TEXT } from "../lib/topicText";
 
 describe("topicWhere", () => {
@@ -61,5 +61,15 @@ describe("TOPIC_TEXT", () => {
       }
     }
     expect(Object.keys(TOPIC_TEXT).sort()).toEqual(TOPIC_RULES.map((t) => t.slug).sort());
+  });
+});
+
+describe("firstSentence", () => {
+  it("doesn't stop at abbreviations like U.S. or No.", () => {
+    expect(firstSentence("Mission Reports (MISREPs) are the forms U.S. military aircrews file after a mission. Each one here logs a UAP.")).toBe(
+      "Mission Reports (MISREPs) are the forms U.S. military aircrews file after a mission."
+    );
+    expect(firstSentence("Its Special Report No. 14 came out in 1955. Later text.")).toBe("Its Special Report No. 14 came out in 1955.");
+    expect(firstSentence("No full stop")).toBe("No full stop");
   });
 });

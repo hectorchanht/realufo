@@ -84,6 +84,28 @@ describe("topic hub API", () => {
     expect(((await res.json()) as any).topics).toEqual([]);
   });
 
+  it("a failing topic query drops topics but keeps the rest of the hub list", async () => {
+    const DB = { prepare: (sql: string) => (sql.includes("SELECT r.id FROM records r") ? (() => { throw new Error("D1 down"); })() : env.DB.prepare(sql)), batch: env.DB.batch.bind(env.DB) };
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(new Request("https://hublistfail.test/api/hubs"), { ...env, DB } as any, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(res.status).toBe(200);
+    const keys = ((await res.json()) as any).hubs.map((h: any) => `${h.kind}/${h.slug}`);
+    expect(keys).toContain("release/1");
+    expect(keys.some((k: string) => k.startsWith("topic/"))).toBe(false);
+  });
+
+  it("a failing stories query still serves the topic page, without stories", async () => {
+    const DB = { prepare: (sql: string) => (sql.includes("FROM articles a JOIN article_records") ? (() => { throw new Error("D1 down"); })() : env.DB.prepare(sql)), batch: env.DB.batch.bind(env.DB) };
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(new Request("https://storiesfail.test/api/hubs/topic/aawsap"), { ...env, DB } as any, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(res.status).toBe(200);
+    const h: any = await res.json();
+    expect(h.topic.stories).toEqual([]);
+    expect(h.topic.background).toBe(TOPIC_TEXT.aawsap.background);
+  });
+
   it("hub_highlights accepts kind='topic' after the migration", async () => {
     await env.DB.prepare("INSERT INTO hub_highlights(kind,slug,lede,picks,members_hash) VALUES ('topic','aawsap','L','[]','h')").run();
     const row = await env.DB.prepare("SELECT kind FROM hub_highlights WHERE kind='topic' AND slug='aawsap'").first();

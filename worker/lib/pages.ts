@@ -17,7 +17,7 @@ import { SOCIAL_PROFILES } from "./profiles";
 import { MAP_INTRO, RELEASES_DESCRIPTION, RELEASES_TITLE } from "./shared";
 import { trackerData } from "../routes/releases";
 import { agencyList, longDate } from "./releases";
-import { TOPIC_RULES } from "./topics";
+import { TOPIC_RULES, firstSentence } from "./topics";
 
 // One SPA route's pre-render: <head> meta (url is filled in by serveWithMeta)
 // and the HTML that goes inside #root. A loader returns null when the entity
@@ -330,7 +330,7 @@ const hubPage =
       meta: {
         title: h.title,
         description: h.topic
-          ? `${h.topic.background.split(/(?<=\.)\s/)[0]} ${h.intro}`
+          ? `${firstSentence(h.topic.background)} ${h.intro}`.trim()
           : h.release ? `${h.intro} Agencies: ${agencyList(h.release.info, 3)}.` : h.intro,
         image: (h.records.find((r) => r.thumb)?.thumb as string | undefined) ?? null,
         type: "website",

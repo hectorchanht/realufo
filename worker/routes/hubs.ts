@@ -46,7 +46,14 @@ export function highlightsOf(row: { lede: string; picks: string } | null, record
 
 // Every hub with ≥ MIN_HUB_FILES files, from the Archive's grouped counts.
 export async function listHubs(env: Env, origin: string): Promise<HubSummary[]> {
-  const [f, members] = await Promise.all([facetCounts(env), topicMembers(env, origin)]);
+  const [f, members] = await Promise.all([
+    facetCounts(env),
+    // A failing topic query drops topics, not every hub (bootstrap, browse, sitemap use this list).
+    topicMembers(env, origin).catch((e) => {
+      console.error("topic members failed", e);
+      return {} as Record<string, string[]>;
+    }),
+  ]);
   const sum = (values: string[], rows: { name: string; count: number }[]) =>
     rows.filter((r) => values.includes(r.name)).reduce((n, r) => n + r.count, 0);
   return [
@@ -91,12 +98,18 @@ async function topicBlock(env: Env, slug: string, members: string[]): Promise<To
     env.DB.prepare("SELECT id,title,kind FROM records WHERE status='live' AND id IN (SELECT value FROM json_each(?))")
       .bind(JSON.stringify(srcIds))
       .all<{ id: string; title: string; kind: string }>(),
-    env.DB.prepare(
-      `SELECT a.slug, a.title, a.thread_id threadId, max(a.created_at) c FROM articles a JOIN article_records ar ON ar.slug=a.slug
-        WHERE ar.record_id IN (SELECT value FROM json_each(?)) GROUP BY a.slug ORDER BY c DESC`
-    )
-      .bind(JSON.stringify(members))
-      .all<{ slug: string; title: string; threadId: string | null }>(),
+    (async () =>
+      env.DB.prepare(
+        `SELECT a.slug, a.title, a.thread_id threadId, max(a.created_at) c FROM articles a JOIN article_records ar ON ar.slug=a.slug
+          WHERE ar.record_id IN (SELECT value FROM json_each(?)) GROUP BY a.slug ORDER BY c DESC`
+      )
+        .bind(JSON.stringify(members))
+        .all<{ slug: string; title: string; threadId: string | null }>())()
+      .catch((e) => {
+        // Stories are garnish: the topic page still renders without them.
+        console.error("topic stories failed", e);
+        return { results: [] as { slug: string; title: string; threadId: string | null }[] };
+      }),
   ]);
   const byId = new Map(recs.results.map((r) => [r.id, r]));
   return {

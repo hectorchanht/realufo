@@ -65,3 +65,10 @@ export function topicWhere(rule: TopicRule): { sql: string; binds: string[] } {
 
 export const validTopic = (t: TopicDef) =>
   !!(t.rule.title?.length || t.rule.summary?.length || t.rule.agencies?.length || t.include?.length);
+
+// First sentence of a background, for meta descriptions. A sentence ends at
+// ". " + capital — but not after an initialism or abbreviation ("U.S.", "No.").
+export function firstSentence(text: string): string {
+  const m = /^.*?[^A-Z.](?<!\bNo)\.(?=\s+[A-Z])/s.exec(text);
+  return (m ? m[0] : text).trim();
+}
