@@ -96,10 +96,11 @@ def meta(env):
     for i, p in enumerate(pages):
         print(f"[{i}] {p['name']} ({p['id']})")
     page = pages[int(input("Page #: ") or 0)]
-    ig = _http(f"{GRAPH}/{page['id']}?" + urlencode({"fields": "instagram_business_account", "access_token": page["access_token"]}))
+    ig = _http(f"{GRAPH}/{page['id']}?" + urlencode({"fields": "instagram_business_account{id,username}", "access_token": page["access_token"]}))
     _secret("META_PAGE_ID", page["id"])
     _secret("META_PAGE_TOKEN", page["access_token"])  # page token from a long-lived user token does not expire
     if ig.get("instagram_business_account"):
+        print(f"Instagram linked to this Page: @{ig['instagram_business_account'].get('username')}")
         _secret("IG_USER_ID", ig["instagram_business_account"]["id"])
     else:
         print("WARNING: no Instagram Business/Creator account linked to this Page; IG stays unconfigured")
