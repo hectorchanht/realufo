@@ -50,3 +50,15 @@ def test_chunks_for_adds_ai_summary_and_moments_after_card_before_pages():
 def test_chunks_for_ignores_missing_or_bad_moments():
     assert len(chunks_for({"id": "X", "title": "T", "ai_moments": "not json"}, [])) == 1
     assert len(chunks_for({"id": "X", "title": "T", "ai_summary": None, "ai_moments": None}, [])) == 1
+
+def test_section_summaries_become_chunks_with_their_first_page():
+    import json
+    r = {"id": "X", "title": "T", "summary": None, "ai_summary": "Sum.", "ai_moments": None,
+         "ai_sections": json.dumps([{"from": 1, "to": 12, "text": "Memos."}, {"from": 13, "to": 13, "text": "A map."}])}
+    cs = [{"page": c["page"], "text": c["text"]} for c in chunks_for(r, [])]
+    assert {"page": 1, "text": "T — pp. 1–12\nMemos."} in cs
+    assert {"page": 13, "text": "T — p. 13\nA map."} in cs
+
+def test_bad_or_missing_sections_are_ignored():
+    r = {"id": "X", "title": "T", "summary": None, "ai_summary": None, "ai_moments": None, "ai_sections": "not json"}
+    assert len(chunks_for(r, [])) == 1

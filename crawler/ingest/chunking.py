@@ -63,11 +63,26 @@ def _ai_chunks(title: str, label: str, text) -> list[dict]:
     parts = [t] if len(t) <= CHUNK else chunk_page(t)
     return [{"page": 0, "text": f"{title} — {label}\n{p}"} for p in parts if p]
 
+def section_chunks(title: str, raw) -> list[dict]:
+    """Map-level section summaries (ingest.summaries ai_sections), each pointing at its first page."""
+    try:
+        secs = json.loads(raw or "null") or []
+    except ValueError:
+        return []
+    out = []
+    for s in secs if isinstance(secs, list) else []:
+        if isinstance(s, dict) and isinstance(s.get("from"), int) and s.get("text"):
+            a, b = s["from"], s.get("to", s["from"])
+            label = f"p. {a}" if a == b else f"pp. {a}\u2013{b}"
+            out.append({"page": a, "text": f"{title} — {label}\n{s['text']}"})
+    return out
+
 def chunks_for(r: dict, pages: list[str]) -> list[dict]:
     # Card, then AI text, then pages. Re-indexing a record only ever adds chunks,
     # so upserting over the old ids leaves no orphans.
     out = [{"page": 0, "text": card_text(r)}]
     out += _ai_chunks(r["title"], "AI summary", r.get("ai_summary"))
+    out += section_chunks(r["title"], r.get("ai_sections"))
     out += _ai_chunks(r["title"], "AI key moments", moments_text(r.get("ai_moments")))
     for n, page in enumerate(pages, 1):
         out += [{"page": n, "text": f"{r['title']} — p.{n}\n{c}"} for c in chunk_page(page)]

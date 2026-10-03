@@ -15,6 +15,7 @@ from . import cfapi, chunking, d1, fetch
 
 SELECT = """SELECT r.id, r.kind, r.title, r.agency, r.incident_date, r.location, r.summary,
   r.ai_moments, (SELECT ai_summary FROM record_text t WHERE t.record_id=r.id) AS ai_summary,
+  (SELECT ai_sections FROM record_text t WHERE t.record_id=r.id) AS ai_sections,
   (SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND a.role='full' LIMIT 1) AS url,
   EXISTS(SELECT 1 FROM record_ocr o WHERE o.record_id=r.id) AS ocr
 FROM records r LEFT JOIN text_index ti ON ti.record_id=r.id
