@@ -35,6 +35,7 @@ Candidate pairs not yet written up:
 
 - `article.json`: `slug`, `title`, `hero`, `short`, `showcase_record` (the X post hangs off it; once per record), `parts` (X tweets, each ≤280 weighted; the first gets the doc link appended, the last gets the thread link), and `evidence` (`[{id, t?, label, evidence, image?}]`). See `teardrop-twins/article.json`.
   - Juicy points: the hook (distance/years apart), the crews' quotes, the tell (what the frames show), the physics, a bonus myth-bust, then **how to check it in the app** (search word → Video → open → tap the moment → `,` `.` step frames → read the mission report).
+  - `poll`: `{q, opts}`, the story's crowd question (site poll under the story + an X poll reply under the X thread). A newcomer must be able to pick in 2 seconds: 2–4 opts ≤25 chars, "Need more data" as the safe last one, no leading wording ("Obviously a balloon?"). Opts freeze once anyone voted. **Show the question to the user before `X_POLLS` posts it.** With a poll, the social caption ends "<q> Vote → link" instead of "Full story: link".
 - Images: close-ups at the moment (`crop=120:120:X:Y,scale=720:720`) and a side-by-side `hero.jpg`.
 - `short.py` → `short.mp4` (git-ignored). Use `showcase/lib.py` (`Cut`, `txt`, `save(out, bed=True)` for the synthesized ambient sound). Include an app-screenshot beat: headless Chrome `--screenshot --window-size=430,932 --force-device-scale-factor=2` of `/archive?q=WORD&type=video`. Don't screenshot doc pages, they hang on the video. Don't use emoji in drawtext (Arial renders boxes).
 
@@ -47,4 +48,5 @@ python3 scripts/article.py SLUG --social   # + Short and story as an X thread, m
 
 - Re-running is safe: images (uuid5 keys), rows (upserts), the thread (made once) and the social post (once per record) are all idempotent.
 - **Never post to social before the user has approved the Short and the copy** ("no post until we make it good"). The site part can go first.
+- The X poll is posted by the cron (`worker/lib/xpoll.ts`), not by `--social`: one per tick, as a reply to the story's head tweet, once `X_POLLS=on` and the head tweet is posted.
 - Needs migration 0025 applied and the Worker deployed with the article code (doc card + X thread replies).
