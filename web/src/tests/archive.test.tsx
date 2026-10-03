@@ -12,8 +12,8 @@
 // re-renders off that new data) — see FRONTEND-CONTEXT.md's query-hooks
 // contract and DocCard.tsx's header note on why it needs useBootstrap mocked
 // here too.
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
+import { cleanup, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import type { Bootstrap, RecordFacets, RecordsListResponse } from "../api/types";
 import { renderAppAt } from "./util";
 
@@ -94,12 +94,22 @@ vi.mock("../api/queries", () => ({
   }),
 }));
 
+const records = (params: { archive?: string }) =>
+  params.archive === "nara" ? { data: naraOnly, isLoading: false } : { data: allRecords, isLoading: false };
+
 beforeEach(() => {
   useRecordsMock.mockReset();
-  useRecordsMock.mockImplementation((params: { archive?: string }) => {
-    if (params.archive === "nara") return { data: naraOnly, isLoading: false };
-    return { data: allRecords, isLoading: false };
-  });
+  useRecordsMock.mockImplementation(records);
+});
+
+// The first app render in a worker is cold (JIT, first jsdom/React paths):
+// ~8x a warm one, which on a loaded machine blows the 1s findBy window of
+// whichever test runs first. Pay it once here, with room to spare.
+beforeAll(async () => {
+  useRecordsMock.mockImplementation(records);
+  renderAppAt("/archive");
+  await screen.findByRole("navigation", { name: "Site" }, { timeout: 8000 });
+  cleanup();
 });
 
 describe("Archive", () => {
