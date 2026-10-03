@@ -2,7 +2,7 @@
 resembled a "plasma-like sphere" changing shape; at 2:47 (167.5 s) the sharp dot swells into a soft disc
 and is sharp again by 2:49, the way any point light looks when a camera loses focus ("bokeh").
 Posed as a question: the FBI file has no conclusion, and two FBI agents saw lights there too
-(FBI-UAP-D007 p.2). Cut: tease (frame 0 = thumbnail: the sharp dot boxed, no spoiler) -> 165-170.5 s,
+(FBI-UAP-D007 p.3). Cut: tease (frame 0 = thumbnail: the sharp dot boxed, no spoiler) -> 165-170.5 s,
 swell at ~5 s -> 4x slower -> dot / sphere / dot -> lesson -> agents' quote -> end card -> loop.
 ElevenLabs narration + calm subtitles (lib.subtitles) + ambient bed. 9:16, ~34 s.
 
@@ -53,10 +53,10 @@ segs.append(out)
 # L: the lesson + sound bite, on the swollen disc
 still(167.5, [ZS, txt("Out of focus,", 250, 80), txt("every light is an orb", 345, 80, "yellow"),
               txt("photographers call it \"bokeh\"", 1300, 58), site], 5.3)
-# K: balance: the FBI's own agents (FBI-UAP-D007 p.2); the file has no conclusion
+# K: balance: the FBI's own agents (FBI-UAP-D007 p.3); the file has no conclusion
 still(169.0, [ZS, "eq=brightness=-0.15", txt("But 2 FBI agents, Nov 2024:", 230, 62),
               txt("\"white lights appear at", 320, 66, "yellow"), txt("the top of the tree line\"", 400, 66, "yellow"),
-              txt("FBI-UAP-D007  ·  p.2", 490, 46), txt("No conclusion in the file", 1300, 58), site], 4.8)
+              txt("FBI-UAP-D007  ·  p.3", 490, 46), txt("No conclusion in the file", 1300, 58), site], 4.8)
 # C: end card
 still(167.5, [ZS, txt("Step through all 4 minutes", 250, 70), txt("frame by frame", 340, 80),
               txt("realufo.org/doc/FBI-UAP-PR003", 1380, 50, "yellow"),
