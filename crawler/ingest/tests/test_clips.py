@@ -53,6 +53,7 @@ def test_vertical_args_pad_blur_overlay_and_text():
         assert part in fc
     assert a.index("-ss") < a.index("-i") and a[a.index("-t") + 1] == "30.00"
     assert "anullsrc" not in " ".join(a) and "0:a:0" in a
+    assert a[a.index("-r") + 1] == "30"                        # constant fps: TikTok needs >= 23
     for flag in ("libx264", "yuv420p", "+faststart", "aac"):
         assert flag in a
     assert a[-1] == "/tmp/o.mp4"

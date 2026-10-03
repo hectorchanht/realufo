@@ -163,7 +163,8 @@ def vertical_args(url, start, length, out, title_files, fontsize, font, audio=Tr
     if not audio:
         a += ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100"]
     return a + ["-t", f"{length:.2f}", "-filter_complex", fc, "-map", "[v]", "-map", "0:a:0" if audio else "1:a",
-                "-fpsmax", "30", "-c:v", "libx264", "-profile:v", "high", "-pix_fmt", "yuv420p", "-preset", "veryfast",
+                # constant 30 fps: TikTok rejects < 23 fps (FBI-UAP-PR007's source is 10 fps)
+                "-r", "30", "-c:v", "libx264", "-profile:v", "high", "-pix_fmt", "yuv420p", "-preset", "veryfast",
                 "-crf", "23", "-maxrate", "1500k", "-bufsize", "3000k",
                 "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-movflags", "+faststart", out]
 
