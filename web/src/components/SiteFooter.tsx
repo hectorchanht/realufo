@@ -50,6 +50,7 @@ export default function SiteFooter() {
           <li key="source"><a className={linkCls} href="https://github.com/hectorchanht/realufo" target="_blank" rel="noopener">Source code on GitHub ↗</a></li>,
           <li key="contact"><a className={linkCls} href="mailto:hello@realufo.org">Contact: hello@realufo.org</a></li>,
           <li key="privacy"><Link className={linkCls} to="/privacy">Privacy</Link></li>,
+          <li key="terms"><Link className={linkCls} to="/terms">Terms</Link></li>,
         ])}
         {GROUPS.map(([kind, title]) => {
           const group = hubs.filter((h) => h.kind === kind);

@@ -12,6 +12,7 @@ import {
 import { loadSharedAsk } from "../routes/ask";
 import { askHref, askIdOf } from "./ask";
 import { PRIVACY_HTML } from "./privacy";
+import { TERMS_HTML } from "./terms";
 
 // One SPA route's pre-render: <head> meta (url is filled in by serveWithMeta)
 // and the HTML that goes inside #root. A loader returns null when the entity
@@ -341,6 +342,11 @@ const privacyPage: Loader = async () => ({
   body: `<h1>Privacy</h1>${PRIVACY_HTML}`,
 });
 
+const termsPage: Loader = async () => ({
+  meta: { title: "Terms", description: "Terms of use for RealUFO, an independent archive of declassified, public-domain UAP records.", type: "website" },
+  body: `<h1>Terms</h1>${TERMS_HTML}`,
+});
+
 export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/" }), load: homePage },
   { pattern: new URLPattern({ pathname: "/archive" }), load: archivePage },
@@ -350,6 +356,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/ask/:id" }), load: sharedAskPage },
   { pattern: new URLPattern({ pathname: "/browse" }), load: browsePage },
   { pattern: new URLPattern({ pathname: "/privacy" }), load: privacyPage },
+  { pattern: new URLPattern({ pathname: "/terms" }), load: termsPage },
   { pattern: new URLPattern({ pathname: "/release/:slug" }), load: hubPage("release") },
   { pattern: new URLPattern({ pathname: "/agency/:slug" }), load: hubPage("agency") },
   { pattern: new URLPattern({ pathname: "/location/:slug" }), load: hubPage("location") },

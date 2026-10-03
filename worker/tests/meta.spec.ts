@@ -379,6 +379,9 @@ describe("pre-rendered body", () => {
     expect(html).toContain("<title>Privacy · RealUFO</title>");
     expect(html).toContain("<h1>Privacy</h1>");
     expect(html).toContain("salted hash");
+    const terms = await get("/terms");
+    expect(terms).toContain("<title>Terms · RealUFO</title>");
+    expect(terms).toContain("<h1>Terms</h1>");
   });
   it("doc: meta + body even with Accept */* (share scrapers)", async () => {
     const html = await get("/doc/FBI-UAP-D002");
