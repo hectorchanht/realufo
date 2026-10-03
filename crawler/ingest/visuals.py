@@ -12,7 +12,7 @@ leave no row, so the next run retries them.
 """
 import argparse, json, os, re, subprocess, sys, tempfile
 from . import cfapi, d1
-from .textindex import flush
+from .textindex import flush, reindex_sql
 
 SELECT = """SELECT r.id, r.title, coalesce(r.summary,'') AS summary, a.cdn_url FROM records r
 JOIN assets a ON a.record_id=r.id AND a.role='full'
@@ -52,7 +52,7 @@ def row_sql(rid: str, desc: str) -> str:
     # Upsert only ai_summary: a record that somehow has page text keeps it.
     return ("INSERT INTO record_text(record_id,pages,truncated,total_pages,ai_summary) "
             f"VALUES({d1.sql_q(rid)},'[]',0,0,{d1.sql_q(desc)}) "
-            "ON CONFLICT(record_id) DO UPDATE SET ai_summary=excluded.ai_summary;")
+            "ON CONFLICT(record_id) DO UPDATE SET ai_summary=excluded.ai_summary;" + reindex_sql(rid))
 
 def image_jpeg(url: str, work: str) -> bytes:
     """Full image (JPG/PNG/GIF/WebP on the CDN) → ≤1024px JPEG bytes."""

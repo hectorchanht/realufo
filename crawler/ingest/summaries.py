@@ -10,7 +10,7 @@ ai_summary NULL, so the next run retries them.
 """
 import argparse, json, re, sys, tempfile
 from . import cfapi, d1
-from .textindex import flush
+from .textindex import flush, reindex_sql
 
 SELECT = """SELECT rt.record_id AS id, r.title, rt.pages FROM record_text rt JOIN records r ON r.id=rt.record_id
 WHERE r.status='live' AND rt.pages != '[]' AND rt.ai_summary IS NULL{ids}
@@ -41,7 +41,7 @@ def clean_summary(raw) -> str | None:
     return t
 
 def row_sql(rid: str, summary: str) -> str:
-    return f"UPDATE record_text SET ai_summary={d1.sql_q(summary)} WHERE record_id={d1.sql_q(rid)};"
+    return f"UPDATE record_text SET ai_summary={d1.sql_q(summary)} WHERE record_id={d1.sql_q(rid)};" + reindex_sql(rid)
 
 def main(argv=None):
     ap = argparse.ArgumentParser()

@@ -9,6 +9,7 @@ result is one JSON document in records.ai_moments.
 """
 import argparse, datetime, http.client, json, math, os, re, subprocess, tempfile, time
 from . import cfapi, d1
+from .textindex import reindex_sql
 
 MIN_SEG = 3.0       # seconds; shorter segments merge into a neighbour
 MAX_MOMENTS = 15    # long videos: window grows so ~15 moments at most
@@ -133,7 +134,7 @@ def doc_json(moments, model, now):
 
 
 def update_sql(record_id, doc):
-    return f"UPDATE records SET ai_moments={d1.sql_q(doc)} WHERE id={d1.sql_q(record_id)};"
+    return f"UPDATE records SET ai_moments={d1.sql_q(doc)} WHERE id={d1.sql_q(record_id)};" + reindex_sql(record_id)
 
 
 # Tuned on DOW-UAP-PR133 (see the plan ledger): the model ignores tiny light

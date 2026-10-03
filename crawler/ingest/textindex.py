@@ -3,8 +3,10 @@
     python3 -m ingest.textindex --dry-run --limit 2   # extract + chunk only, no writes
     python3 -m ingest.textindex                       # embed + upsert + D1 status rows
 
-Each record gets a card chunk (title/agency/date/location/summary); PDFs add
-their page text. Progress is tracked in D1 `text_index`, written after the
+Each record gets a card chunk (title/agency/date/location/summary), chunks for
+its AI summary / AI key moments, and PDFs add their page text. The AI writers
+(summaries, visuals, moments) drop the record's text_index row via
+reindex_sql, so the next run re-embeds it over the same vector ids. Progress is tracked in D1 `text_index`, written after the
 vectors, so a crash means a retry. `failed` records are cleaned up (vectors
 deleted, row removed) at the start of the next live run and retried.
 """
@@ -12,6 +14,7 @@ import argparse, os, subprocess, sys, tempfile
 from . import cfapi, chunking, d1, fetch
 
 SELECT = """SELECT r.id, r.kind, r.title, r.agency, r.incident_date, r.location, r.summary,
+  r.ai_moments, (SELECT ai_summary FROM record_text t WHERE t.record_id=r.id) AS ai_summary,
   (SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND a.role='full' LIMIT 1) AS url
 FROM records r LEFT JOIN text_index ti ON ti.record_id=r.id
 WHERE r.status='live' AND ti.record_id IS NULL
@@ -33,6 +36,11 @@ def pdf_pages(url: str, work: str) -> list[str]:
 def status_sql(rid: str, status: str, chunks: int, chars: int) -> str:
     return ("INSERT OR REPLACE INTO text_index(record_id,status,chunks,chars,indexed_at) VALUES("
             f"{d1.sql_q(rid)},'{status}',{int(chunks)},{int(chars)},datetime('now'));")
+
+def reindex_sql(rid: str) -> str:
+    # ponytail: a regenerated record with fewer chunks (moments --force) leaves its
+    # tail vectors behind; delete ids past the new count if that ever matters.
+    return f"DELETE FROM text_index WHERE record_id={d1.sql_q(rid)};"
 
 def retry_failed() -> None:
     rows = d1._d1_json(FAILED)

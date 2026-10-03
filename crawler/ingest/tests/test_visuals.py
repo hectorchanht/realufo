@@ -28,6 +28,7 @@ def test_row_sql_creates_a_text_row_without_pages_and_never_touches_existing_pag
     assert sql.startswith("INSERT INTO record_text(record_id,pages,truncated,total_pages,ai_summary) VALUES('AARO-IMG-x''s','[]',0,0,'Desc.')")
     assert "ON CONFLICT(record_id) DO UPDATE SET ai_summary=excluded.ai_summary" in sql
     assert "pages=" not in sql.split("DO UPDATE")[1]
+    assert sql.endswith("DELETE FROM text_index WHERE record_id='AARO-IMG-x''s';")
 
 def test_select_only_live_images_without_ai_text():
     sql = " ".join(visuals.SELECT.format(ids="", limit="").split())

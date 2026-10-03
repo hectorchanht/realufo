@@ -37,3 +37,16 @@ def test_chunks_for_card_first_then_prefixed_pages_with_seq_ids():
     assert out[0] == {"id": vector_id("REC-1", 0), "page": 0, "text": "Doc — AARO\nsum"}
     assert out[1]["page"] == 2 and out[1]["text"].startswith("Doc — p.2\n")
     assert [c["id"] for c in out] == [vector_id("REC-1", i) for i in range(len(out))]
+
+def test_chunks_for_adds_ai_summary_and_moments_after_card_before_pages():
+    moments = '{"moments": [{"start": 0.0, "end": 9.6, "text": "A bright light at frame centre."},' \
+              ' {"start": 65.2, "end": 80, "text": "The light drifts left."}]}'
+    r = {"id": "V", "title": "Vid", "ai_summary": "An infrared frame.", "ai_moments": moments}
+    out = chunks_for(r, ["Line of report text about the radar contact. " * 5])
+    assert [c["page"] for c in out] == [0, 0, 0, 1]
+    assert out[1]["text"] == "Vid — AI summary\nAn infrared frame."
+    assert out[2]["text"] == "Vid — AI key moments\n0:00 A bright light at frame centre.\n1:05 The light drifts left."
+
+def test_chunks_for_ignores_missing_or_bad_moments():
+    assert len(chunks_for({"id": "X", "title": "T", "ai_moments": "not json"}, [])) == 1
+    assert len(chunks_for({"id": "X", "title": "T", "ai_summary": None, "ai_moments": None}, [])) == 1

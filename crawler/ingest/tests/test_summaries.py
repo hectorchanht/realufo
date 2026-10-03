@@ -26,7 +26,8 @@ def test_clean_summary_caps_long_output_at_a_sentence():
 
 def test_row_sql_updates_only_that_record():
     sql = summaries.row_sql("AARO-x's.pdf", "A summary.")
-    assert sql == "UPDATE record_text SET ai_summary='A summary.' WHERE record_id='AARO-x''s.pdf';"
+    assert sql == ("UPDATE record_text SET ai_summary='A summary.' WHERE record_id='AARO-x''s.pdf';"
+                   "DELETE FROM text_index WHERE record_id='AARO-x''s.pdf';")   # Ask re-embeds it
 
 def test_chat_body_disables_thinking(monkeypatch):
     seen = {}
