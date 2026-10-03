@@ -76,7 +76,7 @@ export function AskCard({ question, data, footer }: { question: string; data: { 
   return (
     <section className={CARD} aria-label="archive answer">
       <div className="mb-1 font-mono text-[9px] tracking-[.5px] text-signal">◉ ARCHIVE ANSWER</div>
-      <div className="mb-2 font-mono text-[11px] text-faint">{question}</div>
+      <div className="mb-2 font-mono text-[12px] text-dim">{question}</div>
       <p className="whitespace-pre-wrap text-[13.5px] leading-[1.55] text-ink">
         {parts.map((p, i) => {
           const m = /^\[(\d+)\]$/.exec(p);
