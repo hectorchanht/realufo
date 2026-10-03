@@ -1,5 +1,6 @@
 """Point records.source_url at the official source so the doc page can link back:
-the DVIDS page for videos, the war.gov file for war.gov PDFs/images.
+the DVIDS page for videos, the war.gov file for war.gov PDFs/images, and for the
+snapshot archives (aaro, nasa, nara, ...) the official file from their JSON `s` field.
 
     python source-links.py            # print planned changes
     python source-links.py --apply    # + write them to remote D1
@@ -8,10 +9,11 @@ the DVIDS page for videos, the war.gov file for war.gov PDFs/images.
 Idempotent; rerun after an ingest. Rows with no known source keep their URL.
 """
 import csv, glob, json, os, posixpath, re, sys, tempfile
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 from ingest import d1
 from ingest.cli import CSV_PATHS
 from ingest.sources import wargov
+from ingest.sources.snapshot import ARCHIVE_ROWS, _load
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -39,6 +41,25 @@ def wargov_links(paths):
     return out
 
 
+# NARA's landing page links each Pentagon Papers part to this bucket under the same file name
+PENTAGON = ("https://www.archives.gov/research/pentagon-papers",
+            "https://nara-media-001.s3.amazonaws.com/arcmedia/research/pentagon-papers/")
+
+
+def snapshot_sources():
+    """cdn_url -> official URL. An asset listed twice keeps its longest (most exact) source:
+    the NASA PDFs appear once with the wp-content file and once with the /uap/ landing page."""
+    m = {}
+    for slug in ARCHIVE_ROWS:
+        for a in _load(slug, os.path.join(HERE, "ingest", "data")):
+            u, src = (a.get("u") or a.get("l") or "").strip(), (a.get("s") or "").strip()
+            if src.rstrip("/") == PENTAGON[0]:
+                src = PENTAGON[1] + posixpath.basename(u)
+            if u and src and len(src) > len(m.get(u, "")):
+                m[u] = quote(src, safe=":/%?=&#")  # aaro.mil paths carry raw spaces
+    return m
+
+
 def source_for(row, dvids, links):
     url = row["cdn_url"] or ""
     if row["kind"] == "video":
@@ -54,15 +75,20 @@ def main(apply, extra_csvs):
         # committed CSVs first so fresher ones override
         links = wargov_links(CSV_PATHS + extra_csvs + wargov.refresh_csvs(work, []))
     dvids = dvids_by_dod()
+    snap = snapshot_sources()
     rows = d1._d1_json("SELECT r.id, r.archive, r.kind, r.source_url, a.cdn_url FROM records r "
                        "JOIN assets a ON a.record_id=r.id AND a.role='full'")
     sql = []
     for r in rows:
         src = source_for(r, dvids, links)
+        # snapshot sources only fill rows still pointing at our own mirror
+        cur = r["source_url"] or ""
+        if not src and (not cur or cur.startswith("https://assets.realufo.org/")):
+            src = snap.get(r["cdn_url"])
         if src and src != r["source_url"]:
             sql.append(f"UPDATE records SET source_url={d1.sql_q(src)} WHERE id={d1.sql_q(r['id'])};")
     print(f"records={len(rows)} updates={len(sql)}")
-    print("\n".join(sql[:5]))
+    print("\n".join(sql if "-v" in sys.argv else sql[:5]))
     if apply and sql:
         path = os.path.join(tempfile.gettempdir(), "source-links.sql")
         open(path, "w").write("\n".join(sql) + "\n")

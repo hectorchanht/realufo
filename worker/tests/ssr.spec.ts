@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { distinctSummary, docTitleParts, esc, docHref, boardHref, injectBody, docBody, docFooter, threadBody, caseBody, homeBody, type DocData, hubBody, browseBody, hubHref } from "../lib/ssr";
+import { sourceLinks } from "../../web/src/lib/sourceLinks";
 
 const doc = (over: Partial<DocData["record"]> = {}, rest: Partial<DocData> = {}): DocData => ({
   record: {
@@ -51,6 +52,22 @@ describe("docBody", () => {
       '<a href="/api/file/FBI-UAP-D002">Open original file</a> · <a href="https://www.dvidshub.net/video/1007707">DVIDS page</a> · <a href="https://www.war.gov/UFO/">WAR.GOV page</a>'
     );
     expect(docBody(doc({ archive: "nara", source_url: "https://assets.realufo.org/x.pdf" }))).not.toContain(" page</a>");
+  });
+  it("links any other official source by its host", () => {
+    expect(docBody(doc({ archive: "aaro", source_url: "https://www.aaro.mil/Portals/136/PDFs/x.pdf" }))).toContain(
+      '<a href="https://www.aaro.mil/Portals/136/PDFs/x.pdf">AARO.MIL page</a>'
+    );
+  });
+  it("sourceLinks opens an official PDF at the page being read", () => {
+    expect(sourceLinks({ archive: "nasa", source_url: "https://science.nasa.gov/a.pdf" }, 7)).toEqual([
+      { label: "SCIENCE.NASA.GOV", href: "https://science.nasa.gov/a.pdf#page=7" },
+    ]);
+    expect(sourceLinks({ archive: "spain", source_url: "https://bibliotecavirtual.defensa.gob.es/r.do?id=1" }, 7)[0].href).toBe(
+      "https://bibliotecavirtual.defensa.gob.es/r.do?id=1"
+    );
+    expect(sourceLinks({ archive: "wargov", source_url: "https://www.war.gov/medialink/a.PDF" }, 3)[0].href).toBe(
+      "https://www.war.gov/medialink/a.PDF#page=3"
+    );
   });
   it("renders full text pages escaped, with continuation link only when truncated", () => {
     const ft = { pages: [{ n: 3, text: "Para one line\nline two\n\n\n\n<script>x</script>\n\n  \n" }], truncated: true, total_pages: 40 };
