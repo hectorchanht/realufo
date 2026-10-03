@@ -31,7 +31,8 @@ DRAIN=; [ "$ID" = "--drain" ] && DRAIN=1
 # /dev/null makes wrangler use the OAuth login instead.
 q() {
   npx wrangler d1 execute realufo-db --remote --env-file /dev/null --json --command "$1" 2>/dev/null |
-    python3 -c 'import json,sys; d=json.load(sys.stdin); d=d[0] if isinstance(d,list) else d; print(json.dumps(d.get("results",[])))'
+    python3 -c 'import json,sys; d=json.load(sys.stdin); d=d[0] if isinstance(d,list) else d; print(json.dumps(d.get("results",[])))' ||
+    echo '[]' # a transient wrangler/D1 hiccup must not abort a publish mid-way; the next poll retries
 }
 
 TOKEN=$(grep -s '^ADMIN_TOKEN=' "$ROOT/.env" | cut -d= -f2- || true)
