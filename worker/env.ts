@@ -21,8 +21,8 @@ export interface Env {
   X_SINCE?: string; // "YYYY-MM-DD"; empty = no release posts
   X_FORCE_SHOWCASE?: string; // record ID; with X_SHOWCASE_TEXT posts showcase/<archive>/<ID>.mp4 (/__tick only)
   X_SHOWCASE_TEXT?: string;
-  X_FORCE_PICK?: string;
-  X_POLLS?: string; // "on" = post story polls on X (Spec 9); anything else = off // "ID[,ID]": post these records next, outside pick slots (scripts/publish.sh)
+  X_FORCE_PICK?: string; // "ID[,ID]": post these records next, outside pick slots (scripts/publish.sh)
+  X_POLLS?: string; // "on" = post story polls on X (Spec 9); anything else = off
   X_API_KEY?: string; // secrets: OAuth 1.0a user context for the bot account
   X_API_SECRET?: string;
   X_ACCESS_TOKEN?: string;

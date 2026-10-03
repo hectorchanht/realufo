@@ -75,6 +75,34 @@ def poll_error(p):
     return None
 
 
+def weighted_len(text):
+    """X's weighted length, as worker/lib/xcopy.ts weightedLength: a URL = 23, emoji/CJK = 2."""
+    n = 0
+    rest = re.sub(r"https?://\S+", "", text)
+    n += 23 * len(re.findall(r"https?://\S+", text))
+    for ch in rest:
+        c = ord(ch)
+        n += 1 if c <= 0x10FF or 0x2000 <= c <= 0x200D or 0x2010 <= c <= 0x201F or 0x2032 <= c <= 0x2037 else 2
+    return n
+
+
+def last_part_error(a, thread):
+    """The X thread's last tweet = last part + CTA. Over 280, xcopy fit() would cut off the link."""
+    n = weighted_len(a["parts"][-1] + cta(a, thread))
+    return f"last part + Vote/Full-story line is over by {n - 280} (X weighted); shorten it or the poll question" if n > 280 else None
+
+
+def freeze_error(stored, n, new):
+    """Once anyone voted (site or social poll), the opts can't change: a vote is an index into them.
+    stored/new = poll JSON or None. The question wording may still change."""
+    if not n:
+        return None
+    opts = lambda p: p and json.loads(p)["opts"]
+    if not stored or not new or opts(stored) != opts(new):
+        return "poll opts are frozen: votes or a social poll exist (only the question wording may change)"
+    return None
+
+
 def cta(a, thread):
     """Last line of the social caption: the poll question as a Vote link, else the story link."""
     url = f"{SITE}/thread/{thread}"
@@ -91,7 +119,9 @@ def main():
     if poll and (err := poll_error(poll)):
         sys.exit(f"article.json: {err}")
     poll_json = poll and json.dumps({"q": poll["q"].strip(), "opts": [o.strip() for o in poll["opts"]]}, ensure_ascii=False)
-    ids = [e["id"] for e in a["evidence"]]
+    if social and (err := last_part_error(a, f"ar_{slug}")):
+        sys.exit(f"article.json: {err}")
+    ids =[e["id"] for e in a["evidence"]]
     found = {r["id"] for r in d1(f"SELECT id FROM records WHERE status='live' AND id IN ({','.join(map(q, ids))})", read=True)}
     if missing := [i for i in ids if i not in found]:
         sys.exit(f"not live records: {missing}")
@@ -100,11 +130,10 @@ def main():
     hero = upload(slug, a.get("hero"))
     imgs = {e["id"]: upload(slug, e.get("image")) for e in a["evidence"]}
 
-    if poll:
-        cur = d1(f"""SELECT a.poll, (SELECT count(*) FROM poll_votes WHERE slug={q(slug)}) + (SELECT count(*) FROM poll_social WHERE slug={q(slug)}) n
-                     FROM articles a WHERE a.slug={q(slug)}""", read=True)
-        if cur and cur[0]["poll"] and cur[0]["n"] and json.loads(cur[0]["poll"])["opts"] != json.loads(poll_json)["opts"]:
-            sys.exit("poll opts are frozen: votes or a social poll exist (the question wording may still change)")
+    cur = d1(f"""SELECT a.poll, (SELECT count(*) FROM poll_votes WHERE slug={q(slug)}) + (SELECT count(*) FROM poll_social WHERE slug={q(slug)}) n
+                 FROM articles a WHERE a.slug={q(slug)}""", read=True)
+    if cur and (err := freeze_error(cur[0]["poll"], cur[0]["n"], poll_json)):
+        sys.exit(err)
 
     print("== rows → D1")
     sql = [f"""INSERT INTO articles(slug,title,body,image_key,poll) VALUES({q(slug)},{q(a['title'])},{q(SEP.join(a['parts']))},{q(hero)},{q(poll_json)})

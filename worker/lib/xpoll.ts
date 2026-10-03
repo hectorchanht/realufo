@@ -14,14 +14,17 @@ const REFRESH_MS = 20 * 3600_000;
 const log = (o: Record<string, unknown>) => console.log(JSON.stringify({ xpoll: true, ...o }));
 
 async function postNext(env: Env, s: XSecrets, now: Date) {
-  const c = await env.DB.prepare(
+  const { results } = await env.DB.prepare(
     `SELECT a.slug, a.poll, x.tweet_id FROM articles a
      JOIN threads t ON t.id = a.thread_id
      JOIN x_posts x ON x.stream='showcase' AND x.ref=t.source_record_id AND x.status='posted' AND x.tweet_id IS NOT NULL
      LEFT JOIN poll_social p ON p.slug=a.slug AND p.platform='x'
      WHERE a.poll IS NOT NULL AND p.slug IS NULL
-     ORDER BY a.created_at LIMIT 1`
-  ).first<{ slug: string; poll: string; tweet_id: string }>();
+     ORDER BY a.created_at`
+  ).all<{ slug: string; poll: string; tweet_id: string }>();
+  // an unparsable poll (hand-edited D1) is skipped, never allowed to block the stories after it
+  const c = results.find((r) => parsePoll(r.poll));
+  for (const r of results.slice(0, c ? results.indexOf(c) : results.length)) log({ badPoll: r.slug });
   const poll = c && parsePoll(c.poll);
   if (!c || !poll) return;
   if (!(await withinBudget(env, POLL_COST, now, true))) return log({ budget: c.slug });
@@ -42,8 +45,9 @@ async function postNext(env: Env, s: XSecrets, now: Date) {
       await env.DB.prepare("UPDATE poll_social SET error=? WHERE slug=? AND platform='x'").bind(String(e).slice(0, 500), c.slug).run();
       return log({ ambiguous: c.slug, error: String(e).slice(0, 200) });
     }
-    if (e.status === 401 || e.status === 402 || (e.status === 403 && !/duplicate/i.test(e.body))) {
-      await env.DB.prepare("DELETE FROM poll_social WHERE slug=? AND platform='x'").bind(c.slug).run(); // nothing posted; retry later
+    // auth / credits / rate limit: nothing was posted → drop the row, a later tick retries (5xx may have posted: failed)
+    if (e.status === 401 || e.status === 402 || e.status === 429 || (e.status === 403 && !/duplicate/i.test(e.body))) {
+      await env.DB.prepare("DELETE FROM poll_social WHERE slug=? AND platform='x'").bind(c.slug).run();
       return log({ halted: c.slug, status: e.status });
     }
     await env.DB.prepare("UPDATE poll_social SET status='failed', error=? WHERE slug=? AND platform='x'").bind(String(e).slice(0, 500), c.slug).run();

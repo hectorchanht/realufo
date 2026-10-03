@@ -81,6 +81,23 @@ describe("pollTick", () => {
     expect(await row()).toBeNull();
   });
 
+  it("429 (rate limited: nothing posted) deletes the row so a later tick retries", async () => {
+    tweet = () => new Response(JSON.stringify({ title: "Too Many Requests" }), { status: 429 });
+    await pollTick(E(), NOW);
+    expect(await row()).toBeNull();
+  });
+
+  it("an older story with an unparsable poll doesn't block the next one", async () => {
+    await env.DB.prepare("INSERT INTO articles(slug,title,body,poll,thread_id,created_at) VALUES ('xp0','T','B','{broken','ar_xp0','2000-01-01 00:00:00')").run();
+    await env.DB.prepare(
+      "INSERT INTO threads(id,no,board_id,title,stance,op_body,tags,votes,reply_count,img_count,source_record_id,hot,created_at) VALUES ('ar_xp0',2,'uap','T','analyst','B','[]',0,0,0,'CIA-UAP-017',0,?)"
+    ).bind(sqlTime(NOW)).run();
+    await pollTick(E(), NOW);
+    expect(sent).toHaveLength(1);
+    expect(await row()).toMatchObject({ status: "posted" });
+    expect(await row("xp0")).toBeNull();
+  });
+
   it("other X errors mark the row failed", async () => {
     tweet = () => new Response(JSON.stringify({ title: "Invalid Request" }), { status: 400 });
     await pollTick(E(), NOW);
