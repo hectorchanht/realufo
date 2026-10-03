@@ -12,6 +12,7 @@ import { releaseBlock } from "./releases";
 import type { ReleaseBlock } from "../lib/releases";
 import { TOPIC_RULES, topicWhere, type TopicBlock } from "../lib/topics";
 import { TOPIC_TEXT } from "../lib/topicText";
+import { CASE_STORY_TEXT } from "../lib/caseStoryText";
 
 export type CardRow = { id: string; title: string; kind: string; incident_date: string | null } & Record<string, unknown>;
 export type HighlightPick = { id: string; why: string; title: string; thumb: string | null; kind: string };
@@ -118,7 +119,13 @@ async function topicBlock(env: Env, slug: string, members: string[]): Promise<To
       const r = byId.get(s.id);
       return r ? [{ id: s.id, page: s.page ?? null, note: s.note, title: docTitle(r.title, r.id, r.kind) }] : [];
     }),
-    stories: stories.results.map((s) => ({ slug: s.slug, title: s.title, threadId: s.threadId })),
+    stories: [
+      ...stories.results.filter((s) => s.threadId).map((s) => ({ slug: s.slug, title: s.title, threadId: s.threadId, href: `/thread/${s.threadId}` })),
+      // Fact-checked case stories that cite this topic's files.
+      ...Object.entries(CASE_STORY_TEXT)
+        .filter(([, cs]) => cs.sources.some((x) => x.id && members.includes(x.id)))
+        .map(([slug, cs]) => ({ slug, title: cs.title, threadId: null, href: `/case/${slug}` })),
+    ],
   };
 }
 

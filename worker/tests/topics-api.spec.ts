@@ -58,7 +58,7 @@ describe("topic hub API", () => {
     expect(h.topic.background).toBe(TOPIC_TEXT.aawsap.background);
     expect(h.topic.sources.map((s: any) => s.id)).toEqual([SRC]); // the other sources aren't in the test DB
     expect(h.topic.sources[0].title).toContain("AAWSAP source file");
-    expect(h.topic.stories).toEqual([{ slug: "tstory", title: "Test story", threadId: "ar_tstory" }]);
+    expect(h.topic.stories).toEqual([{ slug: "tstory", title: "Test story", threadId: "ar_tstory", href: "/thread/ar_tstory" }]);
   });
 
   it("small topics 404; other kinds have no topic block", async () => {

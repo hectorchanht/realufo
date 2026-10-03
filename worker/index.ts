@@ -1,4 +1,5 @@
 import type { Env } from "./env";
+import { CASE_STORY_TEXT } from "./lib/caseStoryText";
 import { on, dispatch } from "./router";
 import { error, json } from "./lib/json";
 import { health } from "./routes/health";
@@ -106,6 +107,10 @@ export default {
     if (url.hostname.startsWith("www.")) return Response.redirect(`https://${url.hostname.slice(4)}${url.pathname}${url.search}`, 301);
     // The old static site moved to release.realufo.org; its realufo.org URLs are
     // still in search indexes. /map stays: this app has its own.
+    // Stories folded into case pages (spec 2026-10-03-realufo-case-stories-design):
+    // straight to /case, no apex → subdomain → apex chain.
+    const moved = /^\/stories\/([a-z0-9-]+)\/?$/.exec(url.pathname)?.[1];
+    if (moved && CASE_STORY_TEXT[moved]) return Response.redirect(`${url.origin}/case/${moved}`, 301);
     if (LEGACY_PATH.test(url.pathname)) {
       const p = url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`;
       return Response.redirect(`https://release.realufo.org${p}${url.search}`, 301);

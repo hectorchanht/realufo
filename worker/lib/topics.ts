@@ -10,7 +10,7 @@ export interface TopicText { background: string; lore?: string; sources: TopicSo
 export interface TopicBlock {
   background: string; lore: string | null;
   sources: { id: string; page: number | null; note: string; title: string }[];
-  stories: { slug: string; title: string; threadId: string | null }[];
+  stories: { slug: string; title: string; threadId: string | null; href: string }[];
 }
 
 // Registry order = display order (Browse, footer). Audit: spec appendix.

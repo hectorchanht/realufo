@@ -141,8 +141,7 @@ const topicHtml = (t: TopicBlock) =>
       : "",
   ].join("");
 
-const storiesHtml = (t: TopicBlock) =>
-  section("Related stories", t.stories.filter((s) => s.threadId).map((s) => ({ href: threadHref(s.threadId as string), text: s.title })));
+const storiesHtml = (t: TopicBlock) => section("Related stories", t.stories.map((s) => ({ href: s.href, text: s.title })));
 
 export const releaseBlockHtml = (b: ReleaseBlock) => {
   const items = [

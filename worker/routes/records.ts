@@ -4,6 +4,7 @@ import { CARD_COLS } from "../lib/db";
 import { hubsFor, MIN_HUB_FILES } from "../lib/hubs";
 import { listHubsCached, topicMembers } from "./hubs";
 import { TOPIC_RULES } from "../lib/topics";
+import { CASE_STORY_TEXT } from "../lib/caseStoryText";
 import { isoDate, yearOf, decadeOf, wargovReleases, facetCounts } from "../lib/facets";
 import { verdictState } from "./verdicts";
 import { queryShorts } from "./shorts";
@@ -307,6 +308,9 @@ export async function loadRecord(env: Env, id: string, origin: string) {
     record, assets: assets.results, promotedThreads: promoted.results, series, release, related, fullText, tldr,
     articles: groupArticles(env, articleRows.results),
     hubs: hubsFor(record, release?.no ?? null, live),
+    citedIn: Object.entries(CASE_STORY_TEXT)
+      .filter(([, s]) => s.sources.some((x) => x.id === id))
+      .map(([slug, s]) => ({ slug, title: s.title })),
     topics: TOPIC_RULES.filter((t) => {
       const m = topicMap[t.slug] ?? [];
       return m.length >= MIN_HUB_FILES && m.includes(id);

@@ -1,4 +1,5 @@
 import type { Env } from "../env";
+import { CASE_STORY_TEXT } from "../lib/caseStoryText";
 import { boardHref, hubHref, esc } from "../lib/ssr";
 import { thumbSql, durationSql } from "../lib/db";
 import { docTitle, isoDate } from "../lib/pages";
@@ -55,7 +56,7 @@ export async function sitemap(req: Request, env: Env) {
     ...records.results.map((r) => loc(`/doc/${e(r.id)}`, r.d, media(r))),
     ...threads.results.map((t) => loc(`/thread/${e(t.id)}`, t.d)),
     ...boards.results.map((b) => loc(boardHref(b.id))), // slug is "/uap/"; the URL is /board/uap
-    ...cases.results.map((c) => loc(`/case/${e(c.id)}`)),
+    ...cases.results.map((c) => loc(`/case/${e(c.id)}`, CASE_STORY_TEXT[c.id]?.updated)),
     ...hubs.map((h) => loc(hubHref(h.kind, h.slug))),
     ...asks.results.map((x) => loc(askHref(x.id, x.question), x.d)), // slug is [a-z0-9-] only
   ];
