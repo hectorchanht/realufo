@@ -28,6 +28,7 @@ const mockVoteMutate = vi.fn();
 
 vi.mock("../api/queries", () => ({
   isVotedLocally: () => false,
+  useBootstrap: () => ({ data: undefined }), // FollowBell gate (push off)
   useThread: (id: string) => useThreadMock(id),
   usePoll: () => ({ data: undefined }),
   useCastPoll: () => ({ mutate: vi.fn(), isPending: false }),

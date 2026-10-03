@@ -119,4 +119,43 @@ async function trim(cache, max) {
   for (let i = 0; i < keys.length - max; i++) await cache.delete(keys[i]);
 }
 
+// Push (spec Phase 2c): payload {title, body, url, tag} from worker/lib/push.ts.
+self.addEventListener("push", (event) => {
+  let m = {};
+  try {
+    m = event.data ? event.data.json() : {};
+  } catch {
+    // non-JSON payload: show the generic notification
+  }
+  event.waitUntil(
+    self.registration.showNotification(m.title || "RealUFO", {
+      body: m.body || "",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      tag: m.tag,
+      data: { url: m.url || "/" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || "/", self.location.origin).href;
+  event.waitUntil(
+    (async () => {
+      const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      const win = wins.find((w) => new URL(w.url).origin === self.location.origin);
+      if (win) {
+        await win.focus();
+        try {
+          return await win.navigate(url);
+        } catch {
+          // uncontrolled window can't be navigated: open a new one
+        }
+      }
+      return self.clients.openWindow(url);
+    })(),
+  );
+});
+
 void BUILD;

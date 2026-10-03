@@ -14,6 +14,7 @@ import { useOverlay } from "../overlays/OverlayProvider";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
 import { LoadError } from "../components/LoadError";
+import { FollowBell } from "../components/FollowBell";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { promoteCommentOpts } from "../lib/promoteComment";
 import type { Stance } from "../api/types";
@@ -77,9 +78,12 @@ export function Case() {
       </div>
 
       {/* name — prototype line 292 */}
-      <h1 className="mb-[6px] text-[27px] font-bold leading-[1.12] text-ink" style={{ letterSpacing: "-.01em" }}>
-        {story?.title ?? caseDetail.name}
-      </h1>
+      <div className="flex items-start gap-2">
+        <h1 className="mb-[6px] min-w-0 flex-1 text-[27px] font-bold leading-[1.12] text-ink" style={{ letterSpacing: "-.01em" }}>
+          {story?.title ?? caseDetail.name}
+        </h1>
+        <FollowBell kind="case" id={slug} />
+      </div>
 
       {/* archive label + status — prototype line 293 */}
       <div className="mb-[18px] font-mono text-[10px] uppercase text-faint" style={{ letterSpacing: ".5px" }}>
