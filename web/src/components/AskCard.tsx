@@ -74,8 +74,10 @@ export function AskCard({ question, data, footer }: { question: string; data: { 
               data-flash={flash === s.n ? "true" : "false"}
               className="flex items-center gap-2 rounded-lg border border-line px-2 py-1.5 transition-colors data-[flash=true]:border-signal"
             >
-              <span className="w-5 flex-none font-mono text-[10px] text-faint">[{s.n}]</span>
-              {s.thumb && <img src={s.thumb} alt="" loading="lazy" className="h-8 w-8 flex-none rounded object-cover" />}
+              <Link to={`/doc/${s.record_id}`}>
+                <span className="w-5 flex-none font-mono text-[10px] text-faint">[{s.n}]</span>
+                {s.thumb && <img src={s.thumb} alt="" loading="lazy" className="h-8 w-8 flex-none rounded object-cover" />}
+              </Link>
               {/* title + hub chips stack so chips wrap below instead of squeezing the title on phones */}
               <div className="flex min-w-0 flex-1 flex-col">
                 <Link to={`/doc/${s.record_id}`} className="truncate text-[12px] text-ink hover:text-signal">
