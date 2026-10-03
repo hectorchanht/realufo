@@ -14,6 +14,7 @@ import { askHref, askIdOf } from "./ask";
 import { PRIVACY_HTML } from "./privacy";
 import { TERMS_HTML } from "./terms";
 import { SOCIAL_PROFILES } from "./profiles";
+import { MAP_INTRO } from "./shared";
 
 // One SPA route's pre-render: <head> meta (url is filled in by serveWithMeta)
 // and the HTML that goes inside #root. A loader returns null when the entity
@@ -58,7 +59,7 @@ const TAB = {
     description: "Famous UAP cases, what the official record says, and where to discuss them.",
     type: "website" as const,
   },
-  map: { title: "Sighting Map", description: "Map of where the declassified UAP files come from.", type: "website" as const },
+  map: { title: "Sighting Map", description: "Map of where the declassified UAP files come from: every place named in Pentagon, AARO, FBI, CIA and NASA records, with file counts.", type: "website" as const },
   // AI answers can be wrong: never indexed.
   ask: {
     title: "Ask the Archive",
@@ -114,7 +115,15 @@ const casesPage: Loader = async (env) => {
   return { meta: t, body: tabBody(t.title, t.description, section("Cases", links)) };
 };
 
-const mapPage: Loader = async () => ({ meta: TAB.map, body: tabBody(TAB.map.title, TAB.map.description) });
+// Crawlers get the places as links: the map itself is canvas-and-buttons.
+const mapPage: Loader = async (env, _g, url) => {
+  const places = (await listHubsCached(env, url.origin)).filter((h) => h.kind === "location").sort((p, q) => q.count - p.count);
+  return {
+    meta: TAB.map,
+    body: tabBody(TAB.map.title, `${TAB.map.description} ${MAP_INTRO}`,
+      section("Places in the archive", places.map((p) => ({ href: hubHref(p.kind, p.slug), text: `${p.label} (${p.count} files)` })))),
+  };
+};
 const askPage: Loader = async () => ({ meta: TAB.ask, body: tabBody(TAB.ask.title, TAB.ask.description) });
 
 // A shared Ask answer (Spec 8 §2): indexed, unlike the /ask tab. Duplicate
@@ -251,17 +260,18 @@ const boardPage: Loader = async (env, g) => {
 };
 
 const casePage: Loader = async (env, g) => {
-  const [x, thread] = await Promise.all([
-    env.DB.prepare("SELECT name,lede,pull,pull_cite FROM cases WHERE slug=?")
+  const [x, thread, others] = await Promise.all([
+    env.DB.prepare("SELECT slug,name,lede,pull,pull_cite,coord,archive_label FROM cases WHERE slug=?")
       .bind(g.slug)
-      .first<{ name: string; lede: string | null; pull: string | null; pull_cite: string | null }>(),
+      .first<{ slug: string; name: string; lede: string | null; pull: string | null; pull_cite: string | null; coord: string | null; archive_label: string | null }>(),
     env.DB.prepare("SELECT id,title FROM threads WHERE case_slug=? LIMIT 1").bind(g.slug).first<{ id: string; title: string }>(),
+    env.DB.prepare("SELECT slug,name FROM cases WHERE slug<>? ORDER BY name").bind(g.slug).all<{ slug: string; name: string }>(),
   ]);
   if (!x) return null;
   const description = (x.lede || "").slice(0, 200);
   return {
     meta: { title: x.name, description, jsonLd: { "@type": "Article", headline: x.name, description } },
-    body: caseBody({ ...x, thread }),
+    body: caseBody({ ...x, thread, others: others.results }),
   };
 };
 

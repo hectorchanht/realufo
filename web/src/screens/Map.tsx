@@ -23,6 +23,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useBootstrap, useRecords } from "../api/queries";
 import { dotSize, placesNear, project } from "../lib/map";
+import { MAP_INTRO } from "../../../worker/lib/shared";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { WorldMap } from "../components/WorldMap";
 import { DocCard } from "../components/DocCard";
@@ -119,6 +120,11 @@ export function MapScreen() {
   const onMap = places.filter((p) => p.lat !== null && p.lng !== null);
   const offWorld = places.filter((p) => p.lat === null || p.lng === null);
   const place = places.find((p) => p.name === selected) ?? null;
+  // One link per hub (a hub can cover several map places); the biggest place names it.
+  const hubPlaces = places
+    .filter((p) => p.hub)
+    .sort((p, q) => q.count - p.count)
+    .filter((p, i, a) => a.findIndex((q) => q.hub === p.hub) === i);
   const stats = data?.stats;
   const byDecade = stats?.byDecade ?? [];
   const topLocations = stats?.topLocations ?? [];
@@ -149,6 +155,7 @@ export function MapScreen() {
 
   return (
     <div data-screen="map" style={{ animation: "fadeup .35s ease both" }}>
+      <p className="mb-3 text-[13px] leading-[1.55] text-dim">{MAP_INTRO}</p>
       <div className={place || choices ? "items-start min-[900px]:grid min-[900px]:grid-cols-[minmax(0,1fr)_340px] min-[900px]:gap-[14px]" : ""}>
         {/* map panel — prototype lines 313-321 */}
         <div
@@ -300,6 +307,25 @@ export function MapScreen() {
           </div>
         ))}
       </div>
+
+      {/* Same places as links (the map is buttons on a canvas): each opens its hub page. */}
+      {hubPlaces.length > 0 && (
+        <nav aria-label="Places in the archive" className="mt-6">
+          <h2 className="mx-0.5 mb-3 font-pixel text-[9px] tracking-[1px] text-faint">◆ Places in the archive</h2>
+          <ul className="flex flex-wrap gap-2">
+            {hubPlaces.map((p) => (
+              <li key={p.name}>
+                <Link
+                  to={`/location/${p.hub}`}
+                  className="inline-block rounded-full border border-line2 px-[11px] py-[5px] font-mono text-[10px] text-dim hover:border-signal hover:text-signal"
+                >
+                  {p.name} · {p.count}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
     </div>
   );
 }

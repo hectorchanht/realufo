@@ -7,7 +7,8 @@
 // the app frame/AppBar/nav and mounts this inside its `<Outlet/>`, same as
 // every other screen task.
 import { Link, useParams } from "react-router-dom";
-import { useCase, useCaseComments } from "../api/queries";
+import { useBootstrap, useCase, useCaseComments } from "../api/queries";
+import { caseStoryUrl } from "../../../worker/lib/shared";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
@@ -37,6 +38,7 @@ export function Case() {
   const { data, isLoading, error, refetch } = useCase(slug);
   const { data: commentsData } = useCaseComments(slug);
   const { openComposer } = useOverlay();
+  const otherCases = (useBootstrap().data?.cases ?? []).filter((c) => c.slug !== slug);
 
   const caseDetail = data?.case;
   const relatedThread = data?.relatedThread ?? null;
@@ -102,6 +104,15 @@ export function Case() {
           </div>
         </blockquote>
       )}
+
+      <a
+        href={caseStoryUrl(slug)}
+        target="_blank"
+        rel="noopener"
+        className="mb-[22px] inline-block font-mono text-[11px] text-signal hover:underline"
+      >
+        Full story, timeline and sources ↗
+      </a>
 
       {/* "ACTIVE DISCUSSION" card — prototype lines 301-306 */}
       {threads.map((t, i) => (
@@ -216,6 +227,24 @@ export function Case() {
       >
         ◈ Start a board thread about this case
       </button>
+
+      {otherCases.length > 0 && (
+        <nav aria-label="More cold cases" className="mt-8">
+          <h2 className="mx-0.5 mb-3 font-pixel text-[9px] tracking-[1px] text-faint">◆ More cold cases</h2>
+          <ul className="flex flex-wrap gap-2">
+            {otherCases.map((c) => (
+              <li key={c.slug}>
+                <Link
+                  to={`/case/${c.slug}`}
+                  className="inline-block rounded-full border border-line2 px-[11px] py-[5px] font-mono text-[10px] text-dim hover:border-signal hover:text-signal"
+                >
+                  {c.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
     </div>
   );
 }

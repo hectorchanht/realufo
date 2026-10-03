@@ -172,6 +172,17 @@ describe("Map", () => {
     expect(screen.queryByRole("region", { name: "Western United States" })).not.toBeInTheDocument();
   });
 
+  it("lists places with a hub page as links, one per hub, biggest first", () => {
+    const nevada: MapPlace = { name: "Nevada", lat: 39, lng: -117, values: ["Nevada"], count: 3, hub: "western-united-states" };
+    useBootstrapMock.mockReturnValue({ data: { ...mockBootstrap, places: [nevada, harare, western, moon] }, isLoading: false });
+    renderMap();
+    const links = [...screen.getByRole("navigation", { name: "Places in the archive" }).querySelectorAll("a")];
+    expect(links.map((a) => [a.textContent, a.getAttribute("href")])).toEqual([
+      ["Western United States · 56", "/location/western-united-states"],
+      ["The Moon · 8", "/location/moon"],
+    ]);
+  });
+
   it("a tap over overlapping dots lists them all to choose from", () => {
     const vegas: MapPlace = { name: "Las Vegas, Nevada", lat: 36.2, lng: -115.1, values: ["Las Vegas, Nevada"], count: 37, hub: null };
     useBootstrapMock.mockReturnValue({ data: { ...mockBootstrap, places: [western, vegas, harare] }, isLoading: false });

@@ -144,10 +144,13 @@ describe("threadBody / caseBody / homeBody", () => {
     expect(out).toContain('<a href="/doc/CIA-UAP-017">File CIA-UAP-017</a>');
   });
   it("case renders lede, pull quote with cite, and thread link", () => {
-    const out = caseBody({ name: "Kaikoura", lede: "Lede.", pull: "Quote.", pull_cite: "Pilot", thread: { id: "t5", title: "Talk" } });
+    const out = caseBody({ slug: "kaikoura", name: "Kaikoura", lede: "Lede.", pull: "Quote.", pull_cite: "Pilot", coord: "◉ 42.4° S · Kaikoura coast · 1978", archive_label: "NZDF Archive", thread: { id: "t5", title: "Talk" }, others: [{ slug: "socorro", name: "Socorro" }] });
     expect(out).toContain("<h1>Kaikoura</h1>");
     expect(out).toContain("<blockquote><p>Quote.</p><cite>Pilot</cite></blockquote>");
     expect(out).toContain('<a href="/thread/t5">Talk</a>');
+    expect(out).toContain("<p>42.4° S · Kaikoura coast · 1978</p><p>Source: NZDF Archive</p>");
+    expect(out).toContain('<a href="https://release.realufo.org/stories/kaikoura/">Full story, timeline and sources: Kaikoura</a>');
+    expect(out).toContain('<h2>More cold cases</h2><ul><li><a href="/case/socorro">Socorro</a>');
   });
   it("home lists latest files", () => {
     expect(homeBody([{ id: "X-1", title: "One" }])).toContain('<a href="/doc/X-1">X-1 — One</a>');

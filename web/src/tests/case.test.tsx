@@ -17,6 +17,7 @@ vi.mock("../api/queries", () => ({
   isVotedLocally: () => false,
   useCase: (slug: string) => useCaseMock(slug),
   useCaseComments: (slug: string) => useCaseCommentsMock(slug),
+  useBootstrap: () => ({ data: { cases: [{ slug: "roswell", name: "Roswell · Project Mogul" }, { slug: "socorro", name: "Socorro · Lonnie Zamora" }] } }),
   useVote: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
@@ -96,6 +97,14 @@ describe("Case", () => {
     expect(screen.getByText(roswellCase.case.lede)).toBeInTheDocument();
   });
 
+  it("links the full sourced story and the other cold cases (not this one)", () => {
+    renderCase();
+    expect(screen.getByRole("link", { name: /Full story, timeline and sources/ }).getAttribute("href")).toBe("https://release.realufo.org/stories/roswell/");
+    const more = screen.getByRole("navigation", { name: "More cold cases" });
+    expect(more.querySelectorAll("a")).toHaveLength(1);
+    expect(more.querySelector("a")!.getAttribute("href")).toBe("/case/socorro");
+  });
+
   it("renders the archive label and status", () => {
     renderCase();
     expect(screen.getByText(/NARA Archive/)).toBeInTheDocument();
@@ -139,7 +148,7 @@ describe("Case", () => {
     useCaseMock.mockReturnValue({ data: socorroCase, isLoading: false });
     renderCase("/case/socorro");
     expect(screen.queryByText(/ACTIVE DISCUSSION/)).not.toBeInTheDocument();
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(document.querySelector('a[href^="/thread/"]')).toBeNull();
   });
 
   it("shows a loading state while the case is loading (never indexes into undefined)", () => {

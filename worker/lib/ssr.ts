@@ -5,6 +5,7 @@
 // esc(): thread bodies and handles are anonymous user input.
 
 import { parseAiMoments, parseKeyMoments, type KeyMoment } from "../../web/src/lib/keyMoments";
+import { caseStoryUrl } from "./shared";
 import { sourceLinks } from "../../web/src/lib/sourceLinks";
 
 // Same copy as the default block in web/index.html.
@@ -344,11 +345,16 @@ export const boardBody = (b: { name: string; desc: string | null; threads: { id:
   tabBody(b.name, b.desc || "", section("Threads", b.threads.map((t) => ({ href: threadHref(t.id), text: t.title }))));
 
 export function caseBody(c: {
-  name: string; lede: string | null; pull: string | null; pull_cite: string | null; thread: { id: string; title: string } | null;
+  slug: string; name: string; lede: string | null; pull: string | null; pull_cite: string | null;
+  coord?: string | null; archive_label?: string | null;
+  thread: { id: string; title: string } | null; others?: { slug: string; name: string }[];
 }): string {
+  const facts = [c.coord?.replace(/^◉\s*/, ""), c.archive_label && `Source: ${c.archive_label}`].filter(Boolean).map((f) => `<p>${esc(f!)}</p>`).join("");
   const quote = c.pull ? `<blockquote>${paras(c.pull)}${c.pull_cite ? `<cite>${esc(c.pull_cite)}</cite>` : ""}</blockquote>` : "";
+  const story = `<p>${a({ href: caseStoryUrl(c.slug), text: `Full story, timeline and sources: ${c.name}` })}</p>`;
   const discussion = c.thread ? section("Discussion", [{ href: threadHref(c.thread.id), text: c.thread.title }]) : "";
-  return tabBody(c.name, c.lede || "", quote, discussion);
+  const more = section("More cold cases", (c.others ?? []).map((o) => ({ href: `/case/${encodeURIComponent(o.slug)}`, text: o.name })));
+  return tabBody(c.name, c.lede || "", facts, quote, story, discussion, more);
 }
 
 // Shared Ask answer page (Spec 8 §2.4). [n] links to source n's file; an [n]
