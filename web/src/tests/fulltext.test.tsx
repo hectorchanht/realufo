@@ -75,4 +75,14 @@ describe("FullText paginated view", () => {
     fireEvent.click(screen.getByRole("button", { name: "Next page" }));
     expect(screen.getByLabelText("Full text page").scrollTop).toBe(0);
   });
+
+  it("MD view renders the lossless formatting: headings, bold labels, line breaks", () => {
+    const memo = { ...data, pages: [{ n: 1, text: "ESTIMATE OF THE SITUATION\nALDRIN Yes, we saw it.\nShort line\nNext short" }] };
+    render(<FullText id="X" data={memo} page={1} load={never} onOpenOriginal={() => {}} />);
+    expect(screen.getByRole("heading", { name: "ESTIMATE OF THE SITUATION" })).toBeInTheDocument();
+    expect(screen.getByText("ALDRIN").tagName).toBe("STRONG");
+    const box = screen.getByLabelText("Full text page");
+    expect(box.querySelectorAll("br").length).toBeGreaterThan(0);
+    expect(box.textContent).not.toContain("**");
+  });
 });

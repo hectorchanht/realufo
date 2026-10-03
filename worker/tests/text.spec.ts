@@ -31,7 +31,8 @@ describe("GET /doc/:id/text", () => {
     const md = await res.text();
     expect(md).toContain("# Apollo 11 Debriefing (TX-OCR)");
     expect(md).toContain("- Pages: 3 (2 OCR, may contain errors)");
-    expect(md).toContain("## Page 1\n\n[p.1](https://x/doc/TX-OCR?p=1)\n\nAPOLLO 11\nCREW DEBRIEFING");
+    expect(md).toContain("## Page 1\n\n[p.1](https://x/doc/TX-OCR?p=1)\n\nAPOLLO 11\n\n### CREW DEBRIEFING");
+    expect(md).toContain("**ALDRIN** Yes, and we weren't sure"); // lib/ocrMarkdown formatting
     expect(md).toContain("## Page 2\n\n[p.2](https://x/doc/TX-OCR?p=2)\n\n(no text on this page)");
     expect(md).toContain("## Page 3");
   });

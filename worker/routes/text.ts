@@ -1,5 +1,6 @@
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
+import { formatPage, toMarkdown } from "../lib/ocrMarkdown";
 
 // A file's full text, every page (spec 2026-10-03-realufo-paddleocr-reocr): Markdown by
 // default, ?format=json for data. Re-OCR'd files (record_ocr row) read R2 text/<id>.json,
@@ -47,7 +48,7 @@ export async function recordText(req: Request, env: Env, p: Record<string, strin
     `- Original file: ${origin}/api/file/${encodeURIComponent(p.id)}`,
     `- Pages: ${total}${ocrPages ? ` (${ocrPages} OCR, may contain errors)` : ""}`,
     `- JSON: ${docUrl}/text?format=json`, "",
-    ...pages.flatMap((x) => [`## Page ${x.n}`, "", `[p.${x.n}](${docUrl}?p=${x.n})`, "", x.text.trim() || "(no text on this page)", ""]),
+    ...pages.flatMap((x) => [`## Page ${x.n}`, "", `[p.${x.n}](${docUrl}?p=${x.n})`, "", toMarkdown(formatPage(x.text)) || "(no text on this page)", ""]),
     ...(truncated ? [`(Text continues in the original file: ${total} pages.)`, ""] : []),
   ].join("\n");
   return new Response(md, { headers: { "content-type": "text/markdown; charset=utf-8", "cache-control": CACHE } });

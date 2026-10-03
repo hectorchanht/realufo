@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { FullText as FullTextData } from "../api/types";
 import { chip, off, on } from "./ImageTools";
+import { formatPage } from "../../../worker/lib/ocrMarkdown";
 
 type Page = { n: number; text: string; src?: string; conf?: number };
 
@@ -166,9 +167,7 @@ export default function FullText({
             ) : (
               <>
                 <div className="mb-1 font-mono text-[9px] tracking-[.5px] text-faint">## PAGE {shown.n}</div>
-                <p className="text-[13.5px] leading-[1.65] text-dim" style={{ whiteSpace: "pre-line", overflowWrap: "anywhere" }}>
-                  {shown.text.trim() || "(no text on this page)"}
-                </p>
+                <OcrMarkdown text={shown.text} />
               </>
             )}
           </div>
@@ -184,5 +183,34 @@ export default function FullText({
         </>
       )}
     </section>
+  );
+}
+
+// The lossless OCR -> Markdown blocks (worker/lib/ocrMarkdown), rendered straight to
+// elements: no Markdown parser, so OCR text can never become HTML.
+function OcrMarkdown({ text }: { text: string }) {
+  const blocks = formatPage(text);
+  if (!blocks.length) return <p className="text-[13.5px] text-faint">(no text on this page)</p>;
+  return (
+    <div className="text-[13.5px] leading-[1.65] text-dim" style={{ overflowWrap: "anywhere" }}>
+      {blocks.map((b, i) =>
+        b.kind === "heading" ? (
+          <h3 key={i} className="mb-1.5 mt-3 font-mono text-[11.5px] font-semibold tracking-[.5px] text-ink first:mt-0">
+            {b.text}
+          </h3>
+        ) : (
+          <p key={i} className="mb-2.5">
+            {b.lines.map((l, j) => (
+              <span key={j}>
+                {j > 0 && <br />}
+                {l.label && <strong className="font-semibold text-ink">{l.label}</strong>}
+                {l.label && " "}
+                {l.text}
+              </span>
+            ))}
+          </p>
+        ),
+      )}
+    </div>
   );
 }
