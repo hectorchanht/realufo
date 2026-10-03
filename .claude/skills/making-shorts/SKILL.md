@@ -44,7 +44,7 @@ Length is 20–35 s. Get the hook in fast and the end card out fast.
 
 ## Always lead to realufo.org
 
-Every Short exists to send people to the site. Show `realufo.org` on screen in every beat (`lib.SITE()` / `site`). End on `realufo.org/doc/<ID>` plus what they can do there ("step through it", "zoom in yourself", "flip the palette"). Every post caption ends with the doc link too.
+Every Short exists to send people to the site. Show `realufo.org  ·  <ID>` on screen in every beat (`site`, y 1420). The record ID works as a watermark: it's searchable on the site and credits the clip when it's reposted or screenshotted, so it's there from frame 0. A beat whose layout fills that spot must show the ID somewhere else (e.g. a document line). End on `realufo.org/doc/<ID>` plus what they can do there ("step through it", "zoom in yourself", "flip the palette"). Every post caption ends with the doc link too.
 
 ## Enhance (real detail only)
 

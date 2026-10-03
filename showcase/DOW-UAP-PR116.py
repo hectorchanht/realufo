@@ -47,7 +47,7 @@ AI = os.path.join(HERE, "DOW-UAP-PR116-ai.jpg")
 pdf = os.path.join(D, "d091.pdf"); urllib.request.urlretrieve(PDF, pdf)
 subprocess.run(["pdftoppm", "-r", "300", "-f", "1", "-l", "1", "-png", pdf, os.path.join(D, "p")], check=True)
 P1 = next(os.path.join(D, f) for f in os.listdir(D) if f.startswith("p-") and f.endswith(".png"))
-site = txt("realufo.org", 1420, 52)
+site = txt("realufo.org  ·  DOW-UAP-PR116", 1420, 52)  # the ID as a watermark: searchable on the site
 segs = []
 def seg(inputs, vf, secs):
     out = os.path.join(D, f"seg{len(segs)}.mp4")
@@ -115,8 +115,8 @@ for i, (t, path, vol) in enumerate(MIX, 1):
     ins += ["-i", path]; fc += f"[{i}:a]aformat=channel_layouts=stereo,volume={vol},adelay={int(t*1000)}:all=1[n{i}];"
 fc += "[0:a]" + "".join(f"[n{i}]" for i in range(1, len(MIX)+1)) + f"amix=inputs={len(MIX)+1}:normalize=0:duration=first[a]"
 VO = os.path.join(D, "vo.mp4")
-# subtitles, one line per sentence, under the headline (y 460); the crew-quote line is skipped: it's already on screen verbatim
-CAP = subtitles([(t, tts(line)[0]) for t, line in SAY if not line.startswith("In their words")])
+# subtitles, one line per sentence, under the headline (y 460); the crew-quote and "Up close" lines are skipped: already on screen verbatim
+CAP = subtitles([(t, tts(line)[0]) for t, line in SAY if not line.startswith(("In their words", "Up close"))])
 subprocess.run([F, "-v", "error", "-y", *ins, "-filter_complex", fc + ";[0:v]" + ",".join(CAP) + "[v]", "-map", "[v]", "-map", "[a]",
                 "-c:v", "libx264", "-profile:v", "high", "-pix_fmt", "yuv420p", "-preset", "veryfast", "-crf", "20",
                 "-c:a", "aac", "-b:a", "128k", VO], check=True)

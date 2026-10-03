@@ -19,7 +19,7 @@ BOX = "drawbox=x=390:y=810:w=300:h=300:color=yellow@0.95:t=9"
 STILL = {t: os.path.join(D, f"s{t}.png") for t in (165.0, 167.5, 169.0)}
 for t, p in STILL.items():
     subprocess.run([F, "-v", "error", "-y", "-ss", str(t), "-i", U, "-frames:v", "1", "-vf", CROP, p], check=True)
-site = txt("realufo.org", 1420, 52)
+site = txt("realufo.org  ·  FBI-UAP-PR003", 1420, 52)  # the ID as a watermark: searchable on the site
 segs = []
 def run(args, secs):
     i = args.index("-vf"); args, vf = args[:i], args[i:i + 2]  # -vf belongs after every input
