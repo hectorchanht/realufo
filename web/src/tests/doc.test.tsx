@@ -547,7 +547,7 @@ describe("Doc", () => {
 
   it("with a mouse the lens is on by default and click-through (tap-to-open still works)", () => {
     vi.stubGlobal("matchMedia", (q: string) => ({
-      matches: q.includes("pointer: fine"),
+      matches: q.includes("pointer: fine") || q.includes("900px"),
       media: q,
       addEventListener() {},
       removeEventListener() {},
@@ -565,6 +565,17 @@ describe("Doc", () => {
     expect(layer).toBeInTheDocument();
     expect(layer.style.pointerEvents).toBe("none");
     expect(screen.getByRole("button", { name: /open IMG/i })).toBeInTheDocument();
+
+    // shortcut list: hidden until hover/click; click pins it, Esc closes
+    const keysBtn = screen.getByRole("button", { name: "Keyboard shortcuts" });
+    const tip = document.getElementById(keysBtn.getAttribute("aria-controls")!)!;
+    expect(tip).toHaveTextContent("R rotate");
+    expect(tip.className).toContain("hidden");
+    fireEvent.click(keysBtn);
+    expect(keysBtn).toHaveAttribute("aria-expanded", "true");
+    expect(tip.className).not.toContain(" hidden");
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(keysBtn).toHaveAttribute("aria-expanded", "false");
     vi.unstubAllGlobals();
   });
 

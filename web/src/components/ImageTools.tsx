@@ -4,7 +4,7 @@
 // flip, frame zoom, and a zoom lens (LensLayer, shared with VideoTools).
 // CSS + SVG filters and a background-image lens for images, so no canvas
 // (and no CORS dependency on the CDN).
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode, RefObject } from "react";
 import { Contrast, DropletOff, Droplet, Flame, FlipHorizontal2, Focus, Keyboard, Rainbow, RotateCcw, RotateCw, Shrink, SlidersHorizontal, Sun, SunMoon, WandSparkles, X, ZoomIn } from "lucide-react";
@@ -145,6 +145,53 @@ export const ico = { size: 14, strokeWidth: 1.75, "aria-hidden": true } as const
 export const on = "border-signal text-signal";
 export const off = "border-line2 text-dim";
 
+/** Keyboard chip: hover shows the shortcut list; click pins it open (outside click / Esc closes). */
+function ShortcutsTip({ help }: { help: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  const id = useId();
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  return (
+    <span ref={ref} className="group relative">
+      <button
+        type="button"
+        aria-label="Keyboard shortcuts"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen(!open)}
+        className={`${chip} ${open ? on : off}`}
+      >
+        <Keyboard {...ico} />
+      </button>
+      {/* pt (not mt) keeps the gap inside the hover area, so the pointer can travel into the list */}
+      <div id={id} role="tooltip" className={`absolute left-0 top-full z-30 pt-1.5 ${open ? "block" : "hidden group-hover:block group-focus-within:block"}`}>
+        <ul className="w-max max-w-[300px] rounded-lg border border-line2 bg-bg2 px-3 py-2 font-mono text-[10px] leading-[1.75] text-dim shadow-[0_6px_24px_rgba(0,0,0,.45)]">
+          {help
+            .split(/\n| · /)
+            .filter(Boolean)
+            .map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+        </ul>
+      </div>
+    </span>
+  );
+}
+
 const ADJUST_OPEN_KEY = "ru:adjust-open";
 
 export function MediaToolbar({
@@ -244,11 +291,7 @@ export function MediaToolbar({
             <X {...ico} size={12} />
           </button>
         )}
-        {keysHelp && (
-          <span title={keysHelp} aria-label={`Shortcuts: ${keysHelp}`} className={`${chip} ${off} cursor-help`}>
-            <Keyboard {...ico} />
-          </span>
-        )}
+        {keysHelp && <ShortcutsTip help={keysHelp} />}
         {changed && (
           <button type="button" aria-label="Reset filters" title="Reset filters" onClick={() => onAdjust(DEFAULT_ADJUST)} className={`${chip} ${off} ml-auto`}>
             <RotateCcw {...ico} />

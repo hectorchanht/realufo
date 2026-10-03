@@ -658,8 +658,9 @@ export function Doc() {
           view={view}
           onView={setView}
           panelSlot={media === "video" ? setSpeedSlot : undefined}
+          // desktop only: shortcuts need a keyboard
           keysHelp={
-            finePointer
+            isDesktop && finePointer
               ? `${media === "video" ? "Space play · , . frame · [ ] speed\nA loop A–B · M mute · C save frame\n" : ""}L lens · - = lens zoom (or Shift+wheel)\nCtrl/⌘+wheel or pinch zoom, drag to pan\n0 reset · I invert · R rotate · F flip`
               : undefined
           }
