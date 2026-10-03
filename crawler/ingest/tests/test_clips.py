@@ -87,8 +87,9 @@ def test_title_layout_wraps_and_sizes_to_fit_the_frame():
 def test_vertical_args_draw_one_centred_line_per_title_file():
     a = vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", ["/tmp/1.txt", "/tmp/2.txt"], 50, "/f.ttf")
     fc = a[a.index("-filter_complex") + 1]
-    assert "textfile=/tmp/1.txt:expansion=none:fontsize=50:y=220," in fc
-    assert "textfile=/tmp/2.txt:expansion=none:fontsize=50:y=285," in fc
+    assert "textfile=/tmp/1.txt:expansion=none:fontsize=50:y=340," in fc   # below the app tabs (safe zone)
+    assert "textfile=/tmp/2.txt:expansion=none:fontsize=50:y=405," in fc
+    assert "text=realufo.org:fontsize=44:y=1420" in fc                   # above the caption/buttons area
     assert fc.count("x=(w-text_w)/2") == 3                    # both title lines + realufo.org
 
 def test_bars_crops_only_centred_one_axis_black_bars():

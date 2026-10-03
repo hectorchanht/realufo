@@ -126,7 +126,8 @@ def window(duration):
     return round(min(duration * 0.35, duration - CLIP), 2), CLIP
 
 def ffmpeg_args(url, start, length, out, id_file, font):
-    mark = f"fontfile={font}:fontcolor=white:borderw=2:bordercolor=black"
+    # translucent box: readable on white-hot IR frames and over redaction blocks
+    mark = f"fontfile={font}:fontcolor=white:borderw=2:bordercolor=black:box=1:boxcolor=black@0.45:boxborderw=8"
     vf = ("scale='trunc(min(1280,iw)/2)*2':-2,"
           f"drawtext={mark}:textfile={id_file}:expansion=none:fontsize=32:x=20:y=20,"
           f"drawtext={mark}:text=realufo.org:fontsize=26:x=w-text_w-20:y=h-text_h-20")
@@ -141,17 +142,20 @@ def vertical_args(url, start, length, out, title_files, fontsize, font, audio=Tr
                   crop=None, fill=False):
     """title_files: one textfile per line (each drawtext centres its own line). crop strips black
     bars first; fill zooms near-9:16 content to the whole frame, else it is fitted as large as fits."""
+    # Text stays inside the Reels/Shorts/TikTok safe zone: below the top tabs (~200 px)
+    # and above the caption/buttons area (bottom ~450 px) of the 1080x1920 frame.
     band = f"fontfile={font}:fontcolor=white:borderw=3:bordercolor=black:x=(w-text_w)/2"
-    title = "".join(f"drawtext={band}:textfile={f}:expansion=none:fontsize={fontsize}:y={220 + round(i * fontsize * 1.3)},"
+    boxed = f"{band}:box=1:boxcolor=black@0.45:boxborderw=10"
+    title = "".join(f"drawtext={band}:textfile={f}:expansion=none:fontsize={fontsize}:y={340 + round(i * fontsize * 1.3)},"
                     for i, f in enumerate(title_files))
     cover = "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920"
     fc = (f"[0:v]{crop + ',' if crop else ''}split[a][b];"
           f"[a]{cover},boxblur=20[bg];"
           f"[b]{cover if fill else 'scale=1080:1920:force_original_aspect_ratio=decrease'}[fg];"
           "[bg][fg]overlay=(W-w)/2:(H-h)/2,"
-          + (f"drawtext={band}:textfile={id_file}:expansion=none:fontsize={id_fontsize}:y=150," if id_file else "") +
+          + (f"drawtext={boxed}:textfile={id_file}:expansion=none:fontsize={id_fontsize}:y=270," if id_file else "") +
           f"{title}"
-          f"drawtext={band}:text=realufo.org:fontsize=44:y=h-300[v]")
+          f"drawtext={boxed}:text=realufo.org:fontsize=44:y=1420[v]")
     a = ["ffmpeg", "-v", "error", "-y", "-ss", f"{start:.2f}", "-i", url]
     if not audio:
         a += ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100"]
@@ -194,7 +198,8 @@ def main(argv=None):
         with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as idf:
             idf.write(row["id"])
         if args.vertical:
-            lines, fs = title_layout(clean_title(row["id"], row.get("title")))
+            # 60: two auto-fitted lines hold it, so places/years survive ("…, Atlantic Ocean, 2020")
+            lines, fs = title_layout(clean_title(row["id"], row.get("title"), 60))
             tfs = []
             for ln in lines:
                 with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as tf:
