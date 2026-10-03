@@ -138,7 +138,9 @@ async function runPlatform(env: Env, p: Platform, a: Adapter, mode: string, ctx:
   ).bind(since, p).first<XRow>();
   if (!x) return;
   const post = await postFor(env, p, a, x);
-  const blocked = gate(a, post) ?? ((await overCap(env, p, ctx.now)) ? "quota cap" : null);
+  const blocked = gate(a, post);
+  // Over the daily cap: no row, so the same item is retried once the 24 h window frees up.
+  if (!blocked && mode === "on" && (await overCap(env, p, ctx.now))) return log({ platform: p, x: x.id, skipped: "quota cap" });
   const status = blocked ? "failed" : mode === "dry" ? "draft" : "pending";
   const ins = await env.DB.prepare(
     "INSERT INTO social_posts(x_post_id,platform,status,error,created_at) VALUES (?,?,?,?,?) ON CONFLICT(x_post_id, platform) WHERE deleted_at IS NULL DO NOTHING RETURNING id"

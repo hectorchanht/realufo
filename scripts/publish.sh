@@ -81,7 +81,8 @@ if [ -n "$DRAIN" ]; then
     [ "$(date +%s)" -ge "$deadline" ] && { echo "timed out"; break; }
   done
   q "SELECT x.ref, s.platform, s.status, coalesce(s.remote_id, substr(s.error,1,100)) detail FROM social_posts s JOIN x_posts x ON x.id=s.x_post_id WHERE s.deleted_at IS NULL AND s.created_at >= datetime('now','-30 minutes') ORDER BY x.id, s.platform" |
-    python3 -c 'import json,sys; [print(f"{r[\"ref\"]:16} {r[\"platform\"]:8} {r[\"status\"]:10} {r[\"detail\"] or \"\"}") for r in json.load(sys.stdin)]'
+    python3 -c 'import json,sys
+for r in json.load(sys.stdin): print("%-16s %-8s %-10s %s" % (r["ref"], r["platform"], r["status"], r["detail"] or ""))'
   exit 0
 fi
 

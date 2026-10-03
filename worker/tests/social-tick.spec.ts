@@ -137,7 +137,7 @@ describe("social tick", () => {
     expect(await rows()).toMatchObject([{ platform: "ig", status: "posted" }, { platform: "yt", status: "failed", error: "no video" }]);
   });
 
-  it("yt over YT_DAILY_MAX → failed 'quota cap'", async () => {
+  it("yt over YT_DAILY_MAX → skipped with no row, posted once the 24 h window frees", async () => {
     const e = E({ FEATURE_SOCIAL_YT: "on", YT_DAILY_MAX: "1" });
     const A = { yt: fake("yt", { needs: "video", vertical: true }) };
     await addX("ST-V1", { created: "2026-10-10 10:00:00" });
@@ -145,7 +145,9 @@ describe("social tick", () => {
     await addX("ST-V2", { created: "2026-10-10 11:00:00", media: "clip:clips/wargov/ST-V2.mp4" });
     await tick(e, NOW, noSleep, A);
     await tick(e, NOW, noSleep, A);
-    expect((await rows()).map((r) => [r.status, r.error])).toEqual([["posted", null], ["failed", "quota cap"]]);
+    expect((await rows()).map((r) => [r.status, r.error])).toEqual([["posted", null]]);
+    await tick(e, new Date(NOW.getTime() + 25 * 3600_000), noSleep, A);
+    expect((await rows()).map((r) => r.status)).toEqual(["posted", "posted"]);
   });
 
   it("container: processing → resumed to posted next tick; >1 h → processing timeout", async () => {
