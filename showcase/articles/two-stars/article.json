@@ -14,9 +14,27 @@
     "6/ Check it yourself, free:\n• realufo.org/archive → search \"pointed star\" → Video\n• open a file, press I to invert, , and . to step frames\n• watch the spikes: do they ever turn?"
   ],
   "evidence": [
-    {"id": "DOW-UAP-PR038", "t": 25.5, "label": "Middle East, 2013: eight points, arms of alternating length", "image": "DOW-UAP-PR038.jpg",
-     "evidence": "AARO's description: \"an area of contrast resembling an eight-pointed star with arms of alternating length\"; \"the reporter did not provide any oral or written description\". At 0:26, 0:50 and 1:14 the star is in three different places on screen with the arms at the same angles, and it gets smaller as it fades."},
-    {"id": "DOW-UAP-PR104", "t": 6, "label": "Yellow Sea, 2025: six points, same black core", "image": "DOW-UAP-PR104.jpg",
-     "evidence": "AARO's description: \"an area of contrast resembling a six-pointed star\", tracked for 15 seconds. The spike angles stay the same for the whole clip. Black-hot infrared: the black centre is the hottest spot; invert it and it shows white."}
-  ]
+    {
+      "id": "DOW-UAP-PR038",
+      "t": 25.5,
+      "label": "Middle East, 2013: eight points, arms of alternating length",
+      "image": "DOW-UAP-PR038.jpg",
+      "evidence": "AARO's description: \"an area of contrast resembling an eight-pointed star with arms of alternating length\"; \"the reporter did not provide any oral or written description\". At 0:26, 0:50 and 1:14 the star is in three different places on screen with the arms at the same angles, and it gets smaller as it fades."
+    },
+    {
+      "id": "DOW-UAP-PR104",
+      "t": 6,
+      "label": "Yellow Sea, 2025: six points, same black core",
+      "image": "DOW-UAP-PR104.jpg",
+      "evidence": "AARO's description: \"an area of contrast resembling a six-pointed star\", tracked for 15 seconds. The spike angles stay the same for the whole clip. Black-hot infrared: the black centre is the hottest spot; invert it and it shows white."
+    }
+  ],
+  "poll": {
+    "q": "Star-shaped UAP or camera optics?",
+    "opts": [
+      "Camera optics",
+      "A real object",
+      "Need more data"
+    ]
+  }
 }

@@ -57,5 +57,14 @@
       "evidence": "The CIA's 1952-53 Scientific Advisory Panel (Robertson Panel) material lists the Air Force research center's \"Investigation of 'Green Fireball' Phenomena (Project TWINKLE)\" among the cases it reviewed.",
       "page": 10
     }
-  ]
+  ],
+  "poll": {
+    "q": "Do UFOs watch our nukes?",
+    "opts": [
+      "Yes, they're watching",
+      "Meteors + missiles",
+      "Soviet spy craft",
+      "Need more data"
+    ]
+  }
 }

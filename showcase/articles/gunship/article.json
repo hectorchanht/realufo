@@ -41,5 +41,14 @@
       "image": "DOW-UAP-PR117.jpg",
       "evidence": "Tilted reticle, glare, screen-door noise: the footage that survived after the recorder failed. PR117-PR122 were all captured the same night."
     }
-  ]
+  ],
+  "poll": {
+    "q": "What did the AC-130 shoot at?",
+    "opts": [
+      "Balloons",
+      "Drones",
+      "Something unknown",
+      "Need more data"
+    ]
+  }
 }

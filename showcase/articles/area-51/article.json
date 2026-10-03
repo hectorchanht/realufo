@@ -57,5 +57,13 @@
       "label": "AARO director to the Senate, Nov 2024",
       "evidence": "\"to date, AARO has discovered no verifiable evidence of extraterrestrial beings, activity, or technology\" (p.2)."
     }
-  ]
+  ],
+  "poll": {
+    "q": "Are there alien craft at Area 51?",
+    "opts": [
+      "No, spy planes only",
+      "Yes, reverse-engineered",
+      "Need more data"
+    ]
+  }
 }

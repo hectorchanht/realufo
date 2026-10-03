@@ -63,5 +63,14 @@
       "evidence": "AAWSAP DIRD, March 2010, 29 pages: camouflage, transparency and metamaterial cloaking.",
       "page": 1
     }
-  ]
+  ],
+  "poll": {
+    "q": "Was $21.9M on warp drives worth it?",
+    "opts": [
+      "Money well spent",
+      "Waste of money",
+      "A cover for UFO work",
+      "Need more data"
+    ]
+  }
 }

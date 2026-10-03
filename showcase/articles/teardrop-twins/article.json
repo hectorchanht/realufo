@@ -46,5 +46,14 @@
       "evidence": "AARO's GoFast resolution: reported \"near ocean's surface\" at \"high speeds\"; assessed at about 13,000 ft doing 5-92 mph (p.1). \"The object's apparent high speed is attributable to motion parallax.\" (p.3) The same effect applies to any speed called out from a moving jet without a range.",
       "page": 3
     }
-  ]
+  ],
+  "poll": {
+    "q": "What did both crews film?",
+    "opts": [
+      "Balloon + payload",
+      "Drone",
+      "Unknown craft",
+      "Need more data"
+    ]
+  }
 }
