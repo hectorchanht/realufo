@@ -43,6 +43,11 @@ def test_live_run_upserts_card_and_pages_and_records_status(world):
     assert "'P1','indexed'" in sql and "'V1','indexed'" in sql
     assert "DELETE FROM ask_cache;" in world["executed"]
 
+def test_kind_filter_indexes_only_those_kinds(world):
+    world["rows"] = [_row("P1"), _row("V1", kind="video"), _row("I1", kind="image")]
+    assert run("--kind", "video,image") == 0
+    assert {v["metadata"]["record_id"] for v in world["upserted"]} == {"V1", "I1"}
+
 def test_pdf_without_text_is_empty_but_card_still_indexed(world):
     world["rows"] = [_row("P2")]
     world["pages"]["https://cdn/x.pdf"] = ["   ", ""]

@@ -60,10 +60,14 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="extract + chunk only; no AI/Vectorize/D1 writes")
     ap.add_argument("--limit", type=int, default=None, help="max records this run")
+    ap.add_argument("--kind", default=None, help="only these kinds, e.g. video,image (skip slow PDFs)")
     args = ap.parse_args(argv)
     if not args.dry_run:
         retry_failed()
-    rows = d1._d1_json(" ".join(SELECT.split()))[: args.limit]
+    rows = d1._d1_json(" ".join(SELECT.split()))
+    if args.kind:
+        rows = [r for r in rows if r["kind"] in args.kind.split(",")]
+    rows = rows[: args.limit]
     pending, ok, failed = [], 0, 0
     with tempfile.TemporaryDirectory() as work:
         for i, row in enumerate(rows, 1):
