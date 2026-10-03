@@ -132,6 +132,15 @@ describe("serveWithMeta (via worker.fetch)", () => {
     expect(html).toContain('property="og:description" content="Even the redactions look nervous. — First fact bullet"');
     expect(html).not.toMatch(/name="description" content="Even the redactions/);
     expect(html).toContain('name="twitter:card" content="summary_large_image"');
+    // structured data keeps the record's own image, never the text card
+    expect(html).toMatch(/"image":"[^"]+"/);
+    expect(html).not.toContain('"image":"https://cdn/cards/');
+  });
+
+  it("injectMeta: ogImage drives og:image + large card, image is the fallback", () => {
+    const out = injectMeta("<!--META-->", { title: "T", description: "D", url: "https://r/x", image: "https://r/thumb.jpg", ogImage: "https://r/card.png" });
+    expect(out).toContain('property="og:image" content="https://r/card.png"');
+    expect(out).not.toContain("thumb.jpg");
   });
 
   it("injectMeta: ogDescription defaults to description", () => {

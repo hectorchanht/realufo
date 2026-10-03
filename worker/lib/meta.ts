@@ -10,6 +10,9 @@ export interface MetaInput {
   title: string;
   description: string;
   image?: string | null;
+  // og:image when it should differ from `image` (Spec 7 share card); `image`
+  // still feeds JSON-LD so structured data keeps the record's own picture.
+  ogImage?: string | null;
   url: string;
   type?: "website" | "article";
   // schema.org object; "@context", url and image are filled in by serveWithMeta.
@@ -39,7 +42,8 @@ export function injectMeta(html: string, m: MetaInput): string {
   const d = esc(snippet(m.description || DEFAULT_DESCRIPTION));
   const od = m.ogDescription ? esc(snippet(m.ogDescription)) : d;
   const u = esc(m.url);
-  const img = m.image ? esc(m.image) : "";
+  const og = m.ogImage || m.image;
+  const img = og ? esc(og) : "";
   const tags = [
     `<title>${t} · RealUFO</title>`,
     `<meta name="description" content="${d}">`,
