@@ -50,6 +50,33 @@ describe("pollTick", () => {
     expect(await row()).toBeNull();
   });
 
+  it("spacing: extra ticks (publish.sh's manual /__tick) can't post the next story's poll within 2.5 h", async () => {
+    await env.DB.prepare("INSERT INTO articles(slug,title,body,poll,thread_id,created_at) VALUES ('xp2','T','B',?,'ar_xp2','2099-01-01 00:00:00')").bind(POLL).run();
+    await env.DB.prepare(
+      "INSERT INTO threads(id,no,board_id,title,stance,op_body,tags,votes,reply_count,img_count,source_record_id,hot,created_at) VALUES ('ar_xp2',2,'uap','T','analyst','B','[]',0,0,0,'CIA-UAP-017',0,?)"
+    ).bind(sqlTime(NOW)).run();
+    await pollTick(E(), NOW);
+    await pollTick(E(), new Date(NOW.getTime() + 60_000)); // a manual tick a minute later
+    await pollTick(E(), new Date(NOW.getTime() + 2 * 3600_000));
+    expect(sent).toHaveLength(1);
+    expect(await row("xp2")).toBeNull();
+    await pollTick(E(), new Date(NOW.getTime() + 3 * 3600_000 - 30_000)); // next cron, a few seconds early
+    expect(sent).toHaveLength(2);
+    expect(await row("xp2")).toMatchObject({ status: "posted" });
+  });
+
+  it("a failed poll doesn't hold back the next one", async () => {
+    await env.DB.prepare("INSERT INTO articles(slug,title,body,poll,thread_id,created_at) VALUES ('xp2','T','B',?,'ar_xp2','2099-01-01 00:00:00')").bind(POLL).run();
+    await env.DB.prepare(
+      "INSERT INTO threads(id,no,board_id,title,stance,op_body,tags,votes,reply_count,img_count,source_record_id,hot,created_at) VALUES ('ar_xp2',2,'uap','T','analyst','B','[]',0,0,0,'CIA-UAP-017',0,?)"
+    ).bind(sqlTime(NOW)).run();
+    tweet = () => new Response(JSON.stringify({ title: "Invalid Request" }), { status: 400 });
+    await pollTick(E(), NOW);
+    tweet = () => new Response(JSON.stringify({ data: { id: "P9" } }), { status: 201 });
+    await pollTick(E(), new Date(NOW.getTime() + 60_000));
+    expect(await row("xp2")).toMatchObject({ status: "posted" });
+  });
+
   it("posts the poll once, as a reply to the head tweet, no media, no link", async () => {
     await pollTick(E(), NOW);
     expect(sent).toEqual([{ text: "Balloon or craft? 👇", reply: { in_reply_to_tweet_id: "H1" }, poll: { options: ["Balloon", "Craft"], duration_minutes: 4320 } }]);
@@ -174,6 +201,18 @@ describe("pollTick: threads (standalone poll post — the app can't reply)", () 
     expect(await trow()).toMatchObject({ status: "posted", remote_id: "TP1", fetched_at: sqlTime(NOW) });
     await pollTick(TE(), NOW, noSleep);
     expect(creates).toHaveLength(1);
+  });
+
+  it("spacing: a second Threads poll waits 2.5 h after the last one", async () => {
+    await env.DB.prepare("INSERT INTO articles(slug,title,body,poll,thread_id,created_at) VALUES ('xp2','T','B',?,'ar_xp2','2099-01-01 00:00:00')").bind(POLL).run();
+    await env.DB.prepare(
+      "INSERT INTO threads(id,no,board_id,title,stance,op_body,tags,votes,reply_count,img_count,source_record_id,hot,created_at) VALUES ('ar_xp2',2,'uap','T','analyst','B','[]',0,0,0,'CIA-UAP-017',0,?)"
+    ).bind(sqlTime(NOW)).run();
+    await pollTick(TE(), NOW, noSleep);
+    await pollTick(TE(), new Date(NOW.getTime() + 60_000), noSleep);
+    expect(creates).toHaveLength(1);
+    await pollTick(TE(), new Date(NOW.getTime() + 3 * 3600_000 - 30_000), noSleep);
+    expect(creates).toHaveLength(2);
   });
 
   it("off without Threads configured/on, or before the story is on Threads", async () => {

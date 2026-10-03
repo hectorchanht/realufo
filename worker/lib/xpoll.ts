@@ -13,9 +13,16 @@ import { parsePoll } from "../routes/polls";
 export const POLL_MINUTES = 4320; // 3 days
 export const POLL_COST = 0.015; // no link in the text: 0.2 with one (xpick costOf)
 const REFRESH_MS = 20 * 3600_000;
+// One poll per platform per cron slot, also when publish.sh fires /__tick every 30 s.
+// 2.5 h, not 3: the next 3-hourly cron must still pass if it fires a little early.
+const GAP_MS = 2.5 * 3600_000;
+const spaced = async (env: Env, platform: "x" | "threads", now: Date) =>
+  !(await env.DB.prepare("SELECT 1 FROM poll_social WHERE platform=? AND status!='failed' AND created_at > ? LIMIT 1")
+    .bind(platform, sqlTime(new Date(now.getTime() - GAP_MS))).first());
 const log = (o: Record<string, unknown>) => console.log(JSON.stringify({ xpoll: true, ...o }));
 
 async function postNext(env: Env, s: XSecrets, now: Date) {
+  if (!(await spaced(env, "x", now))) return;
   const { results } = await env.DB.prepare(
     `SELECT a.slug, a.poll, x.tweet_id FROM articles a
      JOIN threads t ON t.id = a.thread_id
@@ -87,6 +94,7 @@ const LETTERS = ["a", "b", "c", "d"];
 const errText = (e: unknown) => String(e).slice(0, 500);
 
 async function threadsPostNext(env: Env, now: Date, sleep: Sleep) {
+  if (!(await spaced(env, "threads", now))) return;
   const { results } = await env.DB.prepare(
     `SELECT a.slug, a.poll FROM articles a
      JOIN threads t ON t.id = a.thread_id

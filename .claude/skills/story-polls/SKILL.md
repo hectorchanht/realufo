@@ -54,7 +54,7 @@ npx wrangler versions view <version-id> --env-file /dev/null | grep X_POLLS
 
 ## 3. How the social polls go out (automatic)
 
-The cron runs every 3 h (00, 03, … UTC). Each run posts **one** X poll and **one** Threads poll, for the oldest story that:
+The cron runs every 3 h (00, 03, … UTC). Each run posts **one** X poll and **one** Threads poll. A platform gets no new poll within 2.5 h of its last one, even when `publish.sh` fires `/__tick` every 30 s. The poll goes to the oldest story that:
 - has a poll,
 - whose story is already posted on that platform (the X head tweet, or the Threads mirror of the story),
 - and that has no poll on that platform yet.
