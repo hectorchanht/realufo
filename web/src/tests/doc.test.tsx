@@ -505,6 +505,13 @@ describe("Doc", () => {
     expect(screen.getByRole("button", { name: "Unmute" })).toBeInTheDocument();
     video.currentTime = 2;
 
+    // speed + loop live in the Adjust panel, closed by default
+    expect(screen.queryByRole("button", { name: "0.25×" })).toBeNull();
+    const adjust = screen.getByRole("button", { name: /adjust/i });
+    expect(adjust).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(adjust);
+    expect(localStorage.getItem("ru:adjust-open")).toBe("1"); // remembered for later pages
+
     fireEvent.click(screen.getByRole("button", { name: "0.25×" }));
     expect(video.playbackRate).toBe(0.25);
     expect(screen.getByRole("button", { name: "0.25×" })).toHaveAttribute("aria-pressed", "true");
@@ -528,10 +535,6 @@ describe("Doc", () => {
     fireEvent.click(ab());
     expect(ab()).toHaveAttribute("aria-pressed", "false");
 
-    const adjust = screen.getByRole("button", { name: /adjust/i });
-    expect(adjust).toHaveAttribute("aria-expanded", "false"); // closed by default
-    fireEvent.click(adjust);
-    expect(localStorage.getItem("ru:adjust-open")).toBe("1"); // remembered for later pages
     fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
     // filter sits on a wrapper: on the <video> itself macOS Chrome's overlay path drops url() filters
     expect(video.style.filter).toBe("");

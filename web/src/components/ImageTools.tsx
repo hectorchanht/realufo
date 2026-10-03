@@ -157,6 +157,7 @@ export function MediaToolbar({
   view,
   onView,
   keysHelp,
+  panelSlot,
 }: {
   adjust: ImageAdjust;
   onAdjust: (a: ImageAdjust) => void;
@@ -168,6 +169,8 @@ export function MediaToolbar({
   onView: (v: MediaView) => void;
   /** Keyboard/mouse shortcuts, shown as a hover tooltip. */
   keysHelp?: string;
+  /** Top row of the Adjust panel, for controls another component portals in (video speed/loop). */
+  panelSlot?: (el: HTMLDivElement | null) => void;
 }) {
   // Closed by default; once a visitor opens it, it stays open on later pages.
   const [open, setOpenState] = useState(() => {
@@ -254,6 +257,7 @@ export function MediaToolbar({
       </div>
       {open && (
         <div className="mt-3 rounded-xl border border-line bg-surface px-3.5 py-3">
+          {panelSlot && <div ref={panelSlot} className="mb-2.5 flex flex-wrap items-center gap-2 empty:hidden" />}
           <div className="mb-2.5 flex flex-wrap items-center gap-2">
             {PRESETS.map((p) => {
               const preset = { ...adjust, ...TONE, ...p.adj };

@@ -217,6 +217,8 @@ export function Doc() {
     onShiftWheel: lens ? (d) => setMag((m) => LENS_MAGS[Math.min(LENS_MAGS.length - 1, Math.max(0, LENS_MAGS.indexOf(m) + d))]) : undefined,
   });
   const startAt = parseMoment(searchParams.get("t")) ?? undefined;
+  // VideoTransport portals its speed/loop chips into MediaToolbar's Adjust panel.
+  const [speedSlot, setSpeedSlot] = useState<HTMLDivElement | null>(null);
   // Official time-coded "Video Description" lines → key moments (the rest stays as summary prose).
   const keyMoments = useMemo(() => parseKeyMoments(detail?.record.summary), [detail]);
   const aiMoments = useMemo(() => parseAiMoments(detail?.record.ai_moments), [detail]);
@@ -642,6 +644,7 @@ export function Doc() {
           keys={!(composer || viewer)}
           onShare={handleShare}
           onPost={handlePostFrame}
+          speedSlot={speedSlot}
         />
       )}
       {(media === "image" || media === "video") && (
@@ -654,6 +657,7 @@ export function Doc() {
           onMag={setMag}
           view={view}
           onView={setView}
+          panelSlot={media === "video" ? setSpeedSlot : undefined}
           keysHelp={
             finePointer
               ? `${media === "video" ? "Space play · , . frame · [ ] speed\nA loop A–B · M mute · C save frame\n" : ""}L lens · - = lens zoom (or Shift+wheel)\nCtrl/⌘+wheel or pinch zoom, drag to pan\n0 reset · I invert · R rotate · F flip`

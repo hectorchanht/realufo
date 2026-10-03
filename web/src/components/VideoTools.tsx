@@ -8,6 +8,7 @@
 // capture can't read pixels from it. Capture instead seeks a hidden copy of
 // the same file through our same-origin /api/file/:id route.
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { RefObject } from "react";
 import { Camera, Link, LoaderCircle, MessageSquarePlus, Pause, Play, Repeat, Repeat1, StepBack, StepForward, TriangleAlert, Volume2, VolumeX, X } from "lucide-react";
 import { LENS_PX, LensLayer, chip, ico, lensTurn, off, on } from "./ImageTools";
@@ -68,6 +69,7 @@ export function VideoTransport({
   keys,
   onShare,
   onPost,
+  speedSlot,
 }: {
   videoRef: RefObject<HTMLVideoElement | null>;
   fileUrl: string; // same-origin copy for capture
@@ -78,6 +80,8 @@ export function VideoTransport({
   keys: boolean; // keyboard shortcuts live (off while an overlay is open)
   onShare: (t: number) => void;
   onPost: (frame: File, t: number) => void;
+  /** Where speed + loop render (MediaToolbar's Adjust panel); null while it's closed. State stays here. */
+  speedSlot?: HTMLElement | null;
 }) {
   const [t, setT] = useState(0);
   const [dur, setDur] = useState(0);
@@ -243,43 +247,48 @@ export function VideoTransport({
       <button type="button" aria-label={playing ? "Pause" : "Play"} title={`${playing ? "Pause" : "Play"} (Space)`} onClick={togglePlay} className={`${chip} ${off}`}>
         {playing ? <Pause {...ico} /> : <Play {...ico} />}
       </button>
+      <span className="font-mono text-[10px] tabular-nums text-dim">
+        {formatMoment(t, true)} / {formatMoment(dur, true)}
+      </span>
       <button type="button" aria-label="Previous frame" title="Previous frame (,)" onClick={() => step(-1)} className={`${chip} ${off}`}>
         <StepBack {...ico} />
       </button>
+      <span className="font-mono text-[10px] tabular-nums text-faint">F{frameOf(t)}</span>
       <button type="button" aria-label="Next frame" title="Next frame (.)" onClick={() => step(1)} className={`${chip} ${off}`}>
         <StepForward {...ico} />
-      </button>
-      <span className="font-mono text-[10px] tabular-nums text-dim">
-        {formatMoment(t, true)} / {formatMoment(dur, true)} <span className="text-faint">F{frameOf(t)}</span>
-      </span>
-      <button type="button" aria-label={abLabel} aria-pressed={ab?.b !== undefined} title={`${abLabel} (A)`} onClick={markAb} className={`${chip} ${ab ? on : off}`}>
-        <Repeat1 {...ico} />
-        {ab && (ab.b === undefined ? "B?" : <X {...ico} size={12} />)}
-      </button>
-      <button
-        type="button"
-        aria-label="Loop"
-        aria-pressed={loop}
-        title="Loop"
-        onClick={() => {
-          const el = v();
-          if (el) el.loop = !loop;
-          setLoop(!loop);
-        }}
-        className={`${chip} ${loop ? on : off}`}
-      >
-        <Repeat {...ico} />
       </button>
       <button type="button" aria-label={muted ? "Unmute" : "Mute"} aria-pressed={muted} title={`${muted ? "Unmute" : "Mute"} (M)`} onClick={toggleMute} className={`${chip} ${muted ? on : off}`}>
         {muted ? <VolumeX {...ico} /> : <Volume2 {...ico} />}
       </button>
-      <span className="flex flex-wrap gap-1">
-        {SPEEDS.map((s) => (
-          <button key={s} type="button" aria-pressed={rate === s} title="Speed ([ ])" onClick={() => speed(s)} className={`${chip} ${rate === s ? on : off}`}>
-            {s}×
-          </button>
-        ))}
-      </span>
+      {speedSlot &&
+        createPortal(
+          <>
+            {SPEEDS.map((s) => (
+              <button key={s} type="button" aria-pressed={rate === s} title="Speed ([ ])" onClick={() => speed(s)} className={`${chip} ${rate === s ? on : off}`}>
+                {s}×
+              </button>
+            ))}
+            <button
+              type="button"
+              aria-label="Loop"
+              aria-pressed={loop}
+              title="Loop"
+              onClick={() => {
+                const el = v();
+                if (el) el.loop = !loop;
+                setLoop(!loop);
+              }}
+              className={`${chip} ${loop ? on : off}`}
+            >
+              <Repeat {...ico} />
+            </button>
+            <button type="button" aria-label={abLabel} aria-pressed={ab?.b !== undefined} title={`${abLabel} (A)`} onClick={markAb} className={`${chip} ${ab ? on : off}`}>
+              <Repeat1 {...ico} />
+              {ab && (ab.b === undefined ? "B?" : <X {...ico} size={12} />)}
+            </button>
+          </>,
+          speedSlot,
+        )}
       <span className="ml-auto flex flex-wrap gap-2">
         <button
           type="button"
