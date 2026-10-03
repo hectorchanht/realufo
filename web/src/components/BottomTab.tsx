@@ -17,7 +17,8 @@ export interface BottomTabProps {
 // Overlays the bottom of the shell (absolute) rather than sitting in flow, so
 // sliding it out never resizes the scroll container — see AppShell.
 export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
-  const navItems = useNavItems();
+  // Five fit a phone: Shorts takes Map's slot (Map stays in the footer).
+  const navItems = useNavItems().filter((i) => i.tab !== "map");
   const here = useLocation();
   return (
     <div

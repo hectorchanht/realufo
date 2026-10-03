@@ -46,7 +46,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const { scanlines } = useTheme();
 
-  const activeTab = activeTabForPath(pathname);
+  const activeTab = activeTabForPath(pathname, search);
   // canBack ports the prototype's `hist.length>0` (back only on detail
   // screens — switching top-level tabs resets its history) — see
   // navItems.ts's canBackForPath doc comment.

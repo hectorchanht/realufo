@@ -41,7 +41,26 @@ afterEach(() => {
 });
 
 describe("AppShell", () => {
-  it("shows nav labels Feed/Archive/Boards/Map and marks Feed active at /", async () => {
+  it("phone bar: Shorts takes Map's slot; desktop keeps Map and adds Shorts", async () => {
+    renderAppAt("/archive?type=shorts");
+    await screen.findByPlaceholderText(/search (the archive|[0-9,]+ records)/i);
+    const bar = within(document.querySelector("[data-bottomtab]") as HTMLElement);
+    expect(bar.getByRole("link", { name: /Shorts/i })).toHaveAttribute("aria-current", "page");
+    expect(bar.getByRole("link", { name: /Shorts/i })).toHaveAttribute("href", "/archive?type=shorts");
+    expect(bar.getByRole("link", { name: /Archive/i })).not.toHaveAttribute("aria-current");
+    expect(bar.queryByText("Map")).toBeNull();
+  });
+
+  it("desktop top nav has both Shorts and Map", async () => {
+    stubDesktopMatchMedia();
+    renderAppAt("/archive");
+    await waitFor(() => expect(document.querySelector("[data-topnav]")).toBeTruthy());
+    const topnav = within(document.querySelector("[data-topnav]") as HTMLElement);
+    expect(topnav.getByRole("link", { name: /Shorts/i })).toBeInTheDocument();
+    expect(topnav.getByRole("link", { name: /Map/i })).toBeInTheDocument();
+  });
+
+  it("shows nav labels Feed/Archive/Shorts/Boards and marks Feed active at /", async () => {
     renderAppAt("/");
 
     // Real Feed screen (Task 17) rendered through the router Outlet — its
@@ -59,7 +78,7 @@ describe("AppShell", () => {
     expect(nav.getByText("Feed")).toBeInTheDocument();
     expect(nav.getByText("Archive")).toBeInTheDocument();
     expect(nav.getByText("Boards")).toBeInTheDocument();
-    expect(nav.getByText("Map")).toBeInTheDocument();
+    expect(nav.getByText("Shorts")).toBeInTheDocument();
 
     const feedLink = nav.getByRole("link", { name: /Feed/i });
     expect(feedLink).toHaveAttribute("aria-current", "page");

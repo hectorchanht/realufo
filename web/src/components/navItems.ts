@@ -16,7 +16,7 @@ import type { NavigateFunction } from "react-router-dom";
 import { useBootstrap } from "../api/queries";
 import { forgetScroll, scrollKey } from "../lib/useScrollMemory";
 
-export type NavTab = "feed" | "archive" | "ask" | "boards" | "map";
+export type NavTab = "feed" | "archive" | "shorts" | "ask" | "boards" | "map";
 
 export interface NavItem {
   tab: NavTab;
@@ -28,6 +28,8 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { tab: "feed", glyph: "◎", label: "Feed", path: "/" },
   { tab: "archive", glyph: "▦", label: "Archive", path: "/archive" },
+  // The Archive's Shorts grid (its "Shorts" type chip), as a tab of its own.
+  { tab: "shorts", glyph: "▷", label: "Shorts", path: "/archive?type=shorts" },
   { tab: "ask", glyph: "◉", label: "Ask", path: "/ask" },
   { tab: "boards", glyph: "◈", label: "Boards", path: "/boards" },
   { tab: "map", glyph: "◐", label: "Map", path: "/map" },
@@ -75,7 +77,9 @@ export function goBack(navigate: NavigateFunction, pathname: string): void {
   else navigate(parentPath(pathname), { replace: true });
 }
 
-export function activeTabForPath(pathname: string): NavTab {
+export function activeTabForPath(pathname: string, search = ""): NavTab {
+  if (pathname.startsWith("/shorts/")) return "shorts";
+  if (pathname === "/archive" && new URLSearchParams(search).get("type") === "shorts") return "shorts";
   if (pathname.startsWith("/doc")) return "archive";
   if (pathname.startsWith("/archive")) return "archive";
   // Hubs (/browse, /release/6, /agency/fbi…) are ways into the archive.
@@ -100,7 +104,7 @@ const lastRootUrl = new Map<NavTab, string>();
 export function rememberTabUrl(pathname: string, search: string): void {
   // The Shorts player is a full-screen overlay, not a place a tab should reopen into.
   if (pathname.startsWith("/shorts/")) return;
-  const tab = activeTabForPath(pathname);
+  const tab = activeTabForPath(pathname, search);
   lastUrl.set(tab, pathname + search);
   // Ask's ?q= is the answer itself, not a filter — its root is the bare lists page.
   if (!canBackForPath(pathname)) lastRootUrl.set(tab, tab === "ask" ? pathname : pathname + search);

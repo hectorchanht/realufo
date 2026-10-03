@@ -498,7 +498,7 @@ export function Archive() {
 
       {/* type chips */}
       <div className="mb-1.5 px-0.5 py-1">
-        <div className="flex gap-1.5">
+        <div data-scroll className="flex gap-1.5 overflow-x-auto">
           {["", ...Object.keys(TYPE_LABELS)].map((k) => {
             const n = k === "shorts" ? facets?.shorts : k ? kindCount(k) : totalRecords;
             return (
