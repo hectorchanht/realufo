@@ -26,12 +26,15 @@
 // attribute+global CSS selector) — reproduced here as literal Tailwind
 // classes at the same 900px breakpoint AppShell itself uses, with the
 // `data-grid` attribute kept for markup parity.
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useBootstrap, useFeed, useHubs } from "../api/queries";
-import type { HubSummary } from "../api/types";
+import type { FeedClip, HubSummary } from "../api/types";
 import { DocCard } from "../components/DocCard";
 import { LoadError } from "../components/LoadError";
 import { ThreadRow } from "../components/ThreadRow";
+import { docTitleParts } from "../lib/docTitle";
+import { useMediaQuery } from "../lib/useMediaQuery";
 import { useSetPageTitle } from "../lib/pageTitle";
 
 // Neutral copy shown until bootstrap's `stats` resolve (no fake numbers).
@@ -76,6 +79,68 @@ function BrowseStrip() {
   );
 }
 
+// "Short clips" row: the 9:16 social twins (≤30 s, title already burned in),
+// muted + looping, each playing only while ≥60% on screen. Reduced motion =
+// posters only. Hidden once the feed has answered with no clips.
+function ClipCarousel({ clips, loading }: { clips: FeedClip[]; loading: boolean }) {
+  const row = useRef<HTMLDivElement>(null);
+  const still = useMediaQuery("(prefers-reduced-motion: reduce)");
+  useEffect(() => {
+    if (still || !row.current || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const v = e.target as HTMLVideoElement;
+          if (e.isIntersecting) v.play().catch(() => {});
+          else v.pause();
+        }
+      },
+      { threshold: 0.6 }
+    );
+    row.current.querySelectorAll("video").forEach((v) => io.observe(v));
+    return () => io.disconnect();
+  }, [clips, still]);
+
+  if (!loading && !clips.length) return null;
+  return (
+    <section aria-labelledby="feed-clips" className="mb-[26px]">
+      <div className="mx-0.5 mb-3 flex items-baseline justify-between">
+        <h2 id="feed-clips" className="font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
+          ◆ Short clips
+        </h2>
+        <Link to="/archive?type=video" className="font-mono text-[11px] text-signal">
+          all videos ›
+        </Link>
+      </div>
+      <div ref={row} data-scroll aria-busy={loading} className="flex snap-x snap-mandatory gap-[10px] overflow-x-auto pb-1.5">
+        {loading
+          ? Array.from({ length: 4 }, (_, i) => (
+              <div key={i} aria-hidden="true" className="aspect-[9/16] w-[132px] shrink-0 rounded-[14px] border border-line bg-surface" />
+            ))
+          : clips.map((c) => (
+              <Link
+                key={c.id}
+                to={`/doc/${encodeURIComponent(c.id)}`}
+                aria-label={docTitleParts(c.id, c.title, "video").title}
+                className="aspect-[9/16] w-[132px] shrink-0 snap-start overflow-hidden rounded-[14px] border border-line bg-bg2"
+              >
+                <video
+                  src={c.clip}
+                  poster={c.thumb ?? undefined}
+                  muted
+                  loop
+                  playsInline
+                  preload="none"
+                  aria-hidden="true"
+                  className="h-full w-full object-cover"
+                />
+              </Link>
+            ))}
+      </div>
+    </section>
+  );
+}
+
 export function Feed() {
   // AppBar title — prototype's `titles.feed` (RealUFO.dc.html:566).
   useSetPageTitle("REALUFO", "Declassified UAP archive + forum");
@@ -107,6 +172,8 @@ export function Feed() {
             : hot.map((thread) => <ThreadRow key={thread.id} thread={thread} />)}
         </div>
       )}
+
+      {feedFailed ? null : <ClipCarousel clips={feed?.clips ?? []} loading={feedLoading} />}
 
       <div className="mx-0.5 mb-3 font-pixel text-[9px] uppercase tracking-[1px] text-faint">◆ Hot right now</div>
       <div

@@ -146,9 +146,19 @@ export interface ListRecordCard extends RecordCardBase {
 /** Union of both RecordCard projections — narrow with `"commentN" in card` or `"location" in card`. */
 export type RecordCard = FeedRecordCard | ListRecordCard;
 
+/** A 9:16 short clip from GET /api/feed → `clips[]` (≤30 s MP4 on the CDN). */
+export interface FeedClip {
+  id: string;
+  title: string | null;
+  thumb: string | null;
+  clip: string;
+}
+
 export interface Feed {
   featured: FeedRecordCard[];
   hot: ThreadCard[];
+  /** Optional: older cached responses predate it. */
+  clips?: FeedClip[];
 }
 
 export interface RecordsListResponse {

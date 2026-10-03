@@ -77,6 +77,9 @@ const mockFeed: FeedResponse = {
       ago: "2h",
     },
   ],
+  clips: [
+    { id: "vid1", title: "Gulf of Oman orb", thumb: "https://assets.realufo.org/thumbs/wargov/vid1.jpg", clip: "https://assets.realufo.org/clips-v/wargov/vid1.mp4" },
+  ],
 };
 
 vi.mock("../api/queries", () => ({
@@ -131,6 +134,29 @@ describe("Feed", () => {
     // above, it resolves straight to its "file not found" state; this only
     // needs to prove the click navigated to the /doc/:id route.
     await screen.findByText(/file not found/i, { selector: "[data-screen='doc'] *" });
+  });
+
+  it("renders the short clips row: muted inline clip tiles linking to /doc/:id", async () => {
+    renderAppAt("/");
+    const tile = await screen.findByRole("link", { name: /Gulf of Oman orb/ });
+    expect(tile).toHaveAttribute("href", "/doc/vid1");
+    const video = tile.querySelector("video") as HTMLVideoElement;
+    expect(video).toHaveAttribute("src", "https://assets.realufo.org/clips-v/wargov/vid1.mp4");
+    expect(video).toHaveAttribute("poster", "https://assets.realufo.org/thumbs/wargov/vid1.jpg");
+    expect(video.muted).toBe(true);
+    expect(screen.getByRole("link", { name: /all videos/i })).toHaveAttribute("href", "/archive?type=video");
+  });
+
+  it("hides the short clips row when there are no clips", async () => {
+    const saved = mockFeed.clips;
+    mockFeed.clips = [];
+    try {
+      renderAppAt("/");
+      await screen.findByText(/Something strange over the coast/);
+      expect(screen.queryByText(/Short clips/)).not.toBeInTheDocument();
+    } finally {
+      mockFeed.clips = saved;
+    }
   });
 
   it("links 'all boards ›' to /boards", async () => {

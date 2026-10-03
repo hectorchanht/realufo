@@ -108,11 +108,12 @@ const PICK_COLS = `r.id, r.archive, r.kind, r.title, r.agency, r.incident_date, 
 const UNPOSTED = `r.status='live' AND coalesce(r.title,'') NOT LIKE '%original title not published%'
   AND NOT EXISTS (SELECT 1 FROM x_posts p WHERE p.stream='pick' AND p.ref=r.id)`;
 
-async function clipIds(env: Env): Promise<string[]> {
+// Record ids that have an MP4 under `prefix` (clips/ = X landscape, clips-v/ = 9:16 twins).
+export async function clipIds(env: Env, prefix = "clips/"): Promise<string[]> {
   const ids: string[] = [];
   let cursor: string | undefined;
   do {
-    const page = await env.MEDIA.list({ prefix: "clips/", cursor });
+    const page = await env.MEDIA.list({ prefix, cursor });
     for (const o of page.objects) ids.push(o.key.split("/").pop()!.replace(/\.mp4$/, ""));
     cursor = page.truncated ? page.cursor : undefined;
   } while (cursor);
