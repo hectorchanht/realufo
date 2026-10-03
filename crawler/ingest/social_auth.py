@@ -70,7 +70,7 @@ def _now():
     return datetime.now(timezone.utc)
 
 def bsky(env):
-    handle, pw = input("Bluesky handle: ").strip(), getpass.getpass("App password: ")
+    handle, pw = input("Bluesky handle: ").strip().lstrip("@"), getpass.getpass("App password: ")
     req = Request("https://bsky.social/xrpc/com.atproto.server.createSession", data=json.dumps({"identifier": handle, "password": pw}).encode(),
                   headers={"Content-Type": "application/json"})
     with urlopen(req, timeout=30) as r:
