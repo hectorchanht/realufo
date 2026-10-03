@@ -3,7 +3,7 @@
     python3 -m ingest.clips --dry-run --limit 2   # encode locally, no upload
     python3 -m ingest.clips                       # encode + R2 upload
 
-Output: clips/<archive>/<id>.mp4, with the record id burned in top-left and
+Output: clips/<archive>/<id>.mp4, with the record id + clean title burned in top-left and
 realufo.org bottom-right (reposts keep the source findable). The Worker bot treats the object's existence
 as "this video has a clip", so there is no D1 row. Clips are ≤30 s (short, loopable;
 the post links to the full video): 30 s from 35% in (same offset as thumbs: skips
@@ -125,11 +125,15 @@ def window(duration):
         return 0.0, CLIP
     return round(min(duration * 0.35, duration - CLIP), 2), CLIP
 
-def ffmpeg_args(url, start, length, out, id_file, font):
+def ffmpeg_args(url, start, length, out, id_file, font, title_file=None, id_len=20, title_len=40):
+    """Output width varies (<=1280), so id/title fontsizes shrink with w to fit (em as title_layout)."""
     # translucent box: readable on white-hot IR frames and over redaction blocks
     mark = f"fontfile={font}:fontcolor=white:borderw=2:bordercolor=black:box=1:boxcolor=black@0.45:boxborderw=8"
+    size = lambda fs, n: f"'min({fs},(w-40)/{0.72 * max(n, 1):.2f})'"
     vf = ("scale='trunc(min(1280,iw)/2)*2':-2,"
-          f"drawtext={mark}:textfile={id_file}:expansion=none:fontsize=32:x=20:y=20,"
+          f"drawtext={mark}:textfile={id_file}:expansion=none:fontsize={size(32, id_len)}:x=20:y=20,"
+          + (f"drawtext={mark}:textfile={title_file}:expansion=none:fontsize={size(28, title_len)}:x=20:y=72,"
+             if title_file else "") +
           f"drawtext={mark}:text=realufo.org:fontsize=26:x=w-text_w-20:y=h-text_h-20")
     return ["ffmpeg", "-v", "error", "-y", "-ss", f"{start:.2f}", "-i", url, "-t", f"{length:.2f}",
             "-map", "0:v:0", "-map", "0:a:0?",
@@ -197,6 +201,7 @@ def main(argv=None):
         # textfile= (not text=): ids and titles may hold ':' or quotes that break filtergraph syntax
         with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as idf:
             idf.write(row["id"])
+        title = clean_title(row["id"], row.get("title"))     # landscape: one line, 40 chars
         if args.vertical:
             # 60: two auto-fitted lines hold it, so places/years survive ("…, Atlantic Ocean, 2020")
             lines, fs = title_layout(clean_title(row["id"], row.get("title"), 60))
@@ -209,12 +214,14 @@ def main(argv=None):
             cmd = vertical_args(row["cdn_url"], start, length, out, tfs, fs, FONT, has_audio(row["cdn_url"]), idf.name,
                                 fit(len(row["id"]), 46), crop, fill)
         else:
-            cmd = ffmpeg_args(row["cdn_url"], start, length, out, idf.name, FONT)
+            with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as tf:
+                tf.write(title)
+            tfs = [tf.name]
+            cmd = ffmpeg_args(row["cdn_url"], start, length, out, idf.name, FONT, tf.name, len(row["id"]), len(title))
         p = subprocess.run(cmd, capture_output=True, text=True)
         os.unlink(idf.name)
-        if args.vertical:
-            for f in tfs:
-                os.unlink(f)
+        for f in tfs:
+            os.unlink(f)
         if p.returncode or not os.path.exists(out) or not os.path.getsize(out):
             failed += 1
             print(f"[{i}/{len(rows)}] FAIL {row['id']}: {p.stderr.strip()[-300:]}")
