@@ -2,6 +2,18 @@
 
 Status 2026-10-03: research in progress, story not written. Archive searched over 317 PaddleOCR'd files plus pdftotext for the rest; re-check the remaining files once the OCR backfill finishes.
 
+## Evidence used in the draft (pages checked against the scans)
+
+| Record | Page | What it shows | Crop |
+|---|---|---|---|
+| 255413270UFOsandDefenseWhatShouldwePrepareFor (COMETA 1999) | p.74, p.75 | Bennewicz case; AFOSI agent Doty "induced him"; microwave-weapons research at Kirtland | cometa-bennewicz, cometa-doty, cometa-microwave |
+| CIA-UAP-003 (CIA U-2 history) | pp.91-92 | 14 Apr 1956 U-2 glides to Kirtland; "inside a hanger"; "man from Mars" | cia-hangar, cia-mars |
+| DOW-UAP-D017 | p.70, p.71 | Kirtland 17th District OSI, 18 May 1949, "UNKNOWN (Aerial Phenomena)"; "In none of the reported incidents…" | d017-osi, d017-none |
+| 65-hs1-834228961-62-hq-83894-section-10 (FBI UFO file) | p.9, p.18 | 1966 AFSCA journal: "undersea and underground bases"; kept for the "Communist Party (CP) line" | fbi-underground, fbi-cp |
+| AARO-AARO_Historical_Record_Report_Vol_1_2024.pdf | p.6, p.9 | "persistent narrative"; "circular reporting" (never names Dulce) | hrr-persistent, hrr-circular |
+
+Not from the documents (background, from online sources): 1979 date, Bennewitz placing the base under Archuleta Mesa near Dulce. Site search can't find COMETA ("Bennewicz") or the CIA page ("man from Mars") yet: the search index still uses the old capped text, so the story links pages directly (?p=N).
+
 ## Archive hits (quote only these in the story)
 
 - **255413270UFOsandDefenseWhatShouldwePrepareFor** (French COMETA report "UFOs and Defense: What Should We Prepare For?", 1999), Appendix on disinformation:

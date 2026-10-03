@@ -1,0 +1,59 @@
+{
+  "slug": "dulce-base",
+  "title": "Dulce Base: the alien base the Air Force talked into existence",
+  "hero": "images/hero.jpg",
+  "short": "short/short.mp4",
+  "showcase_record": "255413270UFOsandDefenseWhatShouldwePrepareFor",
+  "parts": [
+    "Under a mesa in Dulce, New Mexico: a 7-level alien base, or so the internet says 🛸\nWe searched the government's UFO files for \"Dulce\". 0 results.\nBut the files do show who built the legend 🧵",
+    "1/ 1979, Albuquerque. Physicist Paul Bennewitz records \"pulsed microwaves from a testing ground at Kirtland\" Air Force base. He decides they're UFOs controlling \"abductees\" with implants.\nThat's from a 1999 French defence study, COMETA (p.74).",
+    "2/ The Air Force noticed. COMETA: the Air Force Office of Special Investigation \"and, namely, its special agent Doty\" … \"induced him to make fantastic 'revelations'\": kidnappings, implants, joint human-alien bases in New Mexico (p.74).",
+    "3/ Bennewitz went public and later put the base under Archuleta Mesa, near Dulce. Others piled on: John Lear added Area 51 (p.75).\nWhy feed him? COMETA: it \"probably permitted the protection of research on microwave weapons at Kirtland\" (p.75).",
+    "4/ Kirtland had form. 14 April 1956: a secret CIA U-2 flames out over Tennessee and glides 300+ miles to Kirtland. Orders: \"get it inside a hanger as quickly as possible\". An air policeman said the pilot in his pressure suit \"looked like a man from Mars\" (CIA history, p.92).",
+    "5/ And Kirtland's own OSI office was filing \"UNKNOWN (Aerial Phenomena)\" reports in 1949: green fireballs over Sandia. \"In none of the reported incidents has any natural or man-made object been determined to be responsible\" (D017 p.71).",
+    "6/ Bonus: alien underground bases are older than Dulce. A 1966 saucer-club journal in the FBI's UFO file: a man who \"visited their undersea and underground bases on our planet\" (p.9).\nWhy did the FBI keep it? A reader thought it pushed the \"Communist Party (CP) line\" (p.18) 😅",
+    "7/ The pattern has a name. AARO, 2024: the reverse-engineering legend is \"in large part, the result of circular reporting\" (p.9). AARO never mentions Dulce, but Dulce is the textbook case: one fed source, retold until it sounds confirmed.",
+    "8/ Check it yourself, free:\n• realufo.org/archive → search \"Dulce\" (0 results 👀)\n• COMETA p.74-75 and the CIA's U-2 history p.92: links in the story\n• read the 1949 Kirtland OSI letter: DOW-UAP-D017 p.70"
+  ],
+  "evidence": [
+    {
+      "id": "255413270UFOsandDefenseWhatShouldwePrepareFor",
+      "page": 74,
+      "label": "France's COMETA report, 1999: where the legend started",
+      "evidence": "p.74: \"The point of departure is the Bennewicz case\" (the translation's spelling). He \"recorded pulsed microwaves from a testing ground at Kirtland (New Mexico) Air Force base\" and blamed UFOs. The Air Force Office of Special Investigation \"and, namely, its special agent Doty\" … \"induced him to make fantastic 'revelations'\": kidnappings, implants, bases shared with \"EBEs\". p.75: this disinformation \"has probably permitted the protection of research on microwave weapons at Kirtland\".",
+      "image": "images/cometa-doty.jpg"
+    },
+    {
+      "id": "CIA-UAP-003",
+      "page": 92,
+      "label": "Kirtland, 14 April 1956: the secret U-2 and the \"man from Mars\"",
+      "evidence": "pp.91-92: a CIA U-2 flames out over Tennessee and glides more than 300 miles to Kirtland. The base is told to \"keep everyone away from the craft and get it inside a hanger as quickly as possible\". The base commander: \"It's not a plane, it's a glider!\" An air policeman: the pilot in his \"space\" suit \"looked like a man from Mars\".",
+      "image": "images/cia-mars.jpg"
+    },
+    {
+      "id": "DOW-UAP-D017",
+      "page": 70,
+      "label": "Kirtland's own UFO desk, 1949",
+      "evidence": "p.70: the 17th District Office of Special Investigations at Kirtland Air Force Base, 18 May 1949, subject \"UNKNOWN (Aerial Phenomena)\". p.71, on the green fireballs: \"In none of the reported incidents has any natural or man-made object been determined to be responsible.\"",
+      "image": "images/d017-osi.jpg"
+    },
+    {
+      "id": "65-hs1-834228961-62-hq-83894-section-10",
+      "page": 9,
+      "label": "1966: \"underground bases\" in the FBI's UFO file",
+      "evidence": "p.9: a saucer-club journal (AFSCA, 1966) on a contactee who \"visited their undersea and underground bases on our planet\" and got messages from \"the planet Korendor\". p.18: the FBI kept it because a reader believed an article \"expounded the Communist Party (CP) line\".",
+      "image": "images/fbi-underground.jpg"
+    },
+    {
+      "id": "AARO-AARO_Historical_Record_Report_Vol_1_2024.pdf",
+      "page": 9,
+      "label": "AARO, 2024: \"circular reporting\"",
+      "evidence": "p.9: the claim that the government reverse-engineers alien technology is \"in large part, the result of circular reporting from a group of individuals who believe this to be the case, despite the lack of any evidence.\" (AARO's report does not mention Dulce or Bennewitz.)",
+      "image": "images/hrr-circular.jpg"
+    }
+  ],
+  "poll": {
+    "q": "Is there a base under Dulce?",
+    "opts": ["Yes, alien", "Yes, secret human", "No, it's a legend", "Need more data"]
+  }
+}
