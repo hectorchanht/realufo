@@ -2,6 +2,7 @@ import type { Env } from "../env";
 import { json, error } from "../lib/json";
 import { relAgo, stanceOK, thumbSql, THREAD_THUMB_COLS } from "../lib/db";
 import { newId, newNo, postActor } from "../lib/anon";
+import { autoFollow } from "../lib/follows";
 import { allowWrite } from "../lib/ratelimit";
 import { readBody, putImage, uploadUrl, UPLOAD_NAME_RE, withThreadThumb } from "../lib/upload";
 
@@ -96,6 +97,7 @@ export async function createThread(req: Request, env: Env) {
       `INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,source_record_id,image_r2_key,image_kind,is_op,created_at,actor_id) VALUES(?,?,?,?,?,?,0,?,?,?,1,?,?)`
     ).bind(opId, no, id, op_body, handle, stance, src, imageKey, imageKey && "upload", created_at, actor),
   ]);
+  await autoFollow(env, actor, "thread", id);
   return json(
     {
       thread: {

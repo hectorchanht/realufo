@@ -102,7 +102,7 @@ const RENAMED_PATH = /^\/(doc|shorts)\/([^/]+)(\/text)?$/;
 const LEGACY_PATH = /^\/(aaro|about|argentina|brazil|canada|chile|foia|geipan|glossary|italy|nara|nasa|peru|search|spain|stories|timeline|uk|whatsnew)(\/|$)/;
 
 export default {
-  async fetch(req: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
     if (url.hostname.startsWith("www.")) return Response.redirect(`https://${url.hostname.slice(4)}${url.pathname}${url.search}`, 301);
     // The old static site moved to release.realufo.org; its realufo.org URLs are
@@ -119,7 +119,7 @@ export default {
     const to = renamed && RENAMED[renamed[2]]; // keys are plain ASCII: no decode (a bad % would throw)
     if (to) return Response.redirect(`${url.origin}/${renamed[1]}/${encodeURIComponent(to)}${renamed[3] ?? ""}${url.search}`, 301);
     if (url.pathname.startsWith("/api/")) {
-      const res = await dispatch(req, env);
+      const res = await dispatch(req, env, ctx);
       return res ?? error(404, "not found");
     }
     if (url.pathname === "/__tick") return manualTick(req, env);
