@@ -22,7 +22,7 @@ export type Candidate =
 export const ARCHIVE_NAME: Record<string, string> = { wargov: "Dept. of War", aaro: "AARO", nara: "National Archives", nasa: "NASA" };
 
 const CDN = "https://assets.realufo.org/";
-const SITE = "https://realufo.org";
+export const SITE = "https://realufo.org";
 const IMAGE_MAX = 5 * 1024 * 1024; // X image limit
 const SETTLE_MS = 2 * 3600_000; // ingest may still be adding files to a release
 

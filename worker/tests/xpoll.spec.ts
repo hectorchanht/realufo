@@ -10,6 +10,7 @@ const NOW = new Date("2026-10-10T15:00:00Z");
 const SECRETS = { X_API_KEY: "k", X_API_SECRET: "s", X_ACCESS_TOKEN: "t", X_ACCESS_SECRET: "ts" };
 const E = (extra: Record<string, unknown> = {}) =>
   ({ ...env, ...SECRETS, FEATURE_X: "on", X_POLLS: "on", X_MONTHLY_USD_CAP: "10", ...extra }) as any;
+const noSleep = async () => {};
 const POLL = JSON.stringify({ q: "Balloon or craft?", opts: ["Balloon", "Craft"] });
 
 let sent: any[] = [];
@@ -17,7 +18,7 @@ let reads: string[] = [];
 let tweet: () => Response;
 let read: () => Response;
 beforeEach(async () => {
-  for (const t of ["poll_social", "poll_votes", "x_posts"]) await env.DB.prepare(`DELETE FROM ${t}`).run();
+  for (const t of ["poll_social", "poll_votes", "social_posts", "x_posts"]) await env.DB.prepare(`DELETE FROM ${t}`).run();
   await env.DB.prepare("DELETE FROM threads WHERE id LIKE 'ar_xp%'").run();
   await env.DB.prepare("DELETE FROM articles WHERE slug LIKE 'xp%'").run();
   // story xp1: poll + posted showcase head tweet H1 (thread source record = the showcase record)
@@ -128,5 +129,76 @@ describe("pollTick", () => {
     read = () => new Response(JSON.stringify({ data: { id: "P1" } }));
     await pollTick(E(), new Date(NOW.getTime() + 21 * 3600_000));
     expect(await row()).toMatchObject({ status: "failed", error: "no poll in response" });
+  });
+});
+
+describe("pollTick: threads (standalone poll post — the app can't reply)", () => {
+  const TE = (x: Record<string, unknown> = {}) => E({ THREADS_USER_ID: "TU", FEATURE_SOCIAL_THREADS: "on", ...x });
+  const trow = () => env.DB.prepare("SELECT * FROM poll_social WHERE slug='xp1' AND platform='threads'").first<any>();
+  let creates: URLSearchParams[] = [];
+  let create: () => Response;
+  let tRead: () => Response;
+  beforeEach(async () => {
+    await env.DB.prepare("DELETE FROM social_posts").run();
+    await env.DB.prepare("DELETE FROM social_auth").run();
+    await env.DB.prepare("INSERT INTO social_auth(platform,access_token,expires_at) VALUES ('threads','TH','2099-01-01 00:00:00')").run();
+    // the story is mirrored on Threads (posted) — the poll follows it
+    await env.DB.prepare(
+      "INSERT INTO social_posts(x_post_id,platform,status,remote_id) SELECT id,'threads','posted','TH1' FROM x_posts WHERE ref='CIA-UAP-017'"
+    ).run();
+    creates = [];
+    create = () => Response.json({ id: "C1" });
+    tRead = () => Response.json({ poll_attachment: { option_a_votes_percentage: 0.7, option_b_votes_percentage: 0.3, total_votes: 10, expiration_timestamp: "2026-10-11T15:00:00+0000" } });
+    const base = vi.mocked(globalThis.fetch).getMockImplementation()!;
+    vi.mocked(globalThis.fetch).mockImplementation(async (input: any, init: any = {}) => {
+      const u = String(input);
+      if (!u.startsWith("https://graph.threads.net/")) return base(input, init);
+      if (u.endsWith("/TU/threads")) { creates.push(new URLSearchParams(init.body)); return create(); }
+      if (u.includes("/C1?")) return Response.json({ status: "FINISHED" });
+      if (u.endsWith("/TU/threads_publish")) return Response.json({ id: "TP1" });
+      if (u.includes("/TP1?")) return tRead();
+      throw new Error("unexpected threads fetch " + u);
+    });
+  });
+
+  it("posts a standalone TEXT poll (no reply_to_id) with the story link, once", async () => {
+    await pollTick(TE(), NOW, noSleep);
+    expect(creates).toHaveLength(1);
+    expect(Object.fromEntries(creates[0])).toMatchObject({
+      media_type: "TEXT",
+      text: "Balloon or craft? 👇\nFull story: https://realufo.org/thread/ar_xp1",
+      access_token: "TH",
+    });
+    expect(JSON.parse(creates[0].get("poll_attachment")!)).toEqual({ option_a: "Balloon", option_b: "Craft" });
+    expect(creates[0].has("reply_to_id")).toBe(false);
+    expect(await trow()).toMatchObject({ status: "posted", remote_id: "TP1", fetched_at: sqlTime(NOW) });
+    await pollTick(TE(), NOW, noSleep);
+    expect(creates).toHaveLength(1);
+  });
+
+  it("off without Threads configured/on, or before the story is on Threads", async () => {
+    await pollTick(TE({ FEATURE_SOCIAL_THREADS: "dry" }), NOW, noSleep);
+    await pollTick(TE({ THREADS_USER_ID: "" }), NOW, noSleep);
+    await env.DB.prepare("UPDATE social_posts SET status='pending'").run();
+    await pollTick(TE(), NOW, noSleep);
+    expect(creates).toEqual([]);
+    expect(await trow()).toBeNull();
+  });
+
+  it("refresh turns the 0-1 fractions into counts; past expiry = closed", async () => {
+    await pollTick(TE(), NOW, noSleep);
+    await pollTick(TE(), new Date(NOW.getTime() + 21 * 3600_000), noSleep);
+    expect(await trow()).toMatchObject({ status: "posted", counts: "[7,3]", total: 10, closes_at: "2026-10-11 15:00:00" });
+    await pollTick(TE(), new Date(NOW.getTime() + 25 * 3600_000), noSleep);
+    expect(await trow()).toMatchObject({ status: "closed" });
+  });
+
+  it("429 drops the row (retry next tick); other API errors mark it failed", async () => {
+    create = () => new Response('{"error":{"message":"rate"}}', { status: 429 });
+    await pollTick(TE(), NOW, noSleep);
+    expect(await trow()).toBeNull();
+    create = () => new Response('{"error":{"message":"Application does not have permission","code":10}}', { status: 400 });
+    await pollTick(TE(), NOW, noSleep);
+    expect(await trow()).toMatchObject({ status: "failed" });
   });
 });

@@ -1,6 +1,8 @@
 import type { Env } from "../env";
 import { createPost, getPoll, XError, type XSecrets } from "./x";
-import { withinBudget, sqlTime } from "./xpick";
+import { withinBudget, sqlTime, SITE } from "./xpick";
+import { boxFlow, graph, threadsBox, THREADS_API } from "./social/meta";
+import { SocialError, type Sleep } from "./social/common";
 import { secretsOf } from "./xbot";
 import { parsePoll } from "../routes/polls";
 
@@ -79,10 +81,84 @@ async function refreshNext(env: Env, s: XSecrets, now: Date) {
   }
 }
 
-export async function pollTick(env: Env, now = new Date()) {
-  if (env.FEATURE_X !== "on" || env.X_POLLS !== "on") return;
+// Threads: the app's token can't reply (no threads_manage_replies; probe 2026-10-03), so the
+// poll is its own TEXT post with the story link, once the story itself is on Threads.
+const LETTERS = ["a", "b", "c", "d"];
+const errText = (e: unknown) => String(e).slice(0, 500);
+
+async function threadsPostNext(env: Env, now: Date, sleep: Sleep) {
+  const { results } = await env.DB.prepare(
+    `SELECT a.slug, a.poll FROM articles a
+     JOIN threads t ON t.id = a.thread_id
+     JOIN x_posts x ON x.stream='showcase' AND x.ref=t.source_record_id
+     JOIN social_posts sp ON sp.x_post_id=x.id AND sp.platform='threads' AND sp.status='posted' AND sp.deleted_at IS NULL
+     LEFT JOIN poll_social p ON p.slug=a.slug AND p.platform='threads'
+     WHERE a.poll IS NOT NULL AND p.slug IS NULL
+     ORDER BY a.created_at`
+  ).all<{ slug: string; poll: string }>();
+  const c = results.find((r) => parsePoll(r.poll));
+  const poll = c && parsePoll(c.poll);
+  if (!c || !poll) return;
+  const ins = await env.DB.prepare(
+    "INSERT INTO poll_social(slug,platform,status,created_at) VALUES (?,'threads','pending',?) ON CONFLICT DO NOTHING RETURNING slug"
+  ).bind(c.slug, sqlTime(now)).first();
+  if (!ins) return;
+  const done = (sql: string, ...v: unknown[]) => env.DB.prepare(sql).bind(...v, c.slug).run();
+  try {
+    const r = await boxFlow(await threadsBox(env, now), {
+      media_type: "TEXT",
+      text: `${poll.q} 👇\nFull story: ${SITE}/thread/ar_${c.slug}`,
+      poll_attachment: JSON.stringify(Object.fromEntries(poll.opts.map((o, i) => [`option_${LETTERS[i]}`, o]))),
+    }, { now, sleep }, "threads");
+    // ponytail: a TEXT container still processing after boxFlow's ~60 s is marked failed (fix by hand); never seen for text
+    if (!("remoteId" in r)) return void (await done("UPDATE poll_social SET status='failed', error=? WHERE slug=? AND platform='threads'", `container ${r.containerId} still processing`));
+    log({ threads: c.slug, post: r.remoteId });
+    await done("UPDATE poll_social SET status='posted', remote_id=?, fetched_at=? WHERE slug=? AND platform='threads'", r.remoteId, sqlTime(now));
+  } catch (e) {
+    if (!(e instanceof SocialError)) {
+      await done("UPDATE poll_social SET error=? WHERE slug=? AND platform='threads'", errText(e)); // ambiguous: stays pending, never re-posted
+      return log({ threadsAmbiguous: c.slug, error: errText(e) });
+    }
+    if (e.status === 429) return void (await done("DELETE FROM poll_social WHERE slug=? AND platform='threads'")); // nothing posted; retry later
+    await done("UPDATE poll_social SET status='failed', error=? WHERE slug=? AND platform='threads'", errText(e));
+    log({ threadsFailed: c.slug, error: errText(e) });
+  }
+}
+
+// Same cadence as X. Threads returns 0-1 fractions per option + total_votes + expiry.
+async function threadsRefreshNext(env: Env, now: Date) {
+  const r = await env.DB.prepare(
+    `SELECT p.slug, p.remote_id, a.poll FROM poll_social p JOIN articles a ON a.slug=p.slug
+     WHERE p.platform='threads' AND p.status='posted' AND (p.fetched_at <= ?1 OR p.closes_at <= ?2) ORDER BY p.fetched_at LIMIT 1`
+  ).bind(sqlTime(new Date(now.getTime() - REFRESH_MS)), sqlTime(now)).first<{ slug: string; remote_id: string; poll: string }>();
+  const poll = r && parsePoll(r.poll);
+  if (!r || !poll) return;
+  const n = poll.opts.length;
+  const fields = `poll_attachment{${LETTERS.slice(0, n).map((l) => `option_${l}_votes_percentage`).join(",")},total_votes,expiration_timestamp}`;
+  try {
+    const { token } = await threadsBox(env, now);
+    const pa = (await graph(`${THREADS_API}/${r.remote_id}`, { fields, access_token: token }, "GET")).poll_attachment;
+    if (!pa) throw new Error("no poll in response");
+    const total = Number(pa.total_votes) || 0;
+    const counts = LETTERS.slice(0, n).map((l) => Math.round((Number(pa[`option_${l}_votes_percentage`]) || 0) * total));
+    const expires = pa.expiration_timestamp ? new Date(pa.expiration_timestamp) : null;
+    await env.DB.prepare("UPDATE poll_social SET counts=?, total=?, fetched_at=?, closes_at=?, status=? WHERE slug=? AND platform='threads'")
+      .bind(JSON.stringify(counts), total, sqlTime(now), expires && sqlTime(expires), expires && expires <= now ? "closed" : "posted", r.slug).run();
+  } catch (e) {
+    await env.DB.prepare("UPDATE poll_social SET fetched_at=?, error=? WHERE slug=? AND platform='threads'").bind(sqlTime(now), errText(e), r.slug).run();
+    log({ threadsReadFailed: r.slug, error: errText(e) });
+  }
+}
+
+export async function pollTick(env: Env, now = new Date(), sleep: Sleep = (ms) => new Promise((r) => setTimeout(r, ms))) {
+  if (env.FEATURE_X !== "on" || env.X_POLLS !== "on") return; // X_POLLS = the story-poll switch for every platform
   const s = secretsOf(env);
-  if (!s) return;
-  await postNext(env, s, now);
-  await refreshNext(env, s, now);
+  if (s) {
+    await postNext(env, s, now);
+    await refreshNext(env, s, now);
+  }
+  if (env.FEATURE_SOCIAL_THREADS === "on" && env.THREADS_USER_ID) {
+    await threadsPostNext(env, now, sleep);
+    await threadsRefreshNext(env, now);
+  }
 }

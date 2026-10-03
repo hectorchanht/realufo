@@ -10,7 +10,7 @@ export const THREADS_API = "https://graph.threads.net/v1.0";
 const POLLS = 6;
 const POLL_MS = 10_000;
 
-async function graph(url: string, params: Record<string, string>, method: "GET" | "POST" = "POST"): Promise<any> {
+export async function graph(url: string, params: Record<string, string>, method: "GET" | "POST" = "POST"): Promise<any> {
   const q = new URLSearchParams(params);
   return readJson(method === "GET" ? await fetch(`${url}?${q}`) : await fetch(url, { method, body: q }));
 }
@@ -25,7 +25,7 @@ async function finishBox(b: Box, id: string): Promise<Finished> {
   return { remoteId: String(r.id) };
 }
 
-async function boxFlow(b: Box, params: Record<string, string>, ctx: Ctx, path: "media" | "threads"): Promise<Published> {
+export async function boxFlow(b: Box, params: Record<string, string>, ctx: Ctx, path: "media" | "threads"): Promise<Published> {
   const { id } = await graph(`${b.base}/${b.user}/${path}`, { ...params, access_token: b.token });
   for (let i = 0; i < POLLS; i++) {
     const f = await finishBox(b, String(id));
@@ -63,7 +63,7 @@ export const ig: Adapter = {
   finish: (env, _p, id) => finishBox(igBox(env), id),
 };
 
-const threadsBox = async (env: Env, now: Date): Promise<Box> =>
+export const threadsBox = async (env: Env, now: Date): Promise<Box> =>
   ({ base: THREADS_API, user: env.THREADS_USER_ID!, token: await token(env, "threads", now), statusField: "status", publish: "threads_publish" });
 const threadsParams = (p: SocialPost): Record<string, string> =>
   p.media?.kind === "video" ? { media_type: "VIDEO", video_url: p.media.url, text: p.text }
