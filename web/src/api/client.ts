@@ -3,6 +3,7 @@
 // No response validation beyond `res.ok` — callers type the result via <T>
 // and types.ts documents the shapes the Worker actually returns.
 import { getAnonId } from "../lib/anon";
+import { setStale } from "../lib/offline";
 
 const base = (path: string) => path; // same-origin; Vite dev proxy forwards /api in dev
 
@@ -29,6 +30,7 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
     },
     body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
   });
+  if (method === "GET") setStale(res.headers.get("X-SW-Cache") === "1");
   if (!res.ok) {
     let message = `${method} ${path} → ${res.status}`;
     try {

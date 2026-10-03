@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { api, ApiError } from "../api/client";
+import { isStale } from "../lib/offline";
 
 beforeEach(() => {
   localStorage.clear();
@@ -55,5 +56,15 @@ describe("api client", () => {
     const id = localStorage.getItem("ufo_anon");
     expect(id).toBeTruthy();
     expect(id).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it("flags reads served from the service-worker cache, clears on a live one", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response("{}", { status: 200, headers: { "X-SW-Cache": "1" } }))
+      .mockResolvedValueOnce(new Response("{}", { status: 200 }));
+    await api.get("/api/feed");
+    expect(isStale()).toBe(true);
+    await api.get("/api/feed");
+    expect(isStale()).toBe(false);
   });
 });
