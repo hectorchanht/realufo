@@ -126,3 +126,27 @@ def test_a_transient_model_error_is_retried_not_fatal(monkeypatch):
         return base(system, user, **k)
     summary, secs = summaries.summarize("T", [(n, LONG) for n in range(1, 13)], chat=flaky)
     assert len(secs) == 3 and summary
+
+def test_stored_sections_fall_back_to_a_coarser_level_when_too_big_for_d1(monkeypatch):
+    # NDAA (973 pp) -> 260 sections -> JSON over D1's ~100 KB statement limit (SQLITE_TOOBIG, pilot 2026-10-03)
+    monkeypatch.setattr(summaries, "SECTION", 3000)
+    monkeypatch.setattr(summaries, "SECTIONS_MAX_BYTES", 2000)
+    calls = []
+    summary, secs = summaries.summarize("T", [(n, LONG) for n in range(1, 81)], chat=_fake_chat(calls))
+    assert len(json.dumps(secs, ensure_ascii=False).encode()) <= 2000
+    assert secs[0]["from"] == 1 and secs[-1]["to"] == 80 and len(secs) < 80
+
+def test_each_record_is_written_alone_so_one_bad_row_fails_only_itself(monkeypatch):
+    rows = [{"id": "A", "title": "T", "pages": '[{"n":1,"text":"x"}]', "url": None, "ocr": 0},
+            {"id": "B", "title": "T", "pages": '[{"n":1,"text":"x"}]', "url": None, "ocr": 0}]
+    monkeypatch.setattr(summaries.d1, "_d1_json", lambda sql: rows)
+    monkeypatch.setattr(summaries, "summarize", lambda title, pages: ("Sum.", None))
+    written = []
+    def flush(lines, work):
+        if "'A'" in lines[0]:
+            raise RuntimeError("statement too long: SQLITE_TOOBIG")
+        written.append(lines)
+    monkeypatch.setattr(summaries, "flush", flush)
+    with pytest.raises(SystemExit) as e:
+        summaries.main([])
+    assert e.value.code == 1 and len(written) == 1 and "'B'" in written[0][0]

@@ -193,3 +193,9 @@ def test_born_digital_capped_file_gets_its_summary_redone_from_the_full_text():
     db.execute("UPDATE record_text SET truncated=0, ai_summary='whole'")
     db.executescript(ocr.marker_sql("O'Hare 1.pdf", [{"n": 1, "text": "abc", "src": "pdf"}], "eng"))
     assert db.execute("SELECT ai_summary FROM record_text").fetchone() == ("whole",)
+
+def test_fts_rows_fit_d1_statement_bytes_not_just_chars():
+    # 80k chars of "é'" = 80k * (2 bytes + doubled quote) > 100 KB per statement
+    sql = ocr.fts_sql("X", [{"n": 1, "text": "é'" * 40000}])
+    insert = [l for l in sql.splitlines() if l.startswith("INSERT")][0]
+    assert len(insert.encode()) <= ocr.FTS_MAX_BYTES + 200

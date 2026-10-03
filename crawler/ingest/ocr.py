@@ -69,12 +69,19 @@ def marker_sql(rid: str, pages: list[dict], engine: str) -> str:
         sql.append(f"UPDATE record_text SET ai_summary=NULL, ai_sections=NULL WHERE record_id={q} AND truncated=1;")
     return "\n".join(sql) + "\n" + fts_sql(rid, pages)
 
-FTS_CAP = 90000  # ponytail: D1 statement limit ~100 KB; real pages are far smaller
+FTS_CAP = 90000  # chars; real pages are far smaller
+FTS_MAX_BYTES = 90000  # the quoted body as UTF-8: one D1 statement is capped near 100 KB (SQLITE_TOOBIG)
+
+def _fit(text: str) -> str:
+    t = text[:FTS_CAP]
+    while len(d1.sql_q(t).encode()) > FTS_MAX_BYTES:  # non-ASCII and doubled quotes grow it
+        t = t[: int(len(t) * 0.9)]
+    return t
 
 def fts_sql(rid: str, pages: list[dict]) -> str:
     """Search rows for every non-empty page (record_text's triggers skip OCR'd files, migration 0037)."""
     q = d1.sql_q(rid)
-    rows = [f"INSERT INTO record_fts(record_id,page,body) VALUES({q},{int(p['n'])},{d1.sql_q(p['text'][:FTS_CAP])});"
+    rows = [f"INSERT INTO record_fts(record_id,page,body) VALUES({q},{int(p['n'])},{d1.sql_q(_fit(p['text']))});"
             for p in pages if p["text"].strip()]
     return "\n".join([f"DELETE FROM record_fts WHERE record_id={q};", *rows]) + "\n"
 
