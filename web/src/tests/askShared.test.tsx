@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import { MemoryRouter, Link, Route, Routes } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { AskShared } from "../screens/AskShared";
@@ -56,7 +56,7 @@ describe("shared answer page", () => {
     expect(screen.getByText("What about Gimbal?")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Gimbal/ })).toHaveAttribute("href", "/doc/WARGOV-VID-1");
     expect(useSharedAskMock).toHaveBeenCalledWith(12);
-    expect(document.title).toBe("What about Gimbal? · RealUFO");
+    await waitFor(() => expect(document.title).toBe("What about Gimbal? · RealUFO")); // set in a passive effect
   });
 
   it("share opens the share sheet for the page URL without publishing again", async () => {
