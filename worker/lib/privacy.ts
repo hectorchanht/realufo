@@ -3,7 +3,7 @@
 export const PRIVACY_UPDATED = "2026-10-03";
 
 export const PRIVACY_HTML = `
-<p>RealUFO is an independent archive of declassified, public-domain UAP records. There are no accounts, no ads and no tracking or analytics scripts.</p>
+<p>RealUFO is an independent archive of declassified, public-domain UAP records. There are no accounts, no ads and no tracking across sites. To count visits we use <b>Cloudflare Web Analytics</b>, which sets no cookies, stores nothing in your browser and does not fingerprint you; it reports only aggregate page views, referrers and page speed.</p>
 <h2>What we store</h2>
 <ul>
 <li><b>Anonymous browser id.</b> Your browser makes a random id and keeps it in local storage. We store only a salted hash of it, to attribute votes and posts and to apply rate limits.</li>
@@ -13,7 +13,7 @@ export const PRIVACY_HTML = `
 <li><b>Preferences.</b> Theme and similar settings stay in your browser's local storage.</li>
 </ul>
 <h2>Who processes it</h2>
-<p>The site runs on Cloudflare (hosting, database, file storage and the AI models behind Ask), which handles requests under its own privacy policy. We do not sell or share your data. Our social accounts (X, Bluesky and others) only post archive content, never visitor data.</p>
+<p>The site runs on Cloudflare (hosting, database, file storage, visit counts and the AI models behind Ask), which handles requests under its own privacy policy. We do not sell or share your data. Our social accounts (X, Bluesky and others) only post archive content, never visitor data.</p>
 <h2>Google, YouTube and social accounts</h2>
 <p>RealUFO posts archive content (clips, images and short summaries of public records) to its own accounts on X, Bluesky, Facebook, Instagram, Threads and YouTube. To do that it holds sign-in tokens for <b>those RealUFO accounts only</b>. It never asks visitors to sign in with Google or any other service, and it never accesses visitors' accounts.</p>
 <ul>
