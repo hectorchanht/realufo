@@ -3,7 +3,8 @@
     python3 -m ingest.fulltext --dry-run --limit 3   # extract + select only
     python3 -m ingest.fulltext                       # write D1 record_text rows
 
-Every live PDF without a record_text row: download, pdftotext, keep the pages
+Every live PDF without a record_text row: download, pdftotext (or the R2
+text/<id>.json of a re-OCR'd file, see ingest.ocr), keep the pages
 that read like text (OCR noise dropped), cap at ~30k chars, store as JSON
 pages. A PDF with no clean page still gets a row (pages='[]') so it isn't
 retried daily; download/pdftotext failures get no row and are retried.
@@ -13,7 +14,8 @@ from . import d1
 from .textindex import pdf_pages, flush
 
 SELECT = """SELECT r.id,
-  (SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND a.role='full' LIMIT 1) AS url
+  (SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND a.role='full' LIMIT 1) AS url,
+  EXISTS(SELECT 1 FROM record_ocr o WHERE o.record_id=r.id) AS ocr
 FROM records r LEFT JOIN record_text rt ON rt.record_id=r.id
 WHERE r.status='live' AND r.kind='pdf' AND rt.record_id IS NULL
   AND EXISTS (SELECT 1 FROM assets a WHERE a.record_id=r.id AND a.role='full')
@@ -76,7 +78,7 @@ def main(argv=None):
     with tempfile.TemporaryDirectory() as work:
         for i, row in enumerate(rows, 1):
             try:
-                pages = pdf_pages(row["url"], work)
+                pages = pdf_pages(row["url"], work, row["id"] if row.get("ocr") else None)
             except Exception as e:
                 failed += 1
                 print(f"[{i}/{len(rows)}] FAIL {row['id']}: {e}")

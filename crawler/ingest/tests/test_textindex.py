@@ -1,4 +1,4 @@
-import subprocess, pytest
+import json, subprocess, pytest
 from ingest import textindex, chunking
 
 PAGE = " ".join(f"Line {i} describes the object seen over the base." for i in range(40))
@@ -13,7 +13,8 @@ def world(monkeypatch, tmp_path):
          "pages": {}}
     def d1_json(sql):
         return w["failed"] if "status='failed'" in sql else w["rows"]
-    def pdf_pages(url, work):
+    def pdf_pages(url, work, ocr_id=None):
+        w.setdefault("ocr_ids", []).append(ocr_id)
         p = w["pages"].get(url, [PAGE])
         if isinstance(p, Exception):
             raise p
@@ -88,3 +89,21 @@ def test_limit_and_periodic_flush(world):
     assert run("--limit", "27") == 0
     assert len(world["applied"]) == 2                              # 25 + 2
     assert sum(s.count("INSERT OR REPLACE INTO text_index") for s in world["applied"]) == 27
+
+def test_ocrd_rows_read_their_r2_text(world):
+    world["rows"] = [dict(_row("P1"), ocr=1), dict(_row("P2"), ocr=0)]
+    assert run() == 0
+    assert world["ocr_ids"] == ["P1", None]
+
+def test_select_flags_records_with_an_ocr_marker():
+    assert "record_ocr" in textindex.SELECT and "AS ocr" in textindex.SELECT
+
+def test_pdf_pages_with_ocr_id_reads_percent_encoded_r2_json(monkeypatch, tmp_path):
+    seen = []
+    def download(url, dest):
+        seen.append(url)
+        with open(dest, "w", encoding="utf-8") as f:
+            json.dump([{"n": 1, "text": "one", "src": "pdf"}, {"n": 2, "text": "", "src": "ocr", "conf": 0.0}], f)
+    monkeypatch.setattr(textindex.fetch, "download", download)
+    assert textindex.pdf_pages("https://cdn/x.pdf", str(tmp_path), "O'Hare 1.pdf") == ["one", ""]
+    assert seen == ["https://assets.realufo.org/text/O%27Hare%201.pdf.json"]

@@ -68,7 +68,8 @@ def world(monkeypatch):
     w = {"rows": [], "applied": [], "pages": {}}
     monkeypatch.setattr(fulltext.d1, "_d1_json", lambda sql: w["rows"])
     monkeypatch.setattr(fulltext.d1, "apply_sql", lambda path: w["applied"].append(open(path, encoding="utf-8").read()))
-    def pdf_pages(url, work):
+    def pdf_pages(url, work, ocr_id=None):
+        w.setdefault("ocr_ids", []).append(ocr_id)
         p = w["pages"].get(url, [CLEAN])
         if isinstance(p, Exception):
             raise p
@@ -108,3 +109,9 @@ def test_all_caps_teletype_counts_as_words():
     )
     assert fulltext.word_ratio(tty) >= 0.9
     assert fulltext.keep_page(tty)
+
+def test_ocrd_rows_read_their_r2_text(world):
+    world["rows"] = [{"id": "A", "url": "https://cdn/a.pdf", "ocr": 1}, {"id": "B", "url": "https://cdn/b.pdf", "ocr": 0}]
+    run()
+    assert world["ocr_ids"] == ["A", None]
+    assert "record_ocr" in fulltext.SELECT

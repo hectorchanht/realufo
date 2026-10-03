@@ -10,19 +10,31 @@ reindex_sql, so the next run re-embeds it over the same vector ids. Progress is 
 vectors, so a crash means a retry. `failed` records are cleaned up (vectors
 deleted, row removed) at the start of the next live run and retried.
 """
-import argparse, os, subprocess, sys, tempfile
+import argparse, json, os, subprocess, sys, tempfile, urllib.parse
 from . import cfapi, chunking, d1, fetch
 
 SELECT = """SELECT r.id, r.kind, r.title, r.agency, r.incident_date, r.location, r.summary,
   r.ai_moments, (SELECT ai_summary FROM record_text t WHERE t.record_id=r.id) AS ai_summary,
-  (SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND a.role='full' LIMIT 1) AS url
+  (SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND a.role='full' LIMIT 1) AS url,
+  EXISTS(SELECT 1 FROM record_ocr o WHERE o.record_id=r.id) AS ocr
 FROM records r LEFT JOIN text_index ti ON ti.record_id=r.id
 WHERE r.status='live' AND ti.record_id IS NULL
 ORDER BY r.created_at DESC, r.id"""
 FAILED = "SELECT record_id, chunks FROM text_index WHERE status='failed'"
 FLUSH_EVERY = 25
 
-def pdf_pages(url: str, work: str) -> list[str]:
+TEXT_BASE = "https://assets.realufo.org/text/"
+
+def pdf_pages(url: str, work: str, ocr_id: str | None = None) -> list[str]:
+    if ocr_id:  # re-OCR'd by ingest.ocr: its R2 file is the canonical per-page text
+        path = os.path.join(work, "text.json")
+        try:
+            fetch.download(TEXT_BASE + urllib.parse.quote(ocr_id, safe="") + ".json", path)
+            with open(path, encoding="utf-8") as f:
+                return [p["text"] for p in json.load(f)]
+        finally:
+            if os.path.exists(path):
+                os.remove(path)
     pdf = os.path.join(work, "src.pdf")
     try:
         fetch.download(url, pdf)
@@ -73,7 +85,8 @@ def main(argv=None):
         for i, row in enumerate(rows, 1):
             chunks, chars = [], 0
             try:
-                pages = pdf_pages(row["url"], work) if row["kind"] == "pdf" and row["url"] else []
+                pages = (pdf_pages(row["url"], work, row["id"] if row.get("ocr") else None)
+                         if row["kind"] == "pdf" and row["url"] else [])
                 chars = sum(len(p) for p in pages)
                 chunks = chunking.chunks_for(row, pages)
                 if not args.dry_run:
