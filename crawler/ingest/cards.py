@@ -17,6 +17,9 @@ W, H = 1200, 630
 BG, INK, DIM, SIGNAL = (7, 8, 12), (231, 236, 244), (139, 150, 169), (77, 240, 166)  # web/src/theme/theme.css dark
 FONTS = os.path.join(os.path.dirname(__file__), "data", "fonts")
 SANS, MONO = "space-grotesk", "jetbrains-mono"  # family prefixes of the vendored @fontsource files
+# glyphs the latin-subset fonts lack (they render as tofu); gpt-oss loves U+2011
+GLYPH_SWAPS = str.maketrans({"\u2010": "-", "\u2011": "-", "\u2265": ">=", "\u2264": "<="})
+REV = 2  # bump when the drawing changes: re-rendered cards need a new key past the 1-month CDN cache
 UA = {"User-Agent": "realufo-ingest/1.0 (+https://realufo.org)"}
 SELECT = """SELECT x.record_id id, x.bullets, x.one_liner, x.input_hash,
   (SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND (a.role='thumb' OR (a.role='full' AND a.mime LIKE 'image/%'))
@@ -27,6 +30,9 @@ WHERE x.lang='en' AND x.card_url IS NULL AND r.status='live'{ids} ORDER BY x.rec
 def font(family: str, size: int, weight: int = 400):
     # weights vendored: SANS 400/700, MONO 500/600
     return ImageFont.truetype(os.path.join(FONTS, f"{family}-latin-{weight}-normal.woff"), size)
+
+def printable(text: str) -> str:
+    return text.translate(GLYPH_SWAPS)
 
 def wrap(d, text: str, f, width: int) -> list[str]:
     lines, cur = [], ""
@@ -95,14 +101,14 @@ def render(t: dict, rid: str, thumb) -> Image.Image:
     y = 52
     d.text((x0, y), L["kicker"], font=L["kf"], fill=SIGNAL)
     y += 48
-    f, lines = fit(d, f"“{t['one_liner']}”", width)
+    f, lines = fit(d, f"“{printable(t['one_liner'])}”", width)
     for line in lines:
         d.text((x0, y), line, font=f, fill=INK)
         y += round(f.size * 1.18)
     y += 16
     bf = font(SANS, 22, 400)
     for b in t["bullets"]:
-        for j, line in enumerate(clip_lines(d, wrap(d, b, bf, width - 28), bf, width - 28, 3)):
+        for j, line in enumerate(clip_lines(d, wrap(d, printable(b), bf, width - 28), bf, width - 28, 3)):
             if j == 0:
                 d.text((x0, y), "•", font=bf, fill=SIGNAL)
             d.text((x0 + 28, y), line, font=bf, fill=DIM)
@@ -122,7 +128,7 @@ def fetch_thumb(url):
         return Image.open(io.BytesIO(r.read())).convert("RGB")
 
 def card_key(rid: str, h: str) -> str:
-    return f"cards/{rid}-en-{h[:8]}.png"
+    return f"cards/{rid}-en-{h[:8]}-r{REV}.png"
 
 def card_url(key: str) -> str:
     return f"{R2_BASE}/{urllib.parse.quote(key)}"

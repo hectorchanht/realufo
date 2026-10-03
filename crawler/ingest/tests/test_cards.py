@@ -65,8 +65,8 @@ def test_render_long_bullets_and_long_one_liner():
 
 def test_card_key_and_url_encode_ids_with_spaces():
     key = cards.card_key("SP ACE-1", "abcdef0123456789")
-    assert key == "cards/SP ACE-1-en-abcdef01.png"
-    assert cards.card_url(key) == "https://assets.realufo.org/cards/SP%20ACE-1-en-abcdef01.png"
+    assert key == "cards/SP ACE-1-en-abcdef01-r2.png"
+    assert cards.card_url(key) == "https://assets.realufo.org/cards/SP%20ACE-1-en-abcdef01-r2.png"
 
 LONG_ID = "AARO-AARO_GoFast_Case_Resolution_Card_Methodology_Final.pdf"
 
@@ -80,3 +80,10 @@ def test_long_id_kicker_and_footer_are_clipped():
         cards.render(T, LONG_ID, Image.new("RGB", (640, 360)) if has_thumb else None)
     short = cards.layout(d, "DOW-UAP-D084", True)
     assert short["kicker"] == "DOW-UAP-D084" and short["footer"] == "realufo.org/doc/DOW-UAP-D084"
+
+def test_glyphs_missing_from_vendored_fonts_are_swapped():
+    # gpt-oss writes U+2011 non-breaking hyphens; the latin-subset fonts draw them as tofu boxes
+    assert cards.printable("U‑2, CIA‑to‑Air, ≥3, ≤2") == "U-2, CIA-to-Air, >=3, <=2"
+    f = cards.font(cards.SANS, 40, 700)
+    notdef = bytes(f.getmask("\U0010FFFD"))
+    assert all(bytes(f.getmask(ch)) != notdef for ch in cards.printable("‐‑≥≤"))
