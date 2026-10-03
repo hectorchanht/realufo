@@ -11,6 +11,12 @@ describe("swRoute", () => {
   it("navigations: same-origin only", () => {
     expect(route(`${O}/doc/X`, "GET", "navigate")).toBe("navigate");
     expect(route("https://example.com/", "GET", "navigate")).toBeNull();
+    expect(route(`${O}/doc/X/text`, "GET", "navigate")).toBe("navigate");
+    expect(route(`${O}/case/kaikoura`, "GET", "navigate")).toBe("navigate");
+  });
+  it("navigations to files/feeds are not pages", () => {
+    for (const p of ["/api/file/X", "/api/u/a.jpg", "/rss.xml", "/sitemap.xml", "/llms.txt", "/llms-full.txt", "/robots.txt", "/__tick"])
+      expect(route(O + p, "GET", "navigate")).toBeNull();
   });
   it("hashed bundles cache-first", () => {
     expect(route(`${O}/assets/index-abc.js`)).toBe("asset");

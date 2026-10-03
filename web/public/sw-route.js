@@ -7,11 +7,14 @@
   // Reads that must always be live: Ask answers, file/upload streams, health.
   var API_SKIP = /^\/api\/(ask(\/|$)|asks\/|file\/|u\/|health$)/;
 
+  var NOT_PAGE = /^\/(api\/|__|[^/]+\.(xml|txt)$)/;
+
   // → "navigate" | "asset" | "api" | "img" | null (null = browser handles it, SW stays out)
   self.swRoute = function (href, method, mode, origin) {
     if (method !== "GET") return null;
     var u = new URL(href);
-    if (mode === "navigate") return u.origin === origin ? "navigate" : null;
+    // Files/feeds (PDF iframes, rss, sitemap…) must not get the offline app shell.
+    if (mode === "navigate") return u.origin === origin && !NOT_PAGE.test(u.pathname) ? "navigate" : null;
     if (u.origin === origin) {
       if (u.pathname.indexOf("/assets/") === 0) return "asset";
       if (u.pathname.indexOf("/api/") === 0 && !API_SKIP.test(u.pathname)) return "api";
