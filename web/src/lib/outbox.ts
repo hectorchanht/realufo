@@ -74,7 +74,8 @@ async function drain(send: Send) {
     } catch {
       break; // still offline: keep it for the next trigger
     }
-    if (res.status === 429) break; // rate limited: next trigger
+    // rate limited or server trouble (deploy, CDN blip) is not a rejected post: keep it for the next trigger
+    if (res.status === 429 || res.status >= 500) break;
     if (res.ok) sent++;
     else failed.push(await errorText(res));
     const done = item.id;

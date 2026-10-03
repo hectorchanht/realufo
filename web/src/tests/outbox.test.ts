@@ -72,6 +72,17 @@ describe("outbox", () => {
     expect(items()).toHaveLength(2);
   });
 
+  it("keeps everything on a 5xx (server trouble is not a rejected post)", async () => {
+    enqueue("/api/votes", { n: 1 });
+    enqueue("/api/votes", { n: 2 });
+    events.length = 0;
+    const send = vi.fn(async () => new Response("{}", { status: 503 }));
+    await flush(send);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(items()).toHaveLength(2);
+    expect(events).toEqual([]);
+  });
+
   it("drops a rejected item with its server error and carries on", async () => {
     enqueue("/api/votes", { n: 1 });
     enqueue("/api/votes", { n: 2 });
