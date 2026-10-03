@@ -186,7 +186,7 @@ function TopicIntro({ t }: { t: TopicBlock }) {
 }
 
 function Stories({ t }: { t: TopicBlock }) {
-  const items = t.stories.filter((s) => s.threadId);
+  const items = t.stories;
   if (!items.length) return null;
   return (
     <section aria-labelledby="topic-stories" className="mb-5">
@@ -194,7 +194,7 @@ function Stories({ t }: { t: TopicBlock }) {
       <ul className="flex flex-col gap-1">
         {items.map((s) => (
           <li key={s.slug}>
-            <Link to={`/thread/${s.threadId}`} className="text-[13.5px] text-signal hover:underline">{s.title}</Link>
+            <Link to={s.href} className="text-[13.5px] text-signal hover:underline">{s.title}</Link>
           </li>
         ))}
       </ul>

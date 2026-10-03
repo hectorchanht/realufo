@@ -746,6 +746,14 @@ export function Doc() {
           ))}
         </div>
       )}
+      {detail.citedIn && detail.citedIn.length > 0 && (
+        <div className="-mt-2 mb-4 flex flex-wrap items-center gap-[7px] font-mono text-[10px]">
+          <span className="text-faint">CITED IN</span>
+          {detail.citedIn.map((c) => (
+            <Link key={c.slug} to={`/case/${c.slug}`} className="rounded-[7px] border border-line px-[9px] py-1 text-dim hover:border-signal hover:text-signal">{c.title}</Link>
+          ))}
+        </div>
+      )}
 
       {/* summary — prototype line 366 */}
       <p ref={summaryRef} className="mb-4 scroll-mt-16 text-[14.5px] leading-[1.65] text-dim" style={{ whiteSpace: "pre-line" }}>

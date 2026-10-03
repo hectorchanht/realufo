@@ -318,6 +318,7 @@ export interface RecordDetail {
   tldr?: Tldr | null;
   hubs?: HubLinks;
   topics?: { slug: string; label: string }[];
+  citedIn?: { slug: string; title: string }[];
   /** Per-visitor verdict state (GET /api/records/:id only, never pre-rendered). */
   verdicts?: VerdictState;
 }
@@ -516,6 +517,8 @@ export interface CaseThread extends RelatedThread {
 
 export interface CaseDetail {
   case: Case;
+  /** Fact-checked story with resolved sources (worker/routes/cases.ts storyView). */
+  story?: import("../../../worker/lib/caseStories").StoryView | null;
   threads?: CaseThread[];
   relatedThread: RelatedThread | null;
 }

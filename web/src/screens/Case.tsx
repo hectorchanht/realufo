@@ -9,6 +9,7 @@
 import { Link, useParams } from "react-router-dom";
 import { useBootstrap, useCase, useCaseComments } from "../api/queries";
 import { caseStoryUrl } from "../../../worker/lib/shared";
+import { citeParts, type StoryView } from "../../../worker/lib/caseStories";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
@@ -41,6 +42,7 @@ export function Case() {
   const otherCases = (useBootstrap().data?.cases ?? []).filter((c) => c.slug !== slug);
 
   const caseDetail = data?.case;
+  const story = data?.story ?? null;
   const relatedThread = data?.relatedThread ?? null;
   const threads = data?.threads ?? (relatedThread ? [relatedThread] : []);
   const comments = commentsData?.comments ?? [];
@@ -75,7 +77,7 @@ export function Case() {
 
       {/* name — prototype line 292 */}
       <h1 className="mb-[6px] text-[27px] font-bold leading-[1.12] text-ink" style={{ letterSpacing: "-.01em" }}>
-        {caseDetail.name}
+        {story?.title ?? caseDetail.name}
       </h1>
 
       {/* archive label + status — prototype line 293 */}
@@ -105,14 +107,18 @@ export function Case() {
         </blockquote>
       )}
 
-      <a
-        href={caseStoryUrl(slug)}
-        target="_blank"
-        rel="noopener"
-        className="mb-[22px] inline-block font-mono text-[11px] text-signal hover:underline"
-      >
-        Full story, timeline and sources ↗
-      </a>
+      {story ? (
+        <Story v={story} />
+      ) : (
+        <a
+          href={caseStoryUrl(slug)}
+          target="_blank"
+          rel="noopener"
+          className="mb-[22px] inline-block font-mono text-[11px] text-signal hover:underline"
+        >
+          Full story, timeline and sources ↗
+        </a>
+      )}
 
       {/* "ACTIVE DISCUSSION" card — prototype lines 301-306 */}
       {threads.map((t, i) => (
@@ -250,3 +256,58 @@ export function Case() {
 }
 
 export default Case;
+
+function Cited({ text, max }: { text: string; max: number }) {
+  return (
+    <>
+      {citeParts(text, max).map((p, i) =>
+        typeof p === "string" ? <span key={i}>{p}</span> : <sup key={i}><a href={`#src-${p.n}`} className="text-signal">[{p.n}]</a></sup>
+      )}
+    </>
+  );
+}
+
+function Story({ v }: { v: StoryView }) {
+  const max = v.sources.length;
+  return (
+    <article className="mb-[22px]">
+      {v.sections.map((s) => (
+        <section key={s.heading} className="mb-4">
+          <h2 className="mb-2 text-[17px] font-bold text-ink">{s.heading}</h2>
+          {s.paras.map((p, i) => <p key={i} className="mb-3 text-[15px] leading-[1.65] text-dim"><Cited text={p} max={max} /></p>)}
+          {s.quote && (
+            <blockquote className="mb-3 rounded-r-xl border-l-[3px] border-signal bg-surface px-[18px] py-3">
+              <div className="text-[15px] italic leading-[1.55] text-ink">“{s.quote.text}”</div>
+              <div className="mt-2 font-mono text-[10px] text-faint">— {s.quote.who} <a href={`#src-${s.quote.src}`} className="text-signal">[{s.quote.src}]</a></div>
+            </blockquote>
+          )}
+        </section>
+      ))}
+      {v.timeline.length > 0 && (
+        <section className="mb-4">
+          <h2 className="mb-2 text-[17px] font-bold text-ink">Timeline</h2>
+          <ul className="flex flex-col gap-1 text-[13.5px] text-dim">
+            {v.timeline.map((t, i) => (
+              <li key={i}><span className="font-mono text-[11px] text-ink">{t.date}</span> {t.event}{t.src ? <> <a href={`#src-${t.src}`} className="text-signal">[{t.src}]</a></> : null}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <section className="mb-2">
+        <h2 className="mb-2 text-[17px] font-bold text-ink">Evidence &amp; sources</h2>
+        <ol className="flex list-decimal flex-col gap-1 pl-5 text-[13px] text-dim">
+          {v.sources.map((s) => (
+            <li key={s.n} id={`src-${s.n}`}>
+              {s.href ? (
+                s.external ? <a href={s.href} target="_blank" rel="noopener" className="text-signal hover:underline">{s.label}</a>
+                           : <Link to={s.href} className="text-signal hover:underline">{s.label}</Link>
+              ) : s.label}
+              : {s.note}
+            </li>
+          ))}
+        </ol>
+      </section>
+      <div className="font-mono text-[10px] text-faint">Last fact-checked: {v.updated}. Every claim cites its source.</div>
+    </article>
+  );
+}

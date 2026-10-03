@@ -105,6 +105,34 @@ describe("Case", () => {
     expect(more.querySelector("a")!.getAttribute("href")).toBe("/case/socorro");
   });
 
+  it("renders the story: title, sections with citations, quote, timeline, numbered sources", () => {
+    useCaseMock.mockReturnValue({
+      data: {
+        ...roswellCase,
+        story: {
+          title: "Roswell 1947: What the Files Show",
+          sections: [{ heading: "The debris", paras: ["Brazel found debris [1]. A note [sic] stays text."], quote: { text: "a disc", who: "RAAF press release", src: 2 } }],
+          timeline: [{ date: "1947-07-08", event: "Press release", src: 2 }],
+          sources: [
+            { n: 1, href: "/doc/A-1?p=3", label: "A-1 — p. 3", note: "debris report", external: false },
+            { n: 2, href: "https://catalog.archives.gov/x", label: "catalog.archives.gov", note: "press release", external: true },
+          ],
+          updated: "2026-10-03",
+        },
+      },
+      isLoading: false,
+    });
+    renderCase();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Roswell 1947: What the Files Show");
+    expect(screen.getByRole("heading", { name: "The debris" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "[1]" }).getAttribute("href")).toBe("#src-1");
+    expect(screen.getByText(/A note \[sic\] stays text\./)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "A-1 — p. 3" }).getAttribute("href")).toBe("/doc/A-1?p=3");
+    expect(screen.getByRole("link", { name: "catalog.archives.gov" }).getAttribute("target")).toBe("_blank");
+    expect(screen.queryByRole("link", { name: /Full story, timeline and sources/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/Last fact-checked: 2026-10-03/)).toBeInTheDocument();
+  });
+
   it("renders the archive label and status", () => {
     renderCase();
     expect(screen.getByText(/NARA Archive/)).toBeInTheDocument();

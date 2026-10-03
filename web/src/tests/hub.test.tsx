@@ -168,7 +168,10 @@ const aawsap: HubData = {
     background: "AAWSAP was a Defense Intelligence Agency program.",
     lore: "Popular accounts call it a crash-retrieval program.",
     sources: [{ id: "DOW-UAP-D111", page: 3, note: "contract award", title: "DOW-UAP-D111 — AAWSAP Solicitation" }],
-    stories: [{ slug: "warp-drives", title: "Warp drives on the Pentagon's dime", threadId: "ar_warp-drives" }],
+    stories: [
+      { slug: "warp-drives", title: "Warp drives on the Pentagon's dime", threadId: "ar_warp-drives", href: "/thread/ar_warp-drives" },
+      { slug: "socorro", title: "Socorro 1964", threadId: null, href: "/case/socorro" },
+    ],
   },
 };
 
@@ -180,6 +183,7 @@ describe("topic hub blocks", () => {
     expect(screen.getByText(/crash-retrieval program/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "DOW-UAP-D111 — AAWSAP Solicitation — p. 3" }).getAttribute("href")).toBe("/doc/DOW-UAP-D111?p=3");
     expect(screen.getByRole("link", { name: "Warp drives on the Pentagon's dime" }).getAttribute("href")).toBe("/thread/ar_warp-drives");
+    expect(screen.getByRole("link", { name: "Socorro 1964" }).getAttribute("href")).toBe("/case/socorro");
   });
 
   it("Browse shows Topics first", () => {
