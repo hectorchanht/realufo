@@ -48,6 +48,18 @@ describe("TldrCard", () => {
     await waitFor(() => expect(share).toHaveBeenCalledWith({ title: "GIMBAL", text: T.oneLiner, url: location.href }));
   });
 
+  it("stamps the card version on the shared link so chat apps re-fetch a re-rendered card", async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    (navigator as any).share = share;
+    history.pushState(null, "", "/doc/CIA-UAP-003?p=2&v=old");
+    const tldr = { ...T, cardUrl: "https://assets.realufo.org/cards/CIA-UAP-003-en-4f1f587a-r2.png" };
+    render(<TldrCard tldr={tldr} title="t" onBoring={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: /share/i }));
+    await waitFor(() => expect(share).toHaveBeenCalled());
+    expect(share.mock.calls[0][0].url).toBe(`${location.origin}/doc/CIA-UAP-003?p=2&v=4f1f587a-r2`);
+    history.pushState(null, "", "/");
+  });
+
   it("cancelled share sheet does nothing", async () => {
     const writeText = vi.fn();
     (navigator as any).share = vi.fn().mockRejectedValue(Object.assign(new Error("x"), { name: "AbortError" }));

@@ -8,7 +8,12 @@ export function TldrCard({ tldr, title, onBoring }: { tldr?: Tldr | null; title:
   if (!tldr) return null;
 
   const share = async () => {
-    const url = location.href;
+    // ?v=<card hash>: WhatsApp & co cache a preview per URL, so a re-rendered card
+    // only shows on a new URL. The canonical tag drops the query for search engines.
+    const u = new URL(location.href);
+    const v = /-en-([\w-]+)\.png$/.exec(tldr.cardUrl ?? "")?.[1];
+    if (v) u.searchParams.set("v", v);
+    const url = u.href;
     if (navigator.share) {
       try {
         return await navigator.share({ title, text: tldr.oneLiner, url });
