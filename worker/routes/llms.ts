@@ -4,7 +4,7 @@ import { hubTitle, type HubKind } from "../lib/hubs";
 import { listHubsCached } from "./hubs";
 import { docTitle, isoDate } from "../lib/pages";
 
-const KINDS: [HubKind, string][] = [["release", "Releases"], ["agency", "Agencies"], ["location", "Locations"], ["decade", "Decades"]];
+const KINDS: [HubKind, string][] = [["topic", "Topics"], ["release", "Releases"], ["agency", "Agencies"], ["location", "Locations"], ["decade", "Decades"]];
 
 const kindCounts = (env: Env) =>
   env.DB.prepare("SELECT kind, count(*) n FROM records WHERE status='live' GROUP BY kind").all<{ kind: string; n: number }>();
@@ -19,7 +19,7 @@ async function intro(env: Env) {
     "",
     `> Searchable archive of ${total} declassified UAP/UFO records (${n("pdf")} PDFs, ${n("video")} videos, ${n("image")} images) from the Pentagon (Department of War PURSUE releases), AARO, CIA, FBI, NASA and the National Archives, with full text, case files, a sighting map and anonymous discussion boards.`,
     "",
-    "All files are public-domain U.S. government records mirrored verbatim. Each file has a page at `/doc/<file id>` (e.g. `/doc/DOW-UAP-D084`) with the official title, agency, incident date, location, release, official summary, an AI summary and the extracted full text. `/api/file/<file id>` serves the original PDF, video or image.",
+    "All files are public-domain U.S. government records mirrored verbatim. Each file has a page at `/doc/<file id>` (e.g. `/doc/DOW-UAP-D084`) with the official title, agency, incident date, location, release, official summary, an AI summary and the extracted full text. `/api/file/<file id>` serves the original PDF, video or image. For PDFs, `/doc/<file id>/text` serves its full text page by page as Markdown, each page linked as `/doc/<file id>?p=N` (`?format=json` for JSON).",
     "",
   ];
 }

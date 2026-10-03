@@ -21,6 +21,7 @@ import { ask, recentAsks, setAskPublic, getSharedAsk } from "./routes/ask";
 import { sitemap } from "./routes/sitemap";
 import { rss } from "./routes/rss";
 import { llms, llmsFull } from "./routes/llms";
+import { recordText } from "./routes/text";
 import { hubsIndex, getHub } from "./routes/hubs";
 import { releasesApi } from "./routes/releases";
 import { tick } from "./lib/xbot";
@@ -41,6 +42,7 @@ on("GET", "/api/hubs", hubsIndex);
 on("GET", "/api/hubs/:kind/:slug", getHub);
 on("GET", "/api/releases", releasesApi);
 on("GET", "/api/records/:id", getRecord);
+on("GET", "/api/records/:id/text", recordText);
 on("GET", "/api/file/:id", viewFile);
 on("GET", "/api/u/:name", viewUpload);
 on("GET", "/api/records/:id/comments", listComments);
@@ -111,6 +113,8 @@ export default {
     if (url.pathname === "/rss.xml") return rss(req, env);
     if (url.pathname === "/llms.txt") return llms(req, env);
     if (url.pathname === "/llms-full.txt") return llmsFull(req, env);
+    const docText = url.pathname.match(/^\/doc\/([^/]+)\/text$/);
+    if (docText) return recordText(req, env, { id: decodeURIComponent(docText[1]) });
     return serveWithMeta(req, env); // SPA + assets, with per-route meta/OG injection for deep links
   },
   async scheduled(_c: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {

@@ -21,6 +21,14 @@ describe("sitemap", () => {
     expect(xml).toContain("/cases</loc>");
   });
 
+  it("lists topic hubs once they have enough files", async () => {
+    const ins = env.DB.prepare("INSERT INTO records(id,archive,agency,title,summary,kind,status) VALUES (?,?,?,?,?,?,?)");
+    await env.DB.batch([1, 2, 3, 4, 5].map((n) => ins.bind(`SM-${n}`, "wargov", "DoW", `SM-${n}, AAWSAP DIRD, Sitemap test ${n}`, "x", "pdf", "live")));
+    // Fresh origin: the hub list memo for realufo.org was filled before the inserts.
+    const res = await worker.fetch(new Request("https://topicsitemap.test/sitemap.xml"), env as any, {} as any);
+    expect(await res.text()).toContain("<loc>https://topicsitemap.test/topic/aawsap</loc>");
+  });
+
   it("rss.xml lists newest live files as RSS 2.0 items linking to doc pages", async () => {
     const res = await worker.fetch(new Request("https://realufo.org/rss.xml"), env as any, {} as any);
     expect(res.headers.get("content-type")).toMatch(/rss\+xml/);
@@ -48,6 +56,7 @@ describe("sitemap", () => {
     expect(md).toContain("- [Archive](https://realufo.org/archive)");
     expect(md).toContain("## Agencies");
     expect(md).toContain("- [FBI UAP files](https://realufo.org/agency/fbi): ");
+    expect(md).toContain("`/doc/<file id>/text` serves its full text page by page as Markdown");
   });
 
   it("llms-full.txt streams every file with facts, summaries and page text", async () => {
