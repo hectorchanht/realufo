@@ -6,7 +6,9 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
+import { Download, Upload } from "lucide-react";
 import { MORE_ICON as MoreIcon, tabHref, type NavItem, type NavTab } from "./navItems";
+import { downloadIdentity, importIdentity } from "../lib/identity";
 
 export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]; activeTab: NavTab; sheet?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -14,7 +16,20 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
   const btn = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLElement>(null);
   const id = useId();
+  const file = useRef<HTMLInputElement>(null);
   const lit = open || items.some((i) => i.tab === activeTab);
+  const row = `flex w-full items-center gap-3 rounded-lg px-3 font-mono font-medium hover:bg-surface ${sheet ? "min-h-[48px] text-[14px]" : "min-h-[40px] text-[13px]"}`;
+  const iconSize = sheet ? 20 : 17;
+
+  const saveId = () => {
+    if (confirm("This file is your identity — anyone with it can act as you. Keep it private.")) downloadIdentity();
+    setOpen(false);
+  };
+  const loadId = async (f: File | undefined) => {
+    if (!f || !confirm("Replace this device's identity? Votes made here will no longer show as yours.")) return;
+    if (importIdentity(await f.text())) location.reload();
+    else alert("Not a RealUFO ID file.");
+  };
 
   useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
@@ -58,16 +73,36 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
                 to={tabHref(item, activeTab)}
                 onClick={() => setOpen(false)}
                 aria-current={on ? "page" : undefined}
-                className={`flex items-center gap-3 rounded-lg px-3 font-mono font-medium hover:bg-surface ${sheet ? "min-h-[48px] text-[14px]" : "min-h-[40px] text-[13px]"}`}
+                className={row}
                 style={{ color: on ? "var(--signal)" : "var(--ink)" }}
               >
-                <Icon size={sheet ? 20 : 17} aria-hidden="true" />
+                <Icon size={iconSize} aria-hidden="true" />
                 {item.label}
               </Link>
             </li>
           );
         })}
       </ul>
+      {/* Same person on another device: move the anon id file (lib/identity.ts). */}
+      <div className="my-1 border-t border-line" />
+      <button type="button" onClick={saveId} className={row} style={{ color: "var(--ink)" }} title="Download your anonymous ID to use on another device">
+        <Download size={iconSize} aria-hidden="true" />
+        Download ID
+      </button>
+      <button type="button" onClick={() => file.current?.click()} className={row} style={{ color: "var(--ink)" }} title="Upload an ID file from another device">
+        <Upload size={iconSize} aria-hidden="true" />
+        Upload ID
+      </button>
+      <input
+        ref={file}
+        type="file"
+        accept="application/json,.json"
+        hidden
+        onChange={(e) => {
+          void loadId(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
     </nav>
   );
 
