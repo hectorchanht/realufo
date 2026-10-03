@@ -11,8 +11,9 @@ the DoD "Unclassified" slates), pulled back so it ends inside the video.
 Idempotent: existing clips skipped unless --force (re-cut after a length change).
 
 --vertical writes the 9:16 twin for Reels/Shorts/TikTok (Spec 5 §7) to
-clips-v/<archive>/<id>.mp4: the full frame centred on a blurred, cropped copy of
-itself, record id + clean title in the top band and realufo.org in the bottom band.
+clips-v/<archive>/<id>.mp4: black pillar/letterbox bars cropped off (cropdetect), then the
+video as big as it fits, on a blurred, cropped copy of itself (near-9:16 video fills the
+frame); record id + clean title in the top band and realufo.org in the bottom band.
 Both need a TTF at $CLIP_FONT (default: DejaVu Sans Bold from apt fonts-dejavu-core); the path
 must not contain spaces, ':' or quotes (ffmpeg filtergraph syntax).
 """
@@ -48,7 +49,7 @@ def title_layout(t, width=1000, em=0.72, max_fs=64):
     Bold advance for all-caps text (mixed case ~0.62); a run of W/M could still clip — measure
     glyph widths if a real title does."""
     lines = [t]
-    if len(t) > 20 and " " in t:
+    if len(t) > 24 and " " in t:
         i = min((i for i, c in enumerate(t) if c == " "), key=lambda i: abs(i - len(t) / 2))
         lines = [t[:i], t[i + 1:]]
     return lines, fit(max(map(len, lines)), max_fs, width, em)
@@ -56,6 +57,35 @@ def title_layout(t, width=1000, em=0.72, max_fs=64):
 def fit(n, max_fs, width=1000, em=0.72) -> int:
     """Largest fontsize ≤ max_fs at which n chars fit `width` px (see title_layout for em)."""
     return min(max_fs, int(width / (em * max(n, 1))))
+
+def bars(iw, ih, w, h, x, y):
+    """cropdetect box -> crop filter for a centred black pillarbox/letterbox, else None. Only one
+    axis may shrink (by >=10%, symmetrically): a dark night sky also reads as black, e.g.
+    LLE-UAP-PR002's top 354 rows, and those frames must stay whole."""
+    for full, keep, off, ofull, okeep in ((iw, w, x, ih, h), (ih, h, y, iw, w)):
+        if okeep >= 0.97 * ofull and 0.2 * full <= keep <= 0.9 * full and abs(off - (full - keep) / 2) <= 0.02 * full:
+            return f"crop={w}:{h}:{x}:{y}"
+    return None
+
+def fills(w, h, loss=0.1) -> bool:
+    """True when cropping w x h content to 9:16 loses <= `loss` of it: fill the frame, else fit inside."""
+    r = (w / h) / (9 / 16)
+    return 1 - 1 / max(r, 1 / r) <= loss
+
+def probe(url, start, length):
+    """(crop filter or None, fill?) from <=10 s of cropdetect over the clip window."""
+    err = subprocess.run(["ffmpeg", "-hide_banner", "-ss", f"{start:.2f}", "-i", url, "-t", f"{min(length, 10):.2f}",
+                          "-vf", "cropdetect=round=2", "-an", "-f", "null", "-"], capture_output=True, text=True).stderr
+    m = re.search(r"Video:.*?, (\d{2,5})x(\d{2,5})[ ,]", err)
+    if not m:
+        return None, False
+    iw, ih = map(int, m.groups())
+    if re.search(r"rotation of -?90", err):    # phone video: cropdetect sees the autorotated frame
+        iw, ih = ih, iw
+    box = re.findall(r"crop=(\d+):(\d+):(\d+):(\d+)", err)
+    crop = bars(iw, ih, *map(int, box[-1])) if box else None
+    w, h = map(int, crop[5:].split(":")[:2]) if crop else (iw, ih)
+    return crop, fills(w, h)
 
 def has_audio(url) -> bool:
     return bool(subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index",
@@ -79,14 +109,17 @@ def ffmpeg_args(url, start, length, out, id_file, font):
             "-crf", "23", "-maxrate", "1500k", "-bufsize", "3000k",
             "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-movflags", "+faststart", out]
 
-def vertical_args(url, start, length, out, title_files, fontsize, font, audio=True, id_file=None, id_fontsize=46):
-    """title_files: one textfile per line (each drawtext centres its own line)."""
+def vertical_args(url, start, length, out, title_files, fontsize, font, audio=True, id_file=None, id_fontsize=46,
+                  crop=None, fill=False):
+    """title_files: one textfile per line (each drawtext centres its own line). crop strips black
+    bars first; fill zooms near-9:16 content to the whole frame, else it is fitted as large as fits."""
     band = f"fontfile={font}:fontcolor=white:borderw=3:bordercolor=black:x=(w-text_w)/2"
     title = "".join(f"drawtext={band}:textfile={f}:expansion=none:fontsize={fontsize}:y={220 + round(i * fontsize * 1.3)},"
                     for i, f in enumerate(title_files))
-    fc = ("[0:v]split[a][b];"
-          "[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20[bg];"
-          "[b]scale=1080:-2[fg];"
+    cover = "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920"
+    fc = (f"[0:v]{crop + ',' if crop else ''}split[a][b];"
+          f"[a]{cover},boxblur=20[bg];"
+          f"[b]{cover if fill else 'scale=1080:1920:force_original_aspect_ratio=decrease'}[fg];"
           "[bg][fg]overlay=(W-w)/2:(H-h)/2,"
           + (f"drawtext={band}:textfile={id_file}:expansion=none:fontsize={id_fontsize}:y=150," if id_file else "") +
           f"{title}"
@@ -139,8 +172,9 @@ def main(argv=None):
                 with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as tf:
                     tf.write(ln)
                 tfs.append(tf.name)
+            crop, fill = probe(row["cdn_url"], start, length)
             cmd = vertical_args(row["cdn_url"], start, length, out, tfs, fs, FONT, has_audio(row["cdn_url"]), idf.name,
-                                fit(len(row["id"]), 46))
+                                fit(len(row["id"]), 46), crop, fill)
         else:
             cmd = ffmpeg_args(row["cdn_url"], start, length, out, idf.name, FONT)
         p = subprocess.run(cmd, capture_output=True, text=True)
