@@ -23,3 +23,10 @@ def test_emit_sql_has_records_assets_and_new_archive():
 def test_emit_sql_no_thumb_when_absent():
     sql = emit_sql([_c(thumb_url="")], {})
     assert "'thumb'" not in sql and "'full'" in sql
+
+def test_emit_sql_uses_the_candidates_licence_and_source():
+    c = _c(); c._license = "crown-copyright-canada"; c._source = "https://data2.collectionscanada.gc.ca/x.jpg"
+    sql = emit_sql([c], {})
+    assert "'crown-copyright-canada'" in sql and "public-domain-usgov" not in sql
+    assert "'https://data2.collectionscanada.gc.ca/x.jpg'" in sql
+    assert "'public-domain-usgov'" in emit_sql([_c()], {})   # default unchanged

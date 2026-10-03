@@ -7,6 +7,8 @@ ARCHIVE_ROWS = {
     "nasa": {"label": "NASA", "flag": "🇺🇸", "accent": "#46dfff", "coord": "NASA HQ"},
     "nara": {"label": "NARA", "flag": "🇺🇸", "accent": "#4df0a6", "coord": "National Archives"},
     "congress": {"label": "Congress", "flag": "🇺🇸", "accent": "#f2b84b", "coord": "U.S. Capitol"},
+    # DoD FOIA reading-room PDFs the case stories cite (Roswell report, GAO letter, DIA/USAF Tehran files)
+    "dod": {"label": "DoD FOIA", "flag": "🇺🇸", "accent": "#ff8a7a", "coord": "Pentagon"},
 }
 
 def _load(slug, data_dir):
@@ -29,10 +31,13 @@ def candidates(slug, data_dir, taken):
         rid = derive_id((a.get("ti") or "").strip(), slug, u, taken); taken.add(rid)
         c = Candidate(id=rid, archive=slug, agency=short_agency(a.get("ag"), slug),
                       agency_full=(a.get("ag") or "").strip(), title=(a.get("ti") or "").strip(),
-                      summary=(a.get("de") or "").strip(), incident_date=(a.get("date") or "").strip(),
+                      summary=(a.get("de") or "").strip(), incident_date=(a.get("idate") or a.get("date") or "").strip(),
                       location=(a.get("region") or "").strip(), doc_date=(a.get("date") or "").strip(),
                       kind=kind, redacted=0, virin="", r2_key=u[len(R2_BASE) + 1:], cdn_url=u,
                       mime=MIME[kind], thumb_url=th if is_r2_hosted(th) else "")
         c._origin = u
+        # the official page/file it was mirrored from, and its licence when not US-gov public domain
+        c._source = (a.get("s") or "").strip()
+        c._license = (a.get("lic") or "").strip()
         out.append(c)
     return out
