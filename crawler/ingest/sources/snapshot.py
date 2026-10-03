@@ -9,6 +9,8 @@ ARCHIVE_ROWS = {
     "congress": {"label": "Congress", "flag": "🇺🇸", "accent": "#f2b84b", "coord": "U.S. Capitol"},
     # DoD FOIA reading-room PDFs the case stories cite (Roswell report, GAO letter, DIA/USAF Tehran files)
     "dod": {"label": "DoD FOIA", "flag": "🇺🇸", "accent": "#ff8a7a", "coord": "Pentagon"},
+    # Library and Archives Canada NRC UFO files (non-commercial reuse, attribution in each summary)
+    "canada": {"label": "Library and Archives Canada", "flag": "🇨🇦", "accent": "#ff6b6b", "coord": "Ottawa"},
 }
 
 def _load(slug, data_dir):
