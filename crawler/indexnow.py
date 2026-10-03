@@ -6,7 +6,8 @@ Usage: python3 crawler/indexnow.py [url ...]            # no args = whole sitema
 --since-hours (daily ingest CI step) submits only pages whose content changed:
 docs of records added or given full text in that window, the docs linking to
 them (their related groups changed), and, if any, every non-doc sitemap page
-(home, archive, hubs list counts and new files). Needs wrangler + a D1 token.
+(home, archive, hubs list counts and new files), and shared Ask answers
+published in that window. Needs wrangler + a D1 token.
 Run after a deploy or a release that adds files. Google doesn't use IndexNow;
 it reads the sitemap submitted in Search Console.
 The key must match web/public/<key>.txt (served at https://realufo.org/<key>.txt).
@@ -33,16 +34,32 @@ CHANGED_SQL = """SELECT id FROM records WHERE status='live' AND created_at >= da
 UNION SELECT record_id FROM record_text WHERE created_at >= datetime('now', '-{h} hours')"""
 
 
+ASK_SQL = "SELECT DISTINCT id FROM ask_log WHERE public=1 AND answer IS NOT NULL AND created_at >= datetime('now', '-{h} hours')"
+
+
+def ask_urls(locs: list[str], ids: set[int]) -> list[str]:
+    """Sitemap URLs of shared answers whose ask_log id is in ids. The slug comes from the sitemap, never rebuilt here."""
+    out = []
+    for u in locs:
+        m = re.search(r"/ask/(\d+)(?:-|$)", u)
+        if m and int(m.group(1)) in ids:
+            out.append(u)
+    return out
+
+
 def changed_urls(hours: int) -> list[str]:
     from ingest import d1  # run from crawler/
     ids = {r["id"] for r in d1._d1_json(" ".join(CHANGED_SQL.format(h=int(hours)).split()))}
-    if not ids:
+    asks = {int(r["id"]) for r in d1._d1_json(ASK_SQL.format(h=int(hours)))}
+    if not ids and not asks:
         return []
-    q = ",".join(d1.sql_q(i) for i in sorted(ids))
-    ids |= {r["id"] for r in d1._d1_json(f"SELECT DISTINCT record_id id FROM record_links WHERE related_id IN ({q})")}
+    if ids:
+        q = ",".join(d1.sql_q(i) for i in sorted(ids))
+        ids |= {r["id"] for r in d1._d1_json(f"SELECT DISTINCT record_id id FROM record_links WHERE related_id IN ({q})")}
     locs = [u.replace("&amp;", "&") for u in sitemap_urls()]
     doc_id = lambda u: urllib.parse.unquote(u.split("/doc/", 1)[1])
-    return [u for u in locs if "/doc/" not in u or doc_id(u) in ids]
+    pages = [u for u in locs if "/ask/" not in u and ("/doc/" not in u or doc_id(u) in ids)] if ids else []
+    return pages + ask_urls(locs, asks)
 
 
 def main():
