@@ -64,6 +64,20 @@ def tts(text):
             f.write(r.read())
     return out, _dur(out)
 
+def sfx(text, seconds, influence=0.6):
+    """ElevenLabs sound effect ("pen tick on a checkbox", "jet whoosh") → mp3 path, cached in showcase/.tts."""
+    out = os.path.join(HERE, ".tts", "sfx-" + hashlib.sha1(f"{text}|{seconds}|{influence}".encode()).hexdigest()[:16] + ".mp3")
+    if not os.path.exists(out):
+        key = os.environ.get("ELEVENLABS_API_KEY") or next((l.split("=", 1)[1].strip() for l in open(os.path.join(HERE, "..", ".env"))
+                                                          if l.startswith("ELEVENLABS_API_KEY=")), None)
+        req = urllib.request.Request("https://api.elevenlabs.io/v1/sound-generation",
+            data=json.dumps({"text": text, "duration_seconds": seconds, "prompt_influence": influence}).encode(),
+            headers={"xi-api-key": key, "Content-Type": "application/json", "Accept": "audio/mpeg"})
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        with urllib.request.urlopen(req) as r, open(out, "wb") as f:
+            f.write(r.read())
+    return out
+
 def _audio(say, seconds):
     """Audio input args + segment length: the narration line (beat stretched to fit it) or silence."""
     if not say:

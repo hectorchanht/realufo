@@ -37,7 +37,28 @@ Length is 20–35 s. Get the hook in fast and the end card out fast.
 - ElevenLabs narration via `lib.tts(line)` (cached), with the ambient bed from `Cut.save(out, bed=True)`.
 - Write one short line per beat, spoken like a friend showing you something ("Did you catch it?"), not a press release. Spell out what the voice mangles: "real U F O dot org", "two hundred eighty-nine".
 - Keep the voice **off** the key moment so the blink, split or pass plays clean.
+- **Sound effects:** `lib.sfx("pen tick on a paper checkbox", 0.6)` uses ElevenLabs sound generation and is cached. Put a tick on each box or reveal and a whoosh on a zoom, at about 0.5–0.9 volume, all in the same `adelay` mix.
+- **What else the ElevenLabs key can do:** sound effects work, and speech-to-text, audio isolation and music are allowed (account/user info is not). Speech-to-text returns word timestamps, so it can drive word-synced captions. Check the music licence terms before using generated music.
 - For fixed-length footage, measure each line with `lib.tts` first, place it at a cue and mix with `adelay`. See `showcase/AARO-956955.py`. Built from stills: `Cut.seg(..., say=line)` stretches each beat to fit.
+
+## Always lead to realufo.org
+
+Every Short exists to send people to the site. Show `realufo.org` on screen in every beat (`lib.SITE()` / `site`). End on `realufo.org/doc/<ID>` plus what they can do there ("step through it", "zoom in yourself", "flip the palette"). Every post caption ends with the doc link too.
+
+## Enhance (real detail only)
+
+- **Frame stack:** when the sensor tracks the target, take the mean of 5–9 frames around the moment (`tmix=frames=9,select='eq(n\,8)'`). Noise drops and the target stays sharp. See `showcase/DOW-UAP-PR116.py`.
+- **Denoise and sharpen:** `nlmeans=s=3:p=5:r=11` and then `cas=0.6` on stills, `hqdn3d=4:3:6:4` on moving footage. Upscale with `scale=…:flags=lanczos`.
+- **Palettes:** use the site's own palettes (`lib.IRONBOW`), which double as a demo of the site's tools.
+- **Label it:** put a small line on screen, e.g. "enhanced: 9-frame stack + denoise".
+- **Not real enhancement:** AI upscaling or "AI 4K" invents pixels. Never run it on the evidence itself.
+
+## AI illustrations
+
+- Use Workers AI `@cf/black-forest-labs/flux-1-schnell` with `CLOUDFLARE_*` from `.env`. It takes `{prompt, steps≤8}` (a `seed` field is rejected) and returns 1024² JPEG base64, so scale it to fit.
+- Build the prompt **only from the documents' own description** (shape, colour, size, setting). If an image shows something the file doesn't say (e.g. several balloons when the crew described one), regenerate it.
+- Label it on screen every time: "AI illustration of their words, not evidence". Use it behind a quote, never as footage.
+- Save the image next to the recipe (`<ID>-ai.jpg`) and put the prompt in the docstring, because flux has no seed and won't regenerate the same image.
 
 ## Craft
 

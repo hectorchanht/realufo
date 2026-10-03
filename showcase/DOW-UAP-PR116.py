@@ -6,13 +6,20 @@ as we passed at the merge" and "it traveled with the wind" (p.2). AARO still lis
 Cut: tease (frame 0 = thumbnail: the speck between the brackets, boxed) -> the whole zoom at 5.9x ->
 close-up (plain, then Ironbow) -> the form, boxes lighting up as they're read -> the crew's words ->
 lesson (foil balloons are round, metallic, shiny; nobody could verify) -> "zoom in yourself" -> loop.
-ElevenLabs narration + ambient bed. 9:16, ~34 s.
+Enhancement (no invented detail): close-ups are a 9-frame stack (the sensor keeps the target centred)
++ nlmeans denoise + CAS sharpen; the zoom plays through hqdn3d. The crew-quote beat sits on an AI
+illustration of the crew's own description (Workers AI flux-1-schnell, prompt below, saved as
+DOW-UAP-PR116-ai.jpg), labelled "not evidence". ElevenLabs narration + SFX (lib.sfx) + ambient bed. ~34 s.
+
+AI prompt: one single large balloon, somewhat deformed and partly deflated, crumpled and lumpy with several
+lobes, dark maroon, about 4 m tall, a few shiny metallic patches, drifting with the wind, seen from a Navy
+jet at dusk over the open Atlantic; photorealistic, no text.
 
     FFMPEG=/path/to/ffmpeg-with-drawtext CLIP_FONT=/path/Bold.ttf python3 showcase/DOW-UAP-PR116.py
 (needs pdftoppm for the D091 page)
 """
 import os, subprocess, urllib.request
-from lib import Cut, txt, tts, IRONBOW, FFMPEG as F, TMP as D, ENC, SILENT as SIL, HERE
+from lib import Cut, txt, tts, sfx, IRONBOW, FFMPEG as F, TMP as D, ENC, SILENT as SIL, HERE
 
 U = "https://assets.realufo.org/videos/wargov/DOD_111830151.mp4"
 PDF = "https://assets.realufo.org/pdfs/wargov/DOW-UAP-D091_Range-Fouler-Debrief_Atlantic-Ocean_2020.pdf"
@@ -22,8 +29,12 @@ TZOOM = "crop=304:540:770:265,scale=1080:1920:flags=lanczos"  # 2x on the speck 
 CZOOM = "crop=405:720:68:196,scale=1080:1920:flags=lanczos"  # 1.5x on the cluster at 29.3 s (after FIT's crop)
 BOX = "drawbox=x=390:y=810:w=300:h=300:color=yellow@0.95:t=9"
 S0, SC = os.path.join(D, "t0.png"), os.path.join(D, "t29.png")
-subprocess.run([F, "-v", "error", "-y", "-i", U, "-frames:v", "1", S0], check=True)
-subprocess.run([F, "-v", "error", "-y", "-ss", "29.3", "-i", U, "-frames:v", "1", "-vf", "crop=608:1080:656:0", SC], check=True)
+subprocess.run([F, "-v", "error", "-y", "-i", U, "-frames:v", "1", "-vf", "nlmeans=s=4:p=5:r=9", S0], check=True)
+# close-up = mean of 9 frames around 29.3 s (target stays centred), then denoise + sharpen
+subprocess.run([F, "-v", "error", "-y", "-ss", "29.0", "-t", "0.6", "-i", U, "-vf",
+                "crop=608:1080:656:0,tmix=frames=9,select='eq(n\\,8)',nlmeans=s=3:p=5:r=11,cas=0.6",
+                "-frames:v", "1", "-fps_mode", "vfr", SC], check=True)
+AI = os.path.join(HERE, "DOW-UAP-PR116-ai.jpg")
 pdf = os.path.join(D, "d091.pdf"); urllib.request.urlretrieve(PDF, pdf)
 subprocess.run(["pdftoppm", "-r", "300", "-f", "1", "-l", "1", "-png", pdf, os.path.join(D, "p")], check=True)
 P1 = next(os.path.join(D, f) for f in os.listdir(D) if f.startswith("p-") and f.endswith(".png"))
@@ -42,9 +53,10 @@ TEASE = [TZOOM, BOX,
          txt("?", 1140, 150, "yellow"), txt("Let's zoom in", 1310, 62), site]
 still(S0, TEASE, 2.5)
 # A: the sensor's whole zoom, 0 -> 29.3 s at 5.86x
-seg(["-t", "29.3", "-i", U], [FIT, "setpts=PTS/5.86", "fps=30", txt("Sensor zooming in", 250, 70), txt("6x speed", 335, 58, "yellow"), site], 5.0)
+seg(["-t", "29.3", "-i", U], [FIT, "hqdn3d=4:3:6:4", "setpts=PTS/5.86", "fps=30", txt("Sensor zooming in", 250, 70), txt("6x speed", 335, 58, "yellow"), site], 5.0)
 # B: close-up, plain then the site's Ironbow palette
-still(SC, [CZOOM, txt("Up close:", 250, 70), txt("a lumpy, lobed cluster", 335, 70, "yellow"), site], 1.8)
+still(SC, [CZOOM, txt("Up close:", 250, 70), txt("a lumpy, lobed cluster", 335, 70, "yellow"),
+           txt("enhanced: 9-frame stack + denoise", 1300, 44), site], 1.8)
 still(SC, [CZOOM, IRONBOW, txt("Same frame", 250, 70), txt("Ironbow palette", 335, 70, "yellow"), site], 1.7)
 # C: the debrief form; each ticked box lights up as the narrator reads it (D091 p.1)
 def tick(x, y, w, h, t):
@@ -64,10 +76,11 @@ subprocess.run([F, "-v", "error", "-y", "-loop", "1", "-t", "6.5", "-i", form, *
                 "-map", "[v]", "-map", "1:a", "-t", "6.5", *ENC, out], check=True)
 segs.append(out)
 # D: the crew's own words (D091 p.2)
-still(SC, [CZOOM, "eq=brightness=-0.35", txt("\"it appeared as a large,", 300, 62, "yellow"),
+still(AI, ["scale=1920:1920,crop=1080:1920:560:0,cas=0.4", txt("\"it appeared as a large,", 300, 62, "yellow"),
            txt("somewhat deformed balloon,", 380, 62, "yellow"), txt("but we were unable", 460, 62, "yellow"),
            txt("to verify that\"", 540, 62, "yellow"), txt("DOW-UAP-D091  ·  p.2", 630, 44),
-           txt("\"it traveled with the wind\"  ·  p.2", 1300, 50), site], 5.5)
+           txt("\"it traveled with the wind\"  ·  p.2", 1290, 50),
+           txt("AI illustration of their words, not evidence", 1360, 40), site], 5.5)
 # L: the lesson; the file stays unresolved
 still(SC, [CZOOM, "eq=brightness=-0.2", txt("Foil party balloons:", 250, 70), txt("round, metallic, shiny", 335, 70, "yellow"),
            txt("Nobody could verify it", 1210, 58), txt("AARO file: Unresolved", 1300, 58, "yellow"), site], 6.4)
@@ -86,10 +99,12 @@ SAY = [(0.2, "A Navy jet filmed this over the Atlantic. Let us zoom in."),
        (17.7, "In their words: a large, somewhat deformed balloon. But we were unable to verify that."),
        (23.2, "Foil party balloons are round, metallic and shiny. But no one could check, so the file says: unresolved."),
        (29.6, "Zoom in yourself, frame by frame, on real U F O dot org.")]
+TICK, WHOOSH = sfx("single crisp pen tick on a paper checkbox, short, clean", 0.6), sfx("fighter jet sensor zoom whoosh, smooth rising air rush", 1.5)
+MIX = [(t, tts(line)[0], 1.0) for t, line in SAY] + [(2.5, WHOOSH, 0.5)] + [(t, TICK, 0.9) for t in (12.8, 13.3, 14.25, 15.05, 15.8)]
 ins, fc = ["-i", CAT], ""
-for i, (t, line) in enumerate(SAY, 1):
-    ins += ["-i", tts(line)[0]]; fc += f"[{i}:a]aformat=channel_layouts=stereo,adelay={int(t*1000)}:all=1[n{i}];"
-fc += "[0:a]" + "".join(f"[n{i}]" for i in range(1, len(SAY)+1)) + f"amix=inputs={len(SAY)+1}:normalize=0:duration=first[a]"
+for i, (t, path, vol) in enumerate(MIX, 1):
+    ins += ["-i", path]; fc += f"[{i}:a]aformat=channel_layouts=stereo,volume={vol},adelay={int(t*1000)}:all=1[n{i}];"
+fc += "[0:a]" + "".join(f"[n{i}]" for i in range(1, len(MIX)+1)) + f"amix=inputs={len(MIX)+1}:normalize=0:duration=first[a]"
 VO = os.path.join(D, "vo.mp4")
 subprocess.run([F, "-v", "error", "-y", *ins, "-filter_complex", fc, "-map", "0:v", "-map", "[a]", "-c:v", "copy",
                 "-c:a", "aac", "-b:a", "128k", VO], check=True)
