@@ -145,6 +145,8 @@ export const ico = { size: 14, strokeWidth: 1.75, "aria-hidden": true } as const
 export const on = "border-signal text-signal";
 export const off = "border-line2 text-dim";
 
+const ADJUST_OPEN_KEY = "ru:adjust-open";
+
 export function MediaToolbar({
   adjust,
   onAdjust,
@@ -167,7 +169,22 @@ export function MediaToolbar({
   /** Keyboard/mouse shortcuts, shown as a hover tooltip. */
   keysHelp?: string;
 }) {
-  const [open, setOpen] = useState(true);
+  // Closed by default; once a visitor opens it, it stays open on later pages.
+  const [open, setOpenState] = useState(() => {
+    try {
+      return localStorage.getItem(ADJUST_OPEN_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  function setOpen(next: boolean) {
+    setOpenState(next);
+    try {
+      localStorage.setItem(ADJUST_OPEN_KEY, next ? "1" : "0");
+    } catch {
+      /* private mode etc.: the choice lasts for this page only */
+    }
+  }
   const changed = adjustFilter(adjust) !== "";
   const nextMag = LENS_MAGS[(LENS_MAGS.indexOf(mag) + 1) % LENS_MAGS.length];
   return (

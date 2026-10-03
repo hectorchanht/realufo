@@ -203,6 +203,7 @@ function renderDoc(path = "/doc/rec1") {
 beforeEach(() => {
   mockOpenComposer.mockReset();
   mockOpenViewer.mockReset();
+  localStorage.removeItem?.("ru:adjust-open");
   useRecordMock.mockReset();
   useCommentsMock.mockReset();
   useRecordsMock.mockReset();
@@ -466,7 +467,10 @@ describe("Doc", () => {
     });
     renderDoc();
     const img = () => document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
-    expect(screen.getByRole("button", { name: /adjust/i })).toHaveAttribute("aria-expanded", "true"); // open by default
+    const adjust = screen.getByRole("button", { name: /adjust/i });
+    expect(adjust).toHaveAttribute("aria-expanded", "false"); // closed by default
+    fireEvent.click(adjust);
+    expect(localStorage.getItem("ru:adjust-open")).toBe("1"); // remembered for later pages
     fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
     expect(img().style.filter).toContain("invert(1)");
     // presets are toggles: lit while active, a second click turns it off
@@ -521,7 +525,10 @@ describe("Doc", () => {
     fireEvent.click(ab());
     expect(ab()).toHaveAttribute("aria-pressed", "false");
 
-    expect(screen.getByRole("button", { name: /adjust/i })).toHaveAttribute("aria-expanded", "true"); // open by default
+    const adjust = screen.getByRole("button", { name: /adjust/i });
+    expect(adjust).toHaveAttribute("aria-expanded", "false"); // closed by default
+    fireEvent.click(adjust);
+    expect(localStorage.getItem("ru:adjust-open")).toBe("1"); // remembered for later pages
     fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
     // filter sits on a wrapper: on the <video> itself macOS Chrome's overlay path drops url() filters
     expect(video.style.filter).toBe("");
@@ -605,6 +612,7 @@ describe("Doc", () => {
     });
     renderDoc();
     const img = () => document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i }));
     fireEvent.click(screen.getByRole("button", { name: "Ironbow" }));
     expect(img().style.filter).toContain("#ru-ironbow");
     expect(document.getElementById("ru-ironbow")).toBeInTheDocument();
@@ -811,6 +819,7 @@ describe("Doc", () => {
       });
       useRecordMock.mockReturnValue({ data: image(midDetail), isLoading: false });
       const { unmount } = renderDoc("/doc/mid");
+      fireEvent.click(screen.getByRole("button", { name: /adjust/i }));
       fireEvent.click(screen.getByRole("button", { name: "Ironbow" }));
       fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
       fireEvent.click(screen.getByRole("button", { name: "Lens" }));

@@ -21,7 +21,8 @@ export interface TopNavProps {
 }
 
 export function TopNav({ activeTab, canBack = false, onBack }: TopNavProps) {
-  const navItems = useNavItems();
+  // No Feed item: the brand logo already links to "/" and the bar needs the room.
+  const navItems = useNavItems().filter((i) => i.tab !== "feed");
   const { title, sub } = usePageTitle();
   // Suppress the contextual block on the root/Feed tab — its title is
   // "REALUFO", which the brand wordmark already shows (avoids a dupe).
