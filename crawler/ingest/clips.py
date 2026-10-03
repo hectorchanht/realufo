@@ -42,6 +42,21 @@ def clean_title(rid, title, n=40) -> str:
     t = re.sub(r"\s+", " ", t.replace("_", " ")).strip(" ,:;") or rid
     return t if len(t) <= n else t[:n - 1].rstrip() + "…"
 
+def title_layout(t, width=1000, em=0.72, max_fs=64):
+    """(lines, fontsize) so the burned title fits `width` px of the 1080 frame: ≤2 lines split
+    at the space nearest the middle, fontsize from the longest line. ponytail: em = DejaVu Sans
+    Bold advance for all-caps text (mixed case ~0.62); a run of W/M could still clip — measure
+    glyph widths if a real title does."""
+    lines = [t]
+    if len(t) > 20 and " " in t:
+        i = min((i for i, c in enumerate(t) if c == " "), key=lambda i: abs(i - len(t) / 2))
+        lines = [t[:i], t[i + 1:]]
+    return lines, fit(max(map(len, lines)), max_fs, width, em)
+
+def fit(n, max_fs, width=1000, em=0.72) -> int:
+    """Largest fontsize ≤ max_fs at which n chars fit `width` px (see title_layout for em)."""
+    return min(max_fs, int(width / (em * max(n, 1))))
+
 def has_audio(url) -> bool:
     return bool(subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index",
                                 "-of", "csv=p=0", url], capture_output=True, text=True).stdout.strip())
@@ -64,14 +79,17 @@ def ffmpeg_args(url, start, length, out, id_file, font):
             "-crf", "23", "-maxrate", "1500k", "-bufsize", "3000k",
             "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-movflags", "+faststart", out]
 
-def vertical_args(url, start, length, out, title_file, font, audio=True, id_file=None):
+def vertical_args(url, start, length, out, title_files, fontsize, font, audio=True, id_file=None, id_fontsize=46):
+    """title_files: one textfile per line (each drawtext centres its own line)."""
     band = f"fontfile={font}:fontcolor=white:borderw=3:bordercolor=black:x=(w-text_w)/2"
+    title = "".join(f"drawtext={band}:textfile={f}:expansion=none:fontsize={fontsize}:y={220 + round(i * fontsize * 1.3)},"
+                    for i, f in enumerate(title_files))
     fc = ("[0:v]split[a][b];"
           "[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20[bg];"
           "[b]scale=1080:-2[fg];"
           "[bg][fg]overlay=(W-w)/2:(H-h)/2,"
-          + (f"drawtext={band}:textfile={id_file}:expansion=none:fontsize=46:y=150," if id_file else "") +
-          f"drawtext={band}:textfile={title_file}:expansion=none:fontsize=56:y=220,"
+          + (f"drawtext={band}:textfile={id_file}:expansion=none:fontsize={id_fontsize}:y=150," if id_file else "") +
+          f"{title}"
           f"drawtext={band}:text=realufo.org:fontsize=44:y=h-300[v]")
     a = ["ffmpeg", "-v", "error", "-y", "-ss", f"{start:.2f}", "-i", url]
     if not audio:
@@ -115,15 +133,21 @@ def main(argv=None):
         with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as idf:
             idf.write(row["id"])
         if args.vertical:
-            with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as tf:
-                tf.write(clean_title(row["id"], row.get("title")))
-            cmd = vertical_args(row["cdn_url"], start, length, out, tf.name, FONT, has_audio(row["cdn_url"]), idf.name)
+            lines, fs = title_layout(clean_title(row["id"], row.get("title")))
+            tfs = []
+            for ln in lines:
+                with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as tf:
+                    tf.write(ln)
+                tfs.append(tf.name)
+            cmd = vertical_args(row["cdn_url"], start, length, out, tfs, fs, FONT, has_audio(row["cdn_url"]), idf.name,
+                                fit(len(row["id"]), 46))
         else:
             cmd = ffmpeg_args(row["cdn_url"], start, length, out, idf.name, FONT)
         p = subprocess.run(cmd, capture_output=True, text=True)
         os.unlink(idf.name)
         if args.vertical:
-            os.unlink(tf.name)
+            for f in tfs:
+                os.unlink(f)
         if p.returncode or not os.path.exists(out) or not os.path.getsize(out):
             failed += 1
             print(f"[{i}/{len(rows)}] FAIL {row['id']}: {p.stderr.strip()[-300:]}")

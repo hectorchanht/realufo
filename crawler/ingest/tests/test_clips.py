@@ -1,4 +1,4 @@
-from ingest.clips import window, ffmpeg_args, todo, key, vkey, clean_title, vertical_args
+from ingest.clips import window, ffmpeg_args, todo, key, vkey, clean_title, vertical_args, title_layout, fit
 
 def test_window_is_30s_from_35pct_kept_inside_the_video():
     assert window(20.0) == (0.0, 30.0)           # short video: whole (-t 30 is a no-op)
@@ -45,7 +45,7 @@ def test_clean_title_strips_id_prefix_underscores_and_caps_length():
     assert len(t) == 40 and t.endswith("…")
 
 def test_vertical_args_pad_blur_overlay_and_text():
-    a = vertical_args("https://cdn/v.mp4", 210.0, 30.0, "/tmp/o.mp4", "/tmp/t.txt", "/fonts/D.ttf")
+    a = vertical_args("https://cdn/v.mp4", 210.0, 30.0, "/tmp/o.mp4", ["/tmp/t.txt"], 56, "/fonts/D.ttf")
     fc = a[a.index("-filter_complex") + 1]
     for part in ("scale=1080:1920:force_original_aspect_ratio=increase", "crop=1080:1920", "boxblur",
                  "scale=1080:-2", "overlay=(W-w)/2:(H-h)/2", "textfile=/tmp/t.txt", "expansion=none",
@@ -58,11 +58,34 @@ def test_vertical_args_pad_blur_overlay_and_text():
     assert a[-1] == "/tmp/o.mp4"
 
 def test_vertical_args_burns_the_id_above_the_title():
-    fc = (a := vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", "/tmp/t.txt", "/f.ttf", id_file="/tmp/id.txt"))[a.index("-filter_complex") + 1]
+    fc = (a := vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", ["/tmp/t.txt"], 56, "/f.ttf", id_file="/tmp/id.txt"))[a.index("-filter_complex") + 1]
     assert fc.index("textfile=/tmp/id.txt") < fc.index("textfile=/tmp/t.txt")
+    assert "textfile=/tmp/id.txt:expansion=none:fontsize=46:" in fc
+
+def test_fit_shrinks_long_ids_to_the_frame():
+    assert fit(20, 46) == 46                                   # WARGOV-VID-111688723
+    n = len("AARO-DOD_110692805-1920x1080-9000k")
+    assert fit(n, 46) < 46 and n * fit(n, 46) * 0.72 <= 1000
 
 def test_vertical_args_adds_silent_audio_when_source_has_none():
-    a = vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", "/tmp/t.txt", "/f.ttf", audio=False)
+    a = vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", ["/tmp/t.txt"], 56, "/f.ttf", audio=False)
     j = " ".join(a)
     assert "anullsrc=channel_layout=stereo:sample_rate=44100" in j
     assert a[a.index("-map", a.index("[v]")) + 1] == "1:a"
+
+def test_title_layout_wraps_and_sizes_to_fit_the_frame():
+    t = clean_title("LLE-UAP-PR002", "LLE-UAP-PR002, Unresolved UAP Report, Colorado, October 2023")
+    lines, fs = title_layout(t)
+    assert lines == ["Unresolved UAP Report,", "Colorado, Octobe…"]
+    assert " ".join(lines) == t
+    assert max(len(l) for l in lines) * fs * 0.72 <= 1000     # all-caps advance still fits 1080 - margins
+    assert title_layout("Go Fast UAP") == (["Go Fast UAP"], 64)   # short: one line, capped size
+    lines, fs = title_layout("X" * 40)                         # no space to wrap: shrink instead
+    assert lines == ["X" * 40] and 40 * fs * 0.72 <= 1000
+
+def test_vertical_args_draw_one_centred_line_per_title_file():
+    a = vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", ["/tmp/1.txt", "/tmp/2.txt"], 50, "/f.ttf")
+    fc = a[a.index("-filter_complex") + 1]
+    assert "textfile=/tmp/1.txt:expansion=none:fontsize=50:y=220," in fc
+    assert "textfile=/tmp/2.txt:expansion=none:fontsize=50:y=285," in fc
+    assert fc.count("x=(w-text_w)/2") == 3                    # both title lines + realufo.org
