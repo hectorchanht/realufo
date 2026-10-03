@@ -22,6 +22,11 @@ def txt(text, y, fs, color="white"):
 
 SITE = lambda: txt("realufo.org", 1420, 52)
 
+def stamp(rid, ctx, y=1420):
+    """Every-beat watermark, a drop-in for `site`: context line (when · where · who, e.g.
+    "Nov 1979  ·  Manises, Spain  ·  airliner crew") over "realufo.org  ·  <ID>"."""
+    return ",".join([txt(ctx, y - 46, 34), txt(f"realufo.org  ·  {rid}", y, 52)])
+
 def ramp_lut(r, g, b):
     """lutrgb expression mapping grey 0..255 through 7-stop colour ramps (as the site's SVG palettes)."""
     def ch(stops):
