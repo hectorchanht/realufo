@@ -374,6 +374,12 @@ describe("pre-rendered body", () => {
     expect(html).toContain("A light moves right.");
   });
 
+  it("privacy: static policy body, not a 404", async () => {
+    const html = await get("/privacy");
+    expect(html).toContain("<title>Privacy · RealUFO</title>");
+    expect(html).toContain("<h1>Privacy</h1>");
+    expect(html).toContain("salted hash");
+  });
   it("doc: meta + body even with Accept */* (share scrapers)", async () => {
     const html = await get("/doc/FBI-UAP-D002");
     expect(html).toContain("<title>FBI-UAP-D002 — FD-1057, Unresolved UAP Report, Colorado Springs, 2022 · RealUFO</title>");

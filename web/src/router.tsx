@@ -41,6 +41,7 @@ export const routes: RouteObject[] = [
           { path: "/case/:slug", lazy: screen(() => import("./screens/Case")) },
           { path: "/map", lazy: screen(() => import("./screens/Map")) },
           { path: "/browse", lazy: screen(() => import("./screens/Browse")) },
+          { path: "/privacy", lazy: screen(() => import("./screens/Privacy")) },
           { path: "/release/:slug", lazy: hub("release") },
           { path: "/agency/:slug", lazy: hub("agency") },
           { path: "/location/:slug", lazy: hub("location") },
