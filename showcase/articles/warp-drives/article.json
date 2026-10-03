@@ -1,0 +1,60 @@
+{
+  "slug": "warp-drives",
+  "title": "The Pentagon paid $21.9 million for warp drives, wormholes and invisibility cloaks: the receipts",
+  "hero": "hero.jpg",
+  "short": "short.mp4",
+  "showcase_record": "DOW-UAP-D138",
+  "parts": [
+    "The Pentagon paid $21,948,810 to study warp drives, wormholes and invisibility cloaks 🛸\nThe papers leaked years ago. The new part? The receipts.\nDOW-UAP-D138 🧵",
+    "1/ July 2008. The Defense Intelligence Agency scopes AAWSAP: foreign aerospace threats \"through the year 2050\". The study list: lift, propulsion, control... and item 5, \"spatial/temporal translation\".",
+    "2/ Sept 2008. The contract goes to Bigelow Aerospace Advanced Space Studies, Las Vegas. Box 26, total award amount: $21,948,810.00. That's in the contract file the Pentagon just released.",
+    "3/ Out came 37 papers. \"Warp Drive, Dark Energy, and the Manipulation of Extra Dimensions\". \"Traversable Wormholes, Stargates, and Negative Energy\". \"Antigravity for Aerospace Applications\". \"Invisibility Cloaking\".",
+    "4/ The warp paper did the math. At 100x light speed: Mars in 193 seconds, Jupiter 36 min, Alpha Centauri 15 days, the Orion Nebula 1.3 years. It cites Star Trek by name, and calls the energy needed \"phenomenally high\".",
+    "5/ The dark one: injuries from \"advanced energy systems\". Its 42 + 300 cases are mostly known microwave exposures. And the Pentagon's own label for all 37: \"reference and synthesis products rather than... original research\".",
+    "6/ Read the receipts yourself, free:\n• realufo.org/archive → search \"AAWSAP\"\n• or search a phrase inside the PDFs, e.g. \"Orion Nebula\"\n• the contract with the $21.9M total: DOW-UAP-D111"
+  ],
+  "evidence": [
+    {
+      "id": "DOW-UAP-D111",
+      "label": "The receipt: $21,948,810.00 to Bigelow Aerospace Advanced Space Studies",
+      "image": "s-receipt.jpg",
+      "evidence": "Solicitation and original order, effective 22 Sep 2008, Virginia Contracting Activity (DIA). Offeror: Bigelow Aerospace Advanced Space Studies, LLC, Las Vegas NV. Box 26, total award amount: $21,948,810.00. Base year line items include $2,887,000 for monthly status reports. New in this release: the contract file (objectives, solicitation, five modifications)."
+    },
+    {
+      "id": "DOW-UAP-D110",
+      "label": "The to-do list: threats \"through the year 2050\", item 5 \"spatial/temporal translation\"",
+      "image": "s-list.jpg",
+      "evidence": "Statement of Objectives, 18 July 2008: \"understand the physics and engineering of these applications as they apply to the foreign threat out to the far term, i.e., from now through the year 2050\". Study areas: lift, propulsion, control, power generation, spatial/temporal translation, materials, configuration, signature reduction, human interface, human effects, armament."
+    },
+    {
+      "id": "DOW-UAP-D138",
+      "label": "Warp drive: Mars in 193 seconds at 100x light speed",
+      "image": "s-table.jpg",
+      "evidence": "Table 1, transit times at 100x the speed of light: Mars 193 seconds, Jupiter 36 minutes, Neptune 4 hours, Alpha Centauri 15 days, Epsilon Eridani 38 days, the Orion Nebula 1.3 years. Cites Alcubierre's 1994 paper and \"the warp drive from the popular Star Trek television series\"; notes the energy requirement is \"so phenomenally high\"."
+    },
+    {
+      "id": "DOW-UAP-D128",
+      "label": "The dark one: injuries blamed on \"advanced energy systems\"",
+      "image": "s-cases.jpg",
+      "evidence": "\"An extensive review of the medical literature ... has revealed an additional relevant but less dramatic 42 cases from the peer-reviewed medical literature, and an additional un-published similar 300 cases, primarily when fields were measured or emitters were known\" (1-10 GHz). Yet: \"The medical analyses ... do indicate the use of (to us) unconventional and advanced energy systems.\""
+    },
+    {
+      "id": "DOW-UAP-D139",
+      "label": "Traversable Wormholes, Stargates, and Negative Energy (2010)",
+      "image": "s-title-D139.jpg",
+      "evidence": "AAWSAP DIRD, April 2010, 42 pages. Reviews wormhole physics and the exotic \"negative energy\" it would need. The Pentagon's note on every DIRD: \"reference and synthesis products rather than ... original research\", not \"current validation of the concepts discussed\"."
+    },
+    {
+      "id": "DOW-UAP-D135",
+      "label": "Antigravity for Aerospace Applications (2010)",
+      "image": "s-title-D135.jpg",
+      "evidence": "AAWSAP DIRD, March 2010, 44 pages: Newtonian, relativistic and quantum approaches to counteracting gravity for propulsion."
+    },
+    {
+      "id": "DOW-UAP-D122",
+      "label": "Invisibility Cloaking: Theory and Experiments (2010)",
+      "image": "s-title-D122.jpg",
+      "evidence": "AAWSAP DIRD, March 2010, 29 pages: camouflage, transparency and metamaterial cloaking."
+    }
+  ]
+}
