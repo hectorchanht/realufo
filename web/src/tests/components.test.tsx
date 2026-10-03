@@ -211,9 +211,9 @@ describe("DocCard", () => {
     expect(container.querySelector("img")!.getAttribute("srcset")).toBeNull();
   });
 
-  it("shows the video play glyph when kind is 'video'", () => {
+  it("does not overlay a play glyph on video thumbs", () => {
     render(withRouter(<DocCard record={{ ...feedRecord, kind: "video" }} variant="feed" />));
-    expect(screen.getByText("▶")).toBeInTheDocument();
+    expect(screen.queryByText("▶")).not.toBeInTheDocument();
   });
 
   it("shows video length bottom-right when duration is known", () => {
@@ -223,11 +223,6 @@ describe("DocCard", () => {
     expect(screen.getByText("1:02:05")).toBeInTheDocument();
     rerender(withRouter(<DocCard record={{ ...feedRecord, kind: "video", duration: null }} variant="feed" />));
     expect(screen.queryByText(/^\d+:\d\d$/)).not.toBeInTheDocument();
-  });
-
-  it("does not show the play glyph for non-video kinds", () => {
-    render(withRouter(<DocCard record={feedRecord} variant="feed" />));
-    expect(screen.queryByText("▶")).not.toBeInTheDocument();
   });
 
   it("shows the diagonal-hatch fallback glyph (type glyph) when there is no thumb", () => {

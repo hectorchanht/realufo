@@ -164,15 +164,6 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
             REDACTED
           </span>
         )}
-        {record.kind === "video" && (
-          <span
-            aria-hidden="true"
-            className="absolute left-1/2 top-1/2 grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-[1.5px] border-white text-[14px] text-white"
-            style={{ background: "rgba(0,0,0,.55)" }}
-          >
-            ▶
-          </span>
-        )}
         {record.kind === "video" && !!record.duration && (
           <span className="absolute bottom-2 right-2 rounded-[5px] px-1.5 py-1 font-mono text-[9px] font-bold text-white" style={{ background: "rgba(0,0,0,.72)" }}>
             {formatDuration(record.duration)}
