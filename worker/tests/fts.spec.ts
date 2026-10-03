@@ -14,6 +14,24 @@ const putText = (id: string, pages: { n: number; text: string }[]) =>
     .run();
 
 describe("record_fts (search inside documents)", () => {
+  it("leaves OCR'd files' FTS rows alone (they're written from R2 by crawler ingest.ocr)", async () => {
+    await env.DB.prepare("INSERT OR REPLACE INTO record_ocr(record_id,pages,ocr_pages,chars,engine) VALUES('FBI-UAP-D002',2,2,40,'t')").run();
+    await env.DB.prepare("DELETE FROM record_fts WHERE record_id='FBI-UAP-D002'").run();
+    await env.DB.prepare("INSERT INTO record_fts(record_id,page,body) VALUES('FBI-UAP-D002',40,'the frobnitz memo on page forty')").run();
+    await putText("FBI-UAP-D002", [{ n: 1, text: "capped wibble text" }]); // fulltext rebuild: must not touch FTS
+    expect(await hits("wibble")).toEqual([]);
+    expect(await hits("frobnitz")).toEqual([{ record_id: "FBI-UAP-D002", page: 40 }]);
+    await env.DB.prepare("DELETE FROM record_text WHERE record_id='FBI-UAP-D002'").run(); // OCR requeue
+    expect(await hits("frobnitz")).toEqual([{ record_id: "FBI-UAP-D002", page: 40 }]);
+    await env.DB.prepare("DELETE FROM record_ocr WHERE record_id='FBI-UAP-D002'").run();
+    await env.DB.prepare("DELETE FROM record_fts WHERE record_id='FBI-UAP-D002'").run();
+  });
+
+  it("record_text has an ai_sections column", async () => {
+    const cols = await env.DB.prepare("PRAGMA table_info(record_text)").all<{ name: string }>();
+    expect(cols.results.map((c) => c.name)).toContain("ai_sections");
+  });
+
   it("stays in sync with record_text on insert, replace and delete", async () => {
     await putText("FBI-UAP-D002", [{ n: 1, text: "cover" }, { n: 7, text: "the zorblax report" }]);
     expect(await hits("zorblax")).toEqual([{ record_id: "FBI-UAP-D002", page: 7 }]);
