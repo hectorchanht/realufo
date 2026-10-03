@@ -64,7 +64,7 @@ VARS=(); [ -z "$DRAIN" ] && VARS=(--var "X_FORCE_PICK:$ID")
 echo "== deploying $REF with every-minute cron ${DRAIN:+(drain)}${DRAIN:-+ X_FORCE_PICK=$ID}"
 # Same steps as `pnpm run deploy`, with the extra var on the wrangler call.
 (cd "$W" && npx wrangler d1 migrations apply realufo-db --remote --env-file /dev/null && pnpm build:web &&
-  npx wrangler deploy --env-file /dev/null "${VARS[@]}") >"$W/deploy.log" 2>&1 || { tail -20 "$W/deploy.log"; exit 1; }
+  npx wrangler deploy --env-file /dev/null ${VARS[@]+"${VARS[@]}"}) >"$W/deploy.log" 2>&1 || { tail -20 "$W/deploy.log"; exit 1; }
 grep -E "Current Version ID" "$W/deploy.log"
 
 if [ -n "$DRAIN" ]; then
