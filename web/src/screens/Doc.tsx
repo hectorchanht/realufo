@@ -466,6 +466,9 @@ export function Doc() {
     </>
   );
 
+  const panelRatio =
+    pic && (media === "image" || media === "video") ? (view.rot % 180 ? pic.h / pic.w : pic.w / pic.h) : null;
+
   return (
     <div data-screen="doc" className="pb-5" style={{ animation: "fadeup .28s ease both" }}>
       {isDesktop && titleBlock}
@@ -488,8 +491,11 @@ export function Doc() {
         // select-none: a long-press while lensing must not start a text selection on the badges.
         className={`relative mb-3.5 select-none overflow-hidden rounded-2xl border border-line2 ${media === "image" ? "bg-black" : "bg-bg2"}`}
         style={{
-          // panel takes the media's own shape once known, so it fills the block with no letterbox bars
-          aspectRatio: pic && (media === "image" || media === "video") ? `${pic.w} / ${pic.h}` : "4/3",
+          // panel takes the media's own shape once known (turned with it at 90/270°), so it fills the
+          // block with no letterbox bars; tall shapes narrow (centred) instead of being cut at 78vh
+          aspectRatio: panelRatio ? `${panelRatio}` : "4/3",
+          width: panelRatio ? `min(100%, calc(78vh * ${panelRatio}))` : undefined,
+          marginInline: "auto",
           maxHeight: "78vh",
           touchAction: view.z > 1 ? "none" : "pan-y",
           WebkitTouchCallout: "none",

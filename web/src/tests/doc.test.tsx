@@ -640,8 +640,15 @@ describe("Doc", () => {
     expect(img().style.filter).toContain("invert(1)");
     expect(img().style.filter).toContain("#ru-ironbow");
 
+    // panel takes the picture's shape, turned with it at 90° so the rotated picture fills it
+    Object.defineProperty(img(), "naturalWidth", { configurable: true, value: 1600 });
+    Object.defineProperty(img(), "naturalHeight", { configurable: true, value: 1000 });
+    fireEvent.load(img());
+    const panel = img().closest("[data-chrome]") as HTMLElement;
+    expect(panel.style.aspectRatio).toMatch(/^1\.6/);
     fireEvent.click(screen.getByRole("button", { name: /rotate 90/i }));
     expect(img().style.transform).toContain("rotate(90deg)");
+    expect(panel.style.aspectRatio).toMatch(/^0\.625/);
     fireEvent.click(screen.getByRole("button", { name: "Flip" }));
     expect(img().style.transform).toContain("scaleX(-1)");
 
