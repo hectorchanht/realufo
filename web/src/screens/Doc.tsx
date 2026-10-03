@@ -396,7 +396,7 @@ export function Doc() {
   const { media, fullUrl, thumbUrl, crop } = recordMedia(detail, isDesktop);
   const badge = record.agency || "DOC";
   const location = record.location && record.location !== "N/A" ? record.location : "";
-  const srcLinks = sourceLinks(record);
+  const srcLinks = sourceLinks(record, pdfPage);
 
   function handleOpenOriginal() {
     if (!fullUrl) return;
