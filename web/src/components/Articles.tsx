@@ -10,7 +10,7 @@ export function Articles({ articles, currentId, onSeek }: { articles: Article[];
     <>
       {articles.map((a) => (
         <section key={a.slug} aria-label={a.title} className="mb-4 overflow-hidden rounded-xl border border-line2 bg-surface">
-          <div className="px-3.5 pt-3 font-mono text-[10px] font-bold tracking-[.6px] text-signal">LOOK-ALIKE FILES</div>
+          <div className="px-3.5 pt-3 font-mono text-[10px] font-bold tracking-[.6px] text-signal">STORY · {a.evidence.length} FILES</div>
           <h2 className="px-3.5 pb-2.5 pt-1 font-body text-[15px] font-semibold leading-snug text-ink">{a.title}</h2>
           {a.image_url && <img src={a.image_url} alt={a.title} loading="lazy" className="block w-full" />}
           <ol className="divide-y divide-line">

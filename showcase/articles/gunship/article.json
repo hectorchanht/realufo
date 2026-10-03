@@ -1,0 +1,26 @@
+{
+  "slug": "gunship",
+  "title": "The gunship that fired at UFOs: \"cold orbs\", a 105mm cannon and a recorder that \"inexplicably failed\"",
+  "hero": "hero.jpg",
+  "short": "short.mp4",
+  "showcase_record": "DOW-UAP-PR121",
+  "parts": [
+    "A US gunship fired its 105mm cannon at two UFOs.\nThen its video recorder \"inexplicably failed\".\nSomeone filmed the screen with a phone 📱\nThe Pentagon just released it all 🧵",
+    "1/ Gulf of Oman, 8 Sep 2021. An AC-130 drops a flare in the sea for target practice. On infrared: two \"cold orbs\", ~4 ft wide, hovering 0-20 ft over the water above the flare. For 15 seconds.",
+    "2/ The officer pulls the trigger on the 105mm. The report: in the split second before the recoil, the orbs \"rapidly fly away from the flare and out of the sensor feed without changing altitude\".",
+    "3/ ~25 sightings that night. Two orbs weaving \"around, over, and under each other in a manner similar to how dolphins playfully swim in a pod\". The source's comment: \"They knew they were flying together.\"",
+    "4/ Clocked at 250 to 1,300 mph. Then the plane's recorder \"inexplicably failed and the video data became corrupted\". What survived: 6 clips shot off the cockpit screen with a phone. In one, two orbs cross the screen in 0.3 s.",
+    "5/ The science: \"cold\" in infrared just means colder than what's behind it. Over a warm night sea, a shiny surface reflecting the cold sky reads cold. And speeds from a circling plane's targeting tool hit the same parallax trap as GoFast. Still unresolved.",
+    "6/ See it yourself, free:\n• realufo.org/archive → search \"gunship\" → Video\n• DOW-UAP-PR121 at 0:14: press , and . to catch the pair\n• read the crew's report in full: DOW-UAP-D101"
+  ],
+  "evidence": [
+    {"id": "DOW-UAP-D101", "label": "The crew's intelligence report",
+     "evidence": "\"two approximately four-foot diameter cold orbs between 0 to 20 feet above the surface of the water stationary over the flare for approximately 15 seconds.\" \"the CSO pulled the trigger firing the aircraft's 105mm cannon … the CSO observed the pair of UAPs rapidly fly away from the flare and out of the sensor feed without changing altitude.\" \"similar to how dolphins playfully swim in a pod (SOURCE COMMENT: They [the UAPs] knew they were flying together).\" \"the aircraft's Digital Video Recorder (DVR) inexplicably failed and the video data became corrupted.\" Speeds 250-1,300 mph (OCR of the scan, lightly cleaned)."},
+    {"id": "DOW-UAP-PR121", "t": 14.1, "label": "Two orbs cross the whole screen in about 0.3 seconds", "image": "DOW-UAP-PR121.jpg",
+     "evidence": "Between 0:14.1 and 0:14.3 two dark blobs streak across the top right as a pair, smeared by their speed. At normal playback you barely see them; step frame by frame. Single orbs are clearest at 0:02.5 and 0:27.5."},
+    {"id": "DOW-UAP-PR118", "t": 1.5, "label": "A \"cold orb\" near the crosshair", "image": "DOW-UAP-PR118.jpg",
+     "evidence": "A small dark orb sits just off the reticle. AARO: \"secondary capture, recorded via a cellular device, of an infrared sensor display aboard a U.S. Special Operations Forces AC-130J Gunship\"; expect blur, flicker and tilt."},
+    {"id": "DOW-UAP-PR117", "t": 4, "label": "What a phone filming a cockpit screen looks like", "image": "DOW-UAP-PR117.jpg",
+     "evidence": "Tilted reticle, glare, screen-door noise: the footage that survived after the recorder failed. PR117-PR122 were all captured the same night."}
+  ]
+}

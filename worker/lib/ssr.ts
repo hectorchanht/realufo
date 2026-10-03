@@ -282,7 +282,7 @@ export function docBody(d: DocData): string {
     tldrSection(d),
     fullTextSection(d),
     series.length ? `<p>${series.join(" · ")}</p>` : "",
-    ...(d.articles ?? []).map((a) => section(`Look-alike files: ${a.title}`, [
+    ...(d.articles ?? []).map((a) => section(`Story: ${a.title}`, [
       ...a.evidence.map((e) => ({ href: docHref(e.id), text: `${e.id}: ${e.label}` })),
       ...(a.thread_id ? [{ href: threadHref(a.thread_id), text: "Full story and evidence" }] : []),
     ])),
