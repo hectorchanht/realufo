@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen, fireEvent, act, waitFor } from "@testing-library/react";
+import { screen, fireEvent, act, waitFor, within } from "@testing-library/react";
 import type { Short } from "../api/types";
 import { renderAppAt } from "./util";
 
@@ -44,7 +44,66 @@ beforeEach(() => {
   );
 });
 
+// jsdom media elements have no real timeline: give one a settable clock.
+const clockOn = (v: HTMLVideoElement, duration: number, paused = false) => {
+  let at = 0;
+  Object.defineProperty(v, "duration", { configurable: true, value: duration });
+  Object.defineProperty(v, "paused", { configurable: true, get: () => paused });
+  Object.defineProperty(v, "currentTime", { configurable: true, get: () => at, set: (x: number) => (at = x) });
+  return (t: number) => {
+    at = t;
+    fireEvent(v, new Event("timeupdate"));
+  };
+};
+
 describe("Shorts player", () => {
+  it("each slide snaps on its own (one swipe = one Short)", async () => {
+    renderAppAt("/shorts/A-1");
+    const videos = await screen.findAllByTestId("short-video");
+    expect(videos.every((v) => v.closest("section")!.classList.contains("snap-always"))).toBe(true);
+  });
+
+  it("progress bar follows playback and ←/→ seek 5 s", async () => {
+    renderAppAt("/shorts/A-1");
+    const v = (await screen.findAllByTestId("short-video"))[0] as HTMLVideoElement;
+    const at = clockOn(v, 24, true);
+    act(() => at(6));
+    const bar = screen.getAllByRole("slider", { name: "Seek" })[0];
+    expect(bar).toHaveAttribute("aria-valuetext", "0:06 of 0:24");
+    expect(bar.querySelector(".bg-signal")).toHaveStyle({ width: "25%" });
+    fireEvent.keyDown(bar, { key: "ArrowRight" });
+    expect(v.currentTime).toBe(11);
+    fireEvent.keyDown(bar, { key: "ArrowLeft" });
+    fireEvent.keyDown(bar, { key: "ArrowLeft" });
+    fireEvent.keyDown(bar, { key: "ArrowLeft" });
+    expect(v.currentTime).toBe(0);
+  });
+
+  it("tapping a video pauses / plays it (sound stays put) and flashes the icon", async () => {
+    renderAppAt("/shorts/A-1");
+    const v = (await screen.findAllByTestId("short-video"))[0] as HTMLVideoElement;
+    const pause = vi.mocked(HTMLMediaElement.prototype.pause);
+    const play = vi.mocked(HTMLMediaElement.prototype.play);
+    pause.mockClear();
+    play.mockClear();
+    clockOn(v, 24, false);
+    fireEvent.click(v);
+    expect(pause).toHaveBeenCalledTimes(1);
+    expect(v.muted).toBe(true);
+    clockOn(v, 24, true);
+    fireEvent.click(v);
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
+  it("▲ / ▼ buttons step one Short", async () => {
+    renderAppAt("/shorts/A-1");
+    await screen.findAllByTestId("short-video");
+    Object.defineProperty(document.querySelector("[data-screen=shorts] [data-scroll]")!, "clientHeight", { configurable: true, value: 800 });
+    fireEvent.click(screen.getByRole("button", { name: "Next Short" }));
+    fireEvent.click(screen.getByRole("button", { name: "Previous Short" }));
+    expect(scrollBy.mock.calls.map(([o]) => (o as ScrollToOptions).top)).toEqual([800, -800]);
+  });
+
   it("renders one slide per Short, muted, each with a View file link", async () => {
     renderAppAt("/shorts/B%202");
     const videos = (await screen.findAllByTestId("short-video")) as HTMLVideoElement[];
@@ -78,7 +137,7 @@ describe("Shorts player", () => {
   it("opens scrolled to :id and the tab title follows the Short on screen", async () => {
     renderAppAt("/shorts/B%202");
     const videos = (await screen.findAllByTestId("short-video")) as HTMLVideoElement[];
-    expect(scrolled.at(-1)).toBe(videos[1].parentElement);
+    expect(scrolled.at(-1)).toBe(videos[1].closest("section"));
     await waitFor(() => expect(document.title).toMatch(/Second/));
     act(() => fire([{ target: videos[2], isIntersecting: true } as unknown as IntersectionObserverEntry], {} as IntersectionObserver));
     await waitFor(() => expect(document.title).toMatch(/Third/));
@@ -94,11 +153,14 @@ describe("Shorts player", () => {
     expect(scrollBy).toHaveBeenCalledTimes(1);
   });
 
-  it("the page behind the player is inert; back button is named by its text", async () => {
+  it("the page behind the player is inert; icon buttons are named", async () => {
     const { container } = renderAppAt("/shorts/A-1");
     await screen.findAllByTestId("short-video");
     expect(container).toHaveAttribute("inert");
-    expect(screen.getByRole("button", { name: "‹ Back" })).toBeInTheDocument();
+    const player = within(document.querySelector("[data-screen=shorts]") as HTMLElement);
+    expect(player.getByRole("button", { name: "Back" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "View file" })[0]).toHaveAttribute("href", "/doc/A-1");
+    expect(screen.getAllByRole("button", { name: "Share" })).toHaveLength(3);
     expect(document.querySelector("[data-screen=shorts] [data-scroll]")).toHaveClass("overscroll-contain");
   });
 

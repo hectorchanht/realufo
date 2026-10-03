@@ -3,10 +3,13 @@
 // the URL follows it (replace) so the address bar is always the shareable Short.
 // Queue = the ?q= search results when they contain :id, else every Short;
 // pages load until :id turns up, and again as the viewer nears the end.
-// Starts muted (autoplay policy); the sound button / tapping a video toggles all.
+// One swipe (snap-stop) / ▲▼ button / arrow key = one Short. Tap a video (or
+// Space) to pause/play; a bar along its bottom shows progress and seeks.
+// Starts muted (autoplay policy); the sound button toggles all.
 // Portaled to <body> with the app behind it made inert, so Tab/screen readers
 // stay in the player.
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { ArrowLeft, Check, ChevronDown, ChevronUp, FileText, Pause, Play, Share2, Volume2, VolumeX } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useShorts } from "../api/queries";
@@ -15,6 +18,88 @@ import { docTitleParts } from "../lib/docTitle";
 import { shareLink } from "../lib/shareLink";
 import { useAutoplayInView } from "../lib/useAutoplayInView";
 import { useSetPageTitle } from "../lib/pageTitle";
+
+const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+// Progress bar along a Short's bottom edge: fills as it plays (every frame
+// while playing), tap/drag to seek (paused while dragging), ←/→ = 5 s.
+// Finds its slide's <video> itself.
+function Seek() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [video, setVideo] = useState<HTMLVideoElement | null>(null);
+  const [t, setT] = useState({ at: 0, dur: 0 });
+  const [drag, setDrag] = useState(false);
+  const resume = useRef(false);
+  useEffect(() => setVideo(ref.current?.closest("section")?.querySelector("video") ?? null), []);
+  useEffect(() => {
+    if (!video) return;
+    let raf = 0;
+    const tick = () => {
+      setT({ at: video.currentTime, dur: Number.isFinite(video.duration) ? video.duration : 0 });
+      if (!video.paused) raf = requestAnimationFrame(tick);
+    };
+    const kick = () => {
+      cancelAnimationFrame(raf);
+      tick();
+    };
+    const evs = ["play", "pause", "timeupdate", "seeked", "loadedmetadata"];
+    evs.forEach((e) => video.addEventListener(e, kick));
+    return () => {
+      cancelAnimationFrame(raf);
+      evs.forEach((e) => video.removeEventListener(e, kick));
+    };
+  }, [video]);
+
+  const seek = (to: number) => {
+    if (!video || !t.dur) return;
+    video.currentTime = Math.min(t.dur, Math.max(0, to));
+    setT({ at: video.currentTime, dur: t.dur });
+  };
+  const seekX = (e: ReactPointerEvent) => {
+    const r = ref.current!.getBoundingClientRect();
+    if (r.width) seek(((e.clientX - r.left) / r.width) * t.dur);
+  };
+  const end = () => {
+    if (!drag) return;
+    setDrag(false);
+    if (resume.current) video?.play().catch(() => {});
+  };
+  const pct = t.dur ? (t.at / t.dur) * 100 : 0;
+  return (
+    <div
+      ref={ref}
+      role="slider"
+      tabIndex={0}
+      aria-label="Seek"
+      aria-valuemin={0}
+      aria-valuemax={Math.round(t.dur)}
+      aria-valuenow={Math.round(t.at)}
+      aria-valuetext={`${clock(t.at)} of ${clock(t.dur)}`}
+      onPointerDown={(e) => {
+        if (!video) return;
+        ref.current?.setPointerCapture?.(e.pointerId);
+        resume.current = !video.paused;
+        video.pause();
+        setDrag(true);
+        seekX(e);
+      }}
+      onPointerMove={(e) => drag && seekX(e)}
+      onPointerUp={end}
+      onPointerCancel={end}
+      onKeyDown={(e: ReactKeyboardEvent) => {
+        const step = { ArrowLeft: -5, ArrowRight: 5 }[e.key];
+        if (!step) return;
+        e.preventDefault();
+        seek(t.at + step);
+      }}
+      className="absolute inset-x-0 bottom-0 z-10 flex h-5 cursor-pointer touch-none items-end outline-none focus-visible:ring-2 focus-visible:ring-signal"
+    >
+      <div className={`w-full bg-white/25 transition-[height] ${drag ? "h-[6px]" : "h-[3px]"}`}>
+        <div className="h-full bg-signal" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
 
 const path = (id: string, q: string) => `/shorts/${encodeURIComponent(id)}${q ? `?q=${encodeURIComponent(q)}` : ""}`;
 
@@ -45,6 +130,20 @@ export default function Shorts() {
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const [muted, setMuted] = useState(true);
   const [copied, setCopied] = useState("");
+  // Big ▶ / ❚❚ flashed mid-slide after a tap toggles play.
+  const [flash, setFlash] = useState<{ id: string; playing: boolean; n: number } | null>(null);
+  const toggle = (v: HTMLVideoElement) => {
+    const playing = v.paused;
+    if (playing) v.play().catch(() => {});
+    else v.pause();
+    setFlash((f) => ({ id: v.dataset.id ?? "", playing, n: (f?.n ?? 0) + 1 }));
+  };
+  useEffect(() => {
+    if (!flash) return;
+    const h = setTimeout(() => setFlash(null), 600);
+    return () => clearTimeout(h);
+  }, [flash]);
+  const step = (n: number) => root?.scrollBy?.({ top: n * root.clientHeight, behavior: "smooth" });
   const opened = useRef(false);
   const idx = shorts?.findIndex((s) => s.id === id) ?? -1;
   const found = idx >= 0;
@@ -80,26 +179,43 @@ export default function Shorts() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement)?.closest?.("input,textarea")) return;
-      const step = { ArrowDown: 1, j: 1, ArrowUp: -1, k: -1 }[e.key];
-      if (step) {
+      const n = { ArrowDown: 1, j: 1, ArrowUp: -1, k: -1 }[e.key];
+      if (n) {
         e.preventDefault();
-        root?.scrollBy?.({ top: step * root.clientHeight, behavior: "smooth" });
+        step(n);
+      } else if (e.key === " " && !(e.target as HTMLElement)?.closest?.("button,a,[role=slider]")) {
+        const v = [...(root?.querySelectorAll("video") ?? [])].find((x) => x.dataset.id === id);
+        if (v) {
+          e.preventDefault();
+          toggle(v);
+        }
       } else if (e.key === "Escape") goBack(navigate, pathname);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [navigate, pathname, root]);
+  });
 
+  const round = "grid h-11 w-11 place-items-center rounded-full text-white";
   const back = (
-    <button type="button" onClick={() => goBack(navigate, pathname)}
-      className="absolute left-3 top-3 z-10 rounded-full bg-black/50 px-3 py-1.5 font-mono text-[13px] text-white">
-      ‹ Back
+    <button type="button" aria-label="Back" title="Back" onClick={() => goBack(navigate, pathname)} className={`absolute left-3 top-3 z-20 bg-black/50 ${round}`}>
+      <ArrowLeft size={22} aria-hidden="true" />
     </button>
   );
 
   return createPortal(
     <div ref={setLayer} data-screen="shorts" className="fixed inset-0 z-[60] bg-black">
       {back}
+      {/* Mouse users get ▲▼; touch screens swipe. */}
+      {found && !pending && (
+        <div className="absolute right-4 top-1/2 z-20 hidden -translate-y-1/2 flex-col gap-3 [@media(hover:hover)]:flex">
+          <button type="button" aria-label="Previous Short" title="Previous" className={`bg-white/15 hover:bg-white/25 ${round}`} onClick={() => step(-1)}>
+            <ChevronUp size={22} aria-hidden="true" />
+          </button>
+          <button type="button" aria-label="Next Short" title="Next" className={`bg-white/15 hover:bg-white/25 ${round}`} onClick={() => step(1)}>
+            <ChevronDown size={22} aria-hidden="true" />
+          </button>
+        </div>
+      )}
       {pending ? (
         <div className="grid h-full place-items-center font-mono text-[11px] text-white/60">◉ loading signal…</div>
       ) : !found ? (
@@ -114,39 +230,53 @@ export default function Shorts() {
         <div ref={setRoot} data-scroll className="h-full snap-y snap-mandatory overflow-y-auto overscroll-contain">
           {shorts!.map((s, i) => {
             const title = docTitleParts(s.id, s.title, "video").title;
+            const MuteIcon = muted ? VolumeX : Volume2;
+            const ShareIcon = copied === s.id ? Check : Share2;
             return (
-              <section key={s.id} className="relative flex h-[100dvh] snap-start items-center justify-center">
-                <video
-                  data-testid="short-video"
-                  data-id={s.id}
-                  src={s.clip}
-                  poster={s.thumb ?? undefined}
-                  muted={muted}
-                  loop
-                  playsInline
-                  preload={i === idx || i === idx + 1 ? "metadata" : "none"}
-                  onClick={() => setMuted((m) => !m)}
-                  // autoplay may force a slide back to muted (useAutoplayInView): keep the button honest
-                  onVolumeChange={(e) => setMuted(e.currentTarget.muted)}
-                  className="aspect-[9/16] h-full max-w-full object-contain"
-                />
-                <button type="button" onClick={() => setMuted((m) => !m)} aria-label={muted ? "Unmute" : "Mute"}
-                  className="absolute right-3 top-3 rounded-full bg-black/50 px-3 py-1.5 text-[15px] text-white">
-                  {muted ? "🔇" : "🔊"}
-                </button>
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-10 text-white">
-                  <div className="font-mono text-[10px] uppercase tracking-[.8px] text-white/60">{s.id}</div>
-                  <div className="mb-3 line-clamp-2 text-[14px] font-semibold">{title}</div>
-                  <div className="flex gap-2">
-                    <Link to={`/doc/${encodeURIComponent(s.id)}`} className="rounded-full bg-white px-3.5 py-1.5 font-mono text-[11px] text-black">
-                      View file ›
-                    </Link>
-                    <button type="button"
-                      onClick={async () => setCopied((await shareLink(title, path(s.id, ""))) === "copied" ? s.id : "")}
-                      className="rounded-full border border-white/40 px-3.5 py-1.5 font-mono text-[11px]">
-                      {copied === s.id ? "Link copied" : "Share"}
-                    </button>
+              <section key={s.id} className="flex h-[100dvh] snap-start snap-always items-center justify-center">
+                {/* 9:16 box: full screen on a phone, a centered column on desktop. */}
+                <div className="relative aspect-[9/16] h-full max-w-full">
+                  <video
+                    data-testid="short-video"
+                    data-id={s.id}
+                    src={s.clip}
+                    poster={s.thumb ?? undefined}
+                    muted={muted}
+                    loop
+                    playsInline
+                    preload={i === idx || i === idx + 1 ? "metadata" : "none"}
+                    onClick={(e) => toggle(e.currentTarget)}
+                    // autoplay may force a slide back to muted (useAutoplayInView): keep the button honest
+                    onVolumeChange={(e) => setMuted(e.currentTarget.muted)}
+                    className="h-full w-full object-contain"
+                  />
+                  {flash?.id === s.id && (
+                    <div key={flash.n} aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center">
+                      <div className="grid h-16 w-16 place-items-center rounded-full bg-black/50 text-white animate-[fadeup_.6s_ease_reverse_both]">
+                        {flash.playing ? <Play size={30} fill="currentColor" /> : <Pause size={30} fill="currentColor" />}
+                      </div>
+                    </div>
+                  )}
+                  <button type="button" onClick={() => setMuted((m) => !m)} aria-label={muted ? "Unmute" : "Mute"} title={muted ? "Unmute" : "Mute"}
+                    className={`absolute right-3 top-3 bg-black/50 ${round}`}>
+                    <MuteIcon size={20} aria-hidden="true" />
+                  </button>
+                  <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 bg-gradient-to-t from-black/85 to-transparent px-4 pb-[max(24px,calc(env(safe-area-inset-bottom)+12px))] pt-10 text-white">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-mono text-[10px] uppercase tracking-[.8px] text-white/60">{s.id}</div>
+                      <div className="line-clamp-2 text-[14px] font-semibold">{title}</div>
+                    </div>
+                    <div className="flex flex-none flex-col gap-3">
+                      <Link to={`/doc/${encodeURIComponent(s.id)}`} aria-label="View file" title="View file" className={`bg-white/15 ${round}`}>
+                        <FileText size={20} aria-hidden="true" />
+                      </Link>
+                      <button type="button" aria-label={copied === s.id ? "Link copied" : "Share"} title="Share" className={`bg-white/15 ${round}`}
+                        onClick={async () => setCopied((await shareLink(title, path(s.id, ""))) === "copied" ? s.id : "")}>
+                        <ShareIcon size={20} aria-hidden="true" />
+                      </button>
+                    </div>
                   </div>
+                  <Seek />
                 </div>
               </section>
             );
