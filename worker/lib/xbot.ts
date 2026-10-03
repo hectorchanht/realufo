@@ -1,6 +1,6 @@
 import type { Env } from "../env";
 import { createPost, uploadMedia, mediaStatus, XError, THREAD_SEP, type XSecrets, type Source } from "./x";
-import { nextCandidate, withinBudget, costOf, sqlTime, type Media } from "./xpick";
+import { nextCandidate, withinBudget, costOf, isManual, sqlTime, type Media } from "./xpick";
 import { draft, isClean } from "./xcopy";
 
 // One cron tick (Spec 4 §3, §6). Row goes in BEFORE X is called: UNIQUE(stream, ref)
@@ -106,7 +106,7 @@ export async function tick(env: Env, now = new Date(), sleep?: (ms: number) => P
     return log({ unsafe: c.ref });
   }
   const cost = costOf(c);
-  if (!(await withinBudget(env, cost, now))) return log({ budget: c.stream, ref: c.ref });
+  if (!(await withinBudget(env, cost, now, isManual(c)))) return log({ budget: c.stream, ref: c.ref });
 
   const { text, ai } = await draft(env, c);
   const media = c.media ? `${c.media.mime.startsWith("video/") ? "clip" : "thumb"}:${c.media.key}` : null;

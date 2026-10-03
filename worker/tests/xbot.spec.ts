@@ -80,6 +80,23 @@ describe("tick", () => {
     expect((await rows())[0]).toMatchObject({ stream: "showcase", status: "posted", tweet_id: "T1" });
     await env.MEDIA.delete("showcase/wargov/XT-V1.mp4");
   });
+  it("daily cap full: the bot's pick waits, an operator showcase still posts (monthly $ cap still applies)", async () => {
+    const day = sqlTime(NOW);
+    for (const ref of ["XT-A", "XT-B", "XT-C"])
+      await env.DB.prepare("INSERT INTO x_posts(stream,ref,text,ai,cost_usd,status,created_at) VALUES ('release',?,'t',0,0.2,'posted',?)").bind(ref, day).run();
+    await tick(E(), NOW, noSleep);
+    expect(xCalls).not.toContain("/2/tweets");
+    await env.MEDIA.put("showcase/wargov/XT-V1.mp4", new Uint8Array(1024));
+    await tick(E({ X_FORCE_SHOWCASE: "XT-V1", X_SHOWCASE_TEXT: "made by hand" }), NOW, noSleep);
+    expect(xCalls).toContain("/2/tweets");
+    await env.DB.prepare("DELETE FROM x_posts").run();
+    for (const ref of ["XT-A", "XT-B"])
+      await env.DB.prepare("INSERT INTO x_posts(stream,ref,text,ai,cost_usd,status,created_at) VALUES ('release',?,'t',0,5,'posted',?)").bind(ref, day).run();
+    xCalls = [];
+    await tick(E({ X_FORCE_SHOWCASE: "XT-V1", X_SHOWCASE_TEXT: "made by hand" }), NOW, noSleep);
+    expect(xCalls).not.toContain("/2/tweets"); // $10 month already spent
+    await env.MEDIA.delete("showcase/wargov/XT-V1.mp4");
+  });
   it("on: uploads the clip in chunks and posts with its media id", async () => {
     await tick(E(), NOW, noSleep);
     expect(xCalls).toEqual(["/2/media/upload/initialize", "/2/media/upload/M1/append", "/2/media/upload/M1/append", "/2/media/upload/M1/finalize", "/2/tweets"]);

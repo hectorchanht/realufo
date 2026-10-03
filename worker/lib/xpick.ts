@@ -1,6 +1,7 @@
 import { docTitle } from "./ssr";
 import type { Env } from "../env";
 import { wargovReleases } from "../routes/records";
+import { THREAD_SEP } from "./x";
 
 // What the bot posts next (Spec 4 §4.2–4.4) and whether it can afford it.
 
@@ -12,7 +13,7 @@ export type PickRecord = {
 };
 export type Candidate =
   | { stream: "release"; ref: string; label: string; link: string; kinds: Record<string, number>; titles: string[]; media: Media }
-  | { stream: "pick"; ref: string; record: PickRecord; link: string; media: Media }
+  | { stream: "pick"; ref: string; record: PickRecord; link: string; media: Media; manual?: true }
   // operator-made video + text about one record (POST /__tick?showcase=ID&text=…)
   | { stream: "showcase"; ref: string; record: PickRecord; link: string; media: Media; text: string }
   | { stream: "highlight"; ref: string; thread: { id: string; title: string; body: string; votes: number }; media: Media };
@@ -27,16 +28,21 @@ const SETTLE_MS = 2 * 3600_000; // ingest may still be adding files to a release
 
 export const sqlTime = (d: Date) => d.toISOString().slice(0, 19).replace("T", " ");
 
-export const costOf = (c: Candidate) => ("link" in c ? 0.2 : 0.015) + (c.media ? 0.015 : 0); // ponytail: media upload unpriced on X's card; assume one post-create charge
+// ponytail: media upload unpriced on X's card; assume one post-create charge. Thread replies: 0.2 with a link, else 0.015.
+export const costOf = (c: Candidate) => ("link" in c ? 0.2 : 0.015) + (c.media ? 0.015 : 0) +
+  (c.stream === "showcase" ? c.text.split(THREAD_SEP).slice(1).reduce((n, r) => n + (/https?:\/\//.test(r) ? 0.2 : 0.015), 0) : 0);
+
+// Operator posts (POST /__tick?showcase= / ?force=) skip the daily count; the monthly $ cap always applies.
+export const isManual = (c: Candidate) => c.stream === "showcase" || (c.stream === "pick" && !!c.manual);
 
 // Rows that may have cost money: everything but failed.
-export async function withinBudget(env: Env, cost: number, now: Date): Promise<boolean> {
+export async function withinBudget(env: Env, cost: number, now: Date, manual = false): Promise<boolean> {
   const t = sqlTime(now);
   const r = await env.DB.prepare(
     `SELECT sum(date(created_at)=date(?1)) today, coalesce(sum(CASE WHEN strftime('%Y-%m',created_at)=strftime('%Y-%m',?1) THEN cost_usd END),0) month
      FROM x_posts WHERE status!='failed'`
   ).bind(t).first<{ today: number | null; month: number }>();
-  return (r?.today ?? 0) < Number(env.X_DAILY_MAX ?? 3) && (r?.month ?? 0) + cost <= Number(env.X_MONTHLY_USD_CAP ?? 10) + 1e-9;
+  return (manual || (r?.today ?? 0) < Number(env.X_DAILY_MAX ?? 3)) && (r?.month ?? 0) + cost <= Number(env.X_MONTHLY_USD_CAP ?? 10) + 1e-9;
 }
 
 export async function mediaFor(env: Env, rec: { id: string; archive: string; kind: string }): Promise<Media> {
@@ -156,7 +162,7 @@ async function forcedCandidate(env: Env): Promise<Candidate | null> {
   if (!ids.length) return null;
   const r = await env.DB.prepare(`SELECT ${PICK_COLS} FROM records r WHERE r.id IN (SELECT value FROM json_each(?)) AND ${UNPOSTED} LIMIT 1`)
     .bind(JSON.stringify(ids)).first<PickRecord>();
-  return r ? { stream: "pick", ref: r.id, record: r, link: `${SITE}/doc/${encodeURIComponent(r.id)}`, media: await mediaFor(env, r) } : null;
+  return r ? { stream: "pick", ref: r.id, record: r, link: `${SITE}/doc/${encodeURIComponent(r.id)}`, media: await mediaFor(env, r), manual: true } : null;
 }
 
 async function highlightCandidate(env: Env, now: Date): Promise<Candidate | null> {
