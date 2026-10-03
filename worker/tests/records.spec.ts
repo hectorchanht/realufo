@@ -66,9 +66,16 @@ describe("records", () => {
       .bind(JSON.stringify([{ n: 2, text: "Page two text" }]))
       .run();
     const d: any = await loadRecord(env as any, "FBI-UAP-D003", "https://x");
-    expect(d.fullText).toEqual({ pages: [{ n: 2, text: "Page two text" }], truncated: true, total_pages: 12, aiSummary: null });
+    expect(d.fullText).toEqual({ pages: [{ n: 2, text: "Page two text" }], truncated: true, total_pages: 12, aiSummary: null, aiSections: null });
     const none: any = await loadRecord(env as any, "FBI-UAP-D002", "https://x");
     expect(none.fullText).toBeNull();
+  });
+  it("loadRecord returns parsed ai_sections", async () => {
+    await env.DB.prepare("INSERT OR REPLACE INTO record_text(record_id,pages,truncated,total_pages,ai_summary,ai_sections) VALUES('FBI-UAP-D003',?,0,12,'Sum.',?)")
+      .bind(JSON.stringify([{ n: 1, text: "x" }]), JSON.stringify([{ from: 1, to: 6, text: "Memos." }, { from: 7, to: 12, text: "Map." }]))
+      .run();
+    const d: any = await loadRecord(env as any, "FBI-UAP-D003", "https://x");
+    expect(d.fullText.aiSections).toEqual([{ from: 1, to: 6, text: "Memos." }, { from: 7, to: 12, text: "Map." }]);
   });
   it("loadRecord returns the detail object, or null when missing", async () => {
     expect(await loadRecord(env as any, "NOPE", "https://x")).toBeNull();

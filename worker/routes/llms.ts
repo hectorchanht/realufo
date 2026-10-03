@@ -62,11 +62,11 @@ export async function llms(req: Request, env: Env) {
 type FullRow = {
   id: string; title: string; agency: string | null; agency_full: string | null; kind: string; incident_date: string | null;
   location: string | null; doc_date: string | null; summary: string | null;
-  pages: string | null; ai_summary: string | null; truncated: number | null; total_pages: number | null;
+  ai_summary: string | null; ai_sections: string | null;
   one_liner: string | null; bullets: string | null;
 };
 
-const BATCH = 40; // largest pages JSON is ~37 KB, so a batch stays ~1.5 MB
+const BATCH = 40; // summaries + outlines only (page text is linked), so a batch stays small
 
 function fileMd(r: FullRow, origin: string): string {
   const facts = [
@@ -74,20 +74,27 @@ function fileMd(r: FullRow, origin: string): string {
     ["Location", r.location && r.location !== "N/A" ? r.location : null],
     ["Released", isoDate(r.doc_date) ?? r.doc_date], ["Type", r.kind.toUpperCase()],
   ].filter(([, v]) => v).map(([k, v]) => `- ${k}: ${v}`);
-  const pages = r.pages ? (JSON.parse(r.pages) as { n: number; text: string }[]) : [];
+  const secs = (() => {
+    try {
+      return JSON.parse(r.ai_sections ?? "null") as { from: number; to: number; text: string }[] | null;
+    } catch {
+      return null;
+    }
+  })();
+  const label = (a: number, b: number) => (a === b ? `p. ${a}` : `pp. ${a}–${b}`);
   return [
     `## ${docTitle(r.title, r.id, r.kind)}`, "",
     `- Page: ${origin}/doc/${encodeURIComponent(r.id)}`, `- Original file: ${origin}/api/file/${encodeURIComponent(r.id)}`, ...facts, "",
     ...(r.one_liner && r.bullets ? ["### TL;DR", "", r.one_liner, "", ...(JSON.parse(r.bullets) as string[]).map((b) => `- ${b}`), ""] : []),
     ...(r.summary ? ["### Official summary", "", r.summary.trim(), ""] : []),
     ...(r.ai_summary ? [r.kind === "image" ? "### AI visual description" : "### AI summary", "", r.ai_summary.trim(), ""] : []),
-    ...(pages.length ? ["### Full text", "", ...pages.flatMap((p) => [`#### Page ${p.n}`, "", p.text.trim(), ""])] : []),
-    ...(r.truncated ? [`(Text continues in the original file: ${r.total_pages} pages.)`, ""] : []),
+    ...(secs?.length ? ["### In this file", "", ...secs.map((x) => `- ${label(x.from, x.to)}: ${x.text}`), ""] : []),
+    ...(r.kind === "pdf" ? [`Full text: ${origin}/doc/${encodeURIComponent(r.id)}/text`, ""] : []),
     "",
   ].join("\n");
 }
 
-// Every file's facts, summaries and extracted text in one Markdown document,
+// Every file's facts, summaries and section outline in one Markdown document (page text linked),
 // streamed in id-ordered batches so ~6 MB never sits in memory at once.
 // ponytail: rebuilt from D1 on every request (~15 queries); put it behind the
 // Cache API if crawlers hammer it.
@@ -97,11 +104,11 @@ export async function llmsFull(req: Request, env: Env) {
   const w = writable.getWriter();
   const enc = new TextEncoder();
   (async () => {
-    await w.write(enc.encode([...(await intro(env)), "This file holds every record in full; the index is at " + origin + "/llms.txt.", "", ""].join("\n")));
+    await w.write(enc.encode([...(await intro(env)), "This file holds every record's facts and summaries; each PDF's full text is linked. The index is at " + origin + "/llms.txt.", "", ""].join("\n")));
     for (let after = ""; ; ) {
       const { results } = await env.DB.prepare(
         `SELECT r.id,r.title,r.agency,r.agency_full,r.kind,r.incident_date,r.location,r.doc_date,r.summary,
-           t.pages,t.ai_summary,t.truncated,t.total_pages,x.one_liner,x.bullets
+           t.ai_summary,t.ai_sections,x.one_liner,x.bullets
          FROM records r LEFT JOIN record_text t ON t.record_id=r.id
            LEFT JOIN record_tldr x ON x.record_id=r.id AND x.lang='en'
          WHERE r.status='live' AND r.id > ? ORDER BY r.id LIMIT ${BATCH}`

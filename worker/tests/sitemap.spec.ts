@@ -60,10 +60,10 @@ describe("sitemap", () => {
     expect(md).toContain("- [Open dataset](https://huggingface.co/datasets/tung00/realufo-uap-archive): ");
   });
 
-  it("llms-full.txt streams every file with facts, summaries and page text", async () => {
+  it("llms-full.txt streams every file with facts, summaries, outline and a full-text link", async () => {
     await env.DB.prepare(
-      `INSERT OR REPLACE INTO record_text(record_id,pages,truncated,total_pages,ai_summary) VALUES('CIA-UAP-017','[{"n":1,"text":"Harare tower log"}]',1,9,'AI says hi')`
-    ).run();
+      `INSERT OR REPLACE INTO record_text(record_id,pages,truncated,total_pages,ai_summary,ai_sections) VALUES('CIA-UAP-017','[{"n":1,"text":"Harare tower log"}]',1,9,'AI says hi',?)`
+    ).bind(JSON.stringify([{ from: 1, to: 6, text: "Memos." }, { from: 7, to: 7, text: "Map." }])).run();
     await env.DB.prepare("INSERT INTO record_tldr (record_id,lang,bullets,one_liner,input_hash) VALUES ('CIA-UAP-017','en',?,'Paperwork wins again.','h')")
       .bind(JSON.stringify(["Bullet one", "Bullet two", "Bullet three"])).run();
     const res = await worker.fetch(new Request("https://realufo.org/llms-full.txt"), env as any, {} as any);
@@ -74,8 +74,10 @@ describe("sitemap", () => {
     expect(md).toContain("- Page: https://realufo.org/doc/CIA-UAP-017");
     expect(md).toContain("### TL;DR\n\nPaperwork wins again.\n\n- Bullet one\n- Bullet two\n- Bullet three\n");
     expect(md).toContain("### AI summary\n\nAI says hi");
-    expect(md).toContain("#### Page 1\n\nHarare tower log");
-    expect(md).toContain("(Text continues in the original file: 9 pages.)");
+    expect(md).toContain("### In this file\n\n- pp. 1–6: Memos.\n- p. 7: Map.\n");
+    expect(md).toContain("Full text: https://realufo.org/doc/CIA-UAP-017/text");
+    expect(md).not.toContain("Harare tower log"); // page text lives at /doc/<id>/text now
+    expect(md).not.toContain("Text continues in the original file");
     const ids = [...md.matchAll(/^- Page: /gm)];
     const { n } = (await env.DB.prepare("SELECT count(*) n FROM records WHERE status='live'").first<{ n: number }>())!;
     expect(ids.length).toBe(n); // every batch made it

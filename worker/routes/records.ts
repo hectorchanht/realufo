@@ -13,6 +13,17 @@ import { uploadUrl } from "../lib/upload";
 export { wargovReleases };
 
 // `has=` flags (comma list, all must hold); unknown names are ignored.
+// Section summaries of the map-reduce AI summary (crawler ingest.summaries); null when absent or bad.
+type Section = { from: number; to: number; text: string };
+function parseSections(raw: string | null): Section[] | null {
+  try {
+    const v = JSON.parse(raw ?? "null");
+    return Array.isArray(v) ? (v as Section[]) : null;
+  } catch {
+    return null;
+  }
+}
+
 const HAS: Record<string, string> = {
   text: "EXISTS (SELECT 1 FROM record_text t WHERE t.record_id=r.id)",
   ai: "EXISTS (SELECT 1 FROM record_text t WHERE t.record_id=r.id AND t.ai_summary IS NOT NULL)",
@@ -285,9 +296,9 @@ export async function loadRecord(env: Env, id: string, origin: string) {
     releaseP,
     releaseP.then((rel) => relatedOf(env, record, rel)),
     soft(
-      env.DB.prepare("SELECT pages,truncated,total_pages,ai_summary FROM record_text WHERE record_id=?")
+      env.DB.prepare("SELECT pages,truncated,total_pages,ai_summary,ai_sections FROM record_text WHERE record_id=?")
         .bind(id)
-        .first<{ pages: string; truncated: number; total_pages: number; ai_summary: string | null }>(),
+        .first<{ pages: string; truncated: number; total_pages: number; ai_summary: string | null; ai_sections: string | null }>(),
       "record_text", id, null
     ),
     // Hub links are optional garnish: a failing facet query must not break the doc.
@@ -322,7 +333,8 @@ export async function loadRecord(env: Env, id: string, origin: string) {
   // aiSummary from crawler ingest.summaries; null until generated.
   const pages = text && parseOr<{ n: number; text: string }[]>(text.pages, "record_text.pages", id);
   const fullText = text && pages
-    ? { pages, truncated: !!text.truncated, total_pages: text.total_pages, aiSummary: text.ai_summary ?? null }
+    ? { pages, truncated: !!text.truncated, total_pages: text.total_pages, aiSummary: text.ai_summary ?? null,
+        aiSections: parseSections(text.ai_sections) }
     : null;
   // Funny-but-true TL;DR (crawler ingest.tldr); null until generated.
   const bullets = tldrRow && parseOr<string[]>(tldrRow.bullets, "record_tldr.bullets", id);
