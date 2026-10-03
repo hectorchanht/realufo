@@ -6,8 +6,10 @@ Usage: python3 crawler/indexnow.py [url ...]            # no args = whole sitema
 --since-hours (daily ingest CI step) submits only pages whose content changed:
 docs of records added or given full text in that window, the docs linking to
 them (their related groups changed), and, if any, every non-doc sitemap page
-(home, archive, hubs list counts and new files), and shared Ask answers
-published in that window. Needs wrangler + a D1 token.
+(home, archive, hubs list counts and new files), shared Ask answers
+published in that window, and threads that got a reply in it. A thread with no
+reply is never pushed: anonymous posts reach search engines only once someone
+has engaged, which gives moderation time and keeps one-off spam out. Needs wrangler + a D1 token.
 Run after a deploy or a release that adds files. Google doesn't use IndexNow;
 it reads the sitemap submitted in Search Console.
 The key must match web/public/<key>.txt (served at https://realufo.org/<key>.txt).
@@ -37,6 +39,14 @@ UNION SELECT record_id FROM record_text WHERE created_at >= datetime('now', '-{h
 ASK_SQL = "SELECT DISTINCT id FROM ask_log WHERE public=1 AND answer IS NOT NULL AND created_at >= datetime('now', '-{h} hours')"
 
 
+THREAD_SQL = "SELECT DISTINCT thread_id id FROM posts WHERE is_op=0 AND created_at >= datetime('now', '-{h} hours')"
+
+
+def thread_urls(locs: list[str], ids: set[str]) -> list[str]:
+    """Sitemap URLs of threads in ids (so deleted threads drop out)."""
+    return [u for u in locs if "/thread/" in u and urllib.parse.unquote(u.split("/thread/", 1)[1]) in ids]
+
+
 def ask_urls(locs: list[str], ids: set[int]) -> list[str]:
     """Sitemap URLs of shared answers whose ask_log id is in ids. The slug comes from the sitemap, never rebuilt here."""
     out = []
@@ -51,15 +61,16 @@ def changed_urls(hours: int) -> list[str]:
     from ingest import d1  # run from crawler/
     ids = {r["id"] for r in d1._d1_json(" ".join(CHANGED_SQL.format(h=int(hours)).split()))}
     asks = {int(r["id"]) for r in d1._d1_json(ASK_SQL.format(h=int(hours)))}
-    if not ids and not asks:
+    threads = {r["id"] for r in d1._d1_json(THREAD_SQL.format(h=int(hours)))}
+    if not ids and not asks and not threads:
         return []
     if ids:
         q = ",".join(d1.sql_q(i) for i in sorted(ids))
         ids |= {r["id"] for r in d1._d1_json(f"SELECT DISTINCT record_id id FROM record_links WHERE related_id IN ({q})")}
     locs = [u.replace("&amp;", "&") for u in sitemap_urls()]
     doc_id = lambda u: urllib.parse.unquote(u.split("/doc/", 1)[1])
-    pages = [u for u in locs if "/ask/" not in u and ("/doc/" not in u or doc_id(u) in ids)] if ids else []
-    return pages + ask_urls(locs, asks)
+    pages = [u for u in locs if "/ask/" not in u and "/thread/" not in u and ("/doc/" not in u or doc_id(u) in ids)] if ids else []
+    return pages + ask_urls(locs, asks) + thread_urls(locs, threads)
 
 
 def main():
