@@ -18,7 +18,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAddComment, useAddCaseComment, useCreateThread, useReply } from "../api/queries";
-import { ApiError } from "../api/client";
+import { ApiError, QueuedError } from "../api/client";
 import type { Stance } from "../api/types";
 import { useOverlay, type ComposerMode } from "./OverlayProvider";
 
@@ -128,6 +128,12 @@ export function Composer() {
   }
 
   function handleMutationError(err: unknown) {
+    if (err instanceof QueuedError) {
+      // Saved to the offline outbox: it will be sent, so the draft goes (OverlayHost toasts).
+      drafts.delete(draftKey);
+      closeComposer();
+      return;
+    }
     drafts.set(draftKey, { body, title: threadTitle }); // not sent: keep it
     // FRONTEND-CONTEXT.md: "write endpoints may return 429 (rate limit) —
     // surface as a toast" — the exact copy is specified in the Task 16 brief.

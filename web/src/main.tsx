@@ -14,8 +14,13 @@ import './theme/theme.css'
 import './index.css'
 import { ThemeProvider } from './theme/ThemeProvider'
 import App from './App.tsx'
+import { startOutbox } from './lib/outbox'
+import { sendRaw } from './api/client'
 
 const queryClient = makeQueryClient()
+
+// Offline writes (lib/outbox.ts): replay on start/online/visible; refetch everything once sent.
+startOutbox(sendRaw, () => void queryClient.invalidateQueries())
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

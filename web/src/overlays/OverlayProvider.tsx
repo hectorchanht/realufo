@@ -17,6 +17,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Composer } from "./Composer";
 import { MediaViewer } from "./MediaViewer";
 import { Toast } from "./Toast";
+import { outboxMessage, type OutboxEvent } from "../lib/outbox";
 
 export type ComposerMode = "comment" | "reply" | "newThread";
 
@@ -166,7 +167,14 @@ export function useOverlay(): OverlayContextValue {
  * tree (AppShell) so the Composer's useNavigate() has a <Router> ancestor.
  */
 export function OverlayHost() {
-  const { composer, viewer, toastMsg, closeComposer, closeViewer } = useOverlay();
+  const { composer, viewer, toastMsg, closeComposer, closeViewer, toast } = useOverlay();
+
+  // Offline outbox (lib/outbox.ts): "saved offline" and "N sent / couldn't post" toasts.
+  useEffect(() => {
+    const on = (e: Event) => toast(outboxMessage((e as CustomEvent<OutboxEvent>).detail));
+    window.addEventListener("outbox", on);
+    return () => window.removeEventListener("outbox", on);
+  }, [toast]);
 
   // Esc closes the open overlay (composer > viewer, top-most first).
   useEffect(() => {
