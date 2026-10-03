@@ -327,7 +327,7 @@ describe("Thread", () => {
   it("shows a loading state while the thread is loading (never indexes into undefined)", () => {
     useThreadMock.mockReturnValue({ data: undefined, isLoading: true });
     renderThread();
-    expect(screen.getByText(/loading signal/i)).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument();
   });
 
   it("shows a simple not-found state when the thread is missing", () => {

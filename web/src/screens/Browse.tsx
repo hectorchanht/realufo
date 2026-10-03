@@ -4,6 +4,7 @@ import { useHubs } from "../api/queries";
 import type { HubKind } from "../api/types";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { KIND_PLURAL } from "./Hub";
+import { Skeleton } from "../components/Skeleton";
 
 const KINDS: HubKind[] = ["topic", "release", "agency", "location", "decade"];
 
@@ -12,8 +13,8 @@ export default function Browse() {
   useSetPageTitle("BROWSE", "", "Browse the archive");
   if (isLoading) {
     return (
-      <div data-screen="browse" className="font-mono text-[11px] text-faint">
-        ◉ loading signal…
+      <div data-screen="browse">
+        <Skeleton rows={6} h={48} />
       </div>
     );
   }

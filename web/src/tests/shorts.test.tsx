@@ -237,7 +237,7 @@ describe("Shorts player", () => {
     const fetchNextPage = vi.fn();
     useShortsMock.mockImplementation(() => ({ data: all, isFetched: true, hasNextPage: true, isFetchingNextPage: false, fetchNextPage }));
     renderAppAt("/shorts/Z-99");
-    expect(await screen.findByText(/loading signal/i)).toBeInTheDocument();
+    expect(await screen.findByRole("status", { name: "Loading" })).toBeInTheDocument();
     await waitFor(() => expect(fetchNextPage).toHaveBeenCalled());
   });
 

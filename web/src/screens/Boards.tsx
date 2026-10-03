@@ -18,7 +18,7 @@
 // convention as Feed.tsx/Archive.tsx). The CTA card + "NEW" tile are static
 // markup that always renders (not gated on bootstrap), so the screen never
 // looks structurally empty while boards are loading — only the board-row
-// list itself swaps to a small "◉ loading signal…" line during the initial
+// list itself swaps to skeleton rows during the initial
 // fetch (`isLoading`).
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -27,6 +27,7 @@ import { BoardRow } from "../components/BoardRow";
 import { ThreadRow } from "../components/ThreadRow";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { Skeleton } from "../components/Skeleton";
 
 // Default board a fresh anon "NEW" thread lands in — prototype line 215
 // wires `onNewThread` with no per-board context (it's from the board LIST
@@ -113,7 +114,7 @@ export function Boards() {
 
       {searching ? (
         searchLoading && !found ? (
-          <div className="font-mono text-[11px] text-faint">◉ scanning threads…</div>
+          <Skeleton rows={3} h={136} />
         ) : found?.threads.length ? (
           <div className="flex flex-col gap-[10px]">
             <div className="font-mono text-[10px] text-faint">
@@ -128,7 +129,7 @@ export function Boards() {
         )
       ) : /* board list — prototype lines 217-229 */
       isLoading ? (
-        <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>
+        <Skeleton rows={6} h={64} />
       ) : (
         <div className="flex flex-col gap-[10px]">
           {boards.map((b) => (

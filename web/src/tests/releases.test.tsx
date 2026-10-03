@@ -34,13 +34,13 @@ describe("Releases screen", () => {
   it("error state instead of an endless loading line", () => {
     useReleasesMock.mockReturnValue({ data: undefined, isLoading: false, isError: true });
     render(<MemoryRouter><Releases /></MemoryRouter>);
-    expect(screen.queryByText(/loading signal/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("status", { name: "Loading" })).not.toBeInTheDocument();
     expect(screen.getByText(/release data unavailable/i)).toBeInTheDocument();
   });
 
   it("loading state", () => {
     useReleasesMock.mockReturnValue({ data: undefined, isLoading: true });
     render(<MemoryRouter><Releases /></MemoryRouter>);
-    expect(screen.getByText(/loading signal/i)).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument();
   });
 });

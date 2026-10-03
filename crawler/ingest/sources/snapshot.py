@@ -31,9 +31,11 @@ def candidates(slug, data_dir, taken):
         seen.add(u)
         th = (a.get("th") or "").strip()
         rid = derive_id((a.get("ti") or "").strip(), slug, u, taken); taken.add(rid)
+        # no `date` fallback for incident_date: an undated file is a report/law/hearing, and its
+        # publication date sorted it as a 2023 "incident" (sort=old/recent).
         c = Candidate(id=rid, archive=slug, agency=short_agency(a.get("ag"), slug),
                       agency_full=(a.get("ag") or "").strip(), title=(a.get("ti") or "").strip(),
-                      summary=(a.get("de") or "").strip(), incident_date=(a.get("idate") or a.get("date") or "").strip(),
+                      summary=(a.get("de") or "").strip(), incident_date=(a.get("idate") or "").strip(),
                       location=(a.get("region") or "").strip(), doc_date=(a.get("date") or "").strip(),
                       kind=kind, redacted=0, virin="", r2_key=u[len(R2_BASE) + 1:], cdn_url=u,
                       mime=MIME[kind], thumb_url=th if is_r2_hosted(th) else "")

@@ -8,6 +8,7 @@ import { Faq } from "../components/Faq";
 import { docTitleParts } from "../lib/docTitle";
 import { DocCard } from "../components/DocCard";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { Skeleton } from "../components/Skeleton";
 
 export const KIND_LABEL: Record<HubKind, string> = { release: "RELEASE", topic: "TOPIC", agency: "AGENCY", location: "LOCATION", decade: "DECADE" };
 export const KIND_PLURAL: Record<HubKind, string> = { release: "RELEASES", topic: "TOPICS", agency: "AGENCIES", location: "LOCATIONS", decade: "DECADES" };
@@ -19,8 +20,8 @@ export default function Hub({ kind }: { kind: HubKind }) {
 
   if (isLoading) {
     return (
-      <div data-screen="hub" className="font-mono text-[11px] text-faint">
-        ◉ loading signal…
+      <div data-screen="hub">
+        <Skeleton cards rows={6} />
       </div>
     );
   }

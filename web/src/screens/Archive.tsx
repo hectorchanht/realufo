@@ -27,7 +27,7 @@
 // useRecords({q,archive,type,redacted}) for the grid + result count. Both
 // default to []/0 while a query hasn't resolved (or errored) so nothing here
 // ever indexes into `undefined`. The result-count/grid/empty-state block
-// swaps to a small "◉ loading signal…" line while useRecords()'s *initial*
+// swaps to skeleton cards while useRecords()'s *initial*
 // fetch is in flight (`isLoading` — true only before the first settle, same
 // convention as Feed.tsx) so a filter change never flashes an empty state.
 //
@@ -50,6 +50,7 @@ import { LoadError } from "../components/LoadError";
 import { ShortsRow, shortHref } from "../components/ShortsRow";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
+import { Skeleton } from "../components/Skeleton";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -576,7 +577,7 @@ export function Archive() {
       )}
 
       {showShorts && shortsLoading ? (
-        <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>
+        <Skeleton cards rows={6} />
       ) : showShorts ? (
         <>
           {q && (
@@ -587,10 +588,10 @@ export function Archive() {
           <ShortsRow grid shorts={shorts} href={(s) => shortHref(s, q)} />
           {/* nearing the bottom loads the next page */}
           {moreShorts && <div ref={setSentinel} aria-hidden="true" className="h-px" />}
-          {isFetchingNextPage && <div className="mt-4 text-center font-mono text-[11px] text-faint">◉ loading…</div>}
+          {isFetchingNextPage && <div className="mt-4"><Skeleton rows={1} h={40} /></div>}
         </>
       ) : isLoading ? (
-        <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>
+        <Skeleton cards rows={6} />
       ) : (
         <>
           {q && page === 1 && shorts.length > 0 && (

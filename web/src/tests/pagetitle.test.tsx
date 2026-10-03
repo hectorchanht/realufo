@@ -92,7 +92,8 @@ describe("AppBar contextual title", () => {
   it('shows "REALUFO" at "/"', async () => {
     renderAppAt("/");
     await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
-    expect(within(getAppBar()).getByText("REALUFO")).toBeInTheDocument();
+    expect(getAppBar().textContent).toContain("REALUFO");
+    expect(within(getAppBar()).getByText("UFO")).toHaveClass("text-signal");
   });
 
   it('shows "THE ARCHIVE" at "/archive"', async () => {

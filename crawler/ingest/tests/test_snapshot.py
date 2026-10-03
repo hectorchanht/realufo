@@ -28,4 +28,4 @@ def test_snapshot_incident_date_can_differ_from_the_document_date(tmp_path):
     (tmp_path / "dod.json").write_text(json.dumps({"v1": {"assets": [a, b]}}))
     r, h = snapshot.candidates("dod", str(tmp_path), set())
     assert (r.doc_date, r.incident_date) == ("Jul 1994", "Jul 1947")
-    assert (h.doc_date, h.incident_date) == ("Sep 2025", "Sep 2025")   # no idate: same as before
+    assert (h.doc_date, h.incident_date) == ("Sep 2025", "")   # no idate: a hearing has no incident

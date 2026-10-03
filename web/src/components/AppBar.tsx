@@ -53,7 +53,8 @@ export function AppBar({
       )}
       <div className="min-w-0 flex-1 leading-[1.15]">
         <div className="overflow-hidden text-ellipsis whitespace-nowrap font-pixel text-[10px] text-ink">
-          {headerTitle}
+          {/* the brand wordmark looks the same everywhere: UFO in the signal colour (TopNav, SiteFooter) */}
+          {headerTitle === "REALUFO" ? <>REAL<span className="text-signal">UFO</span></> : headerTitle}
         </div>
         <div className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[9.5px] tracking-[.5px] text-faint">
           {headerSub}

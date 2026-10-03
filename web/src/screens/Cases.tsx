@@ -3,6 +3,7 @@
 import { Link } from "react-router-dom";
 import { useBootstrap } from "../api/queries";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { Skeleton } from "../components/Skeleton";
 
 export default function Cases() {
   useSetPageTitle("COLD CASES", "Famous cases and the files behind them");
@@ -12,7 +13,7 @@ export default function Cases() {
   return (
     <div data-screen="cases" className="flex flex-col gap-2.5">
       {isLoading && !boot ? (
-        <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>
+        <Skeleton rows={6} h={64} />
       ) : (
         cases.map((c) => (
           <Link

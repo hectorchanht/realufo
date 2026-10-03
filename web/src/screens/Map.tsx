@@ -28,6 +28,7 @@ import { useSetPageTitle } from "../lib/pageTitle";
 import { WorldMap } from "../components/WorldMap";
 import { DocCard } from "../components/DocCard";
 import type { MapPlace, Stats } from "../api/types";
+import { Skeleton } from "../components/Skeleton";
 
 const files = (n: number) => `${n} file${n === 1 ? "" : "s"}`;
 
@@ -59,7 +60,7 @@ function PlacePanel({ place, onClose }: { place: MapPlace; onClose: () => void }
         </button>
       </div>
       {isLoading ? (
-        <div className="font-mono text-[11px] text-faint">Loading files…</div>
+        <Skeleton cards rows={4} />
       ) : (
         <div className="grid grid-flow-row-dense grid-cols-2 gap-3">
           {(data?.records ?? []).map((r) => (

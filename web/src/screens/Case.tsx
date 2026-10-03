@@ -17,6 +17,7 @@ import { LoadError } from "../components/LoadError";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { promoteCommentOpts } from "../lib/promoteComment";
 import type { Stance } from "../api/types";
+import { Skeleton } from "../components/Skeleton";
 
 const DEFAULT_CASE_BOARD = "cases";
 
@@ -54,8 +55,8 @@ export function Case() {
 
   if (isLoading) {
     return (
-      <div data-screen="case" className="font-mono text-[11px] text-faint">
-        ◉ loading signal…
+      <div data-screen="case">
+        <Skeleton rows={3} h={120} />
       </div>
     );
   }

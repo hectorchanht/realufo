@@ -182,7 +182,7 @@ describe("Case", () => {
   it("shows a loading state while the case is loading (never indexes into undefined)", () => {
     useCaseMock.mockReturnValue({ data: undefined, isLoading: true });
     renderCase();
-    expect(screen.getByText(/loading signal/i)).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument();
   });
 
   it("shows a simple not-found state when the case is missing", () => {

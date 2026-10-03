@@ -13,7 +13,7 @@ export function ShortsRow({ shorts, loading = false, grid = false, href }: { sho
     <div ref={setRow} data-scroll aria-busy={loading} className={grid ? "grid grid-cols-3 gap-[10px] min-[900px]:grid-cols-[repeat(auto-fill,minmax(150px,1fr))]" : "flex snap-x snap-mandatory gap-[10px] overflow-x-auto pb-1.5"}>
       {loading
         ? Array.from({ length: 4 }, (_, i) => (
-            <div key={i} aria-hidden="true" className="aspect-[9/16] w-[132px] shrink-0 rounded-[14px] border border-line bg-surface" />
+            <div key={i} aria-hidden="true" className="aspect-[9/16] w-[132px] shrink-0 rounded-[14px] border border-line bg-surface motion-safe:animate-pulse" />
           ))
         : shorts.map((s) => {
             const t = docTitleParts(s.id, s.title, "video");

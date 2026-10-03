@@ -123,7 +123,7 @@ export function Feed() {
             ? // Row-sized placeholders (the feed returns 4): this list sits above the
               // card grid, so a one-line loader here would shove the grid down on load.
               Array.from({ length: 4 }, (_, i) => (
-                <div key={i} aria-hidden="true" className="h-[136px] rounded-[14px] border border-line bg-surface" />
+                <div key={i} aria-hidden="true" className="h-[136px] rounded-[14px] border border-line bg-surface motion-safe:animate-pulse" />
               ))
             : hot.map((thread) => <ThreadRow key={thread.id} thread={thread} />)}
         </div>
@@ -141,7 +141,7 @@ export function Feed() {
           ? // Card-sized placeholders (the feed returns 6): reserving the grid's height
             // keeps everything below it from jumping when /api/feed lands (was CLS 0.47).
             Array.from({ length: 6 }, (_, i) => (
-              <div key={i} aria-hidden="true" className="overflow-hidden rounded-[15px] border border-line bg-surface">
+              <div key={i} aria-hidden="true" className="overflow-hidden rounded-[15px] border border-line bg-surface motion-safe:animate-pulse">
                 <div className="aspect-[4/3] border-b border-line bg-bg2" />
                 <div className="h-[100px]" />
               </div>

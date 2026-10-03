@@ -57,6 +57,7 @@ import { formatMoment, parseMoment, recordMedia } from "../lib/recordMedia";
 import { DEFAULT_VIEW, viewTransform } from "../lib/mediaView";
 import { useZoomPan } from "../lib/useZoomPan";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
+import { Skeleton } from "../components/Skeleton";
 
 // prototype line 522: `if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4)`.
 const SWIPE_MIN_DX = 55;
@@ -371,8 +372,8 @@ export function Doc() {
 
   if (isLoading) {
     return (
-      <div data-screen="doc" className="font-mono text-[11px] text-faint">
-        ◉ loading signal…
+      <div data-screen="doc">
+        <Skeleton rows={3} h={180} />
       </div>
     );
   }

@@ -45,6 +45,7 @@ import { LoadError } from "../components/LoadError";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { docPageTitle, docTitleParts } from "../lib/docTitle";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { Skeleton } from "../components/Skeleton";
 
 // Matches Doc.tsx's own local STANCE_COLOR/stanceColor (FRONTEND-CONTEXT.md
 // "Stance colors") — kept duplicated for the same reason Doc.tsx gives for
@@ -298,8 +299,8 @@ export function Thread() {
 
   if (isLoading) {
     return (
-      <div data-screen="thread" className="font-mono text-[11px] text-faint">
-        ◉ loading signal…
+      <div data-screen="thread">
+        <Skeleton rows={4} h={120} />
       </div>
     );
   }

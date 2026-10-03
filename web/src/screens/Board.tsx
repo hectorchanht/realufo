@@ -25,7 +25,7 @@
 //
 // Loading/not-found: while bootstrap hasn't resolved yet, `board` is
 // undefined the same way an unmatched slug leaves it undefined — the first
-// case renders a "loading signal" line, the second (bootstrap settled, no
+// case renders a skeleton, the second (bootstrap settled, no
 // match) renders a "board not found" line; neither ever indexes into
 // `undefined`. `useBoardThreads` is always called (with the resolved board's
 // id, or "" until resolved — its `enabled: !!boardId` guard skips the fetch)
@@ -35,6 +35,7 @@ import { useBoardThreads, useBootstrap } from "../api/queries";
 import { ThreadRow } from "../components/ThreadRow";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { Skeleton } from "../components/Skeleton";
 
 function stripSlashes(s: string): string {
   return s.replace(/^\/+|\/+$/g, "");
@@ -63,8 +64,8 @@ export function Board() {
 
   if (bootLoading) {
     return (
-      <div data-screen="board" className="font-mono text-[11px] text-faint">
-        ◉ loading signal…
+      <div data-screen="board">
+        <Skeleton rows={4} h={136} />
       </div>
     );
   }
@@ -110,7 +111,7 @@ export function Board() {
 
       {/* thread list — prototype lines 243-253 */}
       {threadsLoading ? (
-        <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>
+        <Skeleton rows={4} h={136} />
       ) : (
         <div className="flex flex-col gap-[10px]">
           {threads.map((t) => (

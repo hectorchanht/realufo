@@ -24,6 +24,7 @@ import { docTitleParts } from "../lib/docTitle";
 import { shareLink } from "../lib/shareLink";
 import { useAutoplayInView } from "../lib/useAutoplayInView";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { Skeleton } from "../components/Skeleton";
 
 const DOUBLE_TAP_MS = 250;
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
@@ -127,7 +128,7 @@ function CommentsSheet({ id, onClose, onCount }: { id: string; onClose: () => vo
           </button>
         </div>
         <ul className="min-h-[120px] flex-1 overflow-y-auto overscroll-contain px-4 py-2">
-          {isLoading && <li className="py-6 text-center font-mono text-[11px] text-faint">◉ loading…</li>}
+          {isLoading && <li><Skeleton rows={3} h={48} /></li>}
           {data && !comments.length && <li className="py-6 text-center font-mono text-[11px] text-faint">no comments yet. be the first.</li>}
           {comments.map((c) => (
             <li key={c.id} className="border-b border-line py-2.5 last:border-0">
@@ -301,7 +302,7 @@ export default function Shorts() {
         </div>
       )}
       {pending ? (
-        <div className="grid h-full place-items-center font-mono text-[11px] text-white/60">◉ loading signal…</div>
+        <div role="status" aria-label="Loading" className="h-full w-full bg-white/5 motion-safe:animate-pulse" />
       ) : !found ? (
         <div className="grid h-full place-items-center px-6 text-center font-mono text-[12px] text-white/70">
           <div>

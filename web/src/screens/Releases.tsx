@@ -6,6 +6,7 @@ import { useReleases } from "../api/queries";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { Faq } from "../components/Faq";
 import { RELEASES_TITLE } from "../../../worker/lib/shared";
+import { Skeleton } from "../components/Skeleton";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
@@ -16,7 +17,7 @@ export default function Releases() {
     return <div data-screen="releases" className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">release data unavailable.</div>;
   }
   if (isLoading || !data) {
-    return <div data-screen="releases" className="font-mono text-[11px] text-faint">◉ loading signal…</div>;
+    return <div data-screen="releases"><Skeleton rows={6} h={64} /></div>;
   }
   const total = data.series.reduce((n, r) => n + r.files, 0);
   return (

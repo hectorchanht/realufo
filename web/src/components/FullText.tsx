@@ -158,7 +158,9 @@ export default function FullText({
             tabIndex={0}
             aria-label="Full text page"
             data-page={shown.n}
-            className="max-h-[80vh] overflow-y-auto overscroll-contain rounded-xl border border-line bg-surface px-3.5 py-3"
+            // Own scroller on desktop only: on phones an 80vh nested scroller traps the
+            // swipe (the page never moves), so there the text just flows in the page.
+            className="rounded-xl border border-line bg-surface px-3.5 py-3 min-[900px]:max-h-[80vh] min-[900px]:overflow-y-auto"
           >
             {format === "json" ? (
               <pre className="font-mono text-[11.5px] leading-[1.5] text-dim" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
