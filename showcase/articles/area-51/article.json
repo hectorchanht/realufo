@@ -1,0 +1,61 @@
+{
+  "slug": "area-51",
+  "title": "Area 51, S-4 and \"reverse-engineered UFOs\": what the government files actually say",
+  "hero": "hero.jpg",
+  "short": "short.mp4",
+  "showcase_record": "CIA-UAP-003",
+  "parts": [
+    "Area 51. S-4. Reverse-engineered alien spacecraft 🛸\nWe read the government files. The CIA puts Area 51 on paper, and says its own planes WERE the UFOs.\nThe receipts 🧵 CIA-UAP-003",
+    "1/ April 1955: the CIA's U-2 team flies over Nevada and spots \"a salt flat known as Groom Lake\". Eisenhower approves \"this strip of wasteland, known by its map designation as Area 51\" (p.69). Nickname: \"Paradise Ranch\" (p.70).",
+    "2/ Then the side effect. U-2s above 60,000 ft caught the sunset and looked like \"fiery objects\" to airline pilots: \"a tremendous increase in reports of unidentified flying objects\" (p.85). Blue Book checked U-2 flight logs but \"could not reveal\" the true cause (p.86).",
+    "3/ The CIA's own verdict: \"U-2 and later OXCART flights accounted for more than one-half of all UFO reports during the late 1950s and most of the 1960s\" (p.86). This history is how the CIA first officially acknowledged Area 51, in 2013.",
+    "4/ S-4: in 1989 Bob Lazar said he reverse-engineered alien craft at a base south of Area 51, powered by stable element 115. Element 115 was finally made in 2003; it decays in under a second. No released government file mentions S-4.",
+    "5/ AARO's 2024 review: \"no evidence that any USG investigation ... has confirmed that any sighting of a UAP represented extraterrestrial technology\" (p.7). The reverse-engineering story is \"in large part, the result of circular reporting\" (p.9).",
+    "6/ The real \"reverse-engineering program\"? KONA BLUE: a proposal to \"reverse-engineer any recovered off-world spacecraft that they hoped to acquire\" (p.34). DHS \"rejected\" it \"for lacking merit\" (p.35). It grew out of AAWSAP, the warp-drive programme.",
+    "7/ The famous 1947 \"crash metal\"? Oak Ridge National Lab tested it: \"terrestrial in origin\" (p.1). David Grusch says AARO lacked access to the deepest programs; AARO's memo says he \"declined\" its interview invitations (p.2). You decide.",
+    "8/ Read the receipts, free:\n• realufo.org/archive → search \"OXCART\" → the CIA history, page 86\n• search \"Kona Blue\" for the reverse-engineering proposal\n• AARO's metal test: search \"metallic specimen\""
+  ],
+  "evidence": [
+    {
+      "id": "CIA-UAP-003",
+      "page": 86,
+      "label": "CIA: U-2 and OXCART flights were over half of all UFO reports",
+      "image": "cia-half.jpg",
+      "evidence": "The CIA's history of the U-2 and OXCART programmes. April 1955: \"a salt flat known as Groom Lake\"; Eisenhower approved \"this strip of wasteland, known by its map designation as Area 51\" (p.69); \"Paradise Ranch\" (p.70). \"High-altitude testing of the U-2 soon led to an unexpected side effect - a tremendous increase in reports of unidentified flying objects (UFOs)\" (p.85). Blue Book checked sightings against U-2 flight logs; investigators \"could not reveal to the letter writers the true cause\"; \"U-2 and later OXCART flights accounted for more than one-half of all UFO reports during the late 1950s and most of the 1960s\" (p.86). This 2013 release was the CIA's first official acknowledgment of Area 51."
+    },
+    {
+      "id": "AARO-AARO_Historical_Record_Report_Vol_1_2024.pdf",
+      "page": 7,
+      "label": "AARO 2024: no evidence of reverse-engineered alien tech",
+      "image": "hrr-no-evidence.jpg",
+      "evidence": "\"AARO found no evidence that any USG investigation, academic-sponsored research, or official review panel has confirmed that any sighting of a UAP represented extraterrestrial technology\" (p.7). \"the inaccurate claim that the USG is reverse-engineering extraterrestrial technology and is hiding it from Congress is, in large part, the result of circular reporting from a group of individuals who believe this to be the case\" (p.9). KONA BLUE would \"reverse-engineer any recovered off-world spacecraft that they hoped to acquire\" (p.34) and \"was eventually rejected by DHS leadership for lacking merit\" (p.35)."
+    },
+    {
+      "id": "AARO-History_and_Origin_of_KONA_BLUE_FINAL_508",
+      "page": 1,
+      "label": "KONA BLUE: \"never approved or formally established\"",
+      "image": "hrr-kona-a.jpg",
+      "evidence": "Interviewees described KONA BLUE as a DHS compartment protecting the retrieval of \"non-human biologics\". AARO: it \"was a Prospective Special Access Program (PSAP) that had been proposed to DHS leadership but was never approved or formally established\" and \"never received any\" materials (p.1)."
+    },
+    {
+      "id": "AARO-AAROs_Supplement_to_ORNLs_Analysis_of_a_Metallic_Specimen",
+      "page": 1,
+      "label": "The \"1947 crash metal\": Oak Ridge says terrestrial",
+      "image": "ornl.jpg",
+      "evidence": "A magnesium alloy specimen \"publicly alleged to be a component recovered from a crashed extraterrestrial vehicle in 1947\", supposedly a terahertz waveguide for antigravity. \"ORNL assessed this specimen to be terrestrial in origin and that it does not meet the theoretical requirements to function as a terahertz (THz) waveguide\"; consistent with Mg alloy research and development (p.1)."
+    },
+    {
+      "id": "AARO-24-F-0266",
+      "page": 2,
+      "label": "AARO's memo: David Grusch \"declined\" to be interviewed",
+      "image": "grusch-declined.jpg",
+      "evidence": "AARO's invitations to interview Grusch \"regarding his claimed knowledge of U.S. Government possession of extra-terrestrial material and reverse-engineering programs were met with negative results\" (p.1). Offered a SCIF meeting, \"Mr. Grusch, again, declined the invitation despite previously agreeing to an interview\" (p.2). Grusch's side: AARO lacked access to the most sensitive programs."
+    },
+    {
+      "id": "AARO-Dr_Jon_Kosloski_Statement_for_the_Record_SASC_Open_Hearing_",
+      "page": 2,
+      "label": "AARO director to the Senate, Nov 2024",
+      "evidence": "\"to date, AARO has discovered no verifiable evidence of extraterrestrial beings, activity, or technology\" (p.2)."
+    }
+  ]
+}
