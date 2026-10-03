@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { oauth1Header, createPost, uploadMedia, mediaStatus, XError, CHUNK, type XSecrets } from "../lib/x";
+import { oauth1Header, createPost, getPoll, uploadMedia, mediaStatus, XError, CHUNK, type XSecrets } from "../lib/x";
 
 // X's published "Creating a signature" example (docs.x.com); verified with an
 // independent HMAC-SHA1 computation → hCtSmYh+iHYCEqBWrE7C7hYmtUk=
@@ -59,6 +59,18 @@ describe("createPost", () => {
   });
 });
 
+describe("createPost poll", () => {
+  it("posts a poll as a reply (no media key)", async () => {
+    mockX(() => ({ status: 201, json: { data: { id: "888" } } }));
+    expect(await createPost(EX, "Balloon or craft? 👇", [], "777", { options: ["A", "B"], duration_minutes: 4320 })).toBe("888");
+    expect(JSON.parse(calls[0].body as string)).toEqual({
+      text: "Balloon or craft? 👇",
+      reply: { in_reply_to_tweet_id: "777" },
+      poll: { options: ["A", "B"], duration_minutes: 4320 },
+    });
+  });
+});
+
 describe("uploadMedia", () => {
   it("initialize → one append per 4 MB chunk → finalize → status until succeeded", async () => {
     let polls = 0;
@@ -106,5 +118,27 @@ describe("mediaStatus", () => {
     expect(await mediaStatus(EX, "M")).toBe("pending");
     mockX(() => ({ json: { data: {} } }));
     expect(await mediaStatus(EX, "M")).toBe("succeeded");
+  });
+});
+
+describe("getPoll", () => {
+  it("reads counts in position order, total, closed; query params are signed", async () => {
+    mockX(() => ({
+      json: {
+        data: { id: "888", attachments: { poll_ids: ["P1"] } },
+        includes: { polls: [{ id: "P1", voting_status: "closed", options: [
+          { position: 2, label: "B", votes: 30 }, { position: 1, label: "A", votes: 70 }] }] },
+      },
+    }));
+    expect(await getPoll(EX, "888")).toEqual({ counts: [70, 30], total: 100, closed: true });
+    expect(calls[0].method).toBe("GET");
+    expect(calls[0].url).toBe("https://api.x.com/2/tweets/888?expansions=attachments.poll_ids&poll.fields=options,voting_status");
+    expect(calls[0].auth).toMatch(/^OAuth /);
+  });
+  it("open poll → closed:false; no poll in response → null", async () => {
+    mockX(() => ({ json: { data: { id: "1" }, includes: { polls: [{ id: "P", voting_status: "open", options: [{ position: 1, votes: 0 }, { position: 2, votes: 2 }] }] } } }));
+    expect(await getPoll(EX, "1")).toEqual({ counts: [0, 2], total: 2, closed: false });
+    mockX(() => ({ json: { data: { id: "1" } } }));
+    expect(await getPoll(EX, "1")).toBeNull();
   });
 });
