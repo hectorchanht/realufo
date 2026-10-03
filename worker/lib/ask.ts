@@ -1,7 +1,12 @@
 // Pure helpers for GET /api/ask (Spec 3). No I/O here — routes/ask.ts wires them.
 export const ASK_EMBED_MODEL = "@cf/baai/bge-m3";
 export const ASK_LLM_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8";
+export const ASK_RERANK_MODEL = "@cf/baai/bge-reranker-base";
 export const ASK_TOP_K = 8;
+// Vector scores are flat (~0.55-0.59 for anything "UFO"), so long OCR'd PDFs crowd
+// out specific records: fetch a wide pool, let the reranker order it, cap per record.
+export const ASK_POOL = 50;
+export const ASK_PER_RECORD = 2;
 export const NOT_COVERED = "The archive doesn't seem to cover that. Try different words.";
 export const RESTING = "Ask is resting — try again later";
 

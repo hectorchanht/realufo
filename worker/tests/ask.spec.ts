@@ -11,15 +11,23 @@ beforeAll(() => seedTestDB(env.DB));
 let aiCalls: { model: string; input: any }[] = [];
 let llmOut: unknown = { response: "Radar tracked it [1]." };
 let matches: any[] = [];
+// Reranker fake: scores per context text; default keeps the vector order.
+let rerank: ((text: string) => number) | Error = () => 0;
 const AI = {
   run: async (model: string, input: any) => {
     aiCalls.push({ model, input });
     if (model.includes("bge-m3")) return { data: [Array(1024).fill(0.01)] };
+    if (model.includes("reranker")) {
+      if (rerank instanceof Error) throw rerank;
+      const f = rerank;
+      return { response: input.contexts.map((c: any, id: number) => ({ id, score: f(c.text) - id / 1000 })) };
+    }
     if (llmOut instanceof Error) throw llmOut;
     return llmOut;
   },
 };
-const VECTORIZE = { query: async () => ({ matches, count: matches.length }) };
+let vecOpts: any = null;
+const VECTORIZE = { query: async (_v: unknown, o: any) => ((vecOpts = o), { matches, count: matches.length }) };
 const hit = (record_id: string, page: number, score = 0.8) => ({
   id: `${record_id}-${page}`, score, metadata: { record_id, page, text: `text of ${record_id} p${page}` },
 });
@@ -35,6 +43,7 @@ const body = async (r: Response) => (await r.json()) as any;
 beforeEach(async () => {
   aiCalls = [];
   llmOut = { response: "Radar tracked it [1]." };
+  rerank = () => 0;
   matches = [hit("CIA-UAP-017", 2)];
   await env.DB.batch([env.DB.prepare("DELETE FROM ask_cache"), env.DB.prepare("DELETE FROM ask_log")]);
 });
@@ -63,6 +72,32 @@ describe("GET /api/ask", () => {
     const llm = aiCalls.find((c) => c.model.includes("qwen3"))!;
     expect(llm.input.messages[1].content).toContain("[1] CIA-UAP-017 · p.2");
     expect(llm.input.max_tokens).toBe(400);
+  });
+
+  it("reranks a wide vector pool: the reranker's order decides the LLM's sources", async () => {
+    matches = [hit("CIA-UAP-017", 1, 0.9), hit("FBI-UAP-D002", 1, 0.8)];
+    rerank = (t) => (t.includes("FBI-UAP-D002") ? 1 : 0);
+    await ask("rerank order question");
+    expect(vecOpts.topK).toBe(50);
+    const llm = aiCalls.find((c) => c.model.includes("qwen3"))!;
+    expect(llm.input.messages[1].content).toMatch(/\[1\] FBI-UAP-D002 · p\.1[\s\S]*\[2\] CIA-UAP-017 · p\.1/);
+  });
+
+  it("keeps at most 2 chunks per record so one long PDF cannot fill every slot", async () => {
+    matches = [1, 2, 3, 4].map((p) => hit("CIA-UAP-017", p, 0.9)).concat(hit("FBI-UAP-D002", 1, 0.5));
+    await ask("one big pdf question");
+    const ctx = aiCalls.find((c) => c.model.includes("qwen3"))!.input.messages[1].content;
+    expect(ctx.match(/CIA-UAP-017 · p\./g)).toHaveLength(2);
+    expect(ctx).toContain("[3] FBI-UAP-D002 · p.1");
+  });
+
+  it("a reranker failure falls back to the vector order instead of failing Ask", async () => {
+    matches = [hit("CIA-UAP-017", 1, 0.9), hit("FBI-UAP-D002", 1, 0.8)];
+    rerank = new Error("reranker down");
+    const r = await ask("rerank down question");
+    expect(r.status).toBe(200);
+    const ctx = aiCalls.find((c) => c.model.includes("qwen3"))!.input.messages[1].content;
+    expect(ctx).toMatch(/\[1\] CIA-UAP-017 · p\.1[\s\S]*\[2\] FBI-UAP-D002 · p\.1/);
   });
 
   it("marks sources that matched an AI summary or AI key moments", async () => {

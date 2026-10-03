@@ -7,7 +7,7 @@ import { isoDate, wargovReleases } from "../lib/facets";
 import { hubsFor } from "../lib/hubs";
 import { listHubsCached } from "./hubs";
 import {
-  ASK_EMBED_MODEL, ASK_LLM_MODEL, ASK_TOP_K, NOT_COVERED, RESTING,
+  ASK_EMBED_MODEL, ASK_LLM_MODEL, ASK_RERANK_MODEL, ASK_TOP_K, ASK_POOL, ASK_PER_RECORD, NOT_COVERED, RESTING,
   askHref, askIdOf, normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, aiSourceOf, type AskChunk,
 } from "../lib/ask";
 
@@ -22,7 +22,7 @@ export async function ask(req: Request, env: Env) {
   if (!q) return error(400, "question must be 3–300 characters");
   // Threshold and prompt version are part of the key so re-tuning either never serves stale answers.
   const min = Number(env.ASK_MIN_SCORE) || 0.45;
-  const key = `${min}|p2|${cacheKey(q)}`;
+  const key = `${min}|p3|${cacheKey(q)}`;
 
   const hit = await env.DB.prepare("SELECT answer FROM ask_cache WHERE key=? AND created_at >= datetime('now','-7 days')")
     .bind(key)
@@ -125,7 +125,7 @@ export async function setAskPublic(req: Request, env: Env, params: Record<string
 
 async function answer(env: Env, q: string, min: number) {
   const emb = (await env.AI.run(ASK_EMBED_MODEL as any, { text: [q] } as any)) as unknown as { data: number[][] };
-  const res = await env.VECTORIZE.query(emb.data[0], { topK: ASK_TOP_K, returnMetadata: "all" });
+  const res = await env.VECTORIZE.query(emb.data[0], { topK: ASK_POOL, returnMetadata: "all" });
   const strong = res.matches.filter((m) => m.score >= min && m.metadata?.record_id);
   if (!strong.length) return notCovered();
 
@@ -137,15 +137,20 @@ async function answer(env: Env, q: string, min: number) {
     .bind(...ids)
     .all<Hydrated>();
   const byId = new Map(rows.results.map((r) => [r.id, r]));
-  const chunks: AskChunk[] = strong
+  const pool = strong
     .filter((m) => byId.has(String(m.metadata!.record_id)))
-    .map((m, i) => ({
-      n: i + 1,
-      record_id: String(m.metadata!.record_id),
-      page: Number(m.metadata!.page) || 0,
-      text: String(m.metadata!.text ?? ""),
-    }));
-  if (!chunks.length) return notCovered();
+    .map((m) => ({ record_id: String(m.metadata!.record_id), page: Number(m.metadata!.page) || 0, text: String(m.metadata!.text ?? "") }));
+  if (!pool.length) return notCovered();
+
+  const perRecord = new Map<string, number>();
+  const chunks: AskChunk[] = (await rerank(env, q, pool))
+    .filter((c) => {
+      const k = (perRecord.get(c.record_id) ?? 0) + 1;
+      perRecord.set(c.record_id, k);
+      return k <= ASK_PER_RECORD;
+    })
+    .slice(0, ASK_TOP_K)
+    .map((c, i) => ({ n: i + 1, ...c }));
 
   const out = await env.AI.run(ASK_LLM_MODEL as any, {
     messages: buildMessages(q, chunks),
@@ -164,6 +169,20 @@ async function answer(env: Env, q: string, min: number) {
       return { n: c.n, record_id: c.record_id, title: r.title, page: c.page, kind: r.kind, thumb: r.thumb ?? null, ...(ai && { ai }) };
     }),
   };
+}
+
+// Pool in reranker order; any reranker failure keeps the vector order.
+async function rerank<T extends { text: string }>(env: Env, q: string, pool: T[]): Promise<T[]> {
+  try {
+    const out = (await env.AI.run(ASK_RERANK_MODEL as any, { query: q, contexts: pool.map((c) => ({ text: c.text })) } as any)) as {
+      response?: { id: number; score: number }[];
+    };
+    const ranked = [...(out.response ?? [])].sort((a, b) => b.score - a.score).map((r) => pool[r.id]).filter(Boolean);
+    return ranked.length === pool.length ? ranked : pool;
+  } catch (e) {
+    console.error("ask rerank failed", e);
+    return pool;
+  }
 }
 
 // GET /api/ask/recent — questions their askers chose to share, newest first,
