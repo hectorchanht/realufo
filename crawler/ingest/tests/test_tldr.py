@@ -11,7 +11,7 @@ ROW = {"id": "DOW-UAP-D084", "title": "Navy encounter off San Diego", "agency": 
        "input_hash": None}
 
 GOOD = {"bullets": ["Navy pilots in two F/A-18 jets film an object off San Diego",
-                    "They watch it for 5 minutes at 2000 feet",
+                    "They watch it for 5 min at 2000 ft",  # already compact: generate() compacts
                     "No official conclusion in the file"],
         "one_liner": "The object left; the filing cabinet stayed."}
 
@@ -194,8 +194,42 @@ def test_check_rejects_more_object_guesses_unless_in_source():
     src = tldr.build_input({**ROW, "summary": ROW["summary"] + " AARO assessed the objects as flares."})
     assert tldr.check({**GOOD, "one_liner": "Turns out it was flares."}, src) is None
 
-def test_failing_stored_picks_rows_whose_tldr_fails_check_now():
-    stored = {"a": {"bullets": GOOD["bullets"], "one_liner": GOOD["one_liner"]},
-              "b": {"bullets": GOOD["bullets"], "one_liner": "Just early fireworks."}}
-    rows = [{**ROW, "id": "a"}, {**ROW, "id": "b"}, {**ROW, "id": "c"}]
-    assert [r["id"] for r in tldr.failing_stored(rows, stored)] == ["b"]
+# --- space-efficient TL;DRs: the og:description is one_liner + " — " + bullet 1 (~155 chars in a SERP)
+def test_compact_abbreviates_units_numbers_and_agencies():
+    t = {"bullets": ["DOW-UAP-PR143 video, Department of War, 2023, Yellow Sea",
+                     "Five‑second FMV, then 34 minutes of radar at approximately 6 feet",
+                     "A second object was seen; thirty-four seconds later it left"],
+         "one_liner": "The sensor’s 19‑second cameo outlasts the 2 hours briefing."}
+    c = tldr.compact(t, "DOW-UAP-PR143")
+    assert c["bullets"][0] == "Video, DoW, 2023, Yellow Sea"
+    assert c["bullets"][1] == "5 s FMV, then 34 min of radar at ~6 ft"
+    assert c["bullets"][2] == "A second object was seen; thirty-four seconds later it left"  # no digit -> untouched
+    assert c["one_liner"] == "The sensor’s 19 s cameo outlasts the 2 h briefing."
+
+def test_check_caps_one_liner_plus_bullet_1_to_the_search_snippet():
+    long_both = {**GOOD, "one_liner": "The object left the frame while the filing cabinet stayed exactly where it was.",
+                 "bullets": ["Navy pilots in two F/A-18 jets film an object off San Diego during a routine exercise", *GOOD["bullets"][1:]]}
+    assert "at most 152 characters" in tldr.check(long_both, tldr.build_input(ROW))
+    long_later = {**GOOD, "bullets": [GOOD["bullets"][0], "They watch it for 5 min at 2000 ft off the coast near San Diego, then", GOOD["bullets"][2]]}
+    assert tldr.check(long_later, tldr.build_input(ROW)) is None  # only bullet 1 is in the snippet
+
+def test_check_accepts_digit_for_a_spelled_number_in_source():
+    row = {**ROW, "summary": "Pilots watched an object for five minutes."}
+    ok = {**GOOD, "bullets": ["Navy video off San Diego", "They watch it for 5 min", GOOD["bullets"][2]]}
+    assert tldr.check(ok, tldr.build_input(row)) is None
+
+def test_generate_compacts_before_check():
+    reply = json.dumps({"bullets": ["DOW-UAP-D084 video, Navy, 2004, San Diego", "Watched for five minutes at 2000 feet",
+                                    "No official conclusion in the file"], "one_liner": "Five minutes, one filing cabinet."})
+    t = tldr.generate(ROW, chat=lambda *a, **k: reply)
+    assert t["bullets"][:2] == ["Video, Navy, 2004, San Diego", "Watched for 5 min at 2000 ft"]
+    assert t["one_liner"] == "5 min, one filing cabinet."
+
+def test_recheck_rewrites_compactable_rows_without_the_model_and_regenerates_the_rest():
+    stored = {"a": {"bullets": ["Navy video", "Watched for 5 minutes", "No official conclusion in the file"], "one_liner": "Short joke."},
+              "b": {"bullets": GOOD["bullets"], "one_liner": "x" * 110},  # 110 + 3 + 59 > 155
+              "c": {"bullets": ["Navy video", "Watched it", "No official conclusion in the file"], "one_liner": "Fine."}}
+    rows = [{**ROW, "id": k} for k in ("a", "b", "c")]
+    rewrite, regen = tldr.recheck_plan(rows, stored)
+    assert [(r["id"], t["bullets"][1]) for r, t in rewrite] == [("a", "Watched for 5 min")]
+    assert [r["id"] for r in regen] == ["b"]

@@ -18,6 +18,8 @@ from .textindex import flush
 LANG = "en"
 INPUT_CAP = 4000
 BULLET_WORDS, LINER_WORDS = 18, 15
+# og:description = one_liner + " — " + bullet 1 (worker/lib/pages.ts); search shows ~155 chars
+SNIPPET = 155
 FLUSH_EVERY = 25
 RECENT = 20  # jokes compared for reused phrases
 SELECT = """SELECT r.id, r.title, r.agency, r.kind, r.incident_date, r.location, r.summary, r.ai_moments,
@@ -31,7 +33,8 @@ SYSTEM = """You write the TL;DR for a public archive of declassified U.S. govern
 Return JSON only, nothing around it: {"bullets": ["...", "...", "..."], "one_liner": "..."}
 Bullet 1: what the file is, plus who, when and where. Bullet 2: what it reports.
 Bullet 3: the conclusion, finding or status the file states (e.g. "AARO found no anomalous performance"); only if the file states none, write "No official conclusion in the file".
-Each bullet at most 18 words. Plain text, no markdown.
+Each bullet at most 18 words. The one_liner and bullet 1 together at most 150 characters. Plain text, no markdown.
+Be terse: digits not words, units as s/min/h/ft/mi, agency short forms (DoW, DoD, FBI, CIA, AARO, NASA); never repeat the file ID.
 one_liner: ONE deadpan joke, at most 15 words, hung on a specific detail of THIS file (its date, place, length, agency, what is on screen, what it concluded) so it could not be pasted onto another file.
 Don't start the joke with "Paperwork" or "Bureaucracy", and don't add details the file doesn't have (no jets, radar or redactions unless the file mentions them). Never mention coffee.
 Use only facts in the file data; every number you write must appear in it. Never mock witnesses or pilots.
@@ -108,6 +111,29 @@ def normalize(obj):
         return None
     return {"bullets": [_clean(x) for x in b], "one_liner": _clean(o)}
 
+_WN = "|".join(w for w in WORDNUM if w not in ("dozen", "hundred", "thousand"))
+UNITS = ((r"seconds?|secs?", "s"), (r"minutes?|mins?", "min"), (r"hours?|hrs?", "h"),
+         (r"feet|foot", "ft"), (r"miles?", "mi"), (r"kilomet(?:er|re)s?", "km"))
+AGENCIES = (("Department of War", "DoW"), ("Department of Defense", "DoD"), ("Department of Energy", "DOE"))
+
+def _compact(s: str) -> str:
+    s = s.replace("\u2011", "-")  # the model's non-breaking hyphen ("19‑second")
+    for pat, ab in UNITS:
+        # "Five-second" -> "5 s" (not "thirty-four seconds": the hyphen marks a compound)
+        s = re.sub(rf"(?<![\w-])({_WN})[\s-](?:{pat})\b", lambda m: f"{WORDNUM[m[1].lower()]} {ab}", s, flags=re.I)
+        s = re.sub(rf"\b(\d[\d,.]*)[\s-]?(?:{pat})\b", rf"\1 {ab}", s, flags=re.I)
+    for long, short in AGENCIES:
+        s = s.replace(long, short)
+    return re.sub(r"\bapproximately\s+", "~", s, flags=re.I)
+
+def compact(t: dict, rid: str = "") -> dict:
+    """Same words, fewer characters: the TL;DR feeds the search snippet."""
+    b = [_compact(x) for x in t["bullets"]]
+    if rid and b:  # the file id is already in the page title
+        first = re.sub(rf"^{re.escape(rid)}\b[\s,:;.-]*", "", b[0], flags=re.I)
+        b[0] = first[:1].upper() + first[1:]
+    return {"bullets": b, "one_liner": _compact(t["one_liner"])}
+
 def _nums(text: str) -> set[str]:
     return {n.replace(",", "") for n in NUM_RE.findall(text)}
 
@@ -116,7 +142,7 @@ def _int(n: str) -> str:
 
 def _have(source: str) -> set[str]:
     """Source numbers, plus the forms a fair paraphrase uses: 05 -> 5, 2:05 -> 2, 5, 125 s, 2-3 minutes."""
-    have = set()
+    have = {d for w, d in WORDNUM.items() if re.search(rf"\b{w}\b", source, re.I)}  # "five" in the file allows "5"
     for n in _nums(source):
         have |= {n, _int(n), *(_int(p) for p in n.split(":"))}
         m = MMSS.match(n)
@@ -134,6 +160,8 @@ def check(t: dict, source: str) -> str | None:
         return f"bullets must be at most {BULLET_WORDS} words"
     if len(o.split()) > LINER_WORDS:
         return f"one-liner must be at most {LINER_WORDS} words"
+    if len(o) + 3 + len(b[0]) > SNIPPET:  # bullets 2-3 aren't in the snippet; only words cap them
+        return f"one-liner plus bullet 1 must total at most {SNIPPET - 3} characters (now {len(o) + len(b[0])})"
     if CRUTCH.match(o):
         return "don't use a Paperwork/Bureaucracy opener; hang the joke on a detail of this file"
     out, src = " ".join(b + [o]), source.lower()
@@ -175,6 +203,7 @@ def generate(row: dict, chat=_respond, recent=()) -> dict:
     for _ in range(2):
         retry = f"\nYour last reply was rejected: {why}. Fix that." if why else ""
         t = normalize(parse_reply(chat(SYSTEM, user + retry, max_tokens=300, temperature=0.7)))
+        t = t and compact(t, row["id"])
         why = "reply was not the JSON shape asked for" if t is None else check(t, src)
         if not why and (g := repeats(t["one_liner"], recent)):
             why = f'the joke reused "{g}" from another file; write a different joke'
@@ -182,9 +211,20 @@ def generate(row: dict, chat=_respond, recent=()) -> dict:
             return t
     raise ValueError(why)
 
-def failing_stored(rows, stored: dict):
-    """Rows whose stored TL;DR no longer passes check() (e.g. after the guard grew)."""
-    return [r for r in rows if r["id"] in stored and check(stored[r["id"]], build_input(r))]
+def recheck_plan(rows, stored: dict):
+    """Stored TL;DRs vs the current rules: ([(row, compacted)] to rewrite with no model call,
+    [row] that still fail check() and need regenerating)."""
+    rewrite, regen = [], []
+    for r in rows:
+        if r["id"] not in stored:
+            continue
+        t = stored[r["id"]]
+        c = compact(t, r["id"])
+        if check(c, build_input(r)):
+            regen.append(r)
+        elif c != t:
+            rewrite.append((r, c))
+    return rewrite, regen
 
 def todo(rows, force: bool = False, limit: int | None = None):
     out = [r for r in rows if force or r.get("input_hash") != input_hash(build_input(r))]
@@ -210,12 +250,13 @@ def main(argv=None):
     if args.recheck:
         stored = {r["id"]: {"bullets": json.loads(r["bullets"]), "one_liner": r["one_liner"]} for r in d1._d1_json(
             f"SELECT record_id id, bullets, one_liner FROM record_tldr WHERE lang='{LANG}'")}
-        rows = failing_stored(rows, stored)[:args.limit] if args.limit else failing_stored(rows, stored)
-        for r in rows:
-            print(f"recheck: {r['id']}: {check(stored[r['id']], build_input(r))}")
+        rewrite, rows = recheck_plan(rows, stored)
+        rows = rows[:args.limit] if args.limit else rows
+        print(f"recheck: {len(rewrite)} compacted in place, {len(rows)} to regenerate")
     else:
-        rows = todo(rows, args.force, args.limit)
-    pending, ok, failed = [], 0, 0
+        rewrite, rows = [], todo(rows, args.force, args.limit)
+    pending = [row_sql(r["id"], t, input_hash(build_input(r))) for r, t in rewrite]
+    ok, failed = len(rewrite), 0
     # Daily runs compare against the newest stored jokes too, not just this run's.
     recent = [r["one_liner"] for r in reversed(d1._d1_json(
         f"SELECT one_liner FROM record_tldr WHERE lang='{LANG}' ORDER BY generated_at DESC LIMIT {RECENT}"))]
