@@ -600,8 +600,10 @@ export function Doc() {
         {!!record.redacted && (
           <span
             data-lens-hide
+            title="Redacted"
+            aria-label="Redacted"
             className={`absolute right-[10px] top-[10px] rounded-md bg-red px-2 py-1 font-mono text-[9px] font-bold text-white ${fade}`}>
-            REDACTED
+            R
           </span>
         )}
         {docIdx && (
