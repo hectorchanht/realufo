@@ -104,12 +104,12 @@ describe("Shorts player", () => {
     expect(scrollBy.mock.calls.map(([o]) => (o as ScrollToOptions).top)).toEqual([800, -800]);
   });
 
-  it("renders one slide per Short, muted, each with a View file link", async () => {
+  it("renders one slide per Short, muted, its id + title linking to the file", async () => {
     renderAppAt("/shorts/B%202");
     const videos = (await screen.findAllByTestId("short-video")) as HTMLVideoElement[];
     expect(videos).toHaveLength(3);
     expect(videos.every((v) => v.muted)).toBe(true);
-    expect(screen.getAllByRole("link", { name: /view file/i })[1]).toHaveAttribute("href", "/doc/B%202");
+    expect(screen.getByRole("link", { name: /B 2.*Second/ })).toHaveAttribute("href", "/doc/B%202");
   });
 
   it("sound button unmutes every slide", async () => {
@@ -159,7 +159,7 @@ describe("Shorts player", () => {
     expect(container).toHaveAttribute("inert");
     const player = within(document.querySelector("[data-screen=shorts]") as HTMLElement);
     expect(player.getByRole("button", { name: "Back" })).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "View file" })[0]).toHaveAttribute("href", "/doc/A-1");
+    expect(player.getByRole("link", { name: /A-1.*First/ })).toHaveAttribute("href", "/doc/A-1");
     expect(screen.getAllByRole("button", { name: "Share" })).toHaveLength(3);
     expect(document.querySelector("[data-screen=shorts] [data-scroll]")).toHaveClass("overscroll-contain");
   });

@@ -9,7 +9,7 @@
 // Portaled to <body> with the app behind it made inert, so Tab/screen readers
 // stay in the player.
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
-import { ArrowLeft, Check, ChevronDown, ChevronUp, FileText, Pause, Play, Share2, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Pause, Play, Share2, Volume2, VolumeX } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useShorts } from "../api/queries";
@@ -262,14 +262,12 @@ export default function Shorts() {
                     <MuteIcon size={20} aria-hidden="true" />
                   </button>
                   <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 bg-gradient-to-t from-black/85 to-transparent px-4 pb-[max(24px,calc(env(safe-area-inset-bottom)+12px))] pt-10 text-white">
-                    <div className="min-w-0 flex-1">
-                      <div className="font-mono text-[10px] uppercase tracking-[.8px] text-white/60">{s.id}</div>
-                      <div className="line-clamp-2 text-[14px] font-semibold">{title}</div>
-                    </div>
+                    {/* The id + title is the way to the file. */}
+                    <Link to={`/doc/${encodeURIComponent(s.id)}`} title="View file" className="-mx-2 min-w-0 flex-1 rounded-lg px-2 py-1 hover:bg-white/10">
+                      <span className="block font-mono text-[10px] uppercase tracking-[.8px] text-white/60">{s.id}</span>
+                      <span className="line-clamp-2 text-[14px] font-semibold">{title}</span>
+                    </Link>
                     <div className="flex flex-none flex-col gap-3">
-                      <Link to={`/doc/${encodeURIComponent(s.id)}`} aria-label="View file" title="View file" className={`bg-white/15 ${round}`}>
-                        <FileText size={20} aria-hidden="true" />
-                      </Link>
                       <button type="button" aria-label={copied === s.id ? "Link copied" : "Share"} title="Share" className={`bg-white/15 ${round}`}
                         onClick={async () => setCopied((await shareLink(title, path(s.id, ""))) === "copied" ? s.id : "")}>
                         <ShareIcon size={20} aria-hidden="true" />
