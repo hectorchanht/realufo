@@ -117,3 +117,8 @@ export const TOPIC_TEXT: Record<string, TopicText> = {
     ],
   },
 };
+
+// Agency hub backgrounds (spec 2026-10-03-realufo-case-stories-batch2-design):
+// the AARO/NARA/NASA overviews moved from release.realufo.org. Same shape and
+// rules as topic texts: every source is an archive file (PDF page = ?p=).
+export const AGENCY_TEXT: Record<string, TopicText> = {};

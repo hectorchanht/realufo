@@ -4,6 +4,7 @@ import worker from "../index";
 import { seedTestDB } from "./helpers";
 import { loadRecord } from "../routes/records";
 import { highlightsOf } from "../routes/hubs";
+import { AGENCY_TEXT } from "../lib/topicText";
 
 beforeAll(() => seedTestDB(env.DB));
 const SHELL = '<html><head><!--META--></head><body><div id="root"></div></body></html>';
@@ -205,5 +206,28 @@ describe("hub highlights", () => {
 
   it("bad JSON in picks is null, not a 500", () => {
     expect(highlightsOf({ lede: "x", picks: "{nope" }, [])).toBeNull();
+  });
+});
+
+describe("agency backgrounds", () => {
+  it("an agency with AGENCY_TEXT carries the background block; missing sources drop; others unchanged", async () => {
+    const { id } = (await env.DB.prepare("SELECT id FROM records WHERE agency='AARO' AND status='live' LIMIT 1").first<{ id: string }>())!;
+    AGENCY_TEXT.aaro = {
+      background: "AARO is the Pentagon office for UAP reports. It began in 2022.",
+      sources: [{ id, page: 1, note: "Fixture source" }, { id: "NOPE-UAP-X999", page: 1, note: "Missing file" }],
+    };
+    try {
+      const h: any = await (await call("/api/hubs/agency/aaro")).json();
+      expect(h.topic.background).toBe(AGENCY_TEXT.aaro.background);
+      expect(h.topic.sources.map((s: any) => s.id)).toEqual([id]);
+      const html = await (await call("/agency/aaro")).text();
+      expect(html).toContain("AARO is the Pentagon office for UAP reports.");
+      expect(html).toContain("Sources in the archive");
+      expect(html).not.toContain("NOPE-UAP-X999");
+      const fbi: any = await (await call("/api/hubs/agency/fbi")).json();
+      expect(fbi.topic).toBeUndefined();
+    } finally {
+      delete AGENCY_TEXT.aaro;
+    }
   });
 });

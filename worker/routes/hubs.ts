@@ -10,8 +10,8 @@ import {
 import { docTitle } from "../lib/ssr";
 import { releaseBlock } from "./releases";
 import type { ReleaseBlock } from "../lib/releases";
-import { TOPIC_RULES, topicWhere, type TopicBlock } from "../lib/topics";
-import { TOPIC_TEXT } from "../lib/topicText";
+import { TOPIC_RULES, topicWhere, type TopicBlock, type TopicText } from "../lib/topics";
+import { AGENCY_TEXT, TOPIC_TEXT } from "../lib/topicText";
 import { CASE_STORY_TEXT } from "../lib/caseStoryText";
 
 export type CardRow = { id: string; title: string; kind: string; incident_date: string | null } & Record<string, unknown>;
@@ -92,8 +92,7 @@ export const topicMembers = async (env: Env, origin: string): Promise<Record<str
     return out;
   })) ?? {};
 
-async function topicBlock(env: Env, slug: string, members: string[]): Promise<TopicBlock> {
-  const text = TOPIC_TEXT[slug];
+async function topicBlock(env: Env, text: TopicText | undefined, members: string[]): Promise<TopicBlock> {
   const srcIds = (text?.sources ?? []).map((s) => s.id);
   const [recs, stories] = await Promise.all([
     env.DB.prepare("SELECT id,title,kind FROM records WHERE status='live' AND id IN (SELECT value FROM json_each(?))")
@@ -190,7 +189,10 @@ export async function loadHub(env: Env, kind: string, slug: string, origin: stri
     kind: me.kind, slug: me.slug, title: hubTitle(me), intro: hubIntro(me, sel.release, stats), stats, records, highlights,
     siblings: same.filter((h) => h !== me),
     ...(me.kind === "release" ? { prev: same[i - 1]?.slug ?? null, next: same[i + 1]?.slug ?? null, release } : {}),
-    ...(me.kind === "topic" ? { topic: await topicBlock(env, me.slug, (sel as { members: string[] }).members) } : {}),
+    ...(me.kind === "topic" ? { topic: await topicBlock(env, TOPIC_TEXT[me.slug], (sel as { members: string[] }).members) } : {}),
+    ...(me.kind === "agency" && Object.hasOwn(AGENCY_TEXT, me.slug)
+      ? { topic: await topicBlock(env, AGENCY_TEXT[me.slug], records.map((r) => r.id as string)) }
+      : {}),
   };
 }
 
