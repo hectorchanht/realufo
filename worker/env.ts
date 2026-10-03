@@ -48,4 +48,8 @@ export interface Env {
   YT_REFRESH_TOKEN?: string;
   TIKTOK_CLIENT_KEY?: string;
   TIKTOK_CLIENT_SECRET?: string;
+  FEATURE_PUSH?: string; // off | on (spec 2026-10-03-realufo-pwa-push-design)
+  VAPID_PUBLIC_KEY?: string; // base64url uncompressed P-256 point (scripts/vapid-keys.mjs)
+  VAPID_PRIVATE_KEY?: string; // secret: base64url private scalar `d`
+  VAPID_SUBJECT?: string; // mailto: contact push services may use
 }
