@@ -14,6 +14,7 @@
 
 import type { NavigateFunction } from "react-router-dom";
 import { useBootstrap } from "../api/queries";
+import { forgetScroll, scrollKey } from "../lib/useScrollMemory";
 
 export type NavTab = "feed" | "archive" | "ask" | "boards" | "map";
 
@@ -105,4 +106,14 @@ export function rememberTabUrl(pathname: string, search: string): void {
 
 export function tabHref(item: NavItem, activeTab: NavTab): string {
   return (item.tab === activeTab ? lastRootUrl : lastUrl).get(item.tab) ?? item.path;
+}
+
+/** Re-tapping the active tab: its root list opens at the top, not where it was left. */
+export function retapTab(href: string, here: { pathname: string; search: string }): void {
+  const url = new URL(href, "http://x");
+  const key = scrollKey(url.pathname, url.search);
+  forgetScroll(key);
+  // Already on the root: the link is a no-op navigation, so scroll by hand.
+  if (key === scrollKey(here.pathname, here.search))
+    document.querySelector("[data-scroll]")?.scrollTo?.({ top: 0, behavior: "smooth" });
 }

@@ -3,8 +3,8 @@
 // home-indicator strip, line 401, is dropped — real phones draw their own). Nav buttons are react-router `Link`s (see TopNav.tsx for
 // why). Each tab has a 44px min-height tap target per the task requirement.
 import type { Ref } from "react";
-import { Link } from "react-router-dom";
-import { tabHref, useNavItems, type NavTab } from "./navItems";
+import { Link, useLocation } from "react-router-dom";
+import { retapTab, tabHref, useNavItems, type NavTab } from "./navItems";
 
 export interface BottomTabProps {
   activeTab: NavTab;
@@ -18,6 +18,7 @@ export interface BottomTabProps {
 // sliding it out never resizes the scroll container — see AppShell.
 export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
   const navItems = useNavItems();
+  const here = useLocation();
   return (
     <div
       ref={ref}
@@ -34,10 +35,12 @@ export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
       >
         {navItems.map((item) => {
           const active = activeTab === item.tab;
+          const href = tabHref(item, activeTab);
           return (
             <Link
               key={item.tab}
-              to={tabHref(item, activeTab)}
+              to={href}
+              onClick={active ? () => retapTab(href, here) : undefined}
               aria-current={active ? "page" : undefined}
               className="flex min-h-[44px] flex-1 flex-col items-center gap-1 px-0.5 py-[5px] active:scale-90"
               style={{ color: active ? "var(--signal)" : "var(--dim)" }}

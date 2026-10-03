@@ -177,4 +177,27 @@ describe("AppShell", () => {
     await waitFor(() => expect(document.querySelector("[data-screen='archive']")).toBeInTheDocument());
     expect(main.scrollTop).toBe(700);
   });
+
+  it("mobile: re-tapping the active tab scrolls its root list to the top and forgets the old spot", async () => {
+    renderAppAt("/archive");
+    await waitFor(() => expect(document.querySelector("[data-screen='archive']")).toBeInTheDocument());
+    const main = document.querySelector<HTMLElement>("main[data-scroll]")!;
+    Object.defineProperty(main, "scrollHeight", { configurable: true, value: 5000 });
+    Object.defineProperty(main, "clientHeight", { configurable: true, value: 800 });
+    main.scrollTo = ((o: ScrollToOptions) => (main.scrollTop = o.top ?? 0)) as typeof main.scrollTo;
+    act(() => {
+      main.scrollTop = 700;
+      fireEvent.scroll(main);
+    });
+
+    const nav = () => within(getNavContainer());
+    fireEvent.click(nav().getByText("Archive"));
+    expect(main.scrollTop).toBe(0);
+
+    fireEvent.click(nav().getByText("Feed"));
+    await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
+    fireEvent.click(nav().getByText("Archive"));
+    await waitFor(() => expect(document.querySelector("[data-screen='archive']")).toBeInTheDocument());
+    expect(main.scrollTop).toBe(0);
+  });
 });

@@ -10,7 +10,7 @@
 // covers desktop.
 import { Link, useLocation } from "react-router-dom";
 import { Saucer } from "./Saucer";
-import { tabHref, useNavItems, type NavTab } from "./navItems";
+import { retapTab, tabHref, useNavItems, type NavTab } from "./navItems";
 import { ThemeToggle } from "./ThemeToggle";
 import { usePageTitle, DEFAULT_PAGE_TITLE } from "../lib/pageTitle";
 
@@ -24,7 +24,8 @@ export function TopNav({ activeTab }: TopNavProps) {
   // No Feed item: the brand logo already links to "/" and the bar needs the room.
   const navItems = useNavItems().filter((i) => i.tab !== "feed");
   const { title, sub } = usePageTitle();
-  const { pathname } = useLocation();
+  const here = useLocation();
+  const { pathname } = here;
   // Suppress the contextual block on the root/Feed tab — its title is
   // "REALUFO", which the brand wordmark already shows (avoids a dupe) — and on
   // pages that open with their own full <h1> (doc, case, browse, hubs).
@@ -44,10 +45,12 @@ export function TopNav({ activeTab }: TopNavProps) {
       <div className="flex flex-none items-center gap-1">
         {navItems.map((item) => {
           const active = activeTab === item.tab;
+          const href = tabHref(item, activeTab);
           return (
             <Link
               key={item.tab}
-              to={tabHref(item, activeTab)}
+              to={href}
+              onClick={active ? () => retapTab(href, here) : undefined}
               aria-current={active ? "page" : undefined}
               className={
                 "flex min-h-[44px] flex-none items-center gap-[9px] rounded-[11px] px-3.5 py-2 font-mono text-[13px] font-medium" +

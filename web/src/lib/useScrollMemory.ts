@@ -20,6 +20,11 @@ export function scrollKey(pathname: string, search: string): string {
   return qs ? `${pathname}?${qs}` : pathname;
 }
 
+/** Forget a URL's scroll so it next opens at the top (tab re-tap). */
+export function forgetScroll(key: string): void {
+  saved.delete(key);
+}
+
 export function useScrollMemory(ref: RefObject<HTMLElement | null>, key: string): void {
   useLayoutEffect(() => {
     const el = ref.current;
