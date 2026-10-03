@@ -135,6 +135,12 @@ post (`reply_to_id`), using the API.
 - **Doesn't work** (or needs an app review we don't have): Threads uses the CTA line below. Note it in
   the spec and drop the threads rows from the plan.
 
+**Probe 2026-10-03 (containers only, nothing published):**
+- Polls are supported. `poll_attachment={"option_a":…,"option_b":…}` on a TEXT container from `/me/threads` returns a container id.
+- Replies are not: any `reply_to_id` container, even plain text without a poll, fails with code 10, "Application does not have permission for this action". The token lacks `threads_manage_replies`.
+- Docs (developers.facebook.com/documentation/threads/create-posts/polls): `option_X_votes_percentage` is a 0–1 fraction (0.10), not 0–100. Polls run on TEXT posts only.
+- So: a Threads poll is either a standalone post, or a reply after re-authorising the app with `threads_manage_replies`.
+
 ## Other platforms: CTA copy
 
 `article.py --social`: when `poll` is set, the last part ends with
