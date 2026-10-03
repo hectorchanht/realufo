@@ -23,7 +23,8 @@ const addX = async (ref: string, opts: { status?: string; media?: string | null;
   (await env.DB.prepare("INSERT INTO x_posts(stream,ref,text,ai,media,cost_usd,status,created_at) VALUES ('pick',?,?,1,?,0.2,?,?) RETURNING id")
     .bind(ref, opts.text ?? `📼 ${ref}\nhttps://realufo.org/doc/${ref}`, opts.media === undefined ? `clip:clips/wargov/${ref}.mp4` : opts.media, opts.status ?? "posted", opts.created ?? "2026-10-10 14:00:00")
     .first<{ id: number }>())!.id;
-const rows = async () => (await env.DB.prepare("SELECT platform, status, remote_id, container_id, error, attempts FROM social_posts ORDER BY id").all<any>()).results;
+// live rows only; soft-deleted ones (deleted_at) are history
+const rows = async () => (await env.DB.prepare("SELECT platform, status, remote_id, container_id, error, attempts FROM social_posts WHERE deleted_at IS NULL ORDER BY id").all<any>()).results;
 
 beforeEach(async () => {
   await env.DB.prepare("DELETE FROM social_posts").run();
@@ -167,11 +168,24 @@ describe("social tick", () => {
     expect(await rows()).toMatchObject([{ status: "failed", error: "processing timeout" }]);
   });
 
-  it("auth error deletes the row (item retried after the fix)", async () => {
+  it("auth error soft-deletes the row (kept as history; item retried after the fix)", async () => {
     await addX("ST-V1");
     const A = { fb: fake("fb", { publish: async () => { throw new SocialError(400, '{"error":{"code":190}}'); } }) };
     await tick(E({ FEATURE_SOCIAL_FB: "on" }), NOW, noSleep, A);
     expect(await rows()).toEqual([]);
+    expect((await env.DB.prepare("SELECT count(*) n FROM social_posts WHERE deleted_at IS NOT NULL").first<any>()).n).toBe(1);
+  });
+
+  it("a soft-deleted row is posted again; the old row stays as history", async () => {
+    await addX("ST-V1");
+    const A = { fb: fake("fb") };
+    const e = E({ FEATURE_SOCIAL_FB: "on" });
+    await tick(e, NOW, noSleep, A);
+    await env.DB.prepare("UPDATE social_posts SET deleted_at=datetime('now')").run();
+    await tick(e, NOW, noSleep, A);
+    expect(seen).toHaveLength(2);
+    expect(await rows()).toMatchObject([{ platform: "fb", status: "posted" }]);
+    expect((await env.DB.prepare("SELECT count(*) n FROM social_posts").first<any>()).n).toBe(2);
   });
 
   it("429 retries up to 3 attempts, then failed; other 4xx fail at once", async () => {

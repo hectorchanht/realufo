@@ -5,7 +5,7 @@
 #   scripts/publish.sh --drain [GIT_REF]       no new X post: just run the fan-out every
 #                                              minute until every posted X post (since
 #                                              SOCIAL_SINCE) has a row on every enabled
-#                                              platform — re-posts rows you deleted
+#                                              platform — re-posts soft-deleted rows
 #
 # How: deploys GIT_REF from a clean worktree with an every-minute cron and
 # X_FORCE_PICK=RECORD_ID (neither is committed). The X bot posts the record at
@@ -74,13 +74,13 @@ if [ -n "$DRAIN" ]; then
   deadline=$(( $(date +%s) + TIMEOUT_MIN * 60 ))
   while :; do
     sleep 30
-    left=$(q "SELECT count(*) n FROM x_posts x, (SELECT value p FROM json_each('[${plats//\'/\"}]')) pl WHERE x.status='posted' AND x.created_at >= '$since' AND NOT EXISTS (SELECT 1 FROM social_posts s WHERE s.x_post_id=x.id AND s.platform=pl.p)")
-    busy=$(q "SELECT count(*) n FROM social_posts WHERE status IN ('pending','processing')")
+    left=$(q "SELECT count(*) n FROM x_posts x, (SELECT value p FROM json_each('[${plats//\'/\"}]')) pl WHERE x.status='posted' AND x.created_at >= '$since' AND NOT EXISTS (SELECT 1 FROM social_posts s WHERE s.x_post_id=x.id AND s.platform=pl.p AND s.deleted_at IS NULL)")
+    busy=$(q "SELECT count(*) n FROM social_posts WHERE status IN ('pending','processing') AND deleted_at IS NULL")
     echo "missing=$left busy=$busy" >&2
     [[ "$left" == *'"n": 0'* && "$busy" == *'"n": 0'* ]] && break
     [ "$(date +%s)" -ge "$deadline" ] && { echo "timed out"; break; }
   done
-  q "SELECT x.ref, s.platform, s.status, coalesce(s.remote_id, substr(s.error,1,100)) detail FROM social_posts s JOIN x_posts x ON x.id=s.x_post_id WHERE s.created_at >= datetime('now','-30 minutes') ORDER BY x.id, s.platform" |
+  q "SELECT x.ref, s.platform, s.status, coalesce(s.remote_id, substr(s.error,1,100)) detail FROM social_posts s JOIN x_posts x ON x.id=s.x_post_id WHERE s.deleted_at IS NULL AND s.created_at >= datetime('now','-30 minutes') ORDER BY x.id, s.platform" |
     python3 -c 'import json,sys; [print(f"{r[\"ref\"]:16} {r[\"platform\"]:8} {r[\"status\"]:10} {r[\"detail\"] or \"\"}") for r in json.load(sys.stdin)]'
   exit 0
 fi

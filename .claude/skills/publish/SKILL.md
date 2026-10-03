@@ -16,7 +16,7 @@ description: Use when the user wants to post / publish / share a specific RealUF
 scripts/publish.sh DOW-UAP-PR104
 ```
 
-**Re-posting rows** (a platform missed some posts, e.g. after fixing an account): the user deletes those `social_posts` rows, then `scripts/publish.sh --drain` runs the fan-out every minute until every posted X post since `SOCIAL_SINCE` is on every enabled platform (one post per platform per minute), then restores the normal deploy.
+**Re-posting rows** (a platform missed some posts, e.g. after fixing an account): soft-delete those `social_posts` rows (`UPDATE … SET deleted_at=datetime('now')`; never hard `DELETE`, the user wants history kept), then `scripts/publish.sh --drain` runs the fan-out every minute until every posted X post since `SOCIAL_SINCE` is on every enabled platform (one post per platform per minute), then restores the normal deploy.
 
 ## Before running
 
@@ -29,8 +29,8 @@ scripts/publish.sh DOW-UAP-PR104
 - Report each platform's row. Known non-bugs:
   - **YouTube** uploads stay *private* until Google's YouTube API audit passes.
   - **TikTok** posts are SELF_ONLY, and fail with `unaudited_client_can_only_post_to_private_accounts` unless the authorized TikTok account is set to private, until TikTok approves the app.
-- **Retrying one platform**: failed rows are never retried automatically. The user deletes that row (the auto-mode classifier blocks Claude from production D1 deletes), and the next cron tick (or another publish run) re-posts it:
+- **Retrying one platform**: failed rows are never retried automatically. Soft-delete that row (migration 0023: live rows are `deleted_at IS NULL`; never hard `DELETE`), and the next cron tick or `scripts/publish.sh --drain` re-posts it:
   ```bash
-  npx wrangler d1 execute realufo-db --remote --env-file /dev/null --command "DELETE FROM social_posts WHERE platform='tiktok' AND x_post_id=(SELECT id FROM x_posts WHERE stream='pick' AND ref='RECORD_ID')"
+  npx wrangler d1 execute realufo-db --remote --env-file /dev/null --command "UPDATE social_posts SET deleted_at=datetime('now') WHERE deleted_at IS NULL AND platform='tiktok' AND x_post_id=(SELECT id FROM x_posts WHERE stream='pick' AND ref='RECORD_ID')"
   ```
 - After any live data change, push changed pages to IndexNow (`crawler/indexnow.py`).

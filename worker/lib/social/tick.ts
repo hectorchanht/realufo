@@ -10,7 +10,8 @@ import { tiktok } from "./tiktok";
 // Social fan-out tick (Spec 5 §3): mirror posted x_posts to every enabled platform, one
 // new post per platform per tick. Only status='posted': pending/processing X rows may still
 // be deleted by xbot (401/402/403), which a social_posts FK would block. Row goes in BEFORE the platform is called:
-// UNIQUE(x_post_id, platform) makes a second attempt a no-op.
+// the live-row unique index (x_post_id, platform) makes a second attempt a no-op. Rows are
+// never hard-deleted: deleted_at retires one (history kept) and frees the pair to post again.
 
 export const ADAPTERS: Record<Platform, Adapter> = { fb, ig, threads, bsky, yt, tiktok };
 const FLAG: Record<Platform, keyof Env> = {
@@ -75,7 +76,7 @@ async function fail(env: Env, p: Platform, row: { id: number; attempts: number }
   }
   if (isAuth(e)) {
     // token revoked/expired: nothing posted; drop the row so the item isn't burned while we're down
-    await env.DB.prepare("DELETE FROM social_posts WHERE id=?").bind(row.id).run();
+    await env.DB.prepare("UPDATE social_posts SET deleted_at=datetime('now') WHERE id=?").bind(row.id).run();
     return log({ platform: p, halted: row.id, status: e.status, body: e.body.slice(0, 200) });
   }
   const attempts = row.attempts + 1;
@@ -98,7 +99,7 @@ async function send(env: Env, p: Platform, a: Adapter, row: { id: number; attemp
 async function resume(env: Env, p: Platform, a: Adapter, ctx: Ctx) {
   const { results } = await env.DB.prepare(
     `SELECT s.id, s.attempts, s.status, s.container_id, s.created_at, x.text, x.media, ${REC_COLS} FROM social_posts s JOIN x_posts x ON x.id=s.x_post_id ${REC_JOIN}
-     WHERE s.platform=? AND (s.status='processing' OR (s.status='pending' AND s.attempts>0))`
+     WHERE s.platform=? AND s.deleted_at IS NULL AND (s.status='processing' OR (s.status='pending' AND s.attempts>0))`
   ).bind(p).all<Row>();
   for (const row of results) {
     const post = await postFor(env, p, a, row);
@@ -132,7 +133,7 @@ async function runPlatform(env: Env, p: Platform, a: Adapter, mode: string, ctx:
   const x = await env.DB.prepare(
     `SELECT x.id, x.text, x.media, ${REC_COLS} FROM x_posts x ${REC_JOIN}
      WHERE x.status='posted' AND x.created_at >= ?
-       AND NOT EXISTS (SELECT 1 FROM social_posts s WHERE s.x_post_id=x.id AND s.platform=?)
+       AND NOT EXISTS (SELECT 1 FROM social_posts s WHERE s.x_post_id=x.id AND s.platform=? AND s.deleted_at IS NULL)
      ORDER BY x.created_at, x.id LIMIT 1`
   ).bind(since, p).first<XRow>();
   if (!x) return;
@@ -140,7 +141,7 @@ async function runPlatform(env: Env, p: Platform, a: Adapter, mode: string, ctx:
   const blocked = gate(a, post) ?? ((await overCap(env, p, ctx.now)) ? "quota cap" : null);
   const status = blocked ? "failed" : mode === "dry" ? "draft" : "pending";
   const ins = await env.DB.prepare(
-    "INSERT INTO social_posts(x_post_id,platform,status,error,created_at) VALUES (?,?,?,?,?) ON CONFLICT(x_post_id, platform) DO NOTHING RETURNING id"
+    "INSERT INTO social_posts(x_post_id,platform,status,error,created_at) VALUES (?,?,?,?,?) ON CONFLICT(x_post_id, platform) WHERE deleted_at IS NULL DO NOTHING RETURNING id"
   ).bind(x.id, p, status, blocked, sqlTime(ctx.now)).first<{ id: number }>();
   if (!ins) return;
   log({ platform: p, x: x.id, mode, status, blocked, media: post.media?.key ?? null });
