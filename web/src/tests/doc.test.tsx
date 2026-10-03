@@ -215,6 +215,15 @@ beforeEach(() => {
 });
 
 describe("Doc", () => {
+  it("shows the file's topics as links", () => {
+    useRecordMock.mockReturnValue({
+      data: { ...mockDetail, topics: [{ slug: "aawsap", label: "AAWSAP & DIRDs" }] },
+      isLoading: false,
+    });
+    renderDoc();
+    expect(screen.getByRole("link", { name: "AAWSAP & DIRDs" }).getAttribute("href")).toBe("/topic/aawsap");
+  });
+
   it("puts the file's hub links in the footer, not in the chip or meta values", () => {
     useRecordMock.mockReturnValue({
       data: { ...mockDetail, hubs: { agency: "cia", location: "roswell", release: "4", decade: "1970s" } },

@@ -250,7 +250,8 @@ export interface FullText {
   aiSummary?: string | null;
 }
 
-export type HubKind = "release" | "agency" | "location" | "decade";
+export type HubKind = "release" | "topic" | "agency" | "location" | "decade";
+export type { TopicBlock } from "../../../worker/lib/topics";
 export interface HubSummary {
   kind: HubKind;
   slug: string;
@@ -276,6 +277,8 @@ export interface Hub {
   highlights?: HubHighlights | null;
   /** Releases only: what's new, dated prev/next, FAQ (worker/routes/releases.ts). */
   release?: import("../../../worker/lib/releases").ReleaseBlock | null;
+  /** Topics only: background, sources, related stories (worker/routes/hubs.ts). */
+  topic?: import("../../../worker/lib/topics").TopicBlock | null;
 }
 export type { FaqItem, NextWindow, ReleaseBlock, ReleaseInfo, TrackerData } from "../../../worker/lib/releases";
 /** Hub slugs this record's facts link to (only hubs that exist). */
@@ -308,6 +311,7 @@ export interface RecordDetail {
   fullText?: FullText | null;
   tldr?: Tldr | null;
   hubs?: HubLinks;
+  topics?: { slug: string; label: string }[];
   /** Per-visitor verdict state (GET /api/records/:id only, never pre-rendered). */
   verdicts?: VerdictState;
 }

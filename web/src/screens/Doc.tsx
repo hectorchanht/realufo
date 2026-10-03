@@ -140,13 +140,14 @@ function MetaCell({ label, value }: MetaCellProps) {
 }
 
 // The hub pages this file belongs to, for the footer's "This file" column.
-function docFooterLinks(record: RecordDetail["record"], hubs: RecordDetail["hubs"], release: RecordDetail["release"]): FooterLinks {
+function docFooterLinks(record: RecordDetail["record"], hubs: RecordDetail["hubs"], release: RecordDetail["release"], topics?: RecordDetail["topics"]): FooterLinks {
   const h = hubs ?? {};
   const links = [
     h.release && { to: `/release/${h.release}`, text: `More from Release ${String(release?.no ?? h.release).padStart(2, "0")}` },
     h.agency && { to: `/agency/${h.agency}`, text: `More from ${record.agency_full || record.agency}` },
     h.location && { to: `/location/${h.location}`, text: `More from ${record.location}` },
     h.decade && { to: `/decade/${h.decade}`, text: `More from the ${h.decade}` },
+    ...(topics ?? []).map((t) => ({ to: `/topic/${t.slug}`, text: `More on ${t.label}` })),
   ].filter((l): l is { to: string; text: string } => !!l);
   return { title: "This file", links };
 }
@@ -366,7 +367,7 @@ export function Doc() {
     tp?.showId ? tp.title : "",
     tp ? (tp.showId ? `${tp.id} — ${tp.title}` : tp.title) : undefined,
   );
-  useSetFooterLinks(record && detail ? docFooterLinks(record, detail.hubs, detail.release) : null);
+  useSetFooterLinks(record && detail ? docFooterLinks(record, detail.hubs, detail.release, detail.topics) : null);
 
   if (isLoading) {
     return (
@@ -735,6 +736,16 @@ export function Doc() {
         <MetaCell label="Released" value={record.doc_date || ""} />
         <MetaCell label="VIRIN" value={record.virin || ""} />
       </div>
+      {detail.topics && detail.topics.length > 0 && (
+        <div className="-mt-2 mb-4 flex flex-wrap items-center gap-[7px] font-mono text-[10px]">
+          <span className="text-faint">TOPICS</span>
+          {detail.topics.map((t) => (
+            <Link key={t.slug} to={`/topic/${t.slug}`} className="rounded-[7px] border border-line px-[9px] py-1 text-dim hover:border-signal hover:text-signal">
+              {t.label}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* summary — prototype line 366 */}
       <p ref={summaryRef} className="mb-4 scroll-mt-16 text-[14.5px] leading-[1.65] text-dim" style={{ whiteSpace: "pre-line" }}>

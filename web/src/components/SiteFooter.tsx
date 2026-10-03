@@ -12,7 +12,7 @@ import { AppearanceSwitcher } from "./AppearanceSwitcher";
 import { Saucer } from "./Saucer";
 import { SOCIAL_PROFILES } from "../../../worker/lib/profiles";
 
-const GROUPS: [HubKind, string][] = [["release", "Releases"], ["agency", "Agencies"], ["decade", "Decades"]];
+const GROUPS: [HubKind, string][] = [["topic", "Topics"], ["release", "Releases"], ["agency", "Agencies"], ["decade", "Decades"]];
 // Plain <a>: served by the Worker, not SPA routes.
 const FILES = [
   ["llms.txt", "/llms.txt"],

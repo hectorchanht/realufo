@@ -5,7 +5,7 @@ import type { HubKind } from "../api/types";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { KIND_PLURAL } from "./Hub";
 
-const KINDS: HubKind[] = ["release", "agency", "location", "decade"];
+const KINDS: HubKind[] = ["topic", "release", "agency", "location", "decade"];
 
 export default function Browse() {
   const { data, isLoading } = useHubs();

@@ -3,14 +3,14 @@
 // Worker pre-renders the same content for crawlers (worker/lib/ssr.ts hubBody).
 import { Link, useParams } from "react-router-dom";
 import { useHub } from "../api/queries";
-import type { HubHighlights, HubKind, ReleaseBlock } from "../api/types";
+import type { HubHighlights, HubKind, ReleaseBlock, TopicBlock } from "../api/types";
 import { Faq } from "../components/Faq";
 import { docTitleParts } from "../lib/docTitle";
 import { DocCard } from "../components/DocCard";
 import { useSetPageTitle } from "../lib/pageTitle";
 
-export const KIND_LABEL: Record<HubKind, string> = { release: "RELEASE", agency: "AGENCY", location: "LOCATION", decade: "DECADE" };
-export const KIND_PLURAL: Record<HubKind, string> = { release: "RELEASES", agency: "AGENCIES", location: "LOCATIONS", decade: "DECADES" };
+export const KIND_LABEL: Record<HubKind, string> = { release: "RELEASE", topic: "TOPIC", agency: "AGENCY", location: "LOCATION", decade: "DECADE" };
+export const KIND_PLURAL: Record<HubKind, string> = { release: "RELEASES", topic: "TOPICS", agency: "AGENCIES", location: "LOCATIONS", decade: "DECADES" };
 
 export default function Hub({ kind }: { kind: HubKind }) {
   const { slug = "" } = useParams();
@@ -37,9 +37,11 @@ export default function Hub({ kind }: { kind: HubKind }) {
         <Link to="/browse" className="hover:text-signal">BROWSE</Link> › {KIND_PLURAL[kind]}
       </div>
       <h1 className="mb-2 text-[19px] font-bold leading-[1.3] text-ink">{data.title}</h1>
+      {data.topic && <TopicIntro t={data.topic} />}
       <p className="mb-4 text-[14.5px] leading-[1.65] text-dim">{data.intro}</p>
       {data.release && <WhatsNew b={data.release} />}
       {data.highlights && <Highlights h={data.highlights} />}
+      {data.topic && <Stories t={data.topic} />}
       {data.release ? (
         <ReleaseNav b={data.release} />
       ) : (
@@ -152,5 +154,50 @@ function ReleaseNav({ b }: { b: ReleaseBlock }) {
         <span />
       )}
     </div>
+  );
+}
+
+function TopicIntro({ t }: { t: TopicBlock }) {
+  return (
+    <div className="mb-4">
+      <p className="mb-2 text-[14.5px] leading-[1.65] text-ink">{t.background}</p>
+      {t.lore && (
+        <p className="mb-2 text-[13.5px] leading-[1.6] text-dim">
+          <span className="font-semibold text-amber">Where the lore differs:</span> {t.lore}
+        </p>
+      )}
+      {t.sources.length > 0 && (
+        <section aria-labelledby="topic-sources" className="mb-2">
+          <h2 id="topic-sources" className="mb-1 font-mono text-[11px] font-semibold tracking-[.5px] text-ink">SOURCES IN THE ARCHIVE</h2>
+          <ul className="flex flex-col gap-1 text-[13px] leading-[1.5] text-dim">
+            {t.sources.map((s) => (
+              <li key={`${s.id}-${s.page}`}>
+                <Link to={`/doc/${encodeURIComponent(s.id)}${s.page ? `?p=${s.page}` : ""}`} className="text-signal hover:underline">
+                  {s.title}{s.page ? ` — p. ${s.page}` : ""}
+                </Link>
+                : {s.note}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function Stories({ t }: { t: TopicBlock }) {
+  const items = t.stories.filter((s) => s.threadId);
+  if (!items.length) return null;
+  return (
+    <section aria-labelledby="topic-stories" className="mb-5">
+      <h2 id="topic-stories" className="mb-2 font-mono text-[11px] font-semibold tracking-[.5px] text-ink">RELATED STORIES</h2>
+      <ul className="flex flex-col gap-1">
+        {items.map((s) => (
+          <li key={s.slug}>
+            <Link to={`/thread/${s.threadId}`} className="text-[13.5px] text-signal hover:underline">{s.title}</Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

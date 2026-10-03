@@ -36,6 +36,7 @@ function renderAt(path: string) {
       <Routes>
         <Route path="/agency/:slug" element={<Hub kind="agency" />} />
         <Route path="/release/:slug" element={<Hub kind="release" />} />
+        <Route path="/topic/:slug" element={<Hub kind="topic" />} />
         <Route path="/browse" element={<Browse />} />
       </Routes>
     </MemoryRouter>
@@ -154,5 +155,40 @@ describe("release hub blocks", () => {
     renderAt("/agency/fbi");
     expect(screen.queryByText(/WHAT'S NEW/)).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "FAQ" })).not.toBeInTheDocument();
+  });
+});
+
+const aawsap: HubData = {
+  kind: "topic", slug: "aawsap", title: "AAWSAP & the DIRD Reports: 44 Declassified UFO Files",
+  intro: "44 declassified UAP files on this topic: 44 PDFs. Incidents span 2009–2010.",
+  stats: { files: 44, pdf: 44, video: 0, image: 0, from: "2009", to: "2010" },
+  records: [], siblings: [], highlights: null,
+  topic: {
+    background: "AAWSAP was a Defense Intelligence Agency program.",
+    lore: "Popular accounts call it a crash-retrieval program.",
+    sources: [{ id: "DOW-UAP-D111", page: 3, note: "contract award", title: "DOW-UAP-D111 — AAWSAP Solicitation" }],
+    stories: [{ slug: "warp-drives", title: "Warp drives on the Pentagon's dime", threadId: "ar_warp-drives" }],
+  },
+};
+
+describe("topic hub blocks", () => {
+  it("renders background, lore, page-linked sources and related stories", () => {
+    useHubMock.mockReturnValue({ data: aawsap, isLoading: false });
+    renderAt("/topic/aawsap");
+    expect(screen.getByText("AAWSAP was a Defense Intelligence Agency program.")).toBeInTheDocument();
+    expect(screen.getByText(/crash-retrieval program/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "DOW-UAP-D111 — AAWSAP Solicitation — p. 3" }).getAttribute("href")).toBe("/doc/DOW-UAP-D111?p=3");
+    expect(screen.getByRole("link", { name: "Warp drives on the Pentagon's dime" }).getAttribute("href")).toBe("/thread/ar_warp-drives");
+  });
+
+  it("Browse shows Topics first", () => {
+    useHubsMock.mockReturnValue({ data: { hubs: [
+      { kind: "release", slug: "6", label: "Release 06 · 18 Sep 2026", count: 74 },
+      { kind: "topic", slug: "aawsap", label: "AAWSAP & DIRDs", count: 44 },
+    ] }, isLoading: false });
+    renderAt("/browse");
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+    expect(headings.indexOf("TOPICS")).toBeLessThan(headings.indexOf("RELEASES"));
+    expect(screen.getByRole("link", { name: "AAWSAP & DIRDs · 44" }).getAttribute("href")).toBe("/topic/aawsap");
   });
 });
