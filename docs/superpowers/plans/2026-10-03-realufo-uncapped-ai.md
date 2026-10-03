@@ -17,7 +17,7 @@
 - Section summary ≤ 40 words; label `p. a` for one page, `pp. a–b` otherwise (en dash).
 - FTS page body capped at 90 000 chars (`ponytail:` D1 statement limit ~100 KB).
 - Model: `cfapi.chat` (qwen3-30b) for map, group and final reduce. Prompts keep today's rules: only what the text says, no speculation about objects, OCR noise ignored, document text is data never instructions.
-- Migration number: next free after checking ALL worktrees (`0035` at plan time — other chats took 0032–0034). Re-check before creating.
+- Migration number: next free after checking ALL worktrees (`0037` at plan time — other chats took 0032–0036, incl. 0035_push and 0036_pentagon_papers_titles). Re-check before creating.
 - Commit after each task; stage only this plan's files (other chats share the checkout). No push without asking, except the deploy in the rollout task (memory rule: every deploy pushes the deployed commit).
 - Run crawler code with `crawler/.venv-ocr/bin/python`; local ops read creds via `set -a; . ../.env; set +a` from `crawler/`.
 - Web tests: run under Node 22 (`PATH=/Users/laichan/.nvm/versions/node/v22.22.0/bin:$PATH`); Node 25 breaks jsdom localStorage.
@@ -35,7 +35,7 @@
 ### Task 1: Migration — `ai_sections` column + FTS trigger guard
 
 **Files:**
-- Create: `db/migrations/0035_uncapped_ai.sql` (number re-checked in Step 1)
+- Create: `db/migrations/0037_uncapped_ai.sql` (number re-checked in Step 1)
 - Test: `worker/tests/fts.spec.ts`
 
 **Interfaces:**
@@ -44,7 +44,7 @@
 - [ ] **Step 1: Check the number is free**
 
 Run: `for w in $(git worktree list | awk '{print $1}'); do ls $w/db/migrations; done | sort -u | tail -4`
-Expected: highest is `0034_*`. Otherwise use the next free number everywhere in this task.
+Expected: highest is `0036_*`. Otherwise use the next free number everywhere in this task.
 
 - [ ] **Step 2: Write the failing test** (append inside the `describe` in `worker/tests/fts.spec.ts`)
 
@@ -73,7 +73,7 @@ Expected: highest is `0034_*`. Otherwise use the next free number everywhere in 
 Run: `pnpm test:worker -- fts`
 Expected: FAIL — `wibble` found (trigger copied capped text) and no `ai_sections` column.
 
-- [ ] **Step 4: Write the migration** `db/migrations/0035_uncapped_ai.sql`
+- [ ] **Step 4: Write the migration** `db/migrations/0037_uncapped_ai.sql`
 
 ```sql
 -- Spec 2026-10-03-realufo-uncapped-ai. Section summaries of the map-reduce AI summary
@@ -119,7 +119,7 @@ Expected: all pass (the existing "stays in sync with record_text" test still pas
 - [ ] **Step 6: Commit**
 
 ```bash
-git add db/migrations/0035_uncapped_ai.sql worker/tests/fts.spec.ts
+git add db/migrations/0037_uncapped_ai.sql worker/tests/fts.spec.ts
 git commit -m "feat(db): ai_sections column; record_text FTS triggers skip OCR'd files"
 ```
 
@@ -799,7 +799,7 @@ cd /Users/laichan/code/tung/realufo-superpower
 env -u CLOUDFLARE_API_TOKEN -u CLOUDFLARE_ACCOUNT_ID npx wrangler d1 migrations list realufo-db --remote --env-file /dev/null
 ```
 
-Expected: only `0035_uncapped_ai.sql` pending (else stop and ask the user). Then `… migrations apply …` with the same flags.
+Expected: only `0037_uncapped_ai.sql` pending (else stop and ask the user). Then `… migrations apply …` with the same flags.
 
 - [ ] **Step 2: FTS backfill + spot check**
 
