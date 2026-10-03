@@ -238,6 +238,20 @@ describe("Ask screen", () => {
   afterEach(() => vi.unstubAllGlobals());
   const box = () => screen.findByPlaceholderText(/ask the archive — e\.g\./);
 
+  it("shared questions with a page link to it (free); older ones re-ask", async () => {
+    useAskRecentMock.mockReturnValue({
+      data: {
+        recent: [
+          { id: 12, question: "What about Gimbal?", sources: 2, asked_at: "2026-10-02 08:00:00", url: "/ask/12-what-about-gimbal" },
+          { id: 3, question: "Old one?", sources: 1, asked_at: "2026-10-01 08:00:00", url: null },
+        ],
+      },
+    });
+    renderAppAt("/ask");
+    expect(await screen.findByRole("link", { name: /What about Gimbal\?/ })).toHaveAttribute("href", "/ask/12-what-about-gimbal");
+    expect(screen.getByRole("button", { name: /Old one\?/ })).toBeInTheDocument();
+  });
+
   it("with no question shows your questions and shared questions; tapping one asks it", async () => {
     localStorage.setItem(ASK_HISTORY_KEY, JSON.stringify(["Earlier question one"]));
     useAskRecentMock.mockReturnValue({

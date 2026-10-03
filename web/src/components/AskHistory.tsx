@@ -1,7 +1,8 @@
 // Ask mode with no question open: this browser's past questions and the
 // public "shared questions" list (questions their askers shared). Tapping an item
-// asks it. Each list hides when empty; the recent list also hides on error.
+// asks it, or opens its shared page when it has one. Each list hides when empty; the recent list also hides on error.
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAskRecent } from "../api/queries";
 import { clearAskHistory, readAskHistory } from "../lib/askHistory";
 
@@ -47,14 +48,26 @@ export function AskHistory({ onPick }: { onPick: (q: string) => void }) {
             <span>SHARED QUESTIONS</span>
           </div>
           <div className="flex flex-col gap-1">
-            {recent.map((r) => (
-              <button key={r.question} type="button" onClick={() => onPick(r.question)} className={`${ITEM} flex items-center gap-2`}>
-                <span className="min-w-0 flex-1 truncate">{r.question}</span>
-                <span className="flex-none font-mono text-[10px] text-faint">
-                  {r.sources} {r.sources === 1 ? "source" : "sources"}
-                </span>
-              </button>
-            ))}
+            {recent.map((r) => {
+              const inner = (
+                <>
+                  <span className="min-w-0 flex-1 truncate">{r.question}</span>
+                  <span className="flex-none font-mono text-[10px] text-faint">
+                    {r.sources} {r.sources === 1 ? "source" : "sources"}
+                  </span>
+                </>
+              );
+              // A shared answer's page is free; rows shared before answers were stored re-ask.
+              return r.url ? (
+                <Link key={r.question} to={r.url} className={`${ITEM} flex items-center gap-2`}>
+                  {inner}
+                </Link>
+              ) : (
+                <button key={r.question} type="button" onClick={() => onPick(r.question)} className={`${ITEM} flex items-center gap-2`}>
+                  {inner}
+                </button>
+              );
+            })}
           </div>
         </section>
       )}
