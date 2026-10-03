@@ -2,6 +2,7 @@ import { env } from "cloudflare:test";
 import { describe, it, expect, beforeAll } from "vitest";
 import worker from "../index";
 import { seedTestDB } from "./helpers";
+import { CASE_SLUGS } from "../lib/caseStories";
 
 beforeAll(() => seedTestDB(env.DB));
 const call = (p: string, init?: RequestInit, overrideEnv?: any) =>
@@ -32,5 +33,17 @@ describe("cases", () => {
     expect(j.threads[0].id).toBe("t5");
     expect(j.threads[0]).toHaveProperty("replies");
     expect(j.threads[0].ago).toBeDefined();
+  });
+});
+
+describe("case rows", () => {
+  it("every batch slug has a case row with name, coord and lede", async () => {
+    const { results } = await env.DB.prepare("SELECT slug,name,coord,lede FROM cases").all<{ slug: string; name: string; coord: string; lede: string }>();
+    const by = new Map(results.map((r) => [r.slug, r]));
+    for (const s of CASE_SLUGS) {
+      const r = by.get(s);
+      expect(r, s).toBeTruthy();
+      expect(r!.name && r!.coord?.startsWith("◉ ") && r!.lede, s).toBeTruthy();
+    }
   });
 });
