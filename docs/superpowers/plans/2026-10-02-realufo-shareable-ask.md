@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - No new dependencies (npm or pip).
-- Migration file is `db/migrations/0021_ask_answer.sql`; before starting, `ls db/migrations` — if another chat already took `0021`, use the next free number everywhere this plan says `0021`.
+- Migration file is `db/migrations/0022_ask_answer.sql`; before starting, `ls db/migrations` — if another chat already took `0022`, use the next free number everywhere this plan says `0022`.
 - The worker is the only place that builds an answer URL (`askHref`); web and Python use the `url` the API/sitemap returns.
 - `/api/asks/:id`, the `/ask/:id` pre-render and the sitemap entries are **not** gated by `FEATURE_ASK`. `/api/ask` and `/api/ask/recent` keep their existing gate.
 - The `/ask` tab (and `/ask?q=`) keeps `robots: noindex`. `/ask/:id` pages have **no** robots tag.
@@ -37,7 +37,7 @@
 
 | File | Responsibility |
 |---|---|
-| `db/migrations/0021_ask_answer.sql` (new) | `answer` column on `ask_log` |
+| `db/migrations/0022_ask_answer.sql` (new) | `answer` column on `ask_log` |
 | `worker/lib/ask.ts` | + `askSlug`, `askHref`, `askIdOf` (pure URL helpers) |
 | `worker/routes/ask.ts` | `logAsk` stores answer; share returns `url`; `loadSharedAsk` + `getSharedAsk`; recent gains `id/url` |
 | `worker/index.ts` | register `GET /api/asks/:id` |
@@ -151,7 +151,7 @@ git commit -m "feat(ask): shared answer URL helpers"
 ### Task 2: Store the answer; share returns its URL
 
 **Files:**
-- Create: `db/migrations/0021_ask_answer.sql`
+- Create: `db/migrations/0022_ask_answer.sql`
 - Modify: `worker/routes/ask.ts` (`ask`, `logAsk`, `setAskPublic`)
 - Test: `worker/tests/ask.spec.ts`
 
@@ -208,7 +208,7 @@ and add:
 Run: `pnpm test:worker -- worker/tests/ask.spec.ts`
 Expected: FAIL — `no such column: answer` / `url` missing from share response.
 
-- [ ] **Step 3: Write the migration** — `db/migrations/0021_ask_answer.sql`:
+- [ ] **Step 3: Write the migration** — `db/migrations/0022_ask_answer.sql`:
 
 ```sql
 -- Frozen answer for shared pages (Spec 8): JSON {answer, sources}, written on
@@ -267,7 +267,7 @@ Expected: PASS
 - [ ] **Step 7: Commit**
 
 ```bash
-git add db/migrations/0021_ask_answer.sql worker/routes/ask.ts worker/tests/ask.spec.ts
+git add db/migrations/0022_ask_answer.sql worker/routes/ask.ts worker/tests/ask.spec.ts
 git commit -m "feat(ask): store answers in ask_log; share returns the answer URL"
 ```
 
@@ -1723,7 +1723,7 @@ Expected: all PASS.
 - [ ] **Step 2: Check pending migrations**
 
 Run: `npx wrangler d1 migrations list realufo-db --remote`
-Expected: only `0021_ask_answer.sql` pending. Anything else pending → stop and ask the user.
+Expected: only `0022_ask_answer.sql` pending. Anything else pending → stop and ask the user.
 
 - [ ] **Step 3: Deploy from a clean worktree of HEAD** (after user confirms)
 

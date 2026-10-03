@@ -35,7 +35,7 @@ Agreed with the user:
 
 ## 1. Worker — data and API
 
-### 1.1 Migration `0021_ask_answer.sql`
+### 1.1 Migration `0022_ask_answer.sql`
 
 ```sql
 -- Frozen answer for shared pages (JSON {answer, sources}); NULL on rows logged before this column.
@@ -285,7 +285,7 @@ Web:
 
 ## 7. Rollout
 
-1. Check pending D1 migrations; apply `0021` to prod.
+1. Check pending D1 migrations; apply `0022` to prod.
 2. Deploy from a clean worktree of HEAD (other chats share this checkout).
 3. `seed_asks.py --ask` → review → `--share` keepers → `--to-local`.
 4. `indexnow.py` for the shared URLs.
