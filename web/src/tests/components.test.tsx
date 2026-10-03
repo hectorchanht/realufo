@@ -175,12 +175,12 @@ describe("DocCard", () => {
     expect(screen.getByText("CIA")).toHaveStyle({ color: "#6ea8ff" });
   });
 
-  it("shows a REDACTED chip only when record.redacted is truthy", () => {
+  it("shows an R (Redacted) chip only when record.redacted is truthy", () => {
     const { rerender } = render(withRouter(<DocCard record={feedRecord} variant="feed" />));
-    expect(screen.queryByText("REDACTED")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Redacted")).not.toBeInTheDocument();
 
     rerender(withRouter(<DocCard record={{ ...feedRecord, redacted: 1 }} variant="feed" />));
-    expect(screen.getByText("REDACTED")).toBeInTheDocument();
+    expect(screen.getByTitle("Redacted")).toHaveTextContent(/^R$/);
   });
 
   it("offers the 400px WebP sibling via srcset for CDN thumbs (spaces escaped)", () => {

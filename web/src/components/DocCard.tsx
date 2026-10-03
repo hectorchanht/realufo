@@ -12,11 +12,10 @@
 // literal port would branch on variant for these too):
 //   - REDACTED chip: the prototype shows literal text only on the Feed
 //     card (line 127); the Archive card shows a plain "■" square (line 195).
-//     Here both variants render the same text chip — simpler, and it's the
-//     shape Task 15's test contract ("shows REDACTED only when
-//     record.redacted") expects to find by text.
-//   - Video play glyph (line 128, Feed-only in the prototype): rendered here
-//     whenever `record.kind === 'video'`, regardless of variant.
+//     Here both variants render the same compact "R" chip, titled
+//     "Redacted" so hover and screen readers still get the full word.
+//   - Video play glyph (line 128, Feed-only in the prototype): dropped on
+//     both variants — the duration chip already marks a video.
 //   - Per-archive accent color: the prototype colors the badge/type-glyph
 //     with `this.accentOf(r.archive)`, resolved from the bootstrap archives
 //     list (`D.archives`). RecordCard itself (`record.archive` is just an id
@@ -160,8 +159,12 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
           {badge}
         </span>
         {!!record.redacted && (
-          <span className="absolute right-2 top-2 rounded-[5px] bg-red px-1.5 py-1 font-mono text-[8px] font-bold text-white">
-            REDACTED
+          <span
+            title="Redacted"
+            aria-label="Redacted"
+            className="absolute right-2 top-2 rounded-[5px] bg-red px-1.5 py-1 font-mono text-[8px] font-bold text-white"
+          >
+            R
           </span>
         )}
         {record.kind === "video" && !!record.duration && (
