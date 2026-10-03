@@ -1,7 +1,7 @@
 // Feed screen. Ported from realufo-handoff/RealUFO.dc.html lines 112-164
-// (the `showFeed` branch of `data-screenpad`) minus the LIVE ticker: "◆ Hot right now"
-// DocCard grid, "◆ Trending threads" ThreadRow list + "all boards ›", and the
-// "91,808 FILES · 15 ARCHIVES" archive CTA card.
+// (the `showFeed` branch of `data-screenpad`) minus the LIVE ticker: "◆ Trending
+// threads" ThreadRow list + "all boards ›" (moved to the top), the "◆ Hot right now"
+// DocCard grid, and the "91,808 FILES · 15 ARCHIVES" archive CTA card.
 //
 // This component renders ONLY that screen content — AppShell (Task 14) owns
 // the app frame, AppBar, and nav, and mounts this inside its `<Outlet/>`
@@ -14,7 +14,7 @@
 //
 // Loading: the section headers/CTA are always-rendered static markup (so the
 // screen never looks structurally empty); the grid shows card-sized
-// placeholders and the thread list a "◉ loading signal…" line while
+// placeholders and the thread list row-sized placeholders while
 // `useFeed()`'s *initial* fetch is still in flight (`isLoading` — true only before the first settle, so a failed
 // fetch still falls through to the graceful "map over an empty array"
 // branch instead of loading forever).
@@ -90,6 +90,24 @@ export function Feed() {
 
   return (
     <div data-screen="feed" className="animate-[fadeup_.4s_ease_both]">
+      <div className="mx-0.5 mb-3 flex items-baseline justify-between">
+        <div className="font-pixel text-[9px] uppercase tracking-[1px] text-faint">◆ Trending threads</div>
+        <Link to="/boards" className="font-mono text-[11px] text-signal">
+          all boards ›
+        </Link>
+      </div>
+      {feedFailed ? null : (
+        <div aria-busy={feedLoading} className="mb-[26px] flex flex-col gap-[10px]">
+          {feedLoading
+            ? // Row-sized placeholders (the feed returns 4): this list sits above the
+              // card grid, so a one-line loader here would shove the grid down on load.
+              Array.from({ length: 4 }, (_, i) => (
+                <div key={i} aria-hidden="true" className="h-[136px] rounded-[14px] border border-line bg-surface" />
+              ))
+            : hot.map((thread) => <ThreadRow key={thread.id} thread={thread} />)}
+        </div>
+      )}
+
       <div className="mx-0.5 mb-3 font-pixel text-[9px] uppercase tracking-[1px] text-faint">◆ Hot right now</div>
       <div
         data-grid
@@ -138,22 +156,6 @@ export function Feed() {
             ))}
           </div>
         </section>
-      )}
-
-      <div className="mx-0.5 mb-3 flex items-baseline justify-between">
-        <div className="font-pixel text-[9px] uppercase tracking-[1px] text-faint">◆ Trending threads</div>
-        <Link to="/boards" className="font-mono text-[11px] text-signal">
-          all boards ›
-        </Link>
-      </div>
-      {feedLoading ? (
-        <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>
-      ) : feedFailed ? null : (
-        <div className="flex flex-col gap-[10px]">
-          {hot.map((thread) => (
-            <ThreadRow key={thread.id} thread={thread} />
-          ))}
-        </div>
       )}
 
       <div
