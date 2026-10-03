@@ -7,7 +7,8 @@
   // Reads that must always be live: Ask answers, file/upload streams, health.
   var API_SKIP = /^\/api\/(ask(\/|$)|asks\/|file\/|u\/|health$)/;
 
-  var NOT_PAGE = /^\/(api\/|__|[^/]+\.(xml|txt)$)/;
+  // /doc/<id>/text is Worker-rendered (no SPA route): offline it would show NotFound.
+  var NOT_PAGE = /^\/(api\/|__|[^/]+\.(xml|txt)$|doc\/[^/]+\/text\/?$)/;
 
   // → "navigate" | "asset" | "api" | "img" | null (null = browser handles it, SW stays out)
   self.swRoute = function (href, method, mode, origin) {

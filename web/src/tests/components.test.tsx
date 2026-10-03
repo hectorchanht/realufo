@@ -5,7 +5,7 @@
 // immediate local-optimistic toggle in its own display.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within, fireEvent } from "@testing-library/react";
-import { ApiError } from "../api/client";
+import { ApiError, QueuedError } from "../api/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
@@ -121,6 +121,17 @@ describe("VoteButton", () => {
     const { onError } = mockMutate.mock.calls.at(-1)![1];
     onError(new ApiError(429, "x"));
     expect(mockToast).toHaveBeenCalledWith("slow down — too many votes");
+  });
+
+  it("queued offline vote: no error toast, stays voted", () => {
+    mockToast.mockClear();
+    localStorage.removeItem("ufo_voted");
+    render(<VoteButton targetType="thread" targetId="th8" votes={3} />);
+    fireEvent.click(screen.getByRole("button"));
+    const { onError } = mockMutate.mock.calls.at(-1)![1];
+    onError(new QueuedError());
+    expect(mockToast).not.toHaveBeenCalled();
+    expect(screen.getByRole("button")).toHaveAttribute("aria-pressed", "true");
   });
 });
 

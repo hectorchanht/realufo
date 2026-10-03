@@ -237,6 +237,18 @@ describe("Composer", () => {
     expect(screen.getByPlaceholderText(/Say your piece/i)).toHaveValue("");
   });
 
+  it("an image post offline says it needs a connection (and keeps the draft)", () => {
+    mockAddCommentMutate.mockImplementation((_v: unknown, o?: { onError?: (e: unknown) => void }) =>
+      o?.onError?.(new ApiError(0, "Image posts need a connection")),
+    );
+    renderReopenable({ mode: "comment", recordId: "draft-img" });
+    fireEvent.click(screen.getByText("open composer"));
+    fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "look at this" } });
+    fireEvent.click(screen.getByRole("button", { name: /post/i }));
+    expect(screen.getByText(/Image posts need a connection/)).toBeInTheDocument();
+    expect(screen.queryByText(/Could not post/i)).toBeNull();
+  });
+
   it("OverlayHost toasts outbox events", () => {
     renderReopenable({ mode: "comment", recordId: "draft-t" });
     act(() => {

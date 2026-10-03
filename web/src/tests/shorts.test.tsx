@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen, fireEvent, act, waitFor, within } from "@testing-library/react";
+import { QueuedError } from "../api/client";
 import type { Short } from "../api/types";
 import { renderAppAt } from "./util";
 
@@ -120,6 +121,15 @@ describe("Shorts player", () => {
     expect(screen.getByRole("button", { name: "Unlike" })).toHaveTextContent("5");
     await waitFor(() => expect(screen.getByRole("button", { name: "Unlike" })).toHaveTextContent("8"));
     expect(likeShortMock).toHaveBeenCalledWith("A-1");
+  });
+
+  it("a like queued offline stays liked (no revert)", async () => {
+    likeShortMock.mockReset().mockRejectedValue(new QueuedError());
+    useShortsMock.mockImplementation(() => ({ data: [{ ...all[0], likes: 4, liked: false, comments: 1 }], isFetched: true }));
+    renderAppAt("/shorts/A-1");
+    fireEvent.click(await screen.findByRole("button", { name: "Like" }));
+    await act(async () => {});
+    expect(screen.getByRole("button", { name: "Unlike" })).toHaveTextContent("5");
   });
 
   it("double-tap likes (never unlikes) and doesn't pause", async () => {

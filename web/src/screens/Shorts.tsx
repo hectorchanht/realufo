@@ -14,6 +14,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Keyboar
 import { ArrowLeft, Check, ChevronDown, ChevronUp, Heart, MessageCircle, Pause, Play, Share2, Volume2, VolumeX, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { QueuedError } from "../api/client";
 import { likeShort, useComments, useShorts } from "../api/queries";
 import type { Short } from "../api/types";
 import { UploadThumb } from "../components/UploadThumb";
@@ -189,7 +190,7 @@ export default function Shorts() {
     setFlash((f) => ({ id: v.dataset.id ?? "", icon: playing ? "play" : "pause", n: (f?.n ?? 0) + 1 }));
   };
 
-  // Likes: optimistic, reconciled with the server's answer (reverted on error).
+  // Likes: optimistic, reconciled with the server's answer (reverted on error unless queued).
   const [likes, setLikes] = useState<Record<string, { liked: boolean; likes: number }>>({});
   const likeOf = (s: Short) => likes[s.id] ?? { liked: !!s.liked, likes: s.likes ?? 0 };
   const like = (s: Short, onlyOn = false) => {
@@ -198,7 +199,10 @@ export default function Shorts() {
     setLikes((m) => ({ ...m, [s.id]: { liked: !cur.liked, likes: cur.likes + (cur.liked ? -1 : 1) } }));
     likeShort(s.id)
       .then((r) => setLikes((m) => ({ ...m, [s.id]: r })))
-      .catch(() => setLikes((m) => ({ ...m, [s.id]: cur })));
+      // Queued offline = the outbox sends it later: keep the optimistic like.
+      .catch((err) => {
+        if (!(err instanceof QueuedError)) setLikes((m) => ({ ...m, [s.id]: cur }));
+      });
   };
   // A tap waits a beat to pause: a second tap inside it is a double-tap = like.
   const tap = useRef<{ at: number; timer?: ReturnType<typeof setTimeout> }>({ at: 0 });

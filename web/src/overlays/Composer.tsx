@@ -139,8 +139,8 @@ export function Composer() {
     // surface as a toast" — the exact copy is specified in the Task 16 brief.
     if (err instanceof ApiError && err.status === 429) {
       toast("slow down — too many posts");
-    } else if (err instanceof ApiError && (err.status === 400 || err.status === 413)) {
-      toast(err.message); // e.g. bad/oversized image
+    } else if (err instanceof ApiError && [0, 400, 413].includes(err.status)) {
+      toast(err.message); // e.g. bad/oversized image; 0 = "Image posts need a connection"
     } else {
       toast("Could not post — try again");
     }

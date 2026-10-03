@@ -11,7 +11,7 @@ describe("swRoute", () => {
   it("navigations: same-origin only", () => {
     expect(route(`${O}/doc/X`, "GET", "navigate")).toBe("navigate");
     expect(route("https://example.com/", "GET", "navigate")).toBeNull();
-    expect(route(`${O}/doc/X/text`, "GET", "navigate")).toBe("navigate");
+    expect(route(`${O}/doc/X/text`, "GET", "navigate")).toBeNull(); // Worker-rendered, no SPA route
     expect(route(`${O}/case/kaikoura`, "GET", "navigate")).toBe("navigate");
   });
   it("navigations to files/feeds are not pages", () => {

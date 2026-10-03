@@ -27,12 +27,14 @@ const save = (sub: PushSubscription) => api.post("/api/push/subscribe", { subscr
 export async function enablePush(): Promise<EnableResult> {
   if (isIos() && !isStandalone()) return "ios-install"; // iOS: push only inside the installed app
   if (!pushSupported()) return "unsupported";
+  // Ask first: WebKit drops the tap's user gesture across earlier awaits.
+  if (Notification.permission === "default" && (await Notification.requestPermission()) !== "granted") return "denied";
+  if (Notification.permission === "denied") return "denied";
   const existing = await currentSub();
   if (existing) {
     await save(existing); // server may have dropped it after failures
     return "ok";
   }
-  if ((await Notification.requestPermission()) !== "granted") return "denied";
   const { publicKey } = await api.get<{ publicKey: string }>("/api/push/config");
   const reg = await navigator.serviceWorker.ready;
   await save(await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) }));

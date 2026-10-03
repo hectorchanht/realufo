@@ -6,7 +6,7 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import type { QueryKey } from "@tanstack/react-query";
-import { api } from "./client";
+import { api, QueuedError } from "./client";
 import type {
   AddCommentResponse,
   TrackerData,
@@ -291,7 +291,7 @@ export function useAddComment(recordId: string) {
 }
 
 // Optimistically flips `mine` (the split stays hidden until the server answers
-// with the tally); rolls back on error. Same verdict again = clear.
+// with the tally); rolls back on error (not when queued offline). Same verdict again = clear.
 export function useCastVerdict(recordId: string) {
   const queryClient = useQueryClient();
   const key = qk.record(recordId);
@@ -307,8 +307,8 @@ export function useCastVerdict(recordId: string) {
       }
       return { prev };
     },
-    onError: (_e, _v, ctx) => {
-      if (ctx?.prev) queryClient.setQueryData(key, ctx.prev);
+    onError: (e, _v, ctx) => {
+      if (ctx?.prev && !(e instanceof QueuedError)) queryClient.setQueryData(key, ctx.prev);
     },
     onSuccess: (data) => {
       queryClient.setQueryData<RecordDetail>(key, (old) => (old ? { ...old, verdicts: data } : old));
@@ -550,8 +550,9 @@ export function useVote() {
       }
       return { previous, wasVoted, key };
     },
-    onError: (_err, _vars, ctx) => {
-      if (!ctx) return;
+    onError: (err, _vars, ctx) => {
+      // Queued offline: the outbox applies this toggle on flush, so keep the optimistic state.
+      if (!ctx || err instanceof QueuedError) return;
       for (const [queryKey, data] of ctx.previous) queryClient.setQueryData(queryKey, data);
       votedMapSet(ctx.key, ctx.wasVoted);
     },
@@ -562,7 +563,9 @@ export function useVote() {
         if (patched !== cur) queryClient.setQueryData(queryKey, patched);
       }
     },
-    onSettled: (_data, _err, _vars, ctx) => {
+    onSettled: (_data, err, _vars, ctx) => {
+      // An offline refetch would serve the SW-cached (pre-vote) count over the optimistic one.
+      if (err instanceof QueuedError) return;
       for (const [queryKey] of ctx?.previous ?? []) {
         void queryClient.invalidateQueries({ queryKey, exact: true });
       }

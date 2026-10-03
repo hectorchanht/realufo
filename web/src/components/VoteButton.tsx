@@ -11,7 +11,7 @@
 // bridges the gap until the cache patch lands (it is dropped when `votes`
 // changes), so the pillar flips instantly on tap.
 import { useEffect, useState } from "react";
-import { ApiError } from "../api/client";
+import { ApiError, QueuedError } from "../api/client";
 import { isVotedLocally, useVote } from "../api/queries";
 import { useOverlay } from "../overlays/OverlayProvider";
 import type { VoteTargetType } from "../api/types";
@@ -47,12 +47,15 @@ export function VoteButton({ targetType, targetId, votes, voted, row }: VoteButt
     vote.mutate(
       { target_type: targetType, target_id: targetId },
       {
-        onError: (err) =>
+        onError: (err) => {
+          // Queued offline: the outbox already said so and will send it; stay voted.
+          if (err instanceof QueuedError) return;
           toast(
             err instanceof ApiError && err.status === 429
               ? "slow down — too many votes"
               : "Vote didn't go through — try again",
-          ),
+          );
+        },
       },
     );
   }

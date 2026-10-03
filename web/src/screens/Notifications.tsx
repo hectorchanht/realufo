@@ -38,14 +38,20 @@ export default function Notifications() {
 
   const enabled = !!endpoint && !!me?.prefs;
   async function toggleEnabled() {
-    if (enabled) {
-      await disablePush();
-      setEndpoint(null);
-      return;
+    try {
+      if (enabled) {
+        await disablePush();
+        setEndpoint(null);
+        return;
+      }
+      const r = await enablePush();
+      if (r !== "ok") return toast(ENABLE_MSG[r]);
+      setEndpoint((await currentSub())?.endpoint ?? null);
+      // Same endpoint = same query key: re-read so the switch shows the re-saved sub.
+      void qc.invalidateQueries({ queryKey: ["pushMe"] });
+    } catch {
+      toast("Could not update — try again"); // e.g. subscribe() on a browser without a push service
     }
-    const r = await enablePush();
-    if (r !== "ok") return toast(ENABLE_MSG[r]);
-    setEndpoint((await currentSub())?.endpoint ?? null);
   }
   // Failed writes (offline, a followed target since deleted) toast instead of rejecting unhandled.
   async function update(path: string, body: unknown) {
