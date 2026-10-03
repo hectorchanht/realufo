@@ -1,0 +1,22 @@
+{
+  "slug": "two-stars",
+  "title": "Two \"star\" UAPs, 12 years apart: 8 points vs 6 points. Object or optics?",
+  "hero": "hero.jpg",
+  "short": "short.mp4",
+  "showcase_record": "DOW-UAP-PR104",
+  "parts": [
+    "Two Pentagon UAP videos. 12 years and thousands of km apart.\nBoth show a black \"star\": one with 8 points, one with 6 ⭐\nDOW-UAP-PR038 vs DOW-UAP-PR104 🧵",
+    "1/ Middle East, 2013. AARO: \"an area of contrast resembling an eight-pointed star with arms of alternating length.\"\nThe crew filed no description at all.",
+    "2/ Yellow Sea, 2025. AARO: \"an area of contrast resembling a six-pointed star.\"\nSame black core, same sharp arms. Different count.",
+    "3/ The tell: step through PR038 frame by frame. The star crosses the whole screen, but its arms never turn. Always + and ×, locked to the camera, not the object.\nA spiky thing that drifts and turns would turn its spikes too.",
+    "4/ That's diffraction: a very bright point of light bends around the edges and struts inside the camera, and the camera draws spikes. Hubble's stars have 4 spikes, Webb's have 8. Different optics → different star.",
+    "5/ Bonus: watch PR038 fade. The star shrinks as it dims, because spikes grow with brightness.\nThe black core? In \"black-hot\" IR, black = HOT. Invert it and it glows white.\nBoth still officially unresolved.",
+    "6/ Check it yourself, free:\n• realufo.org/archive → search \"pointed star\" → Video\n• open a file, press I to invert, , and . to step frames\n• watch the spikes: do they ever turn?"
+  ],
+  "evidence": [
+    {"id": "DOW-UAP-PR038", "t": 25.5, "label": "Middle East, 2013: eight points, arms of alternating length", "image": "DOW-UAP-PR038.jpg",
+     "evidence": "AARO's description: \"an area of contrast resembling an eight-pointed star with arms of alternating length\"; \"the reporter did not provide any oral or written description\". At 0:26, 0:50 and 1:14 the star is in three different places on screen with the arms at the same angles, and it gets smaller as it fades."},
+    {"id": "DOW-UAP-PR104", "t": 6, "label": "Yellow Sea, 2025: six points, same black core", "image": "DOW-UAP-PR104.jpg",
+     "evidence": "AARO's description: \"an area of contrast resembling a six-pointed star\", tracked for 15 seconds. The spike angles stay the same for the whole clip. Black-hot infrared: the black centre is the hottest spot; invert it and it shows white."}
+  ]
+}
