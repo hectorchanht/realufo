@@ -12,7 +12,7 @@ Also fills assets.duration (card m:ss badge) for video `full` assets still
 NULL, via ffprobe on the CDN url; unprobeable ones stay NULL and retry next run.
 """
 import argparse, os, re, subprocess, sys, tempfile
-from . import d1, fetch, r2
+from . import clips, d1, fetch, r2
 from .models import R2_BASE
 
 WIDTH = 640
@@ -74,6 +74,16 @@ def duration_sql(asset_id, probed: str):
     except ValueError:
         return None
     return f"UPDATE assets SET duration={dur:.3f} WHERE id={int(asset_id)};" if dur > 0 else None
+
+CROP_SELECT = """SELECT a.id, a.cdn_url, a.duration FROM assets a JOIN records r ON r.id=a.record_id
+WHERE r.status='live' AND a.role='full' AND a.mime LIKE 'video/%' AND a.crop IS NULL"""
+
+def crop_sql(asset_id, crop) -> str:
+    """UPDATE storing clips.probe's black-bar crop ("crop=w:h:x:y" or None) as 'w:h:x:y' / ''.
+    ponytail: a failed probe also stores '' (probe can't tell it from "no bars"); reset crop to
+    NULL to re-probe."""
+    val = d1.sql_q(crop[5:]) if crop else "''"  # sql_q('') is NULL = unprobed
+    return f"UPDATE assets SET crop={val} WHERE id={int(asset_id)};"
 
 def todo(rows, limit=None):
     """One row per record (full beats original); `limit` caps each kind."""
@@ -187,6 +197,14 @@ def main(argv=None):
     if updates and not args.dry_run:
         d1.apply_sql(os.path.join(args.out, "durations.sql"))
     print(f"durations: probed={len(updates)}/{len(dur_rows)}")
+    # black bars (phone clip padded to 16:9): mid-video window, clear of DoD slates at the ends
+    crop_rows = d1._d1_json(" ".join(CROP_SELECT.split()))
+    crops = [crop_sql(r["id"], clips.probe(r["cdn_url"], max(0.0, (r["duration"] or 0) / 2 - 5), 10)[0]) for r in crop_rows]
+    open(os.path.join(args.out, "crops.sql"), "w").write("\n".join(crops) + "\n")
+    if crops and not args.dry_run:
+        d1.apply_sql(os.path.join(args.out, "crops.sql"))
+    barred = sum("crop=''" not in c for c in crops)
+    print(f"crops: barred={barred}/{len(crops)}")
     print(f"{'dry-run ' if args.dry_run else ''}rendered={len(done)} failed={failed} out={args.out}")
     sys.exit(1 if failed else 0)
 

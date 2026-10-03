@@ -246,7 +246,7 @@ export async function loadRecord(env: Env, id: string, origin: string) {
   if (!record) return null;
   const releaseP = releaseOf(env, record);
   const [assets, promoted, series, release, related, text, hubList, tldrRow, articleRows] = await Promise.all([
-    env.DB.prepare("SELECT role,cdn_url,mime,width,height,duration FROM assets WHERE record_id=?").bind(id).all(),
+    env.DB.prepare("SELECT role,cdn_url,mime,width,height,duration,crop FROM assets WHERE record_id=?").bind(id).all(),
     env.DB.prepare(
       `SELECT t.id,t.no,t.title,t.stance,t.votes,t.source_record_id,b.slug boardSlug,b.accent accent
                     FROM threads t JOIN boards b ON b.id=t.board_id WHERE t.source_record_id=?`

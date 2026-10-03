@@ -15,6 +15,7 @@ import { LENS_PX, LensLayer, chip, ico, lensTurn, off, on } from "./ImageTools";
 import type { LensHit } from "./ImageTools";
 import type { MediaView } from "../lib/mediaView";
 import { formatMoment } from "../lib/recordMedia";
+import type { VideoCrop } from "../lib/recordMedia";
 import type { KeyMoment } from "../lib/keyMoments";
 
 // ponytail: fixed 30 fps (the DoD clips are ~29.97/30); read the real rate via
@@ -25,8 +26,8 @@ const SPEEDS = [0.1, 0.25, 0.5, 1, 1.5, 2];
 // currentTime lands a hair under k/FPS (0.066666 × 30 = 1.99998), so nudge before flooring
 const frameOf = (t: number) => Math.floor(t * FPS + 0.01);
 
-/** Seek a hidden same-origin copy of the file to `time` and encode that frame (filter, rotate, flip applied) as PNG. */
-function grabFrame(src: string, time: number, filter: string, view: MediaView): Promise<Blob> {
+/** Seek a hidden same-origin copy of the file to `time` and encode that frame (bars cropped, filter, rotate, flip applied) as PNG. */
+function grabFrame(src: string, time: number, filter: string, view: MediaView, crop: VideoCrop | null): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const v = document.createElement("video");
     v.muted = true;
@@ -35,8 +36,7 @@ function grabFrame(src: string, time: number, filter: string, view: MediaView): 
     // seeking to the current position fires no `seeked`, so never seek to exactly 0
     v.onloadedmetadata = () => (v.currentTime = Math.max(time, 0.001));
     v.onseeked = () => {
-      const w = v.videoWidth;
-      const h = v.videoHeight;
+      const { w, h, x, y } = crop ?? { w: v.videoWidth, h: v.videoHeight, x: 0, y: 0 };
       const c = document.createElement("canvas");
       [c.width, c.height] = view.rot % 180 ? [h, w] : [w, h];
       const ctx = c.getContext("2d");
@@ -45,7 +45,7 @@ function grabFrame(src: string, time: number, filter: string, view: MediaView): 
       ctx.translate(c.width / 2, c.height / 2);
       ctx.rotate((view.rot * Math.PI) / 180);
       if (view.flip) ctx.scale(-1, 1);
-      ctx.drawImage(v, -w / 2, -h / 2);
+      ctx.drawImage(v, x, y, w, h, -w / 2, -h / 2, w, h);
       v.removeAttribute("src");
       v.load();
       c.toBlob((b) => (b ? resolve(b) : reject(new Error("encode failed"))), "image/png");
@@ -61,6 +61,7 @@ function isTyping() {
 
 export function VideoTransport({
   videoRef,
+  crop,
   fileUrl,
   name,
   filter,
@@ -73,6 +74,7 @@ export function VideoTransport({
   stage,
 }: {
   videoRef: RefObject<HTMLVideoElement | null>;
+  crop: VideoCrop | null; // saved frames drop the black bars too
   fileUrl: string; // same-origin copy for capture
   name: string; // capture file name prefix
   filter: string;
@@ -211,7 +213,7 @@ export function VideoTransport({
     el.pause();
     setCapture("busy");
     try {
-      const blob = await grabFrame(fileUrl, at, filter, view);
+      const blob = await grabFrame(fileUrl, at, filter, view, crop);
       const fileName = `${name}_${formatMoment(at).replace(/[:.]/g, "-")}.png`;
       if (then === "post") onPost(new File([blob], fileName, { type: "image/png" }), at);
       else {
@@ -359,12 +361,14 @@ export function VideoTransport({
 /** Video lens: redraws the zoomed region every frame, so it tracks playback. */
 export function VideoLens({
   videoRef,
+  crop,
   filter,
   view,
   mag,
   clickThrough,
 }: {
   videoRef: RefObject<HTMLVideoElement | null>;
+  crop: VideoCrop | null; // the picture is this box of the frame (black bars cut off)
   filter: string;
   view: MediaView;
   mag: number;
@@ -378,20 +382,32 @@ export function VideoLens({
       deadBottom={48} // native control bar stays usable
       size={() => {
         const v = videoRef.current;
-        return v?.videoWidth ? { w: v.videoWidth, h: v.videoHeight } : null;
+        return v?.videoWidth ? (crop ?? { w: v.videoWidth, h: v.videoHeight }) : null;
       }}
     >
-      {(hit) => <LensCanvas videoRef={videoRef} hit={hit} filter={filter} />}
+      {(hit) => <LensCanvas videoRef={videoRef} crop={crop} hit={hit} filter={filter} />}
     </LensLayer>
   );
 }
 
-function LensCanvas({ videoRef, hit, filter }: { videoRef: RefObject<HTMLVideoElement | null>; hit: LensHit; filter: string }) {
+function LensCanvas({
+  videoRef,
+  crop,
+  hit,
+  filter,
+}: {
+  videoRef: RefObject<HTMLVideoElement | null>;
+  crop: VideoCrop | null;
+  hit: LensHit;
+  filter: string;
+}) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const hitRef = useRef(hit);
+  const cropRef = useRef(crop);
   useEffect(() => {
     hitRef.current = hit;
-  }, [hit]);
+    cropRef.current = crop;
+  }, [hit, crop]);
 
   useEffect(() => {
     let raf = 0;
@@ -401,11 +417,12 @@ function LensCanvas({ videoRef, hit, filter }: { videoRef: RefObject<HTMLVideoEl
       const h = hitRef.current;
       if (v?.videoWidth && ctx) {
         const px = ctx.canvas.width;
+        const p = cropRef.current ?? { w: v.videoWidth, h: v.videoHeight, x: 0, y: 0 };
         // source square = what LENS_PX on screen covers at h.mag, in video pixels
-        const src = (LENS_PX / h.mag) * (v.videoWidth / h.rw);
+        const src = (LENS_PX / h.mag) * (p.w / h.rw);
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, px, px);
-        ctx.drawImage(v, h.u * v.videoWidth - src / 2, h.v * v.videoHeight - src / 2, src, src, 0, 0, px, px);
+        ctx.drawImage(v, p.x + h.u * p.w - src / 2, p.y + h.v * p.h - src / 2, src, src, 0, 0, px, px);
       }
       raf = requestAnimationFrame(draw);
     };

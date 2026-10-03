@@ -50,3 +50,8 @@ def test_small_pass_makes_only_missing_siblings_and_keeps_going_on_failure():
         made.append(key)
     assert small_pass(urls, exists=lambda u: u in have, make=make) == (1, 1)
     assert made == ["thumbs/a/1-400.webp"]
+
+def test_crop_sql_stores_box_or_empty():
+    from ingest.thumbs import crop_sql
+    assert crop_sql(7, "crop=616:1080:652:0") == "UPDATE assets SET crop='616:1080:652:0' WHERE id=7;"
+    assert crop_sql(7, None) == "UPDATE assets SET crop='' WHERE id=7;"

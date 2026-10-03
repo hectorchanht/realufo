@@ -4,6 +4,9 @@ import type { RecordDetail } from "../api/types";
 
 export type RecordMediaKind = "image" | "video" | "audio" | "pdf" | "thumb";
 
+/** The picture inside a video's black pillar/letterbox bars, in video pixels. */
+export type VideoCrop = { w: number; h: number; x: number; y: number };
+
 export function recordMedia(detail: RecordDetail | undefined, isDesktop: boolean) {
   const assets = detail?.assets ?? [];
   const thumbUrl = assets.find((a) => a.role === "thumb")?.cdn_url ?? null;
@@ -24,7 +27,9 @@ export function recordMedia(detail: RecordDetail | undefined, isDesktop: boolean
           : isDesktop
             ? "pdf"
             : "thumb";
-  return { media, fullUrl, thumbUrl };
+  const [w, h, x, y] = (fullAsset?.crop ?? "").split(":").map(Number);
+  const crop: VideoCrop | null = media === "video" && w > 0 && h > 0 ? { w, h, x, y } : null;
+  return { media, fullUrl, thumbUrl, crop };
 }
 
 // Record ids as users type them in posts: NASA-UAP-D030, DOW-UAP-PR012,

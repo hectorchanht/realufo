@@ -212,6 +212,7 @@ export interface Asset {
   mime: string | null;
   width: number | null;
   height: number | null;
+  crop?: string | null; // video's black-bar crop "w:h:x:y" (cropdetect); '' = none, null = unprobed
 }
 
 /** One row of RecordDetail's `promotedThreads[]` — a thread that was "promoted" from this record. */

@@ -386,7 +386,8 @@ export function Doc() {
   const title = tp!.title;
   const isVideo = record.kind === "video";
   const glyph = typeGlyph(record.kind);
-  const { media, fullUrl, thumbUrl } = recordMedia(detail, isDesktop);
+  // crop: a phone clip padded to 16:9 shows as its own (vertical) picture, bars cut off
+  const { media, fullUrl, thumbUrl, crop } = recordMedia(detail, isDesktop);
   const badge = record.agency || "DOC";
   const location = record.location && record.location !== "N/A" ? record.location : "";
   const srcLinks = sourceLinks(record);
@@ -470,8 +471,9 @@ export function Doc() {
     </>
   );
 
+  const shown = pic ?? crop; // crop known before metadata: panel takes its shape at once
   const panelRatio =
-    pic && (media === "image" || media === "video") ? (view.rot % 180 ? pic.h / pic.w : pic.w / pic.h) : null;
+    shown && (media === "image" || media === "video") ? (view.rot % 180 ? shown.h / shown.w : shown.w / shown.h) : null;
 
   return (
     <div data-screen="doc" className="pb-5" style={{ animation: "fadeup .28s ease both" }}>
@@ -532,8 +534,9 @@ export function Doc() {
               // A ?t= link waits at its moment instead, with sound, for the visitor to press play.
               autoPlay={startAt === undefined}
               muted={startAt === undefined}
-              onLoadedMetadata={(e) => setPic({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })}
-              className="h-full w-full bg-black object-contain"
+              onLoadedMetadata={(e) => setPic(crop ?? { w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })}
+              // bars are centred (crawler/ingest/clips.bars), so cover on the crop-shaped panel cuts exactly them
+              className={`h-full w-full bg-black ${crop ? "object-cover" : "object-contain"}`}
               style={{ transform: viewTransform(view, zoom.box, pic) || undefined }}
             />
           </div>
@@ -592,7 +595,7 @@ export function Doc() {
           <ZoomLens src={fullUrl} imgRef={imgRef} filter={adjustFilter(adjust)} view={view} mag={mag} clickThrough={finePointer} />
         )}
         {media === "video" && lens && (
-          <VideoLens videoRef={videoRef} filter={adjustFilter(adjust)} view={view} mag={mag} clickThrough={finePointer} />
+          <VideoLens videoRef={videoRef} crop={crop} filter={adjustFilter(adjust)} view={view} mag={mag} clickThrough={finePointer} />
         )}
         <span
           data-lens-hide
@@ -649,6 +652,7 @@ export function Doc() {
         <VideoTransport
           key={id}
           videoRef={videoRef}
+          crop={crop}
           fileUrl={`/api/file/${id}`}
           name={id}
           filter={adjustFilter(adjust)}
