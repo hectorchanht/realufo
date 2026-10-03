@@ -34,7 +34,6 @@ import { DocCard } from "../components/DocCard";
 import { LoadError } from "../components/LoadError";
 import { ThreadRow } from "../components/ThreadRow";
 import { docTitleParts } from "../lib/docTitle";
-import { useMediaQuery } from "../lib/useMediaQuery";
 import { useSetPageTitle } from "../lib/pageTitle";
 
 // Neutral copy shown until bootstrap's `stats` resolve (no fake numbers).
@@ -84,9 +83,10 @@ function BrowseStrip() {
 // posters only. Hidden once the feed has answered with no clips.
 function ClipCarousel({ clips, loading }: { clips: FeedClip[]; loading: boolean }) {
   const row = useRef<HTMLDivElement>(null);
-  const still = useMediaQuery("(prefers-reduced-motion: reduce)");
+  // Plays even under prefers-reduced-motion: Android reports that for "animation scale 0" (a common
+  // battery/speed tweak), which left the row frozen on phones. Muted, short, and only while on screen.
   useEffect(() => {
-    if (still || !row.current || typeof IntersectionObserver === "undefined") return;
+    if (!row.current || typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
@@ -99,7 +99,7 @@ function ClipCarousel({ clips, loading }: { clips: FeedClip[]; loading: boolean 
     );
     row.current.querySelectorAll("video").forEach((v) => io.observe(v));
     return () => io.disconnect();
-  }, [clips, still]);
+  }, [clips]);
 
   if (!loading && !clips.length) return null;
   return (

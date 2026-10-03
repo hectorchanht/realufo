@@ -147,6 +147,29 @@ describe("Feed", () => {
     expect(screen.getByRole("link", { name: /all videos/i })).toHaveAttribute("href", "/archive?type=video");
   });
 
+  it("plays clips on screen even under prefers-reduced-motion (Android animation scale 0)", async () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: q.includes("reduce"), media: q, addEventListener() {}, removeEventListener() {} }));
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        constructor(private cb: IntersectionObserverCallback) {}
+        observe(target: Element) {
+          this.cb([{ target, isIntersecting: true } as unknown as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+        }
+        disconnect() {}
+      },
+    );
+    try {
+      renderAppAt("/");
+      await screen.findByRole("link", { name: /Gulf of Oman orb/ });
+      expect(play).toHaveBeenCalled();
+    } finally {
+      play.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("hides the short clips row when there are no clips", async () => {
     const saved = mockFeed.clips;
     mockFeed.clips = [];
