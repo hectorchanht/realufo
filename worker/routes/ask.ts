@@ -115,9 +115,9 @@ export async function setAskPublic(req: Request, env: Env, params: Record<string
   if (actor === "anon:none") return error(404, "not found");
   if (!(await allowWrite(env, req, "ask_share"))) return error(429, "slow down");
   const r = await env.DB.prepare(
-    "UPDATE ask_log SET public=? WHERE id=? AND actor_id=? AND sources>0 AND answer IS NOT NULL RETURNING id, question"
+    "UPDATE ask_log SET public=? WHERE id=? AND actor_id=? AND sources>0 AND (?=0 OR answer IS NOT NULL) RETURNING id, question"
   )
-    .bind(b.public ? 1 : 0, Number(params.id) || 0, actor)
+    .bind(b.public ? 1 : 0, Number(params.id) || 0, actor, b.public ? 1 : 0)
     .first<{ id: number; question: string }>();
   if (!r) return error(404, "not found");
   return json({ public: b.public, url: askHref(r.id, r.question) });

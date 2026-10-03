@@ -238,6 +238,18 @@ describe("POST /api/ask/:id/public", () => {
     expect((await share(row!.id, true)).status).toBe(404);
   });
 
+  it("an owner can unshare a legacy public row (answer NULL) but still cannot share it", async () => {
+    const actor = await saltedHash("asker", env.ANON_SALT);
+    const row = await env.DB.prepare("INSERT INTO ask_log(question,actor_id,sources,public) VALUES('old question',?,2,1) RETURNING id")
+      .bind(actor)
+      .first<{ id: number }>();
+    expect((await share(row!.id, true)).status).toBe(404);
+    const r = await share(row!.id, false);
+    expect(r.status).toBe(200);
+    expect(await body(r)).toEqual({ public: false, url: `/ask/${row!.id}-old-question` });
+    expect((await env.DB.prepare("SELECT public FROM ask_log WHERE id=?").bind(row!.id).first())!.public).toBe(0);
+  });
+
   it("not-covered and unknown questions cannot be shared", async () => {
     matches = [];
     const { log_id } = await body(await ask("who built the pyramids?"));
