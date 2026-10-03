@@ -662,6 +662,21 @@ describe("Doc", () => {
     expect(screen.getByRole("button", { name: /lens magnification 5×/i })).toBeInTheDocument();
   });
 
+  it("video opened from a ?t= link waits at its moment: no autoplay, not muted", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "video" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/clip.mp4", mime: "video/mp4", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc("/doc/rec1?t=12.5");
+    const video = document.querySelector('[data-screen="doc"] video') as HTMLVideoElement;
+    expect(video.autoplay).toBe(false);
+    expect(video.muted).toBe(false);
+  });
+
   it("video: ?t= link sharing, post frame opens the composer, comment timestamps seek", async () => {
     useRecordMock.mockReturnValue({
       data: {
