@@ -26,7 +26,9 @@ export const TOPIC_RULES: TopicDef[] = [
     slug: "nuclear-sites", label: "Nuclear sites & Los Alamos", title: "UFOs, Nuclear Sites & Los Alamos",
     rule: { summary: ["Los Alamos", "atomic", "nuclear"] },
     include: ["DOW-UAP-D094", "DOW-UAP-D017"],
-    exclude: ["DOW-UAP-D126"], // AAWSAP propulsion DIRD, not about sightings near sites
+    // D126: AAWSAP propulsion DIRD. CIA-UAP-D022: only its summary says "nuclear"
+    // (an office description); the memo is about a missile range.
+    exclude: ["DOW-UAP-D126", "CIA-UAP-D022"],
   },
   { slug: "aaro-case-resolutions", label: "AARO case resolutions", title: "AARO Case Resolutions", rule: { title: ["Case Resolution"] } },
   {

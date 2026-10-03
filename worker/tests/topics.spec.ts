@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { TOPIC_RULES, topicWhere, validTopic } from "../lib/topics";
+import { TOPIC_TEXT } from "../lib/topicText";
 
 describe("topicWhere", () => {
   it("ORs title, summary and agency matches with bound values", () => {
@@ -37,5 +38,23 @@ describe("TOPIC_RULES", () => {
     expect(by["nuclear-sites"].include).toEqual(expect.arrayContaining(["DOW-UAP-D094", "DOW-UAP-D017"]));
     expect(by["nuclear-sites"].exclude).toContain("DOW-UAP-D126");
     expect(by["congress"].exclude).toContain("059uap00013");
+  });
+});
+
+describe("TOPIC_TEXT", () => {
+  it("every topic has a background (≤ 700 chars), optional lore, and 2–5 sources with positive pages", () => {
+    for (const t of TOPIC_RULES) {
+      const x = TOPIC_TEXT[t.slug];
+      expect(x, t.slug).toBeDefined();
+      expect(x.background.length, t.slug).toBeGreaterThan(80);
+      expect(x.background.length, t.slug).toBeLessThanOrEqual(700);
+      expect(x.sources.length, t.slug).toBeGreaterThanOrEqual(2);
+      expect(x.sources.length, t.slug).toBeLessThanOrEqual(5);
+      for (const s of x.sources) {
+        expect(s.note.length, `${t.slug} ${s.id}`).toBeGreaterThan(3);
+        if (s.page !== undefined) expect(Number.isInteger(s.page) && s.page > 0, `${t.slug} ${s.id}`).toBe(true);
+      }
+    }
+    expect(Object.keys(TOPIC_TEXT).sort()).toEqual(TOPIC_RULES.map((t) => t.slug).sort());
   });
 });
