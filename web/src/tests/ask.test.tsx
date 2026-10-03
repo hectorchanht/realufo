@@ -138,6 +138,23 @@ describe("AskAnswer", () => {
     expect(screen.getByRole("button", { name: "share" })).toBeInTheDocument();
   });
 
+  it("a failed undo says so, stays shared, and the message clears on a later undo", async () => {
+    shareLinkMock.mockResolvedValue("copied");
+    useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, log_id: 7 } });
+    renderCard();
+    fireEvent.click(screen.getByRole("button", { name: "share" }));
+    await act(() => shareMutate.mock.calls[0][1].onSuccess({ public: true, url: "/ask/7-what-did-radar-see" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "undo" }));
+    act(() => shareMutate.mock.calls.at(-1)![1].onError(new Error("boom")));
+    expect(screen.getByText("couldn't undo — try again")).toBeInTheDocument();
+    expect(screen.getByText("✓ shared")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "undo" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "undo" }));
+    expect(screen.queryByText("couldn't undo — try again")).toBeNull();
+  });
+
   it("share state resets when the card switches to a different answer", async () => {
     shareLinkMock.mockResolvedValue("copied");
     useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, log_id: 7 } });

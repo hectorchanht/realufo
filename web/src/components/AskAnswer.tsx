@@ -18,9 +18,11 @@ function ShareControls({ question, logId }: { question: string; logId: number })
   const [url, setUrl] = useState<string | null>(null);
   const [result, setResult] = useState<ShareResult | null>(null);
   const [failed, setFailed] = useState(false);
+  const [undoFailed, setUndoFailed] = useState(false);
 
   function publish() {
     setFailed(false);
+    setUndoFailed(false);
     share.mutate(
       { id: logId, public: true },
       {
@@ -54,11 +56,18 @@ function ShareControls({ question, logId }: { question: string; logId: number })
       <button
         type="button"
         disabled={share.isPending}
-        onClick={() => share.mutate({ id: logId, public: false }, { onSuccess: () => { setUrl(null); setResult(null); } })}
+        onClick={() => {
+          setUndoFailed(false);
+          share.mutate(
+            { id: logId, public: false },
+            { onSuccess: () => { setUrl(null); setResult(null); }, onError: () => setUndoFailed(true) }
+          );
+        }}
         className={ACTION}
       >
         undo
       </button>
+      {undoFailed && <span className="font-mono text-[10px] text-dim">couldn't undo — try again</span>}
       <ShareNote result={result} url={url} />
     </>
   );
