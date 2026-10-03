@@ -8,12 +8,21 @@ close-up (plain, then Ironbow) -> the form, boxes lighting up as they're read ->
 lesson (foil balloons are round, metallic, shiny; nobody could verify) -> "zoom in yourself" -> loop.
 Enhancement (no invented detail): close-ups are a 9-frame stack (the sensor keeps the target centred)
 + nlmeans denoise + CAS sharpen; the zoom plays through hqdn3d. The crew-quote beat sits on an AI
-illustration of the crew's own description (Workers AI flux-1-schnell, prompt below, saved as
-DOW-UAP-PR116-ai.jpg), labelled "not evidence". ElevenLabs narration + SFX (lib.sfx) + ambient bed. ~34 s.
+illustration made to match the file (saved as DOW-UAP-PR116-ai.jpg), labelled "not evidence". ElevenLabs narration + SFX (lib.sfx) + ambient bed. ~34 s.
 
-AI prompt: one single large balloon, somewhat deformed and partly deflated, crumpled and lumpy with several
-lobes, dark maroon, about 4 m tall, a few shiny metallic patches, drifting with the wind, seen from a Navy
-jet at dusk over the open Atlantic; photorealistic, no text.
+AI illustration, made to match the file (making-shorts skill, "AI illustrations"):
+1. the enhanced IR close-up at 29.3 s, cropped square -> threshold silhouette -> flood-fill the bright-spot
+   holes (keeps the notches and the gap between the two masses);
+2. tinted dark maroon from the IR shading ("darker, maroonish", D091 p.2), bright IR spots -> silver
+   (Metallic/Reflective ticked, p.1), composited on an empty flux-1-schnell dusk-over-Atlantic sky;
+3. @cf/black-forest-labs/flux-2-dev, input_image_0 = that mock-up: "Turn image 0 into a photorealistic
+   photograph... keep the object's EXACT silhouette, outline, notches, lobes, size, position and dark maroon
+   colour; only add realistic material and light: a large, somewhat deformed, partly deflated balloon of thin
+   crumpled plastic and foil...; keep the background";
+4. relight only (input = step 3): "Keep EVERYTHING identical... change ONLY the lighting... dusk, sun just set at
+   the horizon behind the object, backlit... rim light... opaque" (Dusk, Opaque on D091 p.1);
+5. exposure only (input = step 4): "...the shadowed side still shows a clearly visible darker maroon colour and
+   the creases... metallic foil glints". No seed, so the result is committed.
 
     FFMPEG=/path/to/ffmpeg-with-drawtext CLIP_FONT=/path/Bold.ttf python3 showcase/DOW-UAP-PR116.py
 (needs pdftoppm for the D091 page)
@@ -76,11 +85,11 @@ subprocess.run([F, "-v", "error", "-y", "-loop", "1", "-t", "6.5", "-i", form, *
                 "-map", "[v]", "-map", "1:a", "-t", "6.5", *ENC, out], check=True)
 segs.append(out)
 # D: the crew's own words (D091 p.2)
-still(AI, ["scale=1920:1920,crop=1080:1920:560:0,cas=0.4", txt("\"it appeared as a large,", 300, 62, "yellow"),
-           txt("somewhat deformed balloon,", 380, 62, "yellow"), txt("but we were unable", 460, 62, "yellow"),
-           txt("to verify that\"", 540, 62, "yellow"), txt("DOW-UAP-D091  ·  p.2", 630, 44),
+still(AI, ["scale=1920:1920,crop=1080:1920:431:0,cas=0.4", txt("\"it appeared as a large,", 215, 54, "yellow"),
+           txt("somewhat deformed balloon,", 285, 54, "yellow"), txt("but we were unable", 355, 54, "yellow"),
+           txt("to verify that\"  ·  D091 p.2", 425, 54, "yellow"),
            txt("\"it traveled with the wind\"  ·  p.2", 1290, 50),
-           txt("AI illustration of their words, not evidence", 1360, 40), site], 5.5)
+           txt("AI render of the IR shape + crew's colour, not evidence", 1360, 40), site], 5.5)
 # L: the lesson; the file stays unresolved
 still(SC, [CZOOM, "eq=brightness=-0.2", txt("Foil party balloons:", 250, 70), txt("round, metallic, shiny", 335, 70, "yellow"),
            txt("Nobody could verify it", 1210, 58), txt("AARO file: Unresolved", 1300, 58, "yellow"), site], 6.4)
@@ -100,7 +109,7 @@ SAY = [(0.2, "A Navy jet filmed this over the Atlantic. Let us zoom in."),
        (23.2, "Foil party balloons are round, metallic and shiny. But no one could check, so the file says: unresolved."),
        (29.6, "Zoom in yourself, frame by frame, on real U F O dot org.")]
 TICK, WHOOSH = sfx("single crisp pen tick on a paper checkbox, short, clean", 0.6), sfx("fighter jet sensor zoom whoosh, smooth rising air rush", 1.5)
-MIX = [(t, tts(line)[0], 1.0) for t, line in SAY] + [(2.5, WHOOSH, 0.5)] + [(t, TICK, 0.9) for t in (12.8, 13.3, 14.25, 15.05, 15.8)]
+MIX = [(t, tts(line)[0], 1.0) for t, line in SAY] + [(2.5, WHOOSH, 0.5)] + [(t, TICK, 0.8) for t in (12.8, 13.3, 14.25, 15.05)]  # one per box read aloud, no more
 ins, fc = ["-i", CAT], ""
 for i, (t, path, vol) in enumerate(MIX, 1):
     ins += ["-i", path]; fc += f"[{i}:a]aformat=channel_layouts=stereo,volume={vol},adelay={int(t*1000)}:all=1[n{i}];"

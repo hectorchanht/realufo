@@ -37,7 +37,8 @@ Length is 20–35 s. Get the hook in fast and the end card out fast.
 - ElevenLabs narration via `lib.tts(line)` (cached), with the ambient bed from `Cut.save(out, bed=True)`.
 - Write one short line per beat, spoken like a friend showing you something ("Did you catch it?"), not a press release. Spell out what the voice mangles: "real U F O dot org", "two hundred eighty-nine".
 - Keep the voice **off** the key moment so the blink, split or pass plays clean.
-- **Sound effects:** `lib.sfx("pen tick on a paper checkbox", 0.6)` uses ElevenLabs sound generation and is cached. Put a tick on each box or reveal and a whoosh on a zoom, at about 0.5–0.9 volume, all in the same `adelay` mix.
+- **Sound effects, used sparingly:** `lib.sfx("pen tick on a paper checkbox", 0.6)` uses ElevenLabs sound generation and is cached. Use one effect per meaningful event (a tick per box read aloud, a whoosh on the zoom), about 6 or fewer per Short. Keep them under the voice at about 0.5–0.8 volume and in the same `adelay` mix. No background sound-effect beds and no effect on every cut.
+- **Word-by-word captions (user likes this, use it as the default going forward):** get word timestamps for the narration (ElevenLabs speech-to-text or forced alignment on the `lib.tts` mp3) and show each word or short phrase as it's spoken (`drawtext` with `enable='between(t,a,b)'`). Put the captions in the lower safe zone so they don't cover the subject.
 - **What else the ElevenLabs key can do:** sound effects work, and speech-to-text, audio isolation and music are allowed (account/user info is not). Speech-to-text returns word timestamps, so it can drive word-synced captions. Check the music licence terms before using generated music.
 - For fixed-length footage, measure each line with `lib.tts` first, place it at a cue and mix with `adelay`. See `showcase/AARO-956955.py`. Built from stills: `Cut.seg(..., say=line)` stretches each beat to fit.
 
@@ -53,12 +54,16 @@ Every Short exists to send people to the site. Show `realufo.org` on screen in e
 - **Label it:** put a small line on screen, e.g. "enhanced: 9-frame stack + denoise".
 - **Not real enhancement:** AI upscaling or "AI 4K" invents pixels. Never run it on the evidence itself.
 
-## AI illustrations
+## AI illustrations (match the file, not a guess)
 
-- Use Workers AI `@cf/black-forest-labs/flux-1-schnell` with `CLOUDFLARE_*` from `.env`. It takes `{prompt, steps≤8}` (a `seed` field is rejected) and returns 1024² JPEG base64, so scale it to fit.
-- Build the prompt **only from the documents' own description** (shape, colour, size, setting). If an image shows something the file doesn't say (e.g. several balloons when the crew described one), regenerate it.
-- Label it on screen every time: "AI illustration of their words, not evidence". Use it behind a quote, never as footage.
-- Save the image next to the recipe (`<ID>-ai.jpg`) and put the prompt in the docstring, because flux has no seed and won't regenerate the same image.
+The goal is to make viewers feel "what if this showed up in front of us", in a realistic style that resembles the file. **Shape comes from the footage, colour and light from the documents.** A text-only prompt invents its own shape, so don't use one. Real case: `showcase/DOW-UAP-PR116.py` (its docstring has the prompts).
+
+1. **Shape:** start from the enhanced close-up, crop it square and threshold it to a silhouette. Fill only the enclosed holes with a flood fill. Morphological closing also fills the gaps between lobes, so don't use it.
+2. **Rough colour version:** tint the silhouette using the file's colour words, with the IR shading kept. Turn bright IR spots silver if the form ticks Metallic or Reflective. Overlay it on an empty `flux-1-schnell` background of the scene (sky, sea, jet nose).
+3. **Make it real:** run `@cf/black-forest-labs/flux-2-dev` with the rough version as `input_image_0`. Send it as a multipart form, `-F input_image_0=@x.png`, 512² input, `steps=25`. Prompt: "turn image 0 into a photorealistic photograph… keep the EXACT silhouette, outline, notches, lobes, size, position and colour; only add material and light".
+4. **Light it like the file:** run one "keep EVERYTHING identical, change ONLY the lighting" pass per issue, with the previous output as input. Use the time of day (Dusk = backlit, rim light from the horizon), Opaque (no light through) and Metallic/Reflective (crisp glints of sky and horizon). If it comes out too dark, add an "exposure only" pass so the colour the crew saw stays visible.
+5. **Check:** compare it side by side with the IR still. If you pile material words into one prompt, the model invents a new object (in one test it made a clear ball). Change one thing per pass.
+6. **Label and save:** on screen, put "AI render of the IR shape + crew's colour, not evidence". Use the image only behind quotes, never as footage. Commit `<ID>-ai.jpg` and put the prompts in the docstring, because flux has no seed.
 
 ## Craft
 
