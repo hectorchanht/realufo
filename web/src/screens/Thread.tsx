@@ -195,10 +195,11 @@ function PostRow({ post, sourceRecord, thread, nos, replies, onQuote }: PostRowP
             OP
           </span>
         )}
-        <span className="font-mono text-[10px] font-bold" style={{ color: stanceColor(post.stance) }}>
-          Anonymous
-        </span>
-        {post.handleShow && <span className="font-mono text-[10px] text-cyan">{post.handleShow}</span>}
+        {post.handleShow && (
+          <span className="font-mono text-[10px] font-bold" style={{ color: stanceColor(post.stance) }}>
+            {post.handleShow}
+          </span>
+        )}
         <span className="font-mono text-[9px] text-faint">ID:{post.id}</span>
         <span className="ml-auto font-mono text-[9px] text-faint">
           {post.ago} · No.{post.no}
