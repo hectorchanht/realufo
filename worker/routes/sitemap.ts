@@ -3,6 +3,7 @@ import { boardHref, hubHref, esc } from "../lib/ssr";
 import { thumbSql, durationSql } from "../lib/db";
 import { docTitle, isoDate } from "../lib/pages";
 import { listHubsCached } from "./hubs";
+import { askHref } from "../lib/ask";
 
 type Rec = {
   id: string; d: string; kind: string; title: string; summary: string | null; doc_date: string | null;
@@ -28,7 +29,7 @@ function media(r: Rec): string {
 // sitemap index once records approach the 50k-URL limit.
 export async function sitemap(req: Request, env: Env) {
   const origin = new URL(req.url).origin;
-  const [records, threads, boards, cases, hubs] = await Promise.all([
+  const [records, threads, boards, cases, hubs, asks] = await Promise.all([
     env.DB.prepare(
       `SELECT r.id, date(r.created_at) d, r.kind, r.title, r.summary, r.doc_date, ${thumbSql("r.id")} thumb, ${durationSql("r.id")} dur,
          (SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND a.role='full' LIMIT 1) file
@@ -41,6 +42,10 @@ export async function sitemap(req: Request, env: Env) {
     env.DB.prepare("SELECT slug id FROM cases").all<{ id: string }>(),
     // Same cached list hub pages use, so no hub is listed before its page exists.
     listHubsCached(env, origin),
+    // Shared Ask answers: one URL per question, its earliest public copy (same rule as the page's canonical).
+    env.DB.prepare(
+      "SELECT min(id) id, question, date(min(created_at)) d FROM ask_log WHERE public=1 AND answer IS NOT NULL GROUP BY lower(question)",
+    ).all<{ id: number; question: string; d: string }>(),
   ]);
   const loc = (path: string, d?: string, extra = "") =>
     `<url><loc>${origin}${path}</loc>${d ? `<lastmod>${d}</lastmod>` : ""}${extra}</url>`;
@@ -52,6 +57,7 @@ export async function sitemap(req: Request, env: Env) {
     ...boards.results.map((b) => loc(boardHref(b.id))), // slug is "/uap/"; the URL is /board/uap
     ...cases.results.map((c) => loc(`/case/${e(c.id)}`)),
     ...hubs.map((h) => loc(hubHref(h.kind, h.slug))),
+    ...asks.results.map((x) => loc(askHref(x.id, x.question), x.d)), // slug is [a-z0-9-] only
   ];
   return new Response(
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${urls.join("")}</urlset>`,

@@ -57,4 +57,19 @@ describe("sitemap", () => {
     const { n } = (await env.DB.prepare("SELECT count(*) n FROM records WHERE status='live'").first<{ n: number }>())!;
     expect(ids.length).toBe(n); // every batch made it
   });
+
+  it("lists one URL per distinct shared question (earliest row), skipping private and unanswered rows", async () => {
+    const a = JSON.stringify({ answer: "x [1]", sources: [] });
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO ask_log(id,question,actor_id,public,answer,created_at) VALUES(9201,'Gimbal video?','a',1,?,'2026-09-30 10:00:00')").bind(a),
+      env.DB.prepare("INSERT INTO ask_log(id,question,actor_id,public,answer) VALUES(9202,'gimbal video?','a',1,?)").bind(a),
+      env.DB.prepare("INSERT INTO ask_log(id,question,actor_id,public,answer) VALUES(9203,'Private one','a',0,?)").bind(a),
+      env.DB.prepare("INSERT INTO ask_log(id,question,actor_id,public) VALUES(9204,'Old shared one','a',1)"),
+    ]);
+    const xml = await (await worker.fetch(new Request("https://realufo.org/sitemap.xml"), { ...env, FEATURE_ASK: "off" } as any, {} as any)).text();
+    expect(xml).toContain("<url><loc>https://realufo.org/ask/9201-gimbal-video</loc><lastmod>2026-09-30</lastmod></url>");
+    expect(xml).not.toContain("/ask/9202");
+    expect(xml).not.toContain("/ask/9203");
+    expect(xml).not.toContain("/ask/9204");
+  });
 });
