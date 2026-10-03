@@ -16,6 +16,8 @@ description: Use when the user wants to post / publish / share a specific RealUF
 scripts/publish.sh DOW-UAP-PR104
 ```
 
+**Re-posting rows** (a platform missed some posts, e.g. after fixing an account): the user deletes those `social_posts` rows, then `scripts/publish.sh --drain` runs the fan-out every minute until every posted X post since `SOCIAL_SINCE` is on every enabled platform (one post per platform per minute), then restores the normal deploy.
+
 ## Before running
 
 - Deploy rules still hold: it deploys **HEAD** (or the git ref given as the 2nd arg). Other chats share this checkout, so check `git log origin/build/app-foundation..HEAD` for commits that shouldn't ship.

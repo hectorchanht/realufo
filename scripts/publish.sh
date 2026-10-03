@@ -2,6 +2,10 @@
 # Publish one archive record to X and every enabled social platform right now.
 #
 #   scripts/publish.sh RECORD_ID [GIT_REF]     (GIT_REF defaults to HEAD)
+#   scripts/publish.sh --drain [GIT_REF]       no new X post: just run the fan-out every
+#                                              minute until every posted X post (since
+#                                              SOCIAL_SINCE) has a row on every enabled
+#                                              platform — re-posts rows you deleted
 #
 # How: deploys GIT_REF from a clean worktree with an every-minute cron and
 # X_FORCE_PICK=RECORD_ID (neither is committed). The X bot posts the record at
@@ -23,6 +27,9 @@ q() {
     python3 -c 'import json,sys; d=json.load(sys.stdin); d=d[0] if isinstance(d,list) else d; print(json.dumps(d.get("results",[])))'
 }
 
+DRAIN=; [ "$ID" = "--drain" ] && DRAIN=1
+
+if [ -z "$DRAIN" ]; then
 echo "== preflight $ID"
 rec=$(q "SELECT id,kind,status,(SELECT count(*) FROM x_posts p WHERE p.stream='pick' AND p.ref=r.id) posted FROM records r WHERE id='${ID//\'/}'")
 python3 - "$rec" <<'PY'
@@ -36,6 +43,7 @@ print(f"ok: {r['id']} ({r['kind']})")
 PY
 today=$(q "SELECT count(*) n FROM x_posts WHERE status!='failed' AND date(created_at)=date('now')")
 echo "X posts today: $today (X_DAILY_MAX in wrangler.jsonc caps it)"
+fi
 
 restore() {
   echo "== restoring normal deploy of $REF"
@@ -52,11 +60,30 @@ sed -i '' 's|"crons": \["0 \*/3 \* \* \*"\]|"crons": ["* * * * *"]|' "$W/wrangle
 grep -q '"\* \* \* \* \*"' "$W/wrangler.jsonc" || { echo "cron line not found in wrangler.jsonc"; exit 1; }
 enabled=$(grep -o '"FEATURE_SOCIAL_[A-Z]*": "on"' "$W/wrangler.jsonc" | wc -l | tr -d ' ')
 
-echo "== deploying $REF with every-minute cron + X_FORCE_PICK=$ID"
+VARS=(); [ -z "$DRAIN" ] && VARS=(--var "X_FORCE_PICK:$ID")
+echo "== deploying $REF with every-minute cron ${DRAIN:+(drain)}${DRAIN:-+ X_FORCE_PICK=$ID}"
 # Same steps as `pnpm run deploy`, with the extra var on the wrangler call.
 (cd "$W" && npx wrangler d1 migrations apply realufo-db --remote --env-file /dev/null && pnpm build:web &&
-  npx wrangler deploy --env-file /dev/null --var "X_FORCE_PICK:$ID") >"$W/deploy.log" 2>&1 || { tail -20 "$W/deploy.log"; exit 1; }
+  npx wrangler deploy --env-file /dev/null "${VARS[@]}") >"$W/deploy.log" 2>&1 || { tail -20 "$W/deploy.log"; exit 1; }
 grep -E "Current Version ID" "$W/deploy.log"
+
+if [ -n "$DRAIN" ]; then
+  since=$(grep -o '"SOCIAL_SINCE": "[^"]*"' "$W/wrangler.jsonc" | cut -d'"' -f4)
+  plats=$(grep -o '"FEATURE_SOCIAL_[A-Z]*": "on"' "$W/wrangler.jsonc" | sed 's/"FEATURE_SOCIAL_\([A-Z]*\)".*/\1/' | tr 'A-Z' 'a-z' | sed "s/.*/'&'/" | paste -sd, -)
+  echo "== draining unposted X posts since $since to: $plats (up to ${TIMEOUT_MIN} min)"
+  deadline=$(( $(date +%s) + TIMEOUT_MIN * 60 ))
+  while :; do
+    sleep 30
+    left=$(q "SELECT count(*) n FROM x_posts x, (SELECT value p FROM json_each('[${plats//\'/\"}]')) pl WHERE x.status='posted' AND x.created_at >= '$since' AND NOT EXISTS (SELECT 1 FROM social_posts s WHERE s.x_post_id=x.id AND s.platform=pl.p)")
+    busy=$(q "SELECT count(*) n FROM social_posts WHERE status IN ('pending','processing')")
+    echo "missing=$left busy=$busy" >&2
+    [[ "$left" == *'"n": 0'* && "$busy" == *'"n": 0'* ]] && break
+    [ "$(date +%s)" -ge "$deadline" ] && { echo "timed out"; break; }
+  done
+  q "SELECT x.ref, s.platform, s.status, coalesce(s.remote_id, substr(s.error,1,100)) detail FROM social_posts s JOIN x_posts x ON x.id=s.x_post_id WHERE s.created_at >= datetime('now','-30 minutes') ORDER BY x.id, s.platform" |
+    python3 -c 'import json,sys; [print(f"{r[\"ref\"]:16} {r[\"platform\"]:8} {r[\"status\"]:10} {r[\"detail\"] or \"\"}") for r in json.load(sys.stdin)]'
+  exit 0
+fi
 
 echo "== waiting for X + $enabled social platforms (up to ${TIMEOUT_MIN} min)"
 deadline=$(( $(date +%s) + TIMEOUT_MIN * 60 ))
