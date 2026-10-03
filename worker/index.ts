@@ -99,6 +99,7 @@ async function sameSecret(a: string, b: string) {
 const RENAMED: Record<string, string> = { "DOW-UAP": "DOW-UAP-PR057a" };
 const RENAMED_PATH = /^\/(doc|shorts)\/([^/]+)(\/text)?$/;
 
+const MOVED_OVERVIEWS: Record<string, string> = { "aaro-overview": "aaro", "nara-overview": "nara", "nasa-overview": "nasa" };
 const LEGACY_PATH = /^\/(aaro|about|argentina|brazil|canada|chile|foia|geipan|glossary|italy|nara|nasa|peru|search|spain|stories|timeline|uk|whatsnew)(\/|$)/;
 
 export default {
@@ -111,6 +112,8 @@ export default {
     // straight to /case, no apex → subdomain → apex chain.
     const moved = /^\/stories\/([a-z0-9-]+)\/?$/.exec(url.pathname)?.[1];
     if (moved && Object.hasOwn(CASE_STORY_TEXT, moved)) return Response.redirect(`${url.origin}/case/${moved}`, 301);
+    // Overviews folded into agency hubs (spec 2026-10-03-realufo-case-stories-batch2-design).
+    if (moved && Object.hasOwn(MOVED_OVERVIEWS, moved)) return Response.redirect(`${url.origin}/agency/${MOVED_OVERVIEWS[moved]}`, 301);
     if (LEGACY_PATH.test(url.pathname)) {
       const p = url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`;
       return Response.redirect(`https://release.realufo.org${p}${url.search}`, 301);
