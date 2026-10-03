@@ -3,6 +3,7 @@
     python -m ingest.ocr --dry-run --limit 3      # OCR + print stats, no writes
     python -m ingest.ocr --ids A,B                # only these records
     python -m ingest.ocr                          # every live PDF without a record_ocr row
+    python -m ingest.ocr --fts-only               # rewrite search rows of OCR'd files from R2
     python -m ingest.ocr --shard 0/8              # one of 8 parallel workers (Paddle uses one core)
 
 Pages whose pdftotext layer already reads as text keep it (src "pdf"); the rest
@@ -16,6 +17,7 @@ import argparse, json, os, re, subprocess, sys, tempfile, time
 from . import d1, fetch, r2
 from .chunking import split_pages
 from .fulltext import clean_page, keep_page
+from .textindex import pdf_pages
 
 SELECT = """SELECT r.id,
   (SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND a.role='full' LIMIT 1) AS url
@@ -60,10 +62,43 @@ def marker_sql(rid: str, pages: list[dict], engine: str) -> str:
     chars = sum(len(p["text"]) for p in pages)
     sql = [f"INSERT OR REPLACE INTO record_ocr(record_id,pages,ocr_pages,chars,engine) "
            f"VALUES({q},{len(pages)},{ocr_pages},{chars},{d1.sql_q(engine)});"]
-    if ocr_pages:  # text changed: rebuild record_text (+FTS, summary, TL;DR) and the Ask vectors
+    if ocr_pages:  # text changed: rebuild record_text (summary, TL;DR) and the Ask vectors
         sql += [f"DELETE FROM record_text WHERE record_id={q};",
                 f"UPDATE text_index SET status='failed' WHERE record_id={q};"]
-    return "\n".join(sql) + "\n"
+    return "\n".join(sql) + "\n" + fts_sql(rid, pages)
+
+FTS_CAP = 90000  # ponytail: D1 statement limit ~100 KB; real pages are far smaller
+
+def fts_sql(rid: str, pages: list[dict]) -> str:
+    """Search rows for every non-empty page (record_text's triggers skip OCR'd files, migration 0037)."""
+    q = d1.sql_q(rid)
+    rows = [f"INSERT INTO record_fts(record_id,page,body) VALUES({q},{int(p['n'])},{d1.sql_q(p['text'][:FTS_CAP])});"
+            for p in pages if p["text"].strip()]
+    return "\n".join([f"DELETE FROM record_fts WHERE record_id={q};", *rows]) + "\n"
+
+SELECT_MARKED = """SELECT r.id,
+  (SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND a.role='full' LIMIT 1) AS url, 1 AS ocr
+FROM records r JOIN record_ocr o ON o.record_id=r.id WHERE r.status='live'{ids} ORDER BY r.id"""
+
+def fts_only(ids: list[str], limit, dry_run: bool) -> int:
+    where = f" AND r.id IN ({','.join(d1.sql_q(i) for i in ids)})" if ids else ""
+    rows = d1._d1_json(" ".join(SELECT_MARKED.format(ids=where).split()))[:limit]
+    failed = 0
+    with tempfile.TemporaryDirectory() as work:
+        for i, row in enumerate(rows, 1):
+            try:
+                pages = [{"n": n, "text": t} for n, t in enumerate(pdf_pages(row["url"], work, row["id"]), 1)]
+                path = os.path.join(work, "fts.sql")
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write(fts_sql(row["id"], pages))
+                if not dry_run:
+                    d1.apply_sql(path)
+                print(f"[{i}/{len(rows)}] fts  {row['id']} pages={len(pages)}", flush=True)
+            except Exception as e:
+                failed += 1
+                print(f"[{i}/{len(rows)}] FAIL {row['id']}: {e}", flush=True)
+    print(f"{'dry-run ' if dry_run else ''}fts-only ok={len(rows) - failed} failed={failed}")
+    return 1 if failed else 0
 
 def page_count(pdf: str) -> int:
     out = subprocess.run(["pdfinfo", pdf], capture_output=True, text=True, check=True).stdout
@@ -172,10 +207,13 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=None, help="max records this run")
     ap.add_argument("--ids", default=None, help="comma-separated record ids")
     ap.add_argument("--shard", default=None, help="I/N: every Nth record from I (start all N together)")
+    ap.add_argument("--fts-only", action="store_true", help="rewrite search rows of OCR'd files from R2; no OCR")
     ap.add_argument("--bench", action="store_true", help="time model/dpi variants on failing pages of --ids")
     ap.add_argument("--bench-pages", type=int, default=3, help="--bench: failing pages per file")
     ap.add_argument("--out", default="../docs/launch/ocr-bench.md", help="--bench report path")
     args = ap.parse_args(argv)
+    if args.fts_only:
+        sys.exit(fts_only([i for i in (args.ids or "").split(",") if i], args.limit, args.dry_run))
     rows = select_rows([i for i in (args.ids or "").split(",") if i], args.limit)
     if args.bench:
         bench(rows, args.bench_pages, args.out)

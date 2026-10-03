@@ -41,6 +41,7 @@ def _db():
       CREATE TABLE record_ocr(record_id TEXT PRIMARY KEY, pages INT, ocr_pages INT, chars INT, engine TEXT, done_at TEXT);
       CREATE TABLE record_text(record_id TEXT PRIMARY KEY, pages TEXT);
       CREATE TABLE text_index(record_id TEXT PRIMARY KEY, status TEXT);
+      CREATE TABLE record_fts(record_id TEXT, page INT, body TEXT);
       INSERT INTO record_text VALUES ('O''Hare 1.pdf','[]');
       INSERT INTO text_index VALUES ('O''Hare 1.pdf','indexed');""")
     return db
@@ -152,3 +153,31 @@ def test_shards_stay_balanced_even_when_ids_hash_alike(world):
         run("--shard", shard)
         sizes.append(len(world["put"]))
     assert sizes == [3, 3, 3]
+
+def _fts_db():
+    db = _db()
+    db.execute("INSERT INTO record_fts VALUES('O''Hare 1.pdf', 1, 'old capped text')")
+    return db
+
+def test_marker_sql_writes_one_fts_row_per_non_empty_page_escaped_and_capped():
+    db = _fts_db()
+    pages = [{"n": 1, "text": "It's \\\\ a \"quote\"", "src": "pdf"}, {"n": 2, "text": "", "src": "ocr", "conf": 0.0},
+             {"n": 3, "text": "x" * 300000, "src": "ocr", "conf": 0.9}]
+    db.executescript(ocr.marker_sql("O'Hare 1.pdf", pages, "eng"))
+    rows = db.execute("SELECT page, length(body) FROM record_fts ORDER BY page").fetchall()
+    assert rows == [(1, len(pages[0]["text"])), (3, ocr.FTS_CAP)]
+    assert db.execute("SELECT body FROM record_fts WHERE page=1").fetchone()[0] == pages[0]["text"]
+
+def test_born_digital_file_gets_fts_rows_too():
+    db = _fts_db()
+    db.executescript(ocr.marker_sql("O'Hare 1.pdf", [{"n": 1, "text": "abc def", "src": "pdf"}], "eng"))
+    assert db.execute("SELECT body FROM record_fts").fetchall() == [("abc def",)]
+
+def test_fts_only_rewrites_search_rows_from_r2_without_marker_or_requeue(world, monkeypatch):
+    world["rows"] = [{"id": "A", "url": "https://cdn/a.pdf", "ocr": 1}]
+    monkeypatch.setattr(ocr, "pdf_pages", lambda url, work, ocr_id: ["page one", "", "page three"])
+    assert run("--fts-only") == 0
+    sql = world["applied"][0]
+    assert "INSERT INTO record_fts" in sql and "'page three'" in sql
+    assert "record_ocr" not in sql and "record_text" not in sql and "text_index" not in sql
+    assert world["put"] == []
