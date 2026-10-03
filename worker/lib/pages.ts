@@ -13,6 +13,7 @@ import { loadSharedAsk } from "../routes/ask";
 import { askHref, askIdOf } from "./ask";
 import { PRIVACY_HTML } from "./privacy";
 import { TERMS_HTML } from "./terms";
+import { SOCIAL_PROFILES } from "./profiles";
 
 // One SPA route's pre-render: <head> meta (url is filled in by serveWithMeta)
 // and the HTML that goes inside #root. A loader returns null when the entity
@@ -75,7 +76,7 @@ const homePage: Loader = async (env, _g, url) => ({
     jsonLd: {
       "@type": "WebSite",
       name: "RealUFO",
-      sameAs: ["https://x.com/realufoorg"],
+      publisher: { "@type": "Organization", name: "RealUFO", url: url.origin, sameAs: SOCIAL_PROFILES.map(([, u]) => u) },
       potentialAction: {
         "@type": "SearchAction",
         target: `${url.origin}/archive?q={search_term_string}`,

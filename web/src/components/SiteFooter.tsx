@@ -8,6 +8,7 @@ import type { HubKind } from "../api/types";
 import { useNavItems } from "./navItems";
 import { useFooterLinks } from "../lib/footerLinks";
 import { AppearanceSwitcher } from "./AppearanceSwitcher";
+import { SOCIAL_PROFILES } from "../../../worker/lib/profiles";
 
 const GROUPS: [HubKind, string][] = [["release", "Releases"], ["agency", "Agencies"], ["decade", "Decades"]];
 // Plain <a>: served by the Worker, not SPA routes.
@@ -46,12 +47,14 @@ export default function SiteFooter() {
           <li key="cases"><Link className={linkCls} to="/cases">Cold cases</Link></li>,
           // static predecessor archive (war-gov-ufo-release repo)
           <li key="release"><a className={linkCls} href="https://release.realufo.org/" target="_blank" rel="noopener">Original release archive ↗</a></li>,
-          <li key="x"><a className={linkCls} href="https://x.com/realufoorg" target="_blank" rel="noopener me">Follow @realufoorg on X ↗</a></li>,
           <li key="source"><a className={linkCls} href="https://github.com/hectorchanht/realufo" target="_blank" rel="noopener">Source code on GitHub ↗</a></li>,
           <li key="contact"><a className={linkCls} href="mailto:hello@realufo.org">Contact: hello@realufo.org</a></li>,
           <li key="privacy"><Link className={linkCls} to="/privacy">Privacy</Link></li>,
           <li key="terms"><Link className={linkCls} to="/terms">Terms</Link></li>,
         ])}
+        {col("Follow", SOCIAL_PROFILES.map(([name, url]) => (
+          <li key={name}><a className={linkCls} href={url} target="_blank" rel="noopener me">{name} ↗</a></li>
+        )))}
         {GROUPS.map(([kind, title]) => {
           const group = hubs.filter((h) => h.kind === kind);
           return group.length
