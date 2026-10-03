@@ -253,7 +253,13 @@ describe("Ask screen", () => {
     vi.stubGlobal("localStorage", memoryStorage());
   });
   afterEach(() => vi.unstubAllGlobals());
-  const box = () => screen.findByPlaceholderText(/ask the archive — e\.g\./);
+  // The box can show before Ask's mount effects run (slow machines), and its
+  // `setInput(ask)` effect would then wipe what the test types. The AppBar
+  // title is set by an effect in the same commit, so once it shows they've run.
+  const box = async () => {
+    await screen.findByText("ASK THE ARCHIVE");
+    return screen.getByPlaceholderText(/ask the archive — e\.g\./);
+  };
 
   it("shared questions with a page link to it (free); older ones re-ask", async () => {
     useAskRecentMock.mockReturnValue({
