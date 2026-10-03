@@ -80,7 +80,7 @@ def sfx(text, seconds, influence=0.6):
 
 def words(mp3):
     """Word timings [(text, start, end)] of a narration mp3 via ElevenLabs speech-to-text (scribe_v1),
-    cached next to it as .words.json. Drives word-by-word captions."""
+    cached next to it as .words.json. Drives subtitles()."""
     out = mp3[:-4] + ".words.json"
     if not os.path.exists(out):
         key = os.environ.get("ELEVENLABS_API_KEY") or next((l.split("=", 1)[1].strip() for l in open(os.path.join(HERE, "..", ".env"))
@@ -97,31 +97,33 @@ def words(mp3):
         json.dump(ws, open(out, "w"))
     return [tuple(w) for w in json.load(open(out))]
 
-def captions(cues, y=460, fs=60, per=3, fix=None):
-    from PIL import ImageFont
-    """Word-by-word captions: for each (t0, mp3), words appear one by one in groups of <= `per`,
-    as drawtext filters (enable='between(t,..)') for the whole timeline. `fix` maps spoken -> shown words."""
+def _split(ws, maxch):
+    """Split a sentence's words into lines <= maxch chars at the most balanced point (commas preferred)."""
+    text = lambda x: " ".join(w for w, _, _ in x)
+    if len(text(ws)) <= maxch or len(ws) < 2:
+        return [ws]
+    half = len(text(ws)) / 2
+    best = min(range(1, len(ws)), key=lambda i: abs(len(text(ws[:i])) - half) - (8 if ws[i - 1][0][-1:] in ",;:" else 0))
+    return _split(ws[:best], maxch) + _split(ws[best:], maxch)
+
+def subtitles(cues, y=460, fs=46, maxch=32):
+    """Calm subtitles: for each (t0, mp3), one line per sentence (long ones split at the most balanced
+    point, commas preferred), each shown whole until the next starts. drawtext filters for the whole timeline."""
     vf = []
     for t0, mp3 in cues:
-        raw = words(mp3)
-        groups, cur = [], []
-        for w, s, e in raw:  # <= per words, and a new group after each sentence end
-            cur.append(((fix or {}).get(w.strip(".,:;!?").lower(), w.rstrip(".,;:")), s, e))
-            if len(cur) == per or w[-1:] in ".!?":
-                groups.append(cur); cur = []
-        groups += [cur] if cur else []
-        for gi, grp in enumerate(groups):
-            full = " ".join(w for w, _, _ in grp)
-            size = min(fs, int(1000 / (0.62 * max(len(full), 1))))  # same rule as txt(), for the whole group
-            x = int((1080 - ImageFont.truetype(FONT, size).getlength(full)) / 2)  # left edge pinned: no jiggle as words add
-            end = t0 + grp[-1][2] + 0.25
-            if gi + 1 < len(groups):
-                end = min(end, t0 + groups[gi + 1][0][1])  # never overlap the next group
-            for i, (_, s, _) in enumerate(grp):
-                a = t0 + s
-                b = t0 + grp[i + 1][1] if i + 1 < len(grp) else end
-                vf.append(txt(" ".join(w for w, _, _ in grp[:i + 1]), y, size).replace("x=(w-text_w)/2", f"x={x}")
-                          + f":enable='gte(t,{a:.2f})*lt(t,{b:.2f})'")
+        sentences, cur = [], []
+        for w, s, e in words(mp3):
+            w = "realufo.org" if w.lower().rstrip(".") == "realufo.org" else w
+            cur.append((w, s, e))
+            if w[-1:] in ".!?":
+                sentences.append(cur); cur = []
+        sentences += [cur] if cur else []
+        lines = [ln for sen in sentences for ln in _split(sen, maxch)]
+        for i, ln in enumerate(lines):
+            a = t0 + ln[0][1]
+            b = t0 + (lines[i + 1][0][1] if i + 1 < len(lines) else ln[-1][2] + 0.6)
+            text = " ".join(w for w, _, _ in ln).rstrip(",;:")
+            vf.append(txt(text, y, fs) + f":enable='gte(t,{a:.2f})*lt(t,{b:.2f})'")
     return vf
 
 def _audio(say, seconds):

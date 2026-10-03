@@ -4,12 +4,12 @@ and is sharp again by 2:49, the way any point light looks when a camera loses fo
 Posed as a question: the FBI file has no conclusion, and two FBI agents saw lights there too
 (FBI-UAP-D007 p.2). Cut: tease (frame 0 = thumbnail: the sharp dot boxed, no spoiler) -> 165-170.5 s,
 swell at ~5 s -> 4x slower -> dot / sphere / dot -> lesson -> agents' quote -> end card -> loop.
-ElevenLabs narration + word-by-word captions (lib.captions) + ambient bed. 9:16, ~34 s.
+ElevenLabs narration + calm subtitles (lib.subtitles) + ambient bed. 9:16, ~34 s.
 
     FFMPEG=/path/to/ffmpeg-with-drawtext CLIP_FONT=/path/Bold.ttf python3 showcase/FBI-UAP-PR003.py
 """
 import os, subprocess
-from lib import Cut, txt, tts, captions, FFMPEG as F, FONT, TMP as D, ENC, SILENT as SIL, HERE
+from lib import Cut, txt, tts, subtitles, FFMPEG as F, FONT, TMP as D, ENC, SILENT as SIL, HERE
 
 U = "https://assets.realufo.org/videos/wargov/DOD_111764159.mp4"
 OUT = os.path.join(HERE, "FBI-UAP-PR003.mp4")
@@ -79,10 +79,10 @@ for i, (t, line) in enumerate(SAY, 1):
     ins += ["-i", tts(line)[0]]; fc += f"[{i}:a]aformat=channel_layouts=stereo,adelay={int(t*1000)}:all=1[n{i}];"
 fc += "[0:a]" + "".join(f"[n{i}]" for i in range(1, len(SAY)+1)) + f"amix=inputs={len(SAY)+1}:normalize=0:duration=first[a]"
 VO = os.path.join(D, "vo.mp4")
-# word-by-word captions under the headline (y 470); the dot/sphere/dot line is skipped (it's the panel labels),
+# subtitles, one line per sentence, under the headline (y 470); the dot/sphere/dot line is skipped (it's the panel labels),
 # the agents' line sits low (y 1170) because their quote fills the top of that beat
-CAP = (captions([(t, tts(line)[0]) for t, line in SAY if not line.startswith(("Dot.", "But two"))], y=470)
-       + captions([(t, tts(line)[0]) for t, line in SAY if line.startswith("But two")], y=1170))
+CAP = (subtitles([(t, tts(line)[0]) for t, line in SAY if not line.startswith(("Dot.", "But two"))], y=470)
+       + subtitles([(t, tts(line)[0]) for t, line in SAY if line.startswith("But two")], y=1170))
 subprocess.run([F, "-v", "error", "-y", *ins, "-filter_complex", fc + ";[0:v]" + ",".join(CAP) + "[v]", "-map", "[v]", "-map", "[a]",
                 "-c:v", "libx264", "-profile:v", "high", "-pix_fmt", "yuv420p", "-preset", "veryfast", "-crf", "20",
                 "-c:a", "aac", "-b:a", "128k", VO], check=True)
