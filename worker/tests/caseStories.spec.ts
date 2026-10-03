@@ -53,4 +53,7 @@ describe("CASE_STORY_TEXT", () => {
     expect(Object.keys(CASE_STORY_TEXT).length).toBeGreaterThan(0);
     for (const [slug, s] of Object.entries(CASE_STORY_TEXT)) expect(storyProblems(slug, s), slug).toEqual([]);
   });
+  it("covers all 12 batch cases", () => {
+    expect(Object.keys(CASE_STORY_TEXT).sort()).toEqual([...CASE_SLUGS].sort());
+  });
 });
