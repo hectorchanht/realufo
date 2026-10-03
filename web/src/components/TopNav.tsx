@@ -5,8 +5,9 @@
 // all work for free.
 //
 // On desktop the separate AppBar is NOT rendered (see AppShell) — its
-// contextual page title/sub (and back affordance for detail screens) are
-// folded into this single bar instead, so desktop shows one nav, not two.
+// contextual page title/sub is folded into this single bar instead, so
+// desktop shows one nav, not two. No back button here: the browser's own back
+// covers desktop.
 import { Link, useLocation } from "react-router-dom";
 import { Saucer } from "./Saucer";
 import { tabHref, useNavItems, type NavTab } from "./navItems";
@@ -17,12 +18,9 @@ const OWN_H1 = /^\/(doc|case|browse|release|agency|location|decade)(\/|$)/;
 
 export interface TopNavProps {
   activeTab: NavTab;
-  /** Show the back affordance (detail screens only — canBackForPath). */
-  canBack?: boolean;
-  onBack?: () => void;
 }
 
-export function TopNav({ activeTab, canBack = false, onBack }: TopNavProps) {
+export function TopNav({ activeTab }: TopNavProps) {
   // No Feed item: the brand logo already links to "/" and the bar needs the room.
   const navItems = useNavItems().filter((i) => i.tab !== "feed");
   const { title, sub } = usePageTitle();
@@ -67,24 +65,13 @@ export function TopNav({ activeTab, canBack = false, onBack }: TopNavProps) {
         })}
       </div>
 
-      {/* Contextual page title/sub — the "bottom bar" description, folded in.
-          Back button appears only on detail screens (canBack). */}
-      <div className="flex min-w-0 flex-1 items-center gap-3 border-l border-line pl-4">
-        {canBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            aria-label="Back"
-            className="flex h-8 w-8 flex-none items-center justify-center rounded-[10px] border border-line2 text-[17px] text-ink active:scale-[.94] hover:border-signal hover:text-signal"
-          >
-            ‹
-          </button>
-        )}
+      {/* Contextual page title/sub — the "bottom bar" description, folded in. */}
+      <div className={"min-w-0 flex-1 leading-[1.15]" + (showContext ? " border-l border-line pl-4" : "")}>
         {showContext && (
-          <div className="min-w-0 leading-[1.15]">
+          <>
             <div className="truncate font-pixel text-[10px] text-ink">{title}</div>
             <div className="mt-1 truncate font-mono text-[9.5px] tracking-[.5px] text-faint">{sub}</div>
-          </div>
+          </>
         )}
       </div>
 

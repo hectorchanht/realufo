@@ -452,7 +452,7 @@ export function Doc() {
     <>
       {/* record id kicker (uapbrowser-style) — only when the id isn't just the title respelled */}
       {tp!.showId && (
-        <div className="mb-1 font-mono text-[11px] font-semibold tracking-[.4px]" style={{ color: accent }}>
+        <div className="mb-2 font-pixel text-[10px]" style={{ color: accent }}>
           {tp!.id}
         </div>
       )}

@@ -107,7 +107,7 @@ export function AppShell() {
             style={{ "--bnav-y": navHidden ? "0px" : "var(--bnav-h, 0px)" } as CSSProperties}
           >
             {isDesktop && (
-              <TopNav activeTab={activeTab} canBack={canBack} onBack={() => goBack(navigate, pathname)} />
+              <TopNav activeTab={activeTab} />
             )}
 
             <main
