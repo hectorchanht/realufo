@@ -7,8 +7,9 @@ import { withThreadThumb } from "../lib/upload";
 //  - "Hot right now" records are ordered by their most recent comment or
 //    verdict (the files people are actively weighing in on), falling back to
 //    featured/newest.
-//  - "Trending threads" are ordered by their most recent post/reply (the
-//    threads with real-time activity), falling back to thread creation time.
+//  - "Trending threads" = the 50 most recently active threads (latest
+//    post/reply, else creation time), ranked by trendScore so a fresh reply
+//    on a weak thread can't bury a well-voted thread with pictures.
 export async function feed(_req: Request, env: Env) {
   // Activity = latest comment or verdict ('' sorts last in DESC; both are
   // "YYYY-MM-DD HH:MM:SS" strings).
@@ -30,11 +31,37 @@ export async function feed(_req: Request, env: Env) {
     FROM threads t JOIN boards b ON b.id=t.board_id
     ORDER BY COALESCE((SELECT max(created_at) FROM posts p WHERE p.thread_id=t.id), t.created_at) DESC,
              t.votes DESC
-    LIMIT 4`
+    LIMIT 50`
   ).all<any>();
 
+  const now = Date.now();
   return json({
     featured: featured.results,
-    hot: hot.results.map((t: any) => ({ ...withThreadThumb(env, t), ago: relAgo(t.lastPost || t.created_at) })),
+    hot: hot.results
+      .map((t: any) => withThreadThumb(env, t))
+      .map((t: any) => ({ t, score: trendScore(t, now) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4)
+      .map(({ t }) => ({ ...t, ago: relAgo(t.lastPost || t.created_at) })),
   });
+}
+
+// Hacker-News-style gravity: engagement over (age + 12)^1.5, age = hours since
+// the thread's last activity. HN's +2h offset let a 5-minute-old reply on an
+// empty thread outrank a well-voted pic thread from yesterday; +12h stops
+// that while a new thread still overtakes stale ones within a few days.
+// Tune the weights here.
+const W_VOTE = 1, W_REPLY = 2, W_IMG = 1, PIC_BONUS = 3, AGE_OFFSET_H = 12, GRAVITY = 1.5;
+
+export function trendScore(
+  t: { votes?: number; reply_count?: number; img_count?: number; thumb?: string | null; lastPost?: string | null; created_at?: string },
+  now: number
+): number {
+  const iso = t.lastPost || t.created_at || "";
+  const at = Date.parse(iso.includes("T") ? iso : iso.replace(" ", "T") + "Z");
+  const hours = Number.isNaN(at) ? 1e6 : Math.max(0, (now - at) / 3_600_000);
+  const points = Math.max(0, t.votes ?? 0) * W_VOTE + (t.reply_count ?? 0) * W_REPLY +
+    (t.img_count ?? 0) * W_IMG + (t.thumb ? PIC_BONUS : 0);
+  // +1 so a brand-new thread with no engagement still beats an ancient one.
+  return (points + 1) / Math.pow(hours + AGE_OFFSET_H, GRAVITY);
 }
