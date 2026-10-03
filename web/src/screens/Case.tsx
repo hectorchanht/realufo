@@ -173,7 +173,7 @@ export function Case() {
                 role="img"
                 aria-label={c.stance ?? "neutral"}
                 title={c.stance ?? "neutral"}
-                className="text-[9px]"
+                className="text-[12px] leading-none"
                 style={{ color: stanceColor(c.stance) }}
               >
                 ●

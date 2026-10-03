@@ -200,7 +200,7 @@ function PostRow({ post, sourceRecord, thread, nos, replies, onQuote }: PostRowP
           role="img"
           aria-label={post.stance ?? "neutral"}
           title={post.stance ?? "neutral"}
-          className="text-[9px]"
+          className="text-[12px] leading-none"
           style={{ color: stanceColor(post.stance) }}
         >
           ●
