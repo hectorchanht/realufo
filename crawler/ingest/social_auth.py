@@ -15,6 +15,7 @@ import getpass, json, os, secrets, subprocess, sys
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode, urlparse, parse_qs
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 from . import d1
 
 REDIRECT = "https://realufo.org/"
@@ -53,8 +54,12 @@ def upsert_sql(platform, access, refresh, expires_in, now) -> str:
 def _http(url, data=None, method=None):
     req = Request(url, data=urlencode(data).encode() if data else None, method=method or ("POST" if data else "GET"),
                   headers={"Content-Type": "application/x-www-form-urlencoded"})
-    with urlopen(req, timeout=30) as r:
-        return json.loads(r.read())
+    try:
+        with urlopen(req, timeout=30) as r:
+            return json.loads(r.read())
+    except HTTPError as e:
+        # The platform's own error JSON says what's wrong; the URL is never printed (it can carry secrets/tokens).
+        sys.exit(f"HTTP {e.code} from {urlparse(url).netloc}: {e.read().decode(errors='replace')[:500]}")
 
 def _secret(name, value):
     env = {k: v for k, v in os.environ.items() if k not in ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID")}
