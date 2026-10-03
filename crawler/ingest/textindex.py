@@ -50,9 +50,9 @@ def status_sql(rid: str, status: str, chunks: int, chars: int) -> str:
             f"{d1.sql_q(rid)},'{status}',{int(chunks)},{int(chars)},datetime('now'));")
 
 def reindex_sql(rid: str) -> str:
-    # ponytail: a regenerated record with fewer chunks (moments --force) leaves its
-    # tail vectors behind; delete ids past the new count if that ever matters.
-    return f"DELETE FROM text_index WHERE record_id={d1.sql_q(rid)};"
+    # Marked failed (not deleted): the next live run's retry_failed deletes ALL the record's
+    # old vectors, so a regenerated record with fewer chunks leaves no stale tail in Ask.
+    return f"UPDATE text_index SET status='failed' WHERE record_id={d1.sql_q(rid)};"
 
 def retry_failed() -> None:
     rows = d1._d1_json(FAILED)

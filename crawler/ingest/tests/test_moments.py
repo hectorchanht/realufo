@@ -60,7 +60,7 @@ def test_doc_json_and_update_sql_escape_quotes_and_unicode():
                       "moments": [{"start": 0.0, "end": 4.5, "text": "It's a “focus box” — café"}]}
     sql = update_sql("O'X", doc)
     assert sql.startswith("UPDATE records SET ai_moments='") and "It''s" in sql and "id='O''X'" in sql
-    assert sql.endswith("DELETE FROM text_index WHERE record_id='O''X';")   # Ask re-embeds it
+    assert sql.endswith("UPDATE text_index SET status='failed' WHERE record_id='O''X';")   # Ask re-embeds it
     assert "café" in sql
 
 

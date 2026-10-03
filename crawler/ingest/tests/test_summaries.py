@@ -1,4 +1,5 @@
-import json
+import json, sqlite3
+import pytest
 from ingest import summaries
 
 PAGES = [{"n": 1, "text": "First page."}, {"n": 3, "text": "Third page."}]
@@ -25,9 +26,9 @@ def test_clean_summary_caps_long_output_at_a_sentence():
     assert len(out.split()) <= summaries.MAX_WORDS and out.endswith(".")
 
 def test_row_sql_updates_only_that_record():
-    sql = summaries.row_sql("AARO-x's.pdf", "A summary.")
-    assert sql == ("UPDATE record_text SET ai_summary='A summary.' WHERE record_id='AARO-x''s.pdf';"
-                   "DELETE FROM text_index WHERE record_id='AARO-x''s.pdf';")   # Ask re-embeds it
+    sql = summaries.row_sql("AARO-x's.pdf", "A summary.", None)
+    assert sql == ("UPDATE record_text SET ai_summary='A summary.', ai_sections=NULL WHERE record_id='AARO-x''s.pdf';"
+                   "UPDATE text_index SET status='failed' WHERE record_id='AARO-x''s.pdf';")   # Ask re-embeds it
 
 def test_chat_body_disables_thinking(monkeypatch):
     seen = {}
@@ -43,3 +44,74 @@ def test_chat_body_disables_thinking(monkeypatch):
 def test_system_prompt_has_date_rules():
     s = summaries.SYSTEM
     assert "redacted" in s and "290141Z OCT25" in s and "29 October 2025" in s
+
+LONG = "The radar operator logged a contact over the base at night. " * 40   # 2,440 chars
+
+def test_sections_pack_pages_split_long_pages_and_skip_empty():
+    pages = [(1, "a" * 5000), (2, ""), (3, "b" * 5000), (4, "c" * 5000), (5, "d" * 30000)]
+    secs = summaries.sections(pages, size=12000)
+    assert [(s["from"], s["to"]) for s in secs] == [(1, 3), (4, 4), (5, 5), (5, 5), (5, 5)]
+    assert all(len(s["text"]) <= 12000 for s in secs)
+    assert summaries.sections([(1, "  "), (2, "")]) == []
+
+def test_page_label():
+    assert summaries.page_label(5, 5) == "p. 5"
+    assert summaries.page_label(5, 12) == "pp. 5\u201312"
+
+def _fake_chat(calls):
+    def chat(system, user, max_tokens=400, temperature=0.2):
+        calls.append((system, user))
+        if "pages contain" in system:
+            return "FBI memos about saucer reports near Seattle in 1952 and the follow-up interviews."
+        if "group of section summaries" in system:
+            return "Seattle-area saucer reports and interviews from the FBI field office."
+        return ("This is an FBI investigative file from 1952 about reports of flying objects over Washington State, "
+                "with witness interviews, memos between field offices and a summary of what each witness described.")
+    return chat
+
+def test_summarize_single_section_is_one_call_without_sections():
+    calls = []
+    summary, secs = summaries.summarize("T", [(1, LONG)], chat=_fake_chat(calls))
+    assert len(calls) == 1 and secs is None and summary.startswith("This is an FBI")
+
+def test_summarize_maps_then_reduces_and_returns_sections():
+    calls = []
+    pages = [(n, LONG) for n in range(1, 13)]                      # 12 x 2,440 chars -> 4 pages per 12k section
+    summary, secs = summaries.summarize("T", pages, chat=_fake_chat(calls))
+    assert [(s["from"], s["to"]) for s in secs] == [(1, 4), (5, 8), (9, 12)]
+    assert sum("pages contain" in c[0] for c in calls) == 3
+    assert "[pp. 1\u20134]" in calls[-1][1] and "FBI investigative file" in summary
+
+def test_summarize_reduces_in_layers_when_the_section_list_is_long(monkeypatch):
+    monkeypatch.setattr(summaries, "SECTION", 3000)                 # force many sections + a long list
+    calls = []
+    pages = [(n, LONG) for n in range(1, 81)]
+    summary, secs = summaries.summarize("T", pages, chat=_fake_chat(calls))
+    assert len(secs) == 80 and any("group of section summaries" in c[0] for c in calls)
+    assert len(calls[-1][1]) < 3000 + 500                           # final reduce input fits
+
+def test_summary_length_scales_with_page_count():
+    calls = []
+    summaries.summarize("T", [(n, "x y z " * 300) for n in range(1, 41)], chat=_fake_chat(calls))
+    assert "200 words" in calls[-1][0]
+    calls.clear()
+    summaries.summarize("T", [(1, LONG)], chat=_fake_chat(calls))
+    assert "120 words" in calls[-1][0]
+
+def test_summarize_raises_when_a_section_reply_is_junk():
+    def chat(system, user, **_):
+        return "" if "pages contain" in system else "fine " * 30
+    with pytest.raises(ValueError):
+        summaries.summarize("T", [(n, LONG) for n in range(1, 13)], chat=chat)
+
+def test_row_sql_stores_summary_and_sections_and_requeues_ask():
+    db = sqlite3.connect(":memory:")
+    db.executescript("CREATE TABLE record_text(record_id TEXT PRIMARY KEY, ai_summary TEXT, ai_sections TEXT);"
+                     "CREATE TABLE text_index(record_id TEXT PRIMARY KEY, status TEXT);"
+                     "INSERT INTO record_text VALUES('A''s',NULL,NULL); INSERT INTO text_index VALUES('A''s','indexed');")
+    db.executescript(summaries.row_sql("A's", "Sum.", [{"from": 1, "to": 2, "text": "x"}]))
+    assert db.execute("SELECT ai_summary, ai_sections FROM record_text").fetchone() == ("Sum.", '[{"from": 1, "to": 2, "text": "x"}]')
+    assert db.execute("SELECT status FROM text_index").fetchone() == ("failed",)
+
+def test_select_picks_long_files_without_sections():
+    assert "ai_sections IS NULL" in summaries.SELECT and "record_ocr" in summaries.SELECT

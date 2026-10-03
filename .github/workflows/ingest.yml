@@ -115,7 +115,7 @@ jobs:
         run: |
           set -o pipefail
           if [ "$LIVE" = "true" ]; then
-            python -m ingest.summaries --limit 50 | tee -a ingest-summary.txt
+            python -m ingest.summaries --limit 50 --workers 4 | tee -a ingest-summary.txt
           else
             python -m ingest.summaries --dry-run --limit 1 | tee -a ingest-summary.txt
           fi
