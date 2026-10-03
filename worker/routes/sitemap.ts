@@ -51,7 +51,7 @@ export async function sitemap(req: Request, env: Env) {
     `<url><loc>${origin}${path}</loc>${d ? `<lastmod>${d}</lastmod>` : ""}${extra}</url>`;
   const e = encodeURIComponent; // also encodes & < > so no XML escaping needed
   const urls = [
-    ...["/", "/archive", "/boards", "/cases", "/map", "/browse", "/privacy", "/terms"].map((p) => loc(p)),
+    ...["/", "/archive", "/boards", "/cases", "/map", "/browse", "/releases", "/privacy", "/terms"].map((p) => loc(p)),
     ...records.results.map((r) => loc(`/doc/${e(r.id)}`, r.d, media(r))),
     ...threads.results.map((t) => loc(`/thread/${e(t.id)}`, t.d)),
     ...boards.results.map((b) => loc(boardHref(b.id))), // slug is "/uap/"; the URL is /board/uap

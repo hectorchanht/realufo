@@ -38,6 +38,7 @@ export async function llms(req: Request, env: Env) {
     "",
     link("Archive", "/archive", "search and filter every file"),
     link("Browse", "/browse", "files grouped by release, agency, location and decade"),
+    link("Release tracker", "/releases", "every Pentagon UFO file release, the gaps between them and the next-release estimate"),
     link("Sighting map", "/map"),
     link("Cold cases", "/cases", "famous cases and their records"),
     link("Boards", "/boards", "anonymous discussion; user posts, not official records"),

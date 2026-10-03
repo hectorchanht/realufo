@@ -12,6 +12,7 @@ describe("sitemap", () => {
     const xml = await res.text();
     expect(xml).toMatch(/^<\?xml/);
     expect(xml).toContain("<loc>https://realufo.org/archive</loc>");
+    expect(xml).toContain("<loc>https://realufo.org/releases</loc>");
     expect(xml).toMatch(/<loc>https:\/\/realufo\.org\/doc\/[^<]+<\/loc><lastmod>\d{4}-\d\d-\d\d<\/lastmod>/);
     expect(xml).toContain("/thread/");
     expect(xml).toContain("/board/uap</loc>");

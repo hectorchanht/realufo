@@ -19,6 +19,8 @@ export interface MetaInput {
   jsonLd?: Record<string, unknown>;
   // Emitted as a BreadcrumbList; hrefs are resolved against url.
   breadcrumbs?: { name: string; href: string }[];
+  // Emitted as a FAQPage (data-written Q&A only).
+  faq?: { q: string; a: string }[];
   // e.g. "noindex" for pages whose content (AI answers) must not be indexed.
   robots?: string;
   // Share-preview text (og:description) when it should differ from the search
@@ -65,6 +67,12 @@ export function injectMeta(html: string, m: MetaInput): string {
         itemListElement: m.breadcrumbs.map((b, i) => ({
           "@type": "ListItem", position: i + 1, name: b.name, item: new URL(b.href, m.url).href,
         })),
+      }),
+    m.faq?.length &&
+      ldScript({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: m.faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
       }),
   ]
     .filter(Boolean)

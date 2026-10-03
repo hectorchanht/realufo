@@ -7,14 +7,16 @@ import { loadHub, listHubsCached } from "../routes/hubs";
 import type { HubKind } from "./hubs";
 import {
   DEFAULT_DESCRIPTION, type DocData, type Link, docBody, docFooter, threadBody, boardBody, caseBody, homeBody, tabBody,
-  section, docLinks, countList, docTitle, boardHref, docHref, hubBody, browseBody, hubHref, docMoments, snippet, askBody, distinctSummary,
+  section, docLinks, countList, docTitle, boardHref, docHref, hubBody, browseBody, hubHref, docMoments, snippet, askBody, distinctSummary, releasesBody,
 } from "./ssr";
 import { loadSharedAsk } from "../routes/ask";
 import { askHref, askIdOf } from "./ask";
 import { PRIVACY_HTML } from "./privacy";
 import { TERMS_HTML } from "./terms";
 import { SOCIAL_PROFILES } from "./profiles";
-import { MAP_INTRO } from "./shared";
+import { MAP_INTRO, RELEASES_DESCRIPTION, RELEASES_TITLE } from "./shared";
+import { trackerData } from "../routes/releases";
+import { agencyList, longDate } from "./releases";
 
 // One SPA route's pre-render: <head> meta (url is filled in by serveWithMeta)
 // and the HTML that goes inside #root. A loader returns null when the entity
@@ -325,7 +327,7 @@ const hubPage =
     return {
       meta: {
         title: h.title,
-        description: h.intro,
+        description: h.release ? `${h.intro} Agencies: ${agencyList(h.release.info, 3)}.` : h.intro,
         image: (h.records.find((r) => r.thumb)?.thumb as string | undefined) ?? null,
         type: "website",
         jsonLd: {
@@ -343,6 +345,7 @@ const hubPage =
           { name: "Browse", href: "/browse" },
           { name: h.title, href: hubHref(kind, h.slug) },
         ],
+        faq: h.release?.faq,
       },
       body: hubBody(h),
     };
@@ -356,6 +359,44 @@ const browsePage: Loader = async (env, _g, url) => ({
   },
   body: browseBody(await listHubsCached(env, url.origin)),
 });
+
+const releasesPage: Loader = async (env, _g, url) => {
+  const meta = { title: RELEASES_TITLE, description: RELEASES_DESCRIPTION, type: "website" as const };
+  let d;
+  try {
+    d = await trackerData(env, url.origin);
+  } catch (e) {
+    console.error("release tracker failed", e);
+    return { meta, body: tabBody(RELEASES_TITLE, RELEASES_DESCRIPTION) };
+  }
+  const last = d.series[d.series.length - 1];
+  return {
+    meta: {
+      ...meta,
+      description: last
+        ? `${d.series.length} Pentagon UFO file releases so far (${d.series.reduce((n, r) => n + r.files, 0)} files), the latest on ${last.weekday} ${longDate(last.date)}. ${d.status.headline}`
+        : RELEASES_DESCRIPTION,
+      jsonLd: {
+        "@type": "CollectionPage",
+        name: RELEASES_TITLE,
+        mainEntity: {
+          "@type": "ItemList",
+          numberOfItems: d.series.length,
+          itemListElement: d.series.map((r, i) => ({
+            "@type": "ListItem", position: i + 1, url: `${url.origin}${hubHref("release", String(r.no))}`, name: `Release ${String(r.no).padStart(2, "0")}`,
+          })),
+        },
+      },
+      faq: d.faq,
+      breadcrumbs: [
+        { name: "Home", href: "/" },
+        { name: "Browse", href: "/browse" },
+        { name: "Release tracker", href: "/releases" },
+      ],
+    },
+    body: releasesBody(d),
+  };
+};
 
 const privacyPage: Loader = async () => ({
   meta: { title: "Privacy", description: "What RealUFO stores: a hashed anonymous browser id, hashed IPs for rate limits, and what you choose to post.", type: "website" },
@@ -375,6 +416,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/ask" }), load: askPage },
   { pattern: new URLPattern({ pathname: "/ask/:id" }), load: sharedAskPage },
   { pattern: new URLPattern({ pathname: "/browse" }), load: browsePage },
+  { pattern: new URLPattern({ pathname: "/releases" }), load: releasesPage },
   { pattern: new URLPattern({ pathname: "/privacy" }), load: privacyPage },
   { pattern: new URLPattern({ pathname: "/terms" }), load: termsPage },
   { pattern: new URLPattern({ pathname: "/release/:slug" }), load: hubPage("release") },

@@ -6,3 +6,7 @@ export const caseStoryUrl = (slug: string) => `https://release.realufo.org/stori
 
 export const MAP_INTRO =
   "Each dot is a place a declassified file names, sized by how many files mention it. Open a place to see its files, or browse the places below.";
+
+export const RELEASES_TITLE = "Pentagon UFO File Releases: Dates, Schedule & Next Release";
+export const RELEASES_DESCRIPTION =
+  "Every Pentagon UFO file release so far: dates, file counts, gaps between drops and when the next release is likely.";

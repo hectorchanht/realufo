@@ -601,3 +601,61 @@ describe("shared Ask answer pages", () => {
     expect((await get("/ask")).html).toContain('<meta name="robots" content="noindex">');
   });
 });
+
+describe("release tracker pages (crawler HTML)", () => {
+  // Own shell with #root: the body pre-render is injected there.
+  const fakeAssets = {
+    fetch: async () =>
+      new Response('<html><head><!--META--></head><body><div id="root"></div></body></html>', { headers: { "content-type": "text/html" } }),
+  };
+  const get = async (path: string, over: Record<string, unknown> = {}) => {
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(new Request("https://x" + path, { headers: { accept: "text/html" } }), { ...env, ASSETS: fakeAssets, ...over } as any, ctx);
+    await waitOnExecutionContext(ctx);
+    return res.text();
+  };
+
+  it("/releases has the status, table, FAQ and FAQPage JSON-LD", async () => {
+    const html = await get("/releases");
+    expect(html).toContain("<title>Pentagon UFO File Releases: Dates, Schedule &amp; Next Release · RealUFO</title>");
+    expect(html).toContain("<h1>Pentagon UFO File Releases: Dates, Schedule &amp; Next Release</h1>");
+    expect(html).toMatch(/Release 03/);
+    expect(html).toContain('<a href="/release/2">Release 02</a>');
+    expect(html).toContain("<h2>FAQ</h2>");
+    expect(html).toContain('"@type":"FAQPage"');
+    expect(html).toContain('"@type":"CollectionPage"');
+  });
+
+  it("/releases falls back to the plain title when D1 fails", async () => {
+    // Own origin: the page memo and the series memo are keyed by origin, so a
+    // cached result from the test above can't mask the failure.
+    const broken = { prepare: () => { throw new Error("D1 down"); } };
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(
+      new Request("https://broken.test/releases", { headers: { accept: "text/html" } }),
+      { ...env, ASSETS: fakeAssets, DB: broken } as any, ctx
+    );
+    await waitOnExecutionContext(ctx);
+    const html = await res.text();
+    expect(res.status).toBe(200);
+    expect(html).toContain("<h1>Pentagon UFO File Releases: Dates, Schedule &amp; Next Release</h1>");
+    expect(html).not.toContain("FAQPage");
+  });
+
+  it("/release/2 has what's new, dated prev link, tracker link and FAQ", async () => {
+    const html = await get("/release/2");
+    expect(html).toContain("<h1>Pentagon UFO Files Release 02 (12 Jun 2026): 8 Files</h1>");
+    expect(html).toContain("<h2>What's new in Release 02</h2>");
+    expect(html).toContain("8 files, −4 on Release 01");
+    expect(html).toContain("First release with files from FBI, CIA and IC");
+    expect(html).toContain('<a href="/release/1">← Release 01 (8 May)</a>');
+    expect(html).toContain('<a href="/releases">');
+    expect(html).toContain('"@type":"FAQPage"');
+  });
+
+  it("agency hubs get no FAQ JSON-LD", async () => {
+    const html = await get("/agency/fbi");
+    expect(html).not.toContain('"@type":"FAQPage"');
+    expect(html).not.toContain("What's new in");
+  });
+});

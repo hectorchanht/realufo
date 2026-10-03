@@ -5,7 +5,8 @@
 // esc(): thread bodies and handles are anonymous user input.
 
 import { parseAiMoments, parseKeyMoments, type KeyMoment } from "../../web/src/lib/keyMoments";
-import { caseStoryUrl } from "./shared";
+import { caseStoryUrl, RELEASES_TITLE } from "./shared";
+import { agencyList, longDate, pad2, shortDate, type FaqItem, type ReleaseBlock, type TrackerData } from "./releases";
 import { sourceLinks } from "../../web/src/lib/sourceLinks";
 
 // Same copy as the default block in web/index.html.
@@ -101,6 +102,7 @@ export type HubPageData = {
   kind: string; title: string; intro: string; records: RecordLink[]; siblings: HubLinkData[];
   prev?: string | null; next?: string | null;
   highlights?: { lede: string; picks: { id: string; why: string; title: string; kind?: string }[] } | null;
+  release?: ReleaseBlock | null;
 };
 
 const highlightsHtml = (h: HubPageData["highlights"]) =>
@@ -110,18 +112,72 @@ const highlightsHtml = (h: HubPageData["highlights"]) =>
         .join("")}</ol><p><small>AI-written from the file summaries</small></p></section>`
     : "";
 
-export function hubBody(h: HubPageData): string {
-  const nav = [
-    h.prev && a({ href: hubHref("release", h.prev), text: `← Release ${h.prev.padStart(2, "0")}` }),
-    h.next && a({ href: hubHref("release", h.next), text: `Release ${h.next.padStart(2, "0")} →` }),
+export const faqHtml = (items: FaqItem[]) =>
+  items.length
+    ? `<section><h2>FAQ</h2>${items
+        .map((f) => `<h3>${esc(f.q)}</h3><p>${esc(f.a)}${f.link ? ` ${a(f.link)}` : ""}</p>`)
+        .join("")}</section>`
+    : "";
+
+const releaseNav = (b: ReleaseBlock) =>
+  [
+    b.prev && a({ href: hubHref("release", String(b.prev.no)), text: `← Release ${pad2(b.prev.no)} (${shortDate(b.prev.date).slice(4)})` }),
+    b.next && a({ href: hubHref("release", String(b.next.no)), text: `Release ${pad2(b.next.no)} (${shortDate(b.next.date).slice(4)}) →` }),
+    b.upcoming && a({ href: "/releases", text: `${b.upcoming} →` }),
   ].filter(Boolean);
+
+const listAnd = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
+
+export const releaseBlockHtml = (b: ReleaseBlock) => {
+  const items = [
+    esc(b.size),
+    b.info.agencies
+      .map((g) => (g.slug ? a({ href: hubHref("agency", g.slug), text: `${g.label} ${g.count}` }) : esc(`${g.label} ${g.count}`)))
+      .join(" · "),
+    esc(b.kinds),
+    b.info.newAgencies.length ? esc(`First release with files from ${listAnd(b.info.newAgencies)}`) : "",
+  ].filter(Boolean);
+  return `<section><h2>What's new in Release ${pad2(b.info.no)}</h2><ul>${items.map((i) => `<li>${i}</li>`).join("")}</ul></section>`;
+};
+
+export function releasesBody(d: TrackerData): string {
+  const total = d.series.reduce((n, r) => n + r.files, 0);
+  const rows = [...d.series]
+    .reverse()
+    .map((r) => `<tr><td>${a({ href: hubHref("release", String(r.no)), text: `Release ${pad2(r.no)}` })}</td><td>${esc(`${r.weekday}, ${longDate(r.date)}`)}</td><td>${r.files}</td><td>${r.gap ?? "—"}</td><td>${esc(agencyList(r, 3))}</td></tr>`)
+    .join("");
+  const facts = [
+    `${d.series.length} releases, ${total} files`,
+    d.window && `Median gap: ${d.window.medianGap} days`,
+    d.window?.sameWeekday && `Every release so far landed on a ${d.window.sameWeekday}`,
+  ].filter(Boolean) as string[];
+  return [
+    `<h1>${esc(RELEASES_TITLE)}</h1>`,
+    `<p><strong>${esc(d.status.headline)}</strong></p>`,
+    d.status.basis ? `<p>${esc(d.status.basis)}</p>` : "",
+    `<ul>${facts.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>`,
+    `<table><thead><tr><th>Release</th><th>Date</th><th>Files</th><th>Gap (days)</th><th>Agencies</th></tr></thead><tbody>${rows}</tbody></table>`,
+    faqHtml(d.faq),
+  ].join("");
+}
+
+export function hubBody(h: HubPageData): string {
+  const nav = h.release
+    ? releaseNav(h.release)
+    : [
+        h.prev && a({ href: hubHref("release", h.prev), text: `← Release ${h.prev.padStart(2, "0")}` }),
+        h.next && a({ href: hubHref("release", h.next), text: `Release ${h.next.padStart(2, "0")} →` }),
+      ].filter(Boolean);
   return [
     `<p>${a({ href: "/browse", text: "Browse" })} › ${esc(KIND_HEADING[h.kind] ?? "")}</p>`,
     `<h1>${esc(h.title)}</h1>`,
     paras(h.intro),
+    h.release ? releaseBlockHtml(h.release) : "",
     highlightsHtml(h.highlights),
     nav.length ? `<p>${nav.join(" · ")}</p>` : "",
+    h.release ? `<p>${a({ href: "/releases", text: "All releases & next-release estimate" })}</p>` : "",
     section(`Files (${h.records.length})`, docLinks(h.records)),
+    h.release ? faqHtml(h.release.faq) : "",
     section(`More ${(KIND_HEADING[h.kind] ?? "hubs").toLowerCase()}`, hubLinks(h.siblings)),
   ].join("");
 }
@@ -130,6 +186,7 @@ export const browseBody = (hubs: HubLinkData[]) =>
   tabBody(
     "Browse the archive",
     "Every declassified UAP file, grouped by release, agency, location and decade.",
+    `<p>${a({ href: "/releases", text: "Release tracker: dates, schedule and next release" })}</p>`,
     ...["release", "agency", "location", "decade"].map((k) => section(KIND_HEADING[k], hubLinks(hubs.filter((h) => h.kind === k))))
   );
 
