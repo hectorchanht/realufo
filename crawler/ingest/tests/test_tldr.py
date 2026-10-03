@@ -166,3 +166,23 @@ def test_generate_defaults_to_gpt_oss(monkeypatch):
     monkeypatch.setattr(tldr.cfapi, "respond", lambda instructions, text: seen.append((instructions, text)) or json.dumps(GOOD))
     assert tldr.generate(ROW) == GOOD
     assert seen and seen[0][0] == tldr.SYSTEM and "/no_think" not in seen[0][1]
+
+def test_check_rejects_coffee_unless_in_source():
+    o = {**GOOD, "one_liner": "The object never got its coffee break."}
+    assert "coffee" in tldr.check(o, tldr.build_input(ROW))
+    assert "coffee" not in (tldr.check(o, tldr.build_input({**ROW, "summary": ROW["summary"] + " Staff took a coffee break."})) or "")
+
+def test_repeats_finds_shared_phrase():
+    recent = ["Only 34 seconds of footage, but enough to fill a form."]
+    assert tldr.repeats("Only 34 seconds of footage and the radar blinked.", recent) in {"only 34 seconds of", "34 seconds of footage"}
+    assert tldr.repeats("The orbs toured the backyard in 49 seconds.", recent) is None
+    assert tldr.repeats("anything", []) is None
+
+def test_generate_retries_on_repeated_phrase():
+    replies = [json.dumps(GOOD), json.dumps({**GOOD, "one_liner": "Navy jets, one object, no follow-up."})]
+    calls = []
+    def fake(system, user, **k):
+        calls.append(user)
+        return replies[len(calls) - 1]
+    out = tldr.generate(ROW, chat=fake, recent=[GOOD["one_liner"]])
+    assert out["one_liner"] == "Navy jets, one object, no follow-up." and "reused" in calls[1]

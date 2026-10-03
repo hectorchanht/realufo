@@ -19,6 +19,7 @@ LANG = "en"
 INPUT_CAP = 4000
 BULLET_WORDS, LINER_WORDS = 18, 15
 FLUSH_EVERY = 25
+RECENT = 20  # jokes compared for reused phrases
 SELECT = """SELECT r.id, r.title, r.agency, r.kind, r.incident_date, r.location, r.summary, r.ai_moments,
   t.ai_summary, (SELECT duration FROM assets a WHERE a.record_id=r.id AND a.role='full' LIMIT 1) duration,
   x.input_hash
@@ -44,7 +45,9 @@ WORDNUM = {"two": "2", "three": "3", "four": "4", "five": "5", "six": "6", "seve
            "nineteen": "19", "twenty": "20", "thirty": "30", "forty": "40", "fifty": "50", "sixty": "60",
            "seventy": "70", "eighty": "80", "ninety": "90", "dozen": "12", "hundred": "100", "thousand": "1000"}
 BANNED = re.compile(r"\b(aliens?|extraterrestrials?|confirmed|proof|hoax"
-                    r"|weather balloon|drones?|balloons?|birds?|stars?|planes?|satellites?|spaceships?|kites?)\b", re.I)
+                    r"|weather balloon|drones?|balloons?|birds?|stars?|planes?|satellites?|spaceships?|kites?"
+                    # dry-run crutch: "coffee break" on 3 of 10 files that never mention coffee
+                    r"|coffee)\b", re.I)
 # Openers the model leans on for every file ("Paperwork so thick…" on 3 of 10 in the dry run).
 CRUTCH = re.compile(r"^(?:the\s+)?(?:paperwork|bureaucracy)\b", re.I)
 LINKY = re.compile(r"https?://|www\.|\b[\w-]+\.(?:com|org|gov|mil|net|io)\b|[<>\[\]@]", re.I)
@@ -153,7 +156,17 @@ def _respond(system: str, user: str, **_) -> str | None:
     # gpt-oss: funnier and more exact than qwen3 (dry run 2026-10-03: 10/10 vs 8/10 passed check()).
     return cfapi.respond(system, user)
 
-def generate(row: dict, chat=_respond) -> dict:
+_WORDS = re.compile(r"[a-z0-9']+")
+
+def repeats(joke: str, recent) -> str | None:
+    """A 4-word phrase this joke shares with a recent one, or None."""
+    def grams(t):
+        w = _WORDS.findall(t.lower())
+        return {" ".join(w[i:i + 4]) for i in range(len(w) - 3)}
+    seen = set().union(*(grams(r) for r in recent)) if recent else set()
+    return next((g for g in sorted(grams(joke)) if g in seen), None)
+
+def generate(row: dict, chat=_respond, recent=()) -> dict:
     src = build_input(row)
     user = f"File data:\n<<<\n{src}\n>>>"
     why = None
@@ -161,6 +174,8 @@ def generate(row: dict, chat=_respond) -> dict:
         retry = f"\nYour last reply was rejected: {why}. Fix that." if why else ""
         t = normalize(parse_reply(chat(SYSTEM, user + retry, max_tokens=300, temperature=0.7)))
         why = "reply was not the JSON shape asked for" if t is None else check(t, src)
+        if not why and (g := repeats(t["one_liner"], recent)):
+            why = f'the joke reused "{g}" from another file; write a different joke'
         if not why:
             return t
     raise ValueError(why)
@@ -186,15 +201,19 @@ def main(argv=None):
     ids = f" AND r.id IN ({','.join(d1.sql_q(i) for i in args.ids)})" if args.ids else ""
     rows = todo(d1._d1_json(" ".join(SELECT.format(ids=ids).split())), args.force, args.limit)
     pending, ok, failed = [], 0, 0
+    # Daily runs compare against the newest stored jokes too, not just this run's.
+    recent = [r["one_liner"] for r in reversed(d1._d1_json(
+        f"SELECT one_liner FROM record_tldr WHERE lang='{LANG}' ORDER BY generated_at DESC LIMIT {RECENT}"))]
     with tempfile.TemporaryDirectory() as work:
         for i, row in enumerate(rows, 1):
             try:
-                t = generate(row)
+                t = generate(row, recent=recent[-RECENT:])
             except Exception as e:
                 failed += 1
                 print(f"[{i}/{len(rows)}] FAIL {row['id']}: {e}")
                 continue
             ok += 1
+            recent.append(t["one_liner"])
             print(f"[{i}/{len(rows)}] ok   {row['id']}")
             if args.dry_run:
                 print(f"    “{t['one_liner']}”\n" + "\n".join(f"    • {b}" for b in t["bullets"]))
