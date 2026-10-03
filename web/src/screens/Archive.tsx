@@ -258,6 +258,7 @@ const SORTS = [
   { value: "new", label: "Newest added" },
   { value: "old", label: "Oldest incident" },
   { value: "recent", label: "Newest incident" },
+  { value: "release", label: "Newest release" },
   { value: "az", label: "Title A–Z" },
 ];
 
@@ -366,6 +367,7 @@ export function Archive() {
 
   const archives = boot?.archives ?? [];
   const flags = facets?.flags;
+  const kindCount = (k: string) => facets?.kinds?.find((x) => x.name === k)?.count;
 
   // One removable pill per active filter, in the order the controls appear.
   type Pill = { label: string; remove: Record<string, string | null> };
@@ -486,18 +488,14 @@ export function Archive() {
       {/* type chips */}
       <div className="mb-1.5 px-0.5 py-1">
         <div className="flex gap-1.5">
-          <TypeChip selected={type === ""} style={typeChipStyle(type === "")} onClick={() => setParam("type", null)}>
-            All
-          </TypeChip>
-          <TypeChip selected={type === "pdf"} style={typeChipStyle(type === "pdf")} onClick={() => setParam("type", "pdf")}>
-            Docs
-          </TypeChip>
-          <TypeChip selected={type === "video"} style={typeChipStyle(type === "video")} onClick={() => setParam("type", "video")}>
-            Video
-          </TypeChip>
-          <TypeChip selected={type === "image"} style={typeChipStyle(type === "image")} onClick={() => setParam("type", "image")}>
-            Images
-          </TypeChip>
+          {["", ...Object.keys(TYPE_LABELS)].map((k) => {
+            const n = k ? kindCount(k) : totalRecords;
+            return (
+              <TypeChip key={k} selected={type === k} style={typeChipStyle(type === k)} onClick={() => setParam("type", k || null)}>
+                {TYPE_LABELS[k] ?? "All"} {n != null && <span className="opacity-60">{abbreviateCount(n)}</span>}
+              </TypeChip>
+            );
+          })}
         </div>
       </div>
 

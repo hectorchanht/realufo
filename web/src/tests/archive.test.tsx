@@ -77,6 +77,7 @@ const mockFacets: RecordFacets = {
     { no: 1, date: "2026-05-08", count: 158 },
     { no: 2, date: "2026-05-22", count: 64 },
   ],
+  kinds: [{ name: "pdf", count: 391 }, { name: "video", count: 165 }],
   agencies: [{ name: "FBI", count: 11 }],
   decades: [{ decade: 1950, count: 40 }],
   locations: [{ name: "Harare, Zimbabwe", count: 1 }],
@@ -216,7 +217,7 @@ describe("Archive", () => {
     await waitFor(() => expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 960 })));
     expect(screen.getByRole("button", { name: /next/ })).toBeDisabled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Docs" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Docs/ }));
     await waitFor(() =>
       expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ type: "pdf", offset: 0 })),
     );

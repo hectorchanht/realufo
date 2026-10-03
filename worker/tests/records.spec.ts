@@ -149,6 +149,11 @@ describe("records", () => {
     expect(await ids("location=Facville&agency=FACAG&archive=wargov")).toEqual(["FAC-1", "FAC-2"]);
     expect(await ids("decade=1940")).toEqual(["FAC-1", "FAC-2"]);
     expect(await ids("decade=1950")).toEqual(["FAC-3", "FAC-4"]);
+    const sorted = ((await (await get("/api/records?agency=FACAG&sort=release&limit=100")).json()) as any).records.map((r: any) => r.id);
+    expect(sorted).toEqual(["FAC-1", "FAC-2", "FAC-4"]); // release rank, nara last
+    const all = ((await (await get("/api/records?sort=release&limit=100")).json()) as any).records.map((r: any) => r.id);
+    expect(all.indexOf("FAC-3")).toBeLessThan(all.indexOf("FAC-1")); // 2/1/90 is the newer release
+    expect(facets.kinds.find((k: any) => k.name === "pdf").count).toBeGreaterThanOrEqual(4);
     expect(facets.agencies.find((a: any) => a.name === "FACAG").count).toBe(3);
     expect(facets.locations.find((l: any) => l.name === "Facville").count).toBe(3);
     expect(facets.locations.some((l: any) => l.name === "N/A" || l.name === "")).toBe(false);

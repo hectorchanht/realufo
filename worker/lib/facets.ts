@@ -50,8 +50,9 @@ export async function facetCounts(env: Env) {
       `SELECT ${col} name, count(*) count FROM records WHERE ${col} IS NOT NULL AND trim(${col}) NOT IN ('','N/A')
        GROUP BY ${col} ORDER BY count DESC, name`
     ).all<{ name: string; count: number }>();
-  const [releases, agencies, locations, dates, flags] = await Promise.all([
+  const [releases, kinds, agencies, locations, dates, flags] = await Promise.all([
     wargovReleases(env),
+    groupBy("kind"),
     groupBy("agency"),
     groupBy("location"),
     env.DB.prepare("SELECT incident_date d, count(*) n FROM records GROUP BY incident_date").all<{ d: string | null; n: number }>(),
@@ -68,6 +69,7 @@ export async function facetCounts(env: Env) {
   }
   return {
     releases,
+    kinds: kinds.results,
     agencies: agencies.results,
     locations: locations.results,
     decades: [...decades].sort(([a], [b]) => a - b).map(([decade, count]) => ({ decade, count })),

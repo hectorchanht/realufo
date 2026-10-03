@@ -89,6 +89,12 @@ export async function listRecords(req: Request, env: Env) {
   const joinBind: unknown[] = [];
   if (sort === "new") order = "r.created_at DESC";
   else if (sort === "az") order = "lower(r.title), r.id";
+  else if (sort === "release") {
+    // Newest war.gov release first ({doc_date: release no}); other archives last.
+    join = "LEFT JOIN json_each(?) rl ON r.archive = 'wargov' AND rl.key = r.doc_date";
+    joinBind.push(JSON.stringify(Object.fromEntries((await wargovReleases(env)).flatMap((r) => r.raw.map((d) => [d, r.no])))));
+    order = "rl.value IS NULL, rl.value DESC, r.id";
+  }
   else if (sort === "old" || sort === "recent") {
     // Free-text incident dates → a {date: year} map; undated records go last.
     const rows = await env.DB.prepare("SELECT DISTINCT incident_date d FROM records WHERE incident_date IS NOT NULL").all<{ d: string }>();
@@ -222,6 +228,7 @@ export async function recordFacets(_req: Request, env: Env) {
   const f = await facetCounts(env);
   return json({
     releases: f.releases.map(({ no, date, count }) => ({ no, date, count })),
+    kinds: f.kinds,
     agencies: f.agencies,
     decades: f.decades,
     locations: f.locations,

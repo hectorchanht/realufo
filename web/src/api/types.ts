@@ -159,6 +159,8 @@ export interface RecordsListResponse {
 /** GET /api/records/facets — archive filter options with global counts. */
 export interface RecordFacets {
   releases: { no: number; date: string; count: number }[];
+  /** Per records.kind ("pdf", "video", "image"). */
+  kinds: { name: string; count: number }[];
   agencies: { name: string; count: number }[];
   decades: { decade: number; count: number }[];
   locations: { name: string; count: number }[];
