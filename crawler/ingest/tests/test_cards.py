@@ -67,3 +67,16 @@ def test_card_key_and_url_encode_ids_with_spaces():
     key = cards.card_key("SP ACE-1", "abcdef0123456789")
     assert key == "cards/SP ACE-1-en-abcdef01.png"
     assert cards.card_url(key) == "https://assets.realufo.org/cards/SP%20ACE-1-en-abcdef01.png"
+
+LONG_ID = "AARO-AARO_GoFast_Case_Resolution_Card_Methodology_Final.pdf"
+
+def test_long_id_kicker_and_footer_are_clipped():
+    d = ImageDraw.Draw(Image.new("RGB", (10, 10)))
+    for has_thumb in (True, False):
+        L = cards.layout(d, LONG_ID, has_thumb)
+        assert d.textlength(L["kicker"], font=L["kf"]) <= L["width"]
+        assert L["footer_x"] + d.textlength(L["footer"], font=L["mf"]) <= L["tldr_x"] - 24
+        assert L["footer"].startswith("realufo.org/doc/AARO")
+        cards.render(T, LONG_ID, Image.new("RGB", (640, 360)) if has_thumb else None)
+    short = cards.layout(d, "DOW-UAP-D084", True)
+    assert short["kicker"] == "DOW-UAP-D084" and short["footer"] == "realufo.org/doc/DOW-UAP-D084"

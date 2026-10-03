@@ -73,16 +73,27 @@ def cover(img, w: int, h: int):
     x, y = (img.width - w) // 2, (img.height - h) // 2
     return img.crop((x, y, x + w, y + h))
 
+def one_line(d, text: str, f, width: int) -> str:
+    return clip_lines(d, wrap(d, text, f, width), f, width, 1)[0]
+
+def layout(d, rid: str, has_thumb: bool) -> dict:
+    """Column + id strings, clipped so long AARO ids never run off the card or under "TL;DR"."""
+    x0, width = (568, W - 568 - 56) if has_thumb else (64, W - 128)
+    kf, mf = font(MONO, 24, 600), font(MONO, 20, 500)
+    tldr_x = W - 56 - d.textlength("TL;DR", font=mf)
+    return {"x0": x0, "width": width, "kf": kf, "mf": mf, "tldr_x": tldr_x, "footer_x": x0,
+            "kicker": one_line(d, rid, kf, width),
+            "footer": one_line(d, f"realufo.org/doc/{rid}", mf, int(tldr_x - 24 - x0))}
+
 def render(t: dict, rid: str, thumb) -> Image.Image:
     img = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(img)
     if thumb is not None:
         img.paste(cover(thumb.convert("RGB"), 520, H), (0, 0))
-        x0, width = 568, W - 568 - 56
-    else:
-        x0, width = 64, W - 128
+    L = layout(d, rid, thumb is not None)
+    x0, width = L["x0"], L["width"]
     y = 52
-    d.text((x0, y), rid, font=font(MONO, 24, 600), fill=SIGNAL)
+    d.text((x0, y), L["kicker"], font=L["kf"], fill=SIGNAL)
     y += 48
     f, lines = fit(d, f"“{t['one_liner']}”", width)
     for line in lines:
@@ -97,9 +108,8 @@ def render(t: dict, rid: str, thumb) -> Image.Image:
             d.text((x0 + 28, y), line, font=bf, fill=DIM)
             y += 28
         y += 4
-    mf = font(MONO, 20, 500)
-    d.text((x0, H - 56), f"realufo.org/doc/{rid}", font=mf, fill=DIM)
-    d.text((W - 56 - d.textlength("TL;DR", font=mf), H - 56), "TL;DR", font=mf, fill=SIGNAL)
+    d.text((L["footer_x"], H - 56), L["footer"], font=L["mf"], fill=DIM)
+    d.text((L["tldr_x"], H - 56), "TL;DR", font=L["mf"], fill=SIGNAL)
     return img
 
 def fetch_thumb(url):
