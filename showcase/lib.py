@@ -46,6 +46,13 @@ class Cut:
         subprocess.run([FFMPEG, "-v", "error", "-y", *inputs, *SILENT, "-vf", vf, "-map", "0:v", "-map", "1:a",
                         "-t", str(seconds), *ENC, out], check=True)
         self.segs.append(out)
+    def seg_fc(self, inputs, fc, seconds):
+        """Like seg, but a -filter_complex over several inputs that ends in [v]."""
+        out = os.path.join(TMP, f"s{len(self.segs)}.mp4")
+        n = sum(1 for x in inputs if x == "-i")
+        subprocess.run([FFMPEG, "-v", "error", "-y", *inputs, *SILENT, "-filter_complex", fc, "-map", "[v]", "-map", f"{n}:a",
+                        "-t", str(seconds), *ENC, out], check=True)
+        self.segs.append(out)
     def save(self, out):
         lst = os.path.join(TMP, "list.txt")
         open(lst, "w").write("".join(f"file '{s}'\n" for s in self.segs))

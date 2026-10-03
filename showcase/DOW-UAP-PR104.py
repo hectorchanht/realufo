@@ -1,36 +1,46 @@
-"""Showcase Short for DOW-UAP-PR104 (Unresolved UAP Report, Yellow Sea, 2025): a black-hot IR
-"six-pointed star", explained with the site's filters and the physics. Beats: original → Invert IR
-(black-hot = darker is hotter) → + Ironbow (one tiny, very hot core = the optics' point-spread
-function) → why six points (diffraction spikes from the camera's own aperture/struts) → spike angles
-never change (camera, not craft?) → "Object or optics?" end card with a deep link that opens the doc
-page with the same filters. Official status: unresolved, so the copy says "consistent with", not
-"is". Square crop on the star (the sensor keeps it centred). 9:16, ~23 s.
+"""Showcase Short "Two stars, 12 years apart": DOW-UAP-PR104 (Yellow Sea, 2025, a black-hot IR
+"six-pointed star") next to DOW-UAP-PR038 (Middle East, 2013, an "eight-pointed star with arms of
+alternating length"). Same kind of craft? Then why different shapes? Diffraction spikes are drawn by
+the camera's optics (aperture edges / mirror struts), so different sensors draw different stars.
+Both are officially unresolved, so the copy says "object or optics?", not "it's optics".
+Filters = the site's Invert IR + Ironbow; the end card points at both doc pages. 9:16, ~21 s.
 
     FFMPEG=/path/to/ffmpeg-with-drawtext CLIP_FONT=/path/Bold.ttf python3 showcase/DOW-UAP-PR104.py
 """
-import os
-from lib import Cut, txt, SITE, IRONBOW
+import os, subprocess
+from lib import Cut, txt, SITE, IRONBOW, FFMPEG, TMP
 
-U = "https://assets.realufo.org/videos/wargov/DOD_111830027.mp4"  # 1920x1080, 30 fps, 15.67 s
+PR104 = "https://assets.realufo.org/videos/wargov/DOD_111830027.mp4"  # 1920x1080, star centred ~(930,460)
+PR038 = "https://assets.realufo.org/videos/wargov/DOD_111689051.mp4"  # 1920x1080 (4:3 + bars), star ~(1364,508) at 25.5 s
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "DOW-UAP-PR104.mp4")
-CROP = "crop=1080:1080:400:0"  # star sits ~(940,470) in 1920x1080; the sensor keeps it centred
-PAD = "pad=1080:1920:0:420:black"  # after the filters, so they don't tint the bands
-INV = "negate"
-HOT = [INV, IRONBOW]
+HOT = "negate," + IRONBOW
+S104, S038 = os.path.join(TMP, "s104.png"), os.path.join(TMP, "s038.png")
+subprocess.run([FFMPEG, "-v", "error", "-y", "-ss", "6", "-i", PR104, "-frames:v", "1", S104], check=True)
+subprocess.run([FFMPEG, "-v", "error", "-y", "-ss", "25.5", "-i", PR038, "-frames:v", "1", S038], check=True)
 
-def beat(c, start, secs, filters, top1, top2, top2_color="white", bottom=None, top3=None):
-    vf = [CROP, "fps=30", *filters, PAD, txt(top1, 210, 74), txt(top2, 300, 66, top2_color)]
-    if top3:
-        vf.append(txt(top3, 1330, 56))  # third line rides low on the video, above realufo.org
-    vf += bottom or [SITE()]
-    c.seg(["-ss", str(start), "-i", U], ",".join(vf), secs)
+def top(a, b, b_color="white", c=None):
+    t = [txt(a, 215, 74), txt(b, 300, 64, b_color)]
+    return t + ([txt(c, 372, 50)] if c else [])
 
 c = Cut()
-beat(c, 0, 4, [], "A 'six-pointed star'", "over the Yellow Sea", bottom=[txt("black-hot infrared, 2025", 1560, 46, "#cccccc"), SITE()])
-beat(c, 4, 4, [INV], "Black-hot IR:", "darker = hotter", "white", top3="INVERT IR → white-hot")
-beat(c, 8, 4, HOT, "IRONBOW: heat → colour", "one tiny, very hot core", "yellow")
-beat(c, 12, 3.6, HOT, "Why 6 points?", "Diffraction spikes", "yellow", top3="from the camera's own optics")
-beat(c, 0, 4, HOT, "Same spike angles", "in every frame", "white", top3="camera, not craft?")
-beat(c, 4, 3.4, HOT, "Object or optics?", "Try the filters. Cast your verdict.", "white",
-     bottom=[txt("realufo.org/doc/DOW-UAP-PR104", 1420, 50, "yellow"), txt("DOW-UAP-PR104  ·  Yellow Sea, 2025", 1500, 42)])
+SQ104 = "crop=1080:1080:400:0,fps=30"  # PR104 playing, square on the star
+c.seg(["-ss", "0", "-i", PR104], ",".join([SQ104, "pad=1080:1920:0:420:black", *top("The Pentagon has 2", "'star' UAPs, 12 years apart", "yellow"), SITE()]), 3.2)
+# PR038 at its sharpest: a still with a slow push-in (its star wanders near the frame's black bar)
+c.seg(["-loop", "1", "-i", S038], ",".join(["crop=600:600:1054:208,scale=1080:1080",
+      "zoompan=z='min(zoom+0.0012,1.12)':x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2':d=1:s=1080x1080:fps=30",
+      "pad=1080:1920:0:420:black", *top("Middle East, 2013", "8 points", "yellow"), SITE()]), 3)
+c.seg(["-ss", "4", "-i", PR104], ",".join([SQ104, "pad=1080:1920:0:420:black", *top("Yellow Sea, 2025", "6 points", "yellow"), SITE()]), 3)
+
+def split(lines, secs, filt=HOT):
+    """PR038 over PR104, both filtered, each panel labelled."""
+    fc = (f"[0:v]crop=1080:620:570:198,{filt}[a];[1:v]crop=1080:620:400:160,{filt}[b];"
+          f"[a][b]vstack=2,pad=1080:1920:0:430:black,"
+          + ",".join([*lines, txt("2013 · Middle East · 8 points", 445, 44, "yellow"),
+                      txt("2025 · Yellow Sea · 6 points", 1075, 44, "yellow")]) + "[v]")
+    c.seg_fc(["-loop", "1", "-i", S038, "-loop", "1", "-i", S104], fc, secs)
+
+split(top("Same kind of craft?", "Then why different shapes?"), 4)
+split(top("Diffraction spikes:", "the camera draws the star", "yellow", "different optics → different star"), 4.5)
+split([txt("Object or optics? Compare both:", 215, 66), txt("realufo.org/doc/DOW-UAP-PR038", 300, 50, "yellow"),
+       txt("realufo.org/doc/DOW-UAP-PR104", 368, 50, "yellow")], 3.6)
 c.save(OUT)
