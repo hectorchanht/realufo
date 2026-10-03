@@ -23,7 +23,7 @@ FROM records r LEFT JOIN record_ocr o ON o.record_id=r.id
 WHERE r.status='live' AND r.kind='pdf' AND o.record_id IS NULL
   AND EXISTS (SELECT 1 FROM assets a WHERE a.record_id=r.id AND a.role='full'){ids}
 ORDER BY r.created_at DESC, r.id"""
-DET, REC, DPI = "PP-OCRv5_server_det", "en_PP-OCRv5_mobile_rec", 200  # picked by the benchmark
+DET, REC, DPI = "PP-OCRv5_mobile_det", "en_PP-OCRv5_mobile_rec", 200  # docs/launch/ocr-bench.md: same text as server det, 3.6x faster
 SCORE_MIN = 0.5  # Paddle drops boxes recognised below this, so garbage never becomes text
 ENGINE = f"PP-OCRv5:{DET}+{REC}@{DPI}"
 
