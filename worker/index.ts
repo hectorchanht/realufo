@@ -110,6 +110,8 @@ async function sameSecret(a: string, b: string) {
 // DOW-UAP: ingest cut "DOW-UAP-PR057a" short (crawler/ingest/mapping.py _CODE).
 const RENAMED: Record<string, string> = { "DOW-UAP": "DOW-UAP-PR057a" };
 const RENAMED_PATH = /^\/(doc|shorts)\/([^/]+)(\/text)?$/;
+// The 49 Pentagon Papers volumes (not UFO files, scraped by mistake) were removed 2026-10-03.
+const PENTAGON_PAPERS = /^\/doc\/NARA-Pentagon-Papers-[^/]+(\/text)?$/;
 
 // nara-overview stays on release.realufo.org: it describes NARA UFO holdings this archive doesn't have.
 const MOVED_OVERVIEWS: Record<string, string> = { "aaro-overview": "aaro", "nasa-overview": "nasa" };
@@ -134,6 +136,7 @@ export default {
     const renamed = url.pathname.match(RENAMED_PATH);
     const to = renamed && RENAMED[renamed[2]]; // keys are plain ASCII: no decode (a bad % would throw)
     if (to) return Response.redirect(`${url.origin}/${renamed[1]}/${encodeURIComponent(to)}${renamed[3] ?? ""}${url.search}`, 301);
+    if (PENTAGON_PAPERS.test(url.pathname)) return Response.redirect("https://www.archives.gov/research/pentagon-papers", 301);
     if (url.pathname.startsWith("/api/")) {
       const res = await dispatch(req, env, ctx);
       return res ?? error(404, "not found");

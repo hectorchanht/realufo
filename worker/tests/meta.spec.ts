@@ -214,6 +214,18 @@ describe("serveWithMeta (via worker.fetch)", () => {
     expect(kept.status).not.toBe(301);
   });
 
+  it("removed Pentagon Papers doc URLs 301 to NARA's Pentagon Papers page", async () => {
+    const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
+    for (const from of [
+      "https://realufo.org/doc/NARA-Pentagon-Papers-Index",
+      "https://realufo.org/doc/NARA-Pentagon-Papers-Part-IV-C-7-a/text?p=6",
+    ]) {
+      const res = await worker.fetch(new Request(from), fakeEnv, createExecutionContext());
+      expect(res.status).toBe(301);
+      expect(res.headers.get("location")).toBe("https://www.archives.gov/research/pentagon-papers");
+    }
+  });
+
   it("old static-site paths 301 to release.realufo.org (with its trailing slash)", async () => {
     const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
     for (const [from, to] of [
