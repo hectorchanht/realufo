@@ -351,6 +351,23 @@ describe("Archive Shorts strip", () => {
     expect(await screen.findByRole("heading", { name: /shorts \(1\+\)/i })).toBeInTheDocument();
   });
 
+  it("Shorts type chip swaps the records grid for every Short, with more on demand", async () => {
+    useRecordsMock.mockImplementation(records);
+    const fetchNextPage = vi.fn();
+    useShortsMock.mockImplementation((() => ({
+      data: [{ id: "DOW-UAP-PR104", title: "Two stars", thumb: null, clip: "https://c/x.mp4", showcase: true }],
+      hasNextPage: true,
+      fetchNextPage,
+    })) as any);
+    renderAppAt("/archive?type=shorts");
+    expect(await screen.findByRole("link", { name: /two stars/i })).toHaveAttribute("href", "/shorts/DOW-UAP-PR104");
+    expect(screen.getByRole("button", { name: /^shorts/i })).toHaveAttribute("aria-pressed", "true");
+    expect(useShortsMock).toHaveBeenCalledWith("", { enabled: true });
+    expect(screen.queryByText(/no records match/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /more shorts/i }));
+    expect(fetchNextPage).toHaveBeenCalled();
+  });
+
   it("no strip without a search", async () => {
     useRecordsMock.mockImplementation(records);
     renderAppAt("/archive");

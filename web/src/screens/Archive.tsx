@@ -247,7 +247,8 @@ function FacetSelect({ label, value, all, options, onChange }: {
 }
 
 const FILTER_KEYS = ["q", "archive", "type", "redacted", "has", "release", "agency", "decade", "location"];
-const TYPE_LABELS: Record<string, string> = { pdf: "Docs", video: "Video", image: "Images" };
+// "shorts" isn't a record kind: it swaps the records grid for the Shorts grid.
+const TYPE_LABELS: Record<string, string> = { pdf: "Docs", video: "Video", image: "Images", shorts: "Shorts" };
 // `has=` flags, in the order they're written to the URL.
 const HAS_FLAGS = [
   ["ai", "AI summary"],
@@ -390,11 +391,13 @@ export function Archive() {
       limit: RECORDS_PAGE_SIZE,
       offset: (page - 1) * RECORDS_PAGE_SIZE,
     },
-    { keepPrevious: true },
+    { keepPrevious: true, enabled: type !== "shorts" },
   );
   // Searching: matching Shorts (title/summary/page text or the posted Short's
   // text) as a strip above the files; tap → the player, queue = this search.
-  const { data: shorts = [], hasNextPage: moreShorts } = useShorts(q, { enabled: !!q });
+  // The Shorts type chip shows them all (still narrowed by q) as a grid.
+  const showShorts = type === "shorts";
+  const { data: shorts = [], hasNextPage: moreShorts, fetchNextPage, isFetchingNextPage, isLoading: shortsLoading } = useShorts(q, { enabled: !!q || showShorts });
   const records = data?.records ?? [];
   const count = data?.count ?? 0;
   const totalPages = Math.ceil(count / RECORDS_PAGE_SIZE);
@@ -557,7 +560,23 @@ export function Archive() {
         </ul>
       )}
 
-      {isLoading ? (
+      {showShorts && shortsLoading ? (
+        <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>
+      ) : showShorts ? (
+        <>
+          <div className="mx-0.5 mb-3 font-mono text-[10px] uppercase tracking-[.8px] text-faint">
+            <b className="text-signal">{shorts.length.toLocaleString()}{moreShorts ? "+" : ""}</b> shorts · tap one to play
+          </div>
+          <ShortsRow grid shorts={shorts} href={(s) => shortHref(s, q)} />
+          {moreShorts && (
+            <div className="mt-4 text-center">
+              <button type="button" className="rounded-lg px-3 py-[7px] text-[11px] active:scale-[.96]" style={typeChipStyle(false)} disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
+                {isFetchingNextPage ? "loading…" : "more shorts"}
+              </button>
+            </div>
+          )}
+        </>
+      ) : isLoading ? (
         <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>
       ) : (
         <>

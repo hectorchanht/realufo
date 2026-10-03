@@ -4,12 +4,13 @@ import type { Short } from "../api/types";
 import { docTitleParts } from "../lib/docTitle";
 import { useAutoplayInView } from "../lib/useAutoplayInView";
 
-// Horizontal row of 9:16 Short cards (muted, looping, playing while on screen).
-export function ShortsRow({ shorts, loading = false, href }: { shorts: Short[]; loading?: boolean; href: (s: Short) => string }) {
+// Horizontal row (or, with `grid`, a wrapping grid) of 9:16 Short cards
+// (muted, looping, playing while on screen).
+export function ShortsRow({ shorts, loading = false, grid = false, href }: { shorts: Short[]; loading?: boolean; grid?: boolean; href: (s: Short) => string }) {
   const [row, setRow] = useState<HTMLDivElement | null>(null);
   useAutoplayInView(row, [shorts]);
   return (
-    <div ref={setRow} data-scroll aria-busy={loading} className="flex snap-x snap-mandatory gap-[10px] overflow-x-auto pb-1.5">
+    <div ref={setRow} data-scroll aria-busy={loading} className={grid ? "grid grid-cols-3 gap-[10px] min-[900px]:grid-cols-[repeat(auto-fill,minmax(150px,1fr))]" : "flex snap-x snap-mandatory gap-[10px] overflow-x-auto pb-1.5"}>
       {loading
         ? Array.from({ length: 4 }, (_, i) => (
             <div key={i} aria-hidden="true" className="aspect-[9/16] w-[132px] shrink-0 rounded-[14px] border border-line bg-surface" />
@@ -19,7 +20,7 @@ export function ShortsRow({ shorts, loading = false, href }: { shorts: Short[]; 
               key={s.id}
               to={href(s)}
               aria-label={docTitleParts(s.id, s.title, "video").title}
-              className="aspect-[9/16] w-[132px] shrink-0 snap-start overflow-hidden rounded-[14px] border border-line bg-bg2"
+              className={`aspect-[9/16] overflow-hidden rounded-[14px] border border-line bg-bg2 ${grid ? "" : "w-[132px] shrink-0 snap-start"}`}
             >
               <video src={s.clip} poster={s.thumb ?? undefined} muted loop playsInline preload="none" aria-hidden="true" className="h-full w-full object-cover" />
             </Link>
