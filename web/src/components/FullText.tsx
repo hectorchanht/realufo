@@ -92,7 +92,7 @@ export default function FullText({
             ref={box}
             tabIndex={0}
             aria-label="Full text pages"
-            className="max-h-[420px] overflow-y-auto overscroll-contain rounded-xl border border-line bg-surface px-3.5 pt-3"
+            className="max-h-[80vh] overflow-y-auto overscroll-contain rounded-xl border border-line bg-surface px-3.5 pt-3"
           >
             {data.pages.map((p) => (
               <div
