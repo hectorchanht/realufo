@@ -911,6 +911,10 @@ wrangler d1 execute realufo-db --remote --json --command "SELECT SUM(pages='[]')
 
 Expected: `files` = live PDF count. `empty` well below 97 and `kept_pages` well above 2,884 (the 30k cap still applies until Spec 2). ask_eval 10/10.
 
+- [ ] **Step 3b: OCR-only golden questions (added 2026-10-03, user request)**
+
+Append 10 questions to `crawler/ingest/data/ask_golden.json`, each answerable ONLY from pages that were garbled/empty before and are now OCR'd (`src:"ocr"` in R2 `text/<id>.json`), spread over agencies/eras (e.g. NASA-UAP-D004 Apollo 11 debrief, FBI-UAP-D013 1952 Seattle, CIA-UAP-005 Ludwig, Blue Book incident summaries, DOW 1948 reports). Format `{"q": "...", "expect": ["<record id>"]}`. Verify each answer by reading the cited page. Run `.venv-ocr/bin/python -m ingest.ask_eval`: report recall on the 10 new ones separately; target ≥ 8/10. Commit the golden file.
+
 - [ ] **Step 4: IndexNow for changed doc pages**
 
 ```bash
