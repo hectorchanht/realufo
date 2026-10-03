@@ -16,7 +16,7 @@
 - Phase 1 (Tasks 1–7) must ship and work on its own; Phase 2 (Tasks 8–15) is invisible while `FEATURE_PUSH` is `"off"`.
 - `FEATURE_PUSH` default `"off"` in `wrangler.jsonc`; values `off` | `on`.
 - UI controls: lucide icons, minimal visible text, every icon button has `aria-label` + `title` (user rule).
-- New D1 migration is `db/migrations/0034_push.sql` — re-run `ls db/migrations | tail -3` first; if another chat already took `0034`, use the next free number everywhere this plan says 0034.
+- New D1 migration is `db/migrations/0035_push.sql` — re-run `ls db/migrations | tail -3` first; if another chat already took `0034`, use the next free number everywhere this plan says 0034.
 - Caches owned by the SW: `ru-shell`, `ru-assets`, `ru-api`, `ru-img`. Every other cache name is deleted on activate.
 - API reads network-first with 5 s timeout; thumbnails cap 300 entries; API cache cap 300 entries.
 - Outbox caps: 50 items, 7 days.
@@ -1234,7 +1234,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 8: Push tables, config, VAPID key script
 
 **Files:**
-- Create: `db/migrations/0034_push.sql`
+- Create: `db/migrations/0035_push.sql`
 - Create: `scripts/vapid-keys.mjs`
 - Modify: `worker/env.ts`
 - Modify: `wrangler.jsonc` (`vars`)
@@ -1280,7 +1280,7 @@ Expected: FAIL — `no such table: push_subs`.
 
 - [ ] **Step 3: Migration**
 
-`db/migrations/0034_push.sql`:
+`db/migrations/0035_push.sql`:
 
 ```sql
 -- Web Push (spec 2026-10-03-realufo-pwa-push-design §2a).
@@ -1355,7 +1355,7 @@ Expected: tests PASS (if `schema.spec.ts` asserts an exact table list, add the t
 - [ ] **Step 6: Commit**
 
 ```bash
-git add db/migrations/0034_push.sql scripts/vapid-keys.mjs worker/env.ts wrangler.jsonc worker/tests/push-schema.spec.ts
+git add db/migrations/0035_push.sql scripts/vapid-keys.mjs worker/env.ts wrangler.jsonc worker/tests/push-schema.spec.ts
 git commit -m "feat(push): D1 tables for subscriptions, follows, push state; VAPID key script
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -3213,7 +3213,7 @@ Run `node scripts/vapid-keys.mjs` and put both lines plus `FEATURE_PUSH=on` into
 - [ ] **Step 6: Report + rollout plan to the user (do not deploy unasked)**
 
 Rollout, in order, when the user says go:
-1. Deploy with `FEATURE_PUSH: "off"` (migration 0034 applies via `pnpm deploy`; follow `realufo-deploy-concurrent-chats`: clean worktree of HEAD, check pending migrations, push the deployed commit).
+1. Deploy with `FEATURE_PUSH: "off"` (migration 0035 applies via `pnpm deploy`; follow `realufo-deploy-concurrent-chats`: clean worktree of HEAD, check pending migrations, push the deployed commit).
 2. `node scripts/vapid-keys.mjs` → set `VAPID_PUBLIC_KEY` in `wrangler.jsonc`, `wrangler secret put VAPID_PRIVATE_KEY`.
 3. Flip `FEATURE_PUSH` to `"on"`, deploy, subscribe on a real Android/desktop Chrome, and have the user test iOS from the installed app (needs a real device).
 4. Run `crawler/indexnow.py` only if public pages changed (the privacy page did).

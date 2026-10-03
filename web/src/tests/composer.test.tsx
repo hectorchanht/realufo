@@ -11,10 +11,10 @@
 // of the overlay context itself) — this exercises the actual open/close/toast
 // wiring end-to-end, only the network-touching mutation hooks are stubbed.
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { useEffect } from "react";
-import { ApiError } from "../api/client";
+import { ApiError, QueuedError } from "../api/client";
 import { OverlayProvider, OverlayHost, useOverlay, type ComposerOpts } from "../overlays/OverlayProvider";
 
 const mockAddCommentMutate = vi.fn();
@@ -222,6 +222,39 @@ describe("Composer", () => {
 
     fireEvent.click(screen.getByText("open composer"));
     expect(screen.getByPlaceholderText(/Say your piece/i)).toHaveValue("half-written read");
+  });
+
+  it("a post queued offline closes the composer and drops the draft", () => {
+    mockAddCommentMutate.mockImplementation((_v: unknown, o?: { onError?: (e: unknown) => void }) => o?.onError?.(new QueuedError()));
+    renderReopenable({ mode: "comment", recordId: "draft-q" });
+    fireEvent.click(screen.getByText("open composer"));
+    fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "offline read" } });
+    fireEvent.click(screen.getByRole("button", { name: /post/i }));
+    expect(screen.queryByPlaceholderText(/Say your piece/i)).toBeNull();
+    expect(screen.queryByText(/Could not post/i)).toBeNull();
+
+    fireEvent.click(screen.getByText("open composer"));
+    expect(screen.getByPlaceholderText(/Say your piece/i)).toHaveValue("");
+  });
+
+  it("an image post offline says it needs a connection (and keeps the draft)", () => {
+    mockAddCommentMutate.mockImplementation((_v: unknown, o?: { onError?: (e: unknown) => void }) =>
+      o?.onError?.(new ApiError(0, "Image posts need a connection")),
+    );
+    renderReopenable({ mode: "comment", recordId: "draft-img" });
+    fireEvent.click(screen.getByText("open composer"));
+    fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "look at this" } });
+    fireEvent.click(screen.getByRole("button", { name: /post/i }));
+    expect(screen.getByText(/Image posts need a connection/)).toBeInTheDocument();
+    expect(screen.queryByText(/Could not post/i)).toBeNull();
+  });
+
+  it("OverlayHost toasts outbox events", () => {
+    renderReopenable({ mode: "comment", recordId: "draft-t" });
+    act(() => {
+      window.dispatchEvent(new CustomEvent("outbox", { detail: { sent: 2, failed: [] } }));
+    });
+    expect(screen.getByText(/2 offline posts sent/)).toBeInTheDocument();
   });
 
   it("a submitted post clears its draft", () => {

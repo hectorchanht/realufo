@@ -13,11 +13,11 @@
 // detail screen's actually-loaded data).
 
 import type { NavigateFunction } from "react-router-dom";
-import { Archive, Clapperboard, Compass, Ellipsis, FileSearch, House, ListChecks, MapPinned, MessagesSquare, Sparkles, type LucideIcon } from "lucide-react";
+import { Archive, Bell, Clapperboard, Compass, Ellipsis, FileSearch, House, ListChecks, MapPinned, MessagesSquare, Sparkles, type LucideIcon } from "lucide-react";
 import { useBootstrap } from "../api/queries";
 import { forgetScroll, scrollKey } from "../lib/useScrollMemory";
 
-export type NavTab = "feed" | "archive" | "shorts" | "boards" | "ask" | "map" | "cases" | "browse" | "releases";
+export type NavTab = "feed" | "archive" | "shorts" | "boards" | "ask" | "map" | "cases" | "browse" | "releases" | "notifications";
 
 export interface NavItem {
   tab: NavTab;
@@ -43,12 +43,13 @@ export const MORE_ITEMS: NavItem[] = [
   { tab: "cases", icon: FileSearch, label: "Cold cases", path: "/cases" },
   { tab: "browse", icon: Compass, label: "Browse", path: "/browse" },
   { tab: "releases", icon: ListChecks, label: "Releases", path: "/releases" },
+  { tab: "notifications", icon: Bell, label: "Notifications", path: "/notifications" },
 ];
 
-// Ask only shows while the server's ask flag is on.
+// Ask and Notifications only show while the server's ask / push flags are on.
 export function useNavItems(): { tabs: NavItem[]; more: NavItem[] } {
-  const askOn = !!useBootstrap().data?.features?.ask;
-  return { tabs: NAV_ITEMS, more: askOn ? MORE_ITEMS : MORE_ITEMS.filter((i) => i.tab !== "ask") };
+  const f = useBootstrap().data?.features;
+  return { tabs: NAV_ITEMS, more: MORE_ITEMS.filter((i) => (i.tab !== "ask" || f?.ask) && (i.tab !== "notifications" || f?.push)) };
 }
 
 export const isMoreTab = (tab: NavTab) => MORE_ITEMS.some((i) => i.tab === tab);
@@ -102,6 +103,7 @@ export function activeTabForPath(pathname: string, search = ""): NavTab {
   if (pathname === "/boards" || pathname.startsWith("/boards/")) return "boards";
   if (pathname === "/cases" || pathname.startsWith("/case/")) return "cases";
   if (pathname.startsWith("/map")) return "map";
+  if (pathname === "/notifications") return "notifications";
   return "feed"; // "/" and any unmatched path
 }
 

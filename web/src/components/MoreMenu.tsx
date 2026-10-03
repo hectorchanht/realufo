@@ -6,9 +6,13 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
-import { Download, Upload } from "lucide-react";
+import { Download, Share, Upload } from "lucide-react";
+import { promptInstall, useInstallMode } from "../lib/install";
 import { MORE_ICON as MoreIcon, tabHref, type NavItem, type NavTab } from "./navItems";
 import { downloadIdentity, importIdentity } from "../lib/identity";
+
+const itemCls = (sheet: boolean) =>
+  `flex w-full items-center gap-3 rounded-lg px-3 font-mono font-medium hover:bg-surface ${sheet ? "min-h-[48px] text-[14px]" : "min-h-[40px] text-[13px]"}`;
 
 export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]; activeTab: NavTab; sheet?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -18,7 +22,7 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
   const id = useId();
   const file = useRef<HTMLInputElement>(null);
   const lit = open || items.some((i) => i.tab === activeTab);
-  const row = `flex w-full items-center gap-3 rounded-lg px-3 font-mono font-medium hover:bg-surface ${sheet ? "min-h-[48px] text-[14px]" : "min-h-[40px] text-[13px]"}`;
+  const row = itemCls(sheet);
   const iconSize = sheet ? 20 : 17;
 
   const saveId = () => {
@@ -82,6 +86,7 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
             </li>
           );
         })}
+        <InstallItem sheet={sheet} close={() => setOpen(false)} />
       </ul>
       {/* Same person on another device: move the anon id file (lib/identity.ts). */}
       <div className="my-1 border-t border-line" />
@@ -136,5 +141,29 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
             )
           : list)}
     </div>
+  );
+}
+
+function InstallItem({ sheet, close }: { sheet: boolean; close: () => void }) {
+  const mode = useInstallMode();
+  const [help, setHelp] = useState(false);
+  if (!mode) return null;
+  const tap = () => {
+    if (mode === "ios") return setHelp((h) => !h);
+    close();
+    void promptInstall();
+  };
+  return (
+    <li>
+      <button type="button" onClick={tap} aria-expanded={mode === "ios" ? help : undefined} className={itemCls(sheet)} style={{ color: "var(--ink)" }}>
+        <Download size={sheet ? 20 : 17} aria-hidden="true" />
+        Install app
+      </button>
+      {help && (
+        <p className="px-3 pb-2 font-mono text-[12px] leading-relaxed text-dim">
+          Tap <Share size={13} aria-label="Share" className="inline align-[-2px]" /> then “Add to Home Screen”.
+        </p>
+      )}
+    </li>
   );
 }

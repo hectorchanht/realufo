@@ -41,6 +41,7 @@ import type { ImageAdjust } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
 import { Articles } from "../components/Articles";
 import { VerdictBar } from "../components/VerdictBar";
+import { FollowBell } from "../components/FollowBell";
 import { TldrCard } from "../components/TldrCard";
 import { parseAiMoments, parseKeyMoments } from "../lib/keyMoments";
 import { UploadThumb } from "../components/UploadThumb";
@@ -465,15 +466,18 @@ export function Doc() {
       {/* title — id prefix and underscores stripped; the id rides inside the h1 as a
           kicker (uapbrowser-style) so "DOW-UAP-D006" searches match the heading.
           Kicker only when the id isn't just the title respelled. */}
-      <h1 className="mb-3.5 text-[19px] font-bold leading-[1.3] text-ink" style={{ overflowWrap: "anywhere" }}>
-        {tp!.showId && (
-          <span className="mb-2 block font-pixel text-[10px] font-normal leading-normal" style={{ color: accent }}>
-            {tp!.id}
-            <span className="sr-only">, </span>
-          </span>
-        )}
-        {title}
-      </h1>
+      <div className="flex items-start gap-2">
+        <h1 className="mb-3.5 min-w-0 flex-1 text-[19px] font-bold leading-[1.3] text-ink" style={{ overflowWrap: "anywhere" }}>
+          {tp!.showId && (
+            <span className="mb-2 block font-pixel text-[10px] font-normal leading-normal" style={{ color: accent }}>
+              {tp!.id}
+              <span className="sr-only">, </span>
+            </span>
+          )}
+          {title}
+        </h1>
+        <FollowBell kind="record" id={id} />
+      </div>
     </>
   );
 

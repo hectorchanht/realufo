@@ -27,6 +27,7 @@
 // /doc/:id showed the same generic "FILE", regardless of record).
 import { useEffect, useRef, type CSSProperties } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { WifiOff } from "lucide-react";
 import SiteFooter from "./SiteFooter";
 import { FooterLinksProvider } from "../lib/footerLinks";
 import { useMediaQuery } from "../lib/useMediaQuery";
@@ -34,6 +35,7 @@ import { useHideOnScroll } from "../lib/useHideOnScroll";
 import { scrollKey, useScrollMemory } from "../lib/useScrollMemory";
 import { useTheme } from "../theme/useTheme";
 import { PageTitleProvider } from "../lib/pageTitle";
+import { useStale } from "../lib/offline";
 import { OverlayHost } from "../overlays/OverlayProvider";
 import { TopNav } from "./TopNav";
 import { AppBar } from "./AppBar";
@@ -45,6 +47,7 @@ export function AppShell() {
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const { scanlines } = useTheme();
+  const stale = useStale();
 
   const activeTab = activeTabForPath(pathname, search);
   // canBack ports the prototype's `hist.length>0` (back only on detail
@@ -125,6 +128,15 @@ export function AppShell() {
                 className="relative px-4 pt-[18px]"
                 style={{ paddingBottom: "calc(2.5rem + var(--bnav-h, 0px))" }}
               >
+                {stale && (
+                  <div
+                    role="status"
+                    className="mb-3 flex items-center justify-center gap-2 rounded-[10px] border border-line bg-bg2 px-3 py-1.5 font-mono text-[11px] text-dim"
+                  >
+                    <WifiOff size={13} aria-hidden="true" />
+                    Offline — showing saved copy
+                  </div>
+                )}
                 <Outlet />
                 <SiteFooter />
               </div>

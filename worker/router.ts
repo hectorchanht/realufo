@@ -1,4 +1,4 @@
-type H = (req: Request, env: import("./env").Env, params: Record<string, string>) => Response | Promise<Response>;
+type H = (req: Request, env: import("./env").Env, params: Record<string, string>, ctx?: ExecutionContext) => Response | Promise<Response>;
 interface Route { method: string; pattern: URLPattern; handler: H; }
 
 const routes: Route[] = [];
@@ -16,7 +16,7 @@ export function decodedGroups(m: URLPatternResult): Record<string, string> | nul
   }
 }
 
-export async function dispatch(req: Request, env: import("./env").Env): Promise<Response | null> {
+export async function dispatch(req: Request, env: import("./env").Env, ctx?: ExecutionContext): Promise<Response | null> {
   const url = new URL(req.url);
   // HEAD = GET minus the body (link previewers / download managers probe with it).
   const head = req.method === "HEAD";
@@ -25,7 +25,7 @@ export async function dispatch(req: Request, env: import("./env").Env): Promise<
     const m = r.pattern.exec({ pathname: url.pathname });
     const params = m && decodedGroups(m);
     if (!params) continue;
-    const res = await r.handler(req, env, params);
+    const res = await r.handler(req, env, params, ctx);
     if (head) await res.body?.cancel();
     return head ? new Response(null, res) : res;
   }

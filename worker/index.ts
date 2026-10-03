@@ -28,6 +28,8 @@ import { releasesApi } from "./routes/releases";
 import { tick } from "./lib/xbot";
 import { tick as socialTick } from "./lib/social/tick";
 import { pollTick } from "./lib/xpoll";
+import { pushNewFiles, pushDaily } from "./lib/push";
+import { pushConfig, subscribe, setPrefs, unsubscribe, pushMe, getFollow, toggleFollow } from "./routes/push";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -61,6 +63,13 @@ on("POST", "/api/shorts/:id/like", likeShort);
 on("GET", "/api/cases/:slug", getCase);
 on("GET", "/api/cases/:slug/comments", listCaseComments);
 on("POST", "/api/cases/:slug/comments", addCaseComment);
+on("GET", "/api/push/config", pushConfig);
+on("POST", "/api/push/subscribe", subscribe);
+on("POST", "/api/push/prefs", setPrefs);
+on("POST", "/api/push/unsubscribe", unsubscribe);
+on("GET", "/api/push/me", pushMe);
+on("GET", "/api/follows", getFollow);
+on("POST", "/api/follows", toggleFollow);
 
 // X bot first (Spec 4; FEATURE_X gates it), then mirror to other platforms (Spec 5;
 // FEATURE_SOCIAL_* gate it). Social failing never affects X.
@@ -69,6 +78,8 @@ async function runTick(env: Env) {
   await tick(env).catch(logErr("xbot"));
   await socialTick(env).catch(logErr("social"));
   await pollTick(env).catch(logErr("xpoll"));
+  await pushNewFiles(env).catch(logErr("pushFiles"));
+  await pushDaily(env).catch(logErr("pushDaily"));
 }
 
 // POST /__tick (Authorization: Bearer ADMIN_TOKEN): one cron tick on demand, for
@@ -104,7 +115,7 @@ const MOVED_OVERVIEWS: Record<string, string> = { "aaro-overview": "aaro", "nasa
 const LEGACY_PATH = /^\/(aaro|about|argentina|brazil|canada|chile|foia|geipan|glossary|italy|nara|nasa|peru|search|spain|stories|timeline|uk|whatsnew)(\/|$)/;
 
 export default {
-  async fetch(req: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
     if (url.hostname.startsWith("www.")) return Response.redirect(`https://${url.hostname.slice(4)}${url.pathname}${url.search}`, 301);
     // The old static site moved to release.realufo.org; its realufo.org URLs are
@@ -123,7 +134,7 @@ export default {
     const to = renamed && RENAMED[renamed[2]]; // keys are plain ASCII: no decode (a bad % would throw)
     if (to) return Response.redirect(`${url.origin}/${renamed[1]}/${encodeURIComponent(to)}${renamed[3] ?? ""}${url.search}`, 301);
     if (url.pathname.startsWith("/api/")) {
-      const res = await dispatch(req, env);
+      const res = await dispatch(req, env, ctx);
       return res ?? error(404, "not found");
     }
     if (url.pathname === "/__tick") return manualTick(req, env);

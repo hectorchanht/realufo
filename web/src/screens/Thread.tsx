@@ -41,6 +41,7 @@ import { useThread } from "../api/queries";
 import type { Post, ThreadSourceRecord } from "../api/types";
 import { VoteButton } from "../components/VoteButton";
 import { PollCard } from "../components/PollCard";
+import { FollowBell } from "../components/FollowBell";
 import { LoadError } from "../components/LoadError";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { docPageTitle, docTitleParts } from "../lib/docTitle";
@@ -332,7 +333,10 @@ export function Thread() {
         </span>
         <span className="font-mono text-[9px] text-faint">No.{thread.no}</span>
       </div>
-      <h2 className="mb-4 text-[18px] font-bold leading-[1.28] text-ink">{thread.title}</h2>
+      <div className="flex items-start gap-2">
+        <h2 className="mb-4 min-w-0 flex-1 text-[18px] font-bold leading-[1.28] text-ink">{thread.title}</h2>
+        <FollowBell kind="thread" id={id} />
+      </div>
 
       {/* "◂ from record" source back-reference chip — see file header note. */}
       {sourceRecord && (

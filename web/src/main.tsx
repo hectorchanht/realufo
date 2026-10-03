@@ -14,8 +14,13 @@ import './theme/theme.css'
 import './index.css'
 import { ThemeProvider } from './theme/ThemeProvider'
 import App from './App.tsx'
+import { startOutbox } from './lib/outbox'
+import { sendRaw } from './api/client'
 
 const queryClient = makeQueryClient()
+
+// Offline writes (lib/outbox.ts): replay on start/online/visible; refetch everything once sent.
+startOutbox(sendRaw, () => void queryClient.invalidateQueries())
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -26,3 +31,12 @@ createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </StrictMode>,
 )
+
+// Service worker (public/sw.js): offline shell, saved reads, push. Production only —
+// in dev it would cache Vite's unhashed modules.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {})
+    void import('./lib/push').then((m) => m.resyncPush())
+  })
+}

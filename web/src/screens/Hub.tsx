@@ -5,6 +5,7 @@ import { Link, useParams } from "react-router-dom";
 import { useHub } from "../api/queries";
 import type { HubHighlights, HubKind, ReleaseBlock, TopicBlock } from "../api/types";
 import { Faq } from "../components/Faq";
+import { FollowBell } from "../components/FollowBell";
 import { docTitleParts } from "../lib/docTitle";
 import { DocCard } from "../components/DocCard";
 import { useSetPageTitle } from "../lib/pageTitle";
@@ -37,7 +38,10 @@ export default function Hub({ kind }: { kind: HubKind }) {
       <div className="mb-1 font-mono text-[11px] font-semibold tracking-[.4px] text-faint">
         <Link to="/browse" className="hover:text-signal">BROWSE</Link> › {KIND_PLURAL[kind]}
       </div>
-      <h1 className="mb-2 text-[19px] font-bold leading-[1.3] text-ink">{data.title}</h1>
+      <div className="flex items-start gap-2">
+        <h1 className="mb-2 min-w-0 flex-1 text-[19px] font-bold leading-[1.3] text-ink">{data.title}</h1>
+        {(kind === "agency" || kind === "topic" || kind === "location") && <FollowBell kind="hub" id={`${kind}/${slug}`} />}
+      </div>
       {data.topic && <TopicIntro t={data.topic} />}
       <p className="mb-4 text-[14.5px] leading-[1.65] text-dim">{data.intro}</p>
       {data.release && <WhatsNew b={data.release} />}

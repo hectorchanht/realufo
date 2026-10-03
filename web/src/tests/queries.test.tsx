@@ -3,11 +3,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { useVote, useAddComment, useAddCaseComment, qk } from "../api/queries";
-import { api } from "../api/client";
+import { api, QueuedError } from "../api/client";
 
 // The client itself is covered by client.test.ts — here we mock it entirely so these
 // tests exercise only the cache-update logic (optimistic flip / prepend), not fetch.
-vi.mock("../api/client", () => ({
+vi.mock("../api/client", async (orig) => ({
+  ...(await orig<typeof import("../api/client")>()),
   api: { get: vi.fn(), post: vi.fn() },
 }));
 
@@ -66,6 +67,23 @@ describe("useVote", () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
     const data = qc.getQueryData<{ thread: { votes: number } }>(qk.thread("th2"));
     expect(data?.thread.votes).toBe(3);
+  });
+
+  it("keeps the optimistic bump when the vote was queued offline (applied on flush)", async () => {
+    localStorage.removeItem("ufo_voted");
+    const qc = new QueryClient();
+    qc.setQueryData(qk.thread("th3"), { thread: { id: "th3", votes: 3 }, sourceRecord: null, posts: [] });
+    vi.mocked(api.post).mockRejectedValue(new QueuedError());
+
+    const { result } = renderHook(() => useVote(), { wrapper: makeWrapper(qc) });
+    act(() => {
+      result.current.mutate({ target_type: "thread", target_id: "th3" });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    const data = qc.getQueryData<{ thread: { votes: number } }>(qk.thread("th3"));
+    expect(data?.thread.votes).toBe(4);
+    expect(JSON.parse(localStorage.getItem("ufo_voted") ?? "{}")["thread:th3"]).toBe(true);
   });
 });
 
