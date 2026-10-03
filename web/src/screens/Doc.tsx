@@ -489,7 +489,7 @@ export function Doc() {
         data-chrome={chrome ? "on" : "off"}
         // image letterbox is the panel's black, not the <img>'s, so filters (invert) don't recolor it.
         // select-none: a long-press while lensing must not start a text selection on the badges.
-        className={`relative mb-3.5 select-none overflow-hidden rounded-2xl border border-line2 ${media === "image" ? "bg-black" : "bg-bg2"}`}
+        className={`relative mb-3.5 select-none overflow-hidden rounded-2xl border border-line2 [&:fullscreen]:rounded-none [&:fullscreen]:border-0 ${media === "image" ? "bg-black" : "bg-bg2"}`}
         style={{
           // panel takes the media's own shape once known (turned with it at 90/270°), so it fills the
           // block with no letterbox bars; tall shapes narrow (centred) instead of being cut at 78vh
@@ -654,6 +654,7 @@ export function Doc() {
           onShare={handleShare}
           onPost={handlePostFrame}
           speedSlot={speedSlot}
+          stage={panel}
         />
       )}
       {(media === "image" || media === "video") && (

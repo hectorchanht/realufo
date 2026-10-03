@@ -1,5 +1,5 @@
 // Video analysis tools for the Doc media panel, uapbrowser-style: frame
-// step, timecode, speed, loop / loop A–B, mute, keyboard shortcuts, capture
+// step, timecode, speed, loop / loop A–B, mute, full screen, download, keyboard shortcuts, capture
 // frame (save, or post to the discussion), link to the current moment, and a
 // zoom lens. Adjust filters / palettes / rotate come from ImageTools.
 //
@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { RefObject } from "react";
-import { Camera, Link, LoaderCircle, MessageSquarePlus, Pause, Play, Repeat, Repeat1, StepBack, StepForward, TriangleAlert, Volume2, VolumeX, X } from "lucide-react";
+import { Camera, Download, Link, LoaderCircle, Maximize, MessageSquarePlus, Minimize, Pause, Play, Repeat, Repeat1, StepBack, StepForward, TriangleAlert, Volume2, VolumeX, X } from "lucide-react";
 import { LENS_PX, LensLayer, chip, ico, lensTurn, off, on } from "./ImageTools";
 import type { LensHit } from "./ImageTools";
 import type { MediaView } from "../lib/mediaView";
@@ -70,6 +70,7 @@ export function VideoTransport({
   onShare,
   onPost,
   speedSlot,
+  stage,
 }: {
   videoRef: RefObject<HTMLVideoElement | null>;
   fileUrl: string; // same-origin copy for capture
@@ -82,6 +83,8 @@ export function VideoTransport({
   onPost: (frame: File, t: number) => void;
   /** Where speed + loop render (MediaToolbar's Adjust panel); null while it's closed. State stays here. */
   speedSlot?: HTMLElement | null;
+  /** The media panel: fullscreened whole so filters, zoom and the lens come along. */
+  stage?: HTMLElement | null;
 }) {
   const [t, setT] = useState(0);
   const [dur, setDur] = useState(0);
@@ -91,6 +94,7 @@ export function VideoTransport({
   const [muted, setMuted] = useState(false);
   const [ab, setAb] = useState<{ a: number; b?: number } | null>(null);
   const [capture, setCapture] = useState<"idle" | "busy" | "failed">("idle");
+  const [full, setFull] = useState(false);
   const abRef = useRef(ab);
   useEffect(() => {
     abRef.current = ab;
@@ -169,6 +173,28 @@ export function VideoTransport({
     const el = v();
     if (el) el.muted = !muted;
     setMuted(!muted);
+  }
+
+  useEffect(() => {
+    const onFs = () => setFull(!!stage && document.fullscreenElement === stage);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, [stage]);
+
+  function toggleFull() {
+    if (document.fullscreenElement) return void document.exitFullscreen().catch(() => {});
+    if (stage?.requestFullscreen) return void stage.requestFullscreen().catch(() => {});
+    // iPhone Safari can't fullscreen a div, only the <video> itself (native player, no filters)
+    (v() as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null)?.webkitEnterFullscreen?.();
+  }
+
+  function download() {
+    // same-origin route, so `download` is honoured (ignored on the cross-origin CDN URL); extension from the CDN file
+    const ext = /\.\w+$/.exec(new URL(v()?.currentSrc || "x:/", location.href).pathname)?.[0] ?? "";
+    const a = document.createElement("a");
+    a.href = fileUrl;
+    a.download = name + ext;
+    a.click();
   }
 
   function markAb() {
@@ -259,6 +285,12 @@ export function VideoTransport({
       </button>
       <button type="button" aria-label={muted ? "Unmute" : "Mute"} aria-pressed={muted} title={`${muted ? "Unmute" : "Mute"} (M)`} onClick={toggleMute} className={`${chip} ${muted ? on : off}`}>
         {muted ? <VolumeX {...ico} /> : <Volume2 {...ico} />}
+      </button>
+      <button type="button" aria-label={full ? "Exit full screen" : "Full screen"} aria-pressed={full} title={full ? "Exit full screen (Esc)" : "Full screen"} onClick={toggleFull} className={`${chip} ${full ? on : off}`}>
+        {full ? <Minimize {...ico} /> : <Maximize {...ico} />}
+      </button>
+      <button type="button" aria-label="Download video" title="Download video" onClick={download} className={`${chip} ${off}`}>
+        <Download {...ico} />
       </button>
       {speedSlot &&
         createPortal(
