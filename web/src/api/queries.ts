@@ -21,6 +21,7 @@ import type {
   RecordDetail,
   RecordFacets,
   RecordsListResponse,
+  SharedAsk,
   Stance,
   ThreadCard,
   ThreadDetail,
@@ -68,6 +69,7 @@ export const qk = {
   threadSearch: (q: string) => ["threadSearch", q] as const,
   ask: (question: string) => ["ask", question] as const,
   askRecent: ["askRecent"] as const,
+  sharedAsk: (id: number) => ["sharedAsk", id] as const,
   thread: (id: string) => ["thread", id] as const,
   case: (slug: string) => ["case", slug] as const,
   caseComments: (slug: string) => ["caseComments", slug] as const,
@@ -191,6 +193,17 @@ export function useAskRecent() {
   });
 }
 
+// A shared answer never changes and costs nothing to fetch.
+export function useSharedAsk(id: number | null) {
+  return useQuery({
+    queryKey: qk.sharedAsk(id ?? 0),
+    queryFn: () => api.get<SharedAsk>(`/api/asks/${id}`),
+    enabled: id != null,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
 export function useThread(id: string) {
   return useQuery({
     queryKey: qk.thread(id),
@@ -219,12 +232,12 @@ export function useCaseComments(slug: string) {
 // Mutations
 // ---------------------------------------------------------------------------
 
-// The asker shares (or unshares) their own answered question to "Recently asked".
+// The asker shares (or unshares) their own answered question; the reply carries its page URL.
 export function useShareAsk() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { id: number; public: boolean }) =>
-      api.post<{ public: boolean }>(`/api/ask/${vars.id}/public`, { public: vars.public }),
+      api.post<{ public: boolean; url: string }>(`/api/ask/${vars.id}/public`, { public: vars.public }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: qk.askRecent }),
   });
 }

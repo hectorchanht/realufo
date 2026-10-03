@@ -499,9 +499,21 @@ export interface AskResponse {
 
 /** GET /api/ask/recent — questions their askers shared, newest first. */
 export interface AskRecent {
+  id: number;
   question: string;
   sources: number;
   asked_at: string;
+  /** The shared answer's page; null for rows shared before answers were stored. */
+  url: string | null;
+}
+/** GET /api/asks/:id — a shared answer, frozen when it was asked (Spec 8). */
+export interface SharedAsk {
+  id: number;
+  question: string;
+  answer: string;
+  sources: AskSource[];
+  asked_at: string;
+  url: string;
 }
 export interface AskRecentResponse {
   recent: AskRecent[];
