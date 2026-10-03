@@ -69,8 +69,31 @@ describe("pushActivity", () => {
     await pushActivity(E, "case", "kaikoura", null, "1");
     await pushActivity(E, "case", "kaikoura", null, "2");
     expect(hits).toHaveLength(1);
-    await env.DB.prepare("UPDATE push_state SET v=datetime('now','-11 minutes') WHERE k='act:case:kaikoura'").run();
+    await env.DB.prepare("UPDATE push_state SET v=datetime('now','-11 minutes') WHERE k LIKE 'act:case:kaikoura:%'").run();
     await pushActivity(E, "case", "kaikoura", null, "3");
+    expect(hits).toHaveLength(2);
+  });
+
+  it("author-only target: nothing sent, and the slot stays free for the next commenter", async () => {
+    const a = await subscriber("solo");
+    const b = await actor("other");
+    await follow(a, "record", "CIA-UAP-017", "auto");
+    await pushActivity(E, "record", "CIA-UAP-017", a, "mine");
+    expect(hits).toEqual([]);
+    await pushActivity(E, "record", "CIA-UAP-017", b, "theirs");
+    expect(hits).toEqual(["https://push.test/solo"]);
+  });
+
+  it("back-and-forth: each side hears the other's first reply; repeats within 10 min are throttled", async () => {
+    const a = await subscriber("ping");
+    const b = await subscriber("pong");
+    await follow(a, "thread", "t2", "auto");
+    await follow(b, "thread", "t2", "auto");
+    await pushActivity(E, "thread", "t2", b, "1");
+    expect(hits).toEqual(["https://push.test/ping"]);
+    await pushActivity(E, "thread", "t2", a, "2");
+    expect(hits).toEqual(["https://push.test/ping", "https://push.test/pong"]);
+    await pushActivity(E, "thread", "t2", b, "3");
     expect(hits).toHaveLength(2);
   });
 
