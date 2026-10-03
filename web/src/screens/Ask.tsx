@@ -1,7 +1,7 @@
 // Ask the Archive (Spec 3) on its own tab. `?q=` is the submitted question;
 // typing never asks (each answer costs money) — only Enter / the ASK button
 // do. With no question: this browser's questions + the shared list. The
-// worker serves /ask with robots noindex (AI answers can be wrong).
+// worker serves /ask with robots noindex; shared answers get their own indexed /ask/:id page.
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -65,7 +65,7 @@ export function Ask() {
         </button>
       </form>
       <p className="-mt-2 mb-3 px-0.5 font-mono text-[9.5px] text-faint">
-        Questions are logged. Tap “share publicly” on an answer to list it under “Shared questions” — don’t include personal details.
+        Questions are logged. Tap “share” on an answer to publish it as a public page — don’t include personal details.
       </p>
       {ask ? <AskAnswer question={ask} onPost={(d) => openComposer(askComposerOpts(ask, d))} /> : <AskHistory onPick={openAsk} />}
     </div>

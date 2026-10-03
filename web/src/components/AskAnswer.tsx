@@ -1,37 +1,11 @@
-// "Ask the Archive" answer card (Spec 3 §4.4). Answer is plain text; each [n]
-// becomes a button that scrolls to + flashes source n.
+// Live "Ask the Archive" answer: fetches /api/ask, shows loading/error states,
+// and lets the asker share it as a public page (Spec 8 §3.3).
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useAsk, useHubs, useShareAsk } from "../api/queries";
+import { useAsk, useShareAsk } from "../api/queries";
 import { ApiError } from "../api/client";
-import { docTitleParts } from "../lib/docTitle";
-
-// Same title rule as cards: id prefix stripped, id shown once unless it only respells the title.
-const srcTitle = (s: { record_id: string; title: string; kind?: string }) => docTitleParts(s.record_id, s.title, s.kind);
-import type { AskResponse, HubKind, HubLinks } from "../api/types";
-
-const CARD = "mb-3.5 rounded-xl border border-line2 bg-surface px-[13px] py-3";
-
-const CHIP_KINDS: HubKind[] = ["release", "agency", "location", "decade"];
-
-// Small links from a source row to the hubs it belongs to (R06, FBI, 1950s…).
-function HubChips({ hubs, labels }: { hubs?: HubLinks; labels: Map<string, string> }) {
-  if (!hubs) return null;
-  const chips = CHIP_KINDS.filter((k) => hubs[k]).map((k) => {
-    const slug = hubs[k]!;
-    const text = k === "release" ? `R${slug.padStart(2, "0")}` : k === "decade" ? slug : (labels.get(`${k}/${slug}`) ?? slug);
-    return (
-      <Link
-        key={k}
-        to={`/${k}/${slug}`}
-        className="rounded-[5px] border border-line px-1.5 py-px font-mono text-[9px] text-dim hover:text-signal"
-      >
-        {text}
-      </Link>
-    );
-  });
-  return chips.length ? <span className="mt-0.5 flex flex-wrap gap-1">{chips}</span> : null;
-}
+import { shareLink, xIntent, type ShareResult } from "../lib/shareLink";
+import { AskCard, ShareNote, CARD, ACTION } from "./AskCard";
+import type { AskResponse } from "../api/types";
 
 function errorCopy(e: unknown) {
   if (e instanceof ApiError && e.status === 429) return "slow down — too many questions";
@@ -39,19 +13,59 @@ function errorCopy(e: unknown) {
   return null;
 }
 
+function ShareControls({ question, logId }: { question: string; logId: number }) {
+  const share = useShareAsk();
+  const [url, setUrl] = useState<string | null>(null);
+  const [result, setResult] = useState<ShareResult | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  function publish() {
+    setFailed(false);
+    share.mutate(
+      { id: logId, public: true },
+      {
+        onSuccess: async (r) => {
+          setUrl(r.url);
+          setResult(await shareLink(question, r.url));
+        },
+        onError: () => setFailed(true),
+      }
+    );
+  }
+
+  if (!url)
+    return (
+      <>
+        <button type="button" disabled={share.isPending} onClick={publish} className={ACTION}>
+          share
+        </button>
+        {failed && <span className="font-mono text-[10px] text-dim">couldn't share — try again</span>}
+      </>
+    );
+  return (
+    <>
+      <span className="font-mono text-[10px] text-signal">✓ shared</span>
+      <button type="button" onClick={async () => setResult(await shareLink(question, url))} className={ACTION}>
+        share link
+      </button>
+      <a href={xIntent(question, url)} target="_blank" rel="noopener" className={ACTION}>
+        post on X
+      </a>
+      <button
+        type="button"
+        disabled={share.isPending}
+        onClick={() => share.mutate({ id: logId, public: false }, { onSuccess: () => { setUrl(null); setResult(null); } })}
+        className={ACTION}
+      >
+        undo
+      </button>
+      <ShareNote result={result} url={url} />
+    </>
+  );
+}
+
 export function AskAnswer({ question, onPost }: { question: string; onPost?: (data: AskResponse) => void }) {
   const { data, isLoading, error, refetch } = useAsk(question);
-  const [flash, setFlash] = useState<number | null>(null);
-  const share = useShareAsk();
-  const { data: hubsData } = useHubs();
-  const hubLabels = new Map((hubsData?.hubs ?? []).map((h) => [`${h.kind}/${h.slug}`, h.label]));
-  const [shared, setShared] = useState(false);
-
-  function cite(n: number) {
-    document.getElementById(`ask-src-${n}`)?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
-    setFlash(n);
-    setTimeout(() => setFlash((cur) => (cur === n ? null : cur)), 1200);
-  }
 
   if (isLoading) return <div className={`${CARD} font-mono text-[11px] text-faint`}>◉ consulting the archive…</div>;
   if (error) {
@@ -69,86 +83,25 @@ export function AskAnswer({ question, onPost }: { question: string; onPost?: (da
   }
   if (!data) return null;
 
-  const parts = data.answer.split(/(\[\d+\])/);
+  const canShare = data.sources.length > 0 && data.log_id != null;
+  const canPost = data.sources.length > 0 && !!onPost;
   return (
-    <section className={CARD} aria-label="archive answer">
-      <div className="mb-1 font-mono text-[9px] tracking-[.5px] text-signal">◉ ARCHIVE ANSWER</div>
-      <div className="mb-2 font-mono text-[11px] text-faint">{question}</div>
-      <p className="whitespace-pre-wrap text-[13.5px] leading-[1.55] text-ink">
-        {parts.map((p, i) => {
-          const m = /^\[(\d+)\]$/.exec(p);
-          if (!m) return p;
-          const n = Number(m[1]);
-          return (
-            <sup key={i}>
-              <button type="button" aria-label={`source ${n}`} onClick={() => cite(n)} className="px-0.5 font-mono text-[10px] text-cyan">
-                [{n}]
+    <AskCard
+      question={question}
+      data={data}
+      footer={
+        canShare || canPost ? (
+          <>
+            {canShare && <ShareControls question={question} logId={data.log_id!} />}
+            {canPost && (
+              <button type="button" onClick={() => onPost!(data)} className={ACTION}>
+                ⤴ post to a board
               </button>
-            </sup>
-          );
-        })}
-      </p>
-      {data.sources.length > 0 && (
-        <ol className="mt-3 flex flex-col gap-1.5">
-          {data.sources.map((s) => (
-            <li
-              key={s.n}
-              id={`ask-src-${s.n}`}
-              data-flash={flash === s.n ? "true" : "false"}
-              className="flex items-center gap-2 rounded-lg border border-line px-2 py-1.5 transition-colors data-[flash=true]:border-signal"
-            >
-              <span className="w-5 flex-none font-mono text-[10px] text-faint">[{s.n}]</span>
-              {s.thumb && <img src={s.thumb} alt="" loading="lazy" className="h-8 w-8 flex-none rounded object-cover" />}
-              {/* title + hub chips stack so chips wrap below instead of squeezing the title on phones */}
-              <div className="flex min-w-0 flex-1 flex-col">
-                <Link to={`/doc/${s.record_id}`} className="truncate text-[12px] text-ink hover:text-signal">
-                  {srcTitle(s).title}
-                  {srcTitle(s).showId && <span className="font-mono text-[10px] text-faint"> · {srcTitle(s).id}</span>}
-                </Link>
-                <HubChips hubs={s.hubs} labels={hubLabels} />
-              </div>
-              {s.kind === "pdf" && s.page > 0 && (
-                <a
-                  href={`/api/file/${encodeURIComponent(s.record_id)}#page=${s.page}`}
-                  target="_blank"
-                  rel="noopener"
-                  className="flex-none font-mono text-[10px] text-cyan"
-                >
-                  open at p.{s.page}
-                </a>
-              )}
-            </li>
-          ))}
-        </ol>
-      )}
-      <p className="mt-2.5 font-mono text-[9.5px] text-faint">
-        AI answer drawn from archive text &amp; OCR — can be wrong. Check the sources.
-      </p>
-      {data.sources.length > 0 && (data.log_id != null || onPost) && (
-        <div className="mt-2.5 flex flex-wrap gap-2 border-t border-line pt-2.5">
-          {data.log_id != null && (
-            <button
-              type="button"
-              aria-pressed={shared}
-              disabled={share.isPending}
-              onClick={() => share.mutate({ id: data.log_id!, public: !shared }, { onSuccess: (r) => setShared(r.public) })}
-              className="rounded-md border border-line2 px-2.5 py-1 font-mono text-[10px] text-signal hover:border-signal disabled:opacity-50"
-            >
-              {shared ? "✓ shared · undo" : "share publicly"}
-            </button>
-          )}
-          {onPost && (
-            <button
-              type="button"
-              onClick={() => onPost(data)}
-              className="rounded-md border border-line2 px-2.5 py-1 font-mono text-[10px] text-signal hover:border-signal"
-            >
-              ⤴ post to a board
-            </button>
-          )}
-        </div>
-      )}
-    </section>
+            )}
+          </>
+        ) : undefined
+      }
+    />
   );
 }
 

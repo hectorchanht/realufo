@@ -27,6 +27,12 @@ vi.mock("../api/queries", () => ({
   useHubs: () => ({ data: { hubs: [{ kind: "agency", slug: "fbi", label: "FBI", count: 104, values: ["FBI"] }] } }),
 }));
 
+const shareLinkMock = vi.fn();
+vi.mock("../lib/shareLink", async (orig) => ({
+  ...(await orig<typeof import("../lib/shareLink")>()),
+  shareLink: (t: string, u: string) => shareLinkMock(t, u),
+}));
+
 const answered = {
   data: {
     answer: "Radar tracked it [1] and pilots saw it [2].",
@@ -45,6 +51,7 @@ const renderCard = () => render(<MemoryRouter><AskAnswer question="what did rada
 beforeEach(() => {
   useAskMock.mockReset();
   shareMutate.mockReset();
+  shareLinkMock.mockReset();
 });
 
 describe("AskAnswer", () => {
@@ -108,22 +115,55 @@ describe("AskAnswer", () => {
     expect(screen.queryByRole("button", { name: "⤴ post to a board" })).toBeNull();
   });
 
-  it("share publicly sends this ask's log id and flips to undo; hidden without log id or sources", () => {
+  it("share publishes the answer, opens the share sheet, then offers share link / X / undo", async () => {
+    shareLinkMock.mockResolvedValue("copied");
     useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, log_id: 7 } });
-    const { rerender } = renderCard();
-    fireEvent.click(screen.getByRole("button", { name: "share publicly" }));
+    renderCard();
+    fireEvent.click(screen.getByRole("button", { name: "share" }));
     expect(shareMutate).toHaveBeenCalledWith({ id: 7, public: true }, expect.anything());
-    act(() => shareMutate.mock.calls[0][1].onSuccess({ public: true }));
-    fireEvent.click(screen.getByRole("button", { name: "✓ shared · undo" }));
+    await act(() => shareMutate.mock.calls[0][1].onSuccess({ public: true, url: "/ask/7-what-did-radar-see" }));
+    expect(shareLinkMock).toHaveBeenCalledWith("what did radar see?", "/ask/7-what-did-radar-see");
+    expect(screen.getByText("✓ shared")).toBeInTheDocument();
+    expect(screen.getByText("link copied")).toBeInTheDocument();
+    const x = screen.getByRole("link", { name: "post on X" });
+    expect(x.getAttribute("href")).toContain("https://x.com/intent/post?text=what%20did%20radar%20see%3F&url=");
+    expect(x).toHaveAttribute("target", "_blank");
+
+    fireEvent.click(screen.getByRole("button", { name: "share link" }));
+    expect(shareLinkMock).toHaveBeenLastCalledWith("what did radar see?", "/ask/7-what-did-radar-see");
+
+    fireEvent.click(screen.getByRole("button", { name: "undo" }));
     expect(shareMutate).toHaveBeenLastCalledWith({ id: 7, public: false }, expect.anything());
+    act(() => shareMutate.mock.calls.at(-1)![1].onSuccess({ public: false, url: "/ask/7-what-did-radar-see" }));
+    expect(screen.getByRole("button", { name: "share" })).toBeInTheDocument();
+  });
 
+  it("when neither share sheet nor clipboard works, the link is shown to copy by hand", async () => {
+    shareLinkMock.mockResolvedValue("failed");
+    useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, log_id: 7 } });
+    renderCard();
+    fireEvent.click(screen.getByRole("button", { name: "share" }));
+    await act(() => shareMutate.mock.calls[0][1].onSuccess({ public: true, url: "/ask/7-what-did-radar-see" }));
+    expect(screen.getByDisplayValue(/^https?:\/\/[^/]+\/ask\/7-what-did-radar-see$/)).toBeInTheDocument();
+  });
+
+  it("a failed share POST says so and keeps the share button", () => {
+    useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, log_id: 7 } });
+    renderCard();
+    fireEvent.click(screen.getByRole("button", { name: "share" }));
+    act(() => shareMutate.mock.calls[0][1].onError(new Error("429")));
+    expect(screen.getByText("couldn't share — try again")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "share" })).toBeInTheDocument();
+    expect(shareLinkMock).not.toHaveBeenCalled();
+  });
+
+  it("no share button without a log id or without sources", () => {
     useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, log_id: null } });
-    rerender(<MemoryRouter><AskAnswer question="q?" /></MemoryRouter>);
-    expect(screen.queryByRole("button", { name: /share publicly|undo/ })).toBeNull();
-
+    const { rerender } = renderCard();
+    expect(screen.queryByRole("button", { name: "share" })).toBeNull();
     useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, log_id: 7, sources: [] } });
     rerender(<MemoryRouter><AskAnswer question="q2?" /></MemoryRouter>);
-    expect(screen.queryByRole("button", { name: /share publicly|undo/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "share" })).toBeNull();
   });
 
   it("citation button highlights its source row", () => {
@@ -235,9 +275,9 @@ describe("Ask screen", () => {
     expect(screen.getByText("REFERENCING FILE")).toBeInTheDocument();
   });
 
-  it("tells the asker questions are logged and listed only when shared", async () => {
+  it("tells the asker questions are logged and become public pages only when shared", async () => {
     renderAppAt("/ask");
-    expect(await screen.findByText(/Questions are logged\. Tap “share publicly”/)).toBeInTheDocument();
+    expect(await screen.findByText(/Questions are logged\. Tap “share” on an answer to publish it as a public page/)).toBeInTheDocument();
   });
 
   it("shows nothing extra when both lists are empty", async () => {
