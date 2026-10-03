@@ -1,7 +1,7 @@
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
 import { stanceOK } from "../lib/db";
-import { newId, newNo } from "../lib/anon";
+import { newId, newNo, postActor } from "../lib/anon";
 import { allowWrite } from "../lib/ratelimit";
 import { readBody, putImage, uploadUrl } from "../lib/upload";
 
@@ -12,6 +12,8 @@ export async function createPost(req: Request, env: Env, p: Record<string, strin
   if (!(await allowWrite(env, req, "post"))) return error(429, "slow down — too many posts");
   const t = await env.DB.prepare("SELECT 1 FROM threads WHERE id=?").bind(p.id).first();
   if (!t) return error(404, "thread not found");
+  const actor = await postActor(req, env);
+  const op = await env.DB.prepare("SELECT actor_id FROM posts WHERE thread_id=? AND is_op=1").bind(p.id).first<{ actor_id: string | null }>();
   const id = newId();
   const no = newNo();
   const stance = stanceOK(b.stance);
@@ -27,8 +29,8 @@ export async function createPost(req: Request, env: Env, p: Record<string, strin
   const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
   await env.DB.batch([
     env.DB.prepare(
-      `INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,source_record_id,image_r2_key,image_kind,is_op,created_at) VALUES(?,?,?,?,?,?,0,?,?,?,0,?)`
-    ).bind(id, no, p.id, body, handle, stance, src, imageKey, imgKind, created_at),
+      `INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,source_record_id,image_r2_key,image_kind,is_op,created_at,actor_id) VALUES(?,?,?,?,?,?,0,?,?,?,0,?,?)`
+    ).bind(id, no, p.id, body, handle, stance, src, imageKey, imgKind, created_at, actor),
     env.DB.prepare("UPDATE threads SET reply_count=reply_count+1, img_count=img_count+? WHERE id=?").bind(imageKey ? 1 : 0, p.id),
   ]);
   return json(
@@ -46,6 +48,7 @@ export async function createPost(req: Request, env: Env, p: Record<string, strin
         image_label: null,
         image_url: uploadUrl(env, imageKey),
         isOp: false,
+        byOp: !!actor && actor === op?.actor_id,
         created_at,
         ago: "now",
       },

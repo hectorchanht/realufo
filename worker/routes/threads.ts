@@ -1,7 +1,7 @@
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
 import { relAgo, stanceOK, thumbSql, THREAD_THUMB_COLS } from "../lib/db";
-import { newId, newNo } from "../lib/anon";
+import { newId, newNo, postActor } from "../lib/anon";
 import { allowWrite } from "../lib/ratelimit";
 import { readBody, putImage, uploadUrl, UPLOAD_NAME_RE, withThreadThumb } from "../lib/upload";
 
@@ -27,9 +27,12 @@ export async function getThread(_req: Request, env: Env, p: Record<string, strin
   const rows = await env.DB.prepare("SELECT * FROM posts WHERE thread_id=? ORDER BY is_op DESC, created_at ASC")
     .bind(p.id)
     .all<any>();
-  const posts = rows.results.map((x) => ({
+  // byOp: a reply posted from the OP's browser. actor_id itself stays server-side.
+  const opActor = rows.results.find((x) => x.is_op)?.actor_id;
+  const posts = rows.results.map(({ actor_id, ...x }) => ({
     ...x,
     isOp: !!x.is_op,
+    byOp: !x.is_op && !!opActor && actor_id === opActor,
     ago: relAgo(x.created_at),
     handleShow: x.handle ? "!" + x.handle : null,
     image_url: uploadUrl(env, x.image_r2_key),
@@ -83,14 +86,15 @@ export async function createThread(req: Request, env: Env) {
   const stance = stanceOK(b.stance);
   const handle = String(b.handle ?? "").trim() || null;
   const opId = newId();
+  const actor = await postActor(req, env);
   const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
   await env.DB.batch([
     env.DB.prepare(
       `INSERT INTO threads(id,no,board_id,title,stance,op_body,op_handle,op_id,tags,votes,reply_count,img_count,source_record_id,case_slug,hot,created_at) VALUES(?,?,?,?,?,?,?,?,'[]',0,0,?,?,?,0,?)`
     ).bind(id, no, board, title, stance, op_body, handle, opId, imgCount, src, caseSlug, created_at),
     env.DB.prepare(
-      `INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,source_record_id,image_r2_key,image_kind,is_op,created_at) VALUES(?,?,?,?,?,?,0,?,?,?,1,?)`
-    ).bind(opId, no, id, op_body, handle, stance, src, imageKey, imageKey && "upload", created_at),
+      `INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,source_record_id,image_r2_key,image_kind,is_op,created_at,actor_id) VALUES(?,?,?,?,?,?,0,?,?,?,1,?,?)`
+    ).bind(opId, no, id, op_body, handle, stance, src, imageKey, imageKey && "upload", created_at, actor),
   ]);
   return json(
     {

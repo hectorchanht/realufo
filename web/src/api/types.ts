@@ -412,6 +412,7 @@ export interface Post {
   reply_to?: string[]; // parsed from JSON; present on GET, absent on the POST echo
   is_op?: number; // 0|1 raw column; present on GET, absent on the POST echo
   isOp: boolean; // computed convenience boolean, present on both
+  byOp?: boolean; // a reply posted from the OP's browser (server-side hash match)
   created_at: string;
   ago: string;
   handleShow?: string | null;

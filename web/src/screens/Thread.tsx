@@ -190,7 +190,7 @@ function PostRow({ post, sourceRecord, thread, nos, replies, onQuote }: PostRowP
     >
       {/* meta row — prototype lines 265-271 */}
       <div className="mb-[9px] flex flex-wrap items-center gap-2">
-        {post.isOp && (
+        {(post.isOp || post.byOp) && (
           <span className="rounded-[5px] bg-signal px-1.5 py-0.5 font-mono text-[8px] font-bold text-[#04140c]">
             OP
           </span>

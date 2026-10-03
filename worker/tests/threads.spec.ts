@@ -36,6 +36,25 @@ describe("threads", () => {
     expect(j.posts[0].isOp).toBe(true);
   });
 
+  it("marks replies from the OP's browser byOp, without leaking actor_id", async () => {
+    const as = (anon: string, p: string, body: any) =>
+      call(p, { method: "POST", headers: { "X-Anon-Id": anon }, body: JSON.stringify(body) });
+    const t: any = await (await as("op-browser", "/api/threads", { board: "uap", op_body: "op here" })).json();
+    const mine: any = await (await as("op-browser", `/api/threads/${t.thread.id}/posts`, { body: "me again" })).json();
+    expect(mine.post.byOp).toBe(true);
+    await as("someone-else", `/api/threads/${t.thread.id}/posts`, { body: "not op" });
+    await call(`/api/threads/${t.thread.id}/posts`, { method: "POST", body: JSON.stringify({ body: "no id" }) });
+    const j: any = await (await call(`/api/threads/${t.thread.id}`)).json();
+    // same-second created_at → reply order isn't fixed; compare as a set
+    expect(j.posts.map((p: any) => [p.body, p.isOp, p.byOp]).sort()).toEqual([
+      ["me again", false, true],
+      ["no id", false, false],
+      ["not op", false, false],
+      ["op here", true, false],
+    ]);
+    expect(j.posts.some((p: any) => "actor_id" in p)).toBe(false);
+  });
+
   it("404s an unknown thread", async () => {
     expect((await call("/api/threads/nope")).status).toBe(404);
   });
