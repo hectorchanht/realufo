@@ -13,7 +13,10 @@ Where it lands:
 - **Site thread** (Reddit-style, `/thread/ar_<slug>`, by RealUFO): OP = the story + hero image; one reply per piece of evidence. A `https://realufo.org/doc/ID?t=15` link in a post embeds that record playing at that moment.
 - **X thread**: the Short + first part as the head tweet, the other parts as replies (parts joined by `\n---\n`, `THREAD_SEP` in worker/lib/x.ts). Facebook, Instagram, Threads, YouTube and TikTok get the whole story as one caption; Bluesky gets the head only.
 
-## 1. Find the story
+## 1. Find the story, then research it (before writing anything)
+
+- **Research first** (user rule): read every source record in full (fullText, the PDFs), then search the web for how others covered it (news, Wikipedia, enthusiast sites) and note where popular retellings differ from the documents. That gap is often the best angle (AAWSAP: CBS omits the $21.9M; green fireballs: the "copper proof" lore contradicts the lab report). Cite outside sources to the user; quote only the documents in the article.
+- Stories needn't be sightings: programmes, money and paper trails work too (warp-drives).
 
 - Shape words in AARO's video descriptions are the best signal: `SELECT id, summary FROM records WHERE status='live' AND kind='video'` → grep "resembl", "shaped", "described the UAP as". Identical wording across files = gold (PR028/PR029: "inverted teardrop with a vertically linear trailing mass suspended below").
 - Search the live API like a user would: `curl "https://realufo.org/api/records?q=teardrop&type=video"`.

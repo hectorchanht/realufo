@@ -1,0 +1,42 @@
+{
+  "slug": "green-fireballs",
+  "title": "1949: green fireballs over the A-bomb labs, and the secret meeting Edward Teller sat in on",
+  "hero": "hero.jpg",
+  "short": "short.mp4",
+  "showcase_record": "DOE-UAP-D004",
+  "parts": [
+    "1949: green fireballs keep flying over America's atomic bomb labs.\nSo the A-bomb scientists held a SECRET meeting about it. Edward Teller was in the room 🟢\nThe transcript is public: DOE-UAP-D004 🧵",
+    "1/ From Dec 1948, New Mexico: bright green fireballs near Los Alamos and Sandia. The top meteor expert, Dr. Lincoln LaPaz, saw one himself on Dec 12, 1948: \"not, in my opinion, a conventional meteor fall\".",
+    "2/ Feb 16, 1949, 1 pm, room P-162, Los Alamos. In the room: lab director Bradbury, Edward Teller (later \"father of the H-bomb\"), future Nobel winner Frederick Reines, an FBI man. Opening line: the subject \"was classified Secret\".",
+    "3/ LaPaz's case: the green matched \"copper salts in the Bunsen burner\", and meteors barely contain copper. The paths were nearly flat. And though \"visible at distances of the order of 400 miles, it doesn't make a sound\".",
+    "4/ Teller: \"it ought to be a material body - might be an electron phenomenon.\"\nLaPaz: \"Nothing like this, to my knowledge, has ever been observed in the case of meteorite drops.\"",
+    "5/ Plot twists. The famous copper-in-the-air sample? The lab's verdict: \"no widespread significant dispersion\"; the one heavy sample was \"presumed to be of local origin\" (two cars drove past). By 1950 LaPaz thought half were meteors, the rest US missiles.",
+    "6/ Today's best guess: bright meteors (bolides). Many glow green from magnesium and nickel, and a boom from 50+ miles up arrives late, if at all. Skeptic Donald Menzel saw one in 1949 and called it an ordinary meteor. Project Twinkle's cameras never settled it.",
+    "7/ Read the secret transcript yourself, free:\n• realufo.org/archive → search \"green fireballs\"\n• the 1949 meeting: DOE-UAP-D004\n• the copper test and 209 Sandia sightings: DOW-UAP-D017"
+  ],
+  "evidence": [
+    {
+      "id": "DOE-UAP-D004",
+      "label": "The secret meeting, 16 Feb 1949, room P-162: Teller, Bradbury, Reines, LaPaz, the FBI",
+      "image": "d004-room.jpg",
+      "evidence": "Opening: the subject of Aerial Phenomena \"was classified Secret within the meaning of AR 380-5\". LaPaz on Dec 12, 1948: \"not, in my opinion, a conventional meteor fall\"; colour \"very close to 5218 which is about the color you get when you have copper salts in the Bunsen burner\"; \"although it produces light visible at distances of the order of 400 miles, it doesn't make a sound\". Teller: \"it ought to be a material body - might be an electron phenomenon.\" LaPaz: \"Nothing like this, to my knowledge, has ever been observed in the case of meteorite drops.\""
+    },
+    {
+      "id": "DOW-UAP-D017",
+      "label": "The copper test: \"no widespread significant dispersion\"",
+      "image": "d017-copper.jpg",
+      "evidence": "116 pages from the Armed Forces Special Weapons Project and the Air Force on 209 sightings of green orbs, discs and fireballs near Sandia Base, 1948-1950. The air-sampling report: \"My tentative conclusion is that no widespread significant dispersion of copper-bearing particles was present in the atmosphere\"; the one heavy copper collection \"should be presumed to be of local origin\"; \"The passage of two automobiles while this collection was being made is a complicating factor.\""
+    },
+    {
+      "id": "65-hs1-834228961-62-hq-83894-section-6",
+      "label": "FBI file, 1950: the expert changes his mind",
+      "image": "fbi-missiles.jpg",
+      "evidence": "LaPaz's analysis of May 23, 1950: \"approximately half of the phenomena recorded were of meteoric origin. The other phenomena commonly referred to as green fireballs or discs he believed to be U.S. guided missiles being tested in the neighborhood of the installations.\" Also: OSI concern about \"green fireballs, discs and meteors in the vicinity of sensitive installations in New Mexico\"; Project Twinkle."
+    },
+    {
+      "id": "CIA-UAP-002",
+      "label": "Still on the table in 1953: the Twinkle report",
+      "evidence": "The CIA's 1952-53 Scientific Advisory Panel (Robertson Panel) material lists the Air Force research center's \"Investigation of 'Green Fireball' Phenomena (Project TWINKLE)\" among the cases it reviewed."
+    }
+  ]
+}
