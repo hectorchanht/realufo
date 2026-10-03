@@ -48,7 +48,8 @@ def _dur(path):
 def tts(text):
     """ElevenLabs narration → (mp3 path, seconds), cached in showcase/.tts by text + voice.
     Key: ELEVENLABS_API_KEY in the environment or the repo-root .env."""
-    out = os.path.join(HERE, ".tts", hashlib.sha1(f"{VOICE}|{text}".encode()).hexdigest()[:16] + ".mp3")
+    settings = {"stability": 0.45, "similarity_boost": 0.8, "style": 0.35, "speed": 1.1}
+    out = os.path.join(HERE, ".tts", hashlib.sha1(f"{VOICE}|{settings}|{text}".encode()).hexdigest()[:16] + ".mp3")
     if not os.path.exists(out):
         key = os.environ.get("ELEVENLABS_API_KEY") or next((l.split("=", 1)[1].strip() for l in open(os.path.join(HERE, "..", ".env"))
                                                           if l.startswith("ELEVENLABS_API_KEY=")), None)
@@ -56,7 +57,7 @@ def tts(text):
             raise SystemExit("ELEVENLABS_API_KEY missing (repo-root .env)")
         req = urllib.request.Request(f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE}?output_format=mp3_44100_128",
             data=json.dumps({"text": text, "model_id": "eleven_multilingual_v2",
-                             "voice_settings": {"stability": 0.45, "similarity_boost": 0.8, "style": 0.35}}).encode(),
+                             "voice_settings": settings}).encode(),
             headers={"xi-api-key": key, "Content-Type": "application/json", "Accept": "audio/mpeg"})
         os.makedirs(os.path.dirname(out), exist_ok=True)
         with urllib.request.urlopen(req) as r, open(out, "wb") as f:
