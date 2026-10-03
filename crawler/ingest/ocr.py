@@ -11,8 +11,20 @@ record's record_text row is deleted and its text_index row marked failed, so
 fulltext / summaries / tldr / cards / textindex rebuild it from the new text.
 Needs Paddle (crawler/.venv-ocr or requirements-ocr.txt); nothing else does.
 """
-from . import d1
+import argparse, json, os, re, subprocess, sys, tempfile, time
+from . import d1, fetch, r2
+from .chunking import split_pages
 from .fulltext import clean_page, keep_page
+
+SELECT = """SELECT r.id,
+  (SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND a.role='full' LIMIT 1) AS url
+FROM records r LEFT JOIN record_ocr o ON o.record_id=r.id
+WHERE r.status='live' AND r.kind='pdf' AND o.record_id IS NULL
+  AND EXISTS (SELECT 1 FROM assets a WHERE a.record_id=r.id AND a.role='full'){ids}
+ORDER BY r.created_at DESC, r.id"""
+DET, REC, DPI = "PP-OCRv5_server_det", "en_PP-OCRv5_mobile_rec", 200  # picked by the benchmark
+SCORE_MIN = 0.5  # Paddle drops boxes recognised below this, so garbage never becomes text
+ENGINE = f"PP-OCRv5:{DET}+{REC}@{DPI}"
 
 def lines_from_boxes(items) -> str:
     """[(text, (x1, y1, x2, y2))] -> lines top-to-bottom, boxes left-to-right in a line."""
@@ -51,3 +63,86 @@ def marker_sql(rid: str, pages: list[dict], engine: str) -> str:
         sql += [f"DELETE FROM record_text WHERE record_id={q};",
                 f"UPDATE text_index SET status='failed' WHERE record_id={q};"]
     return "\n".join(sql) + "\n"
+
+def page_count(pdf: str) -> int:
+    out = subprocess.run(["pdfinfo", pdf], capture_output=True, text=True, check=True).stdout
+    m = re.search(r"^Pages:\s+(\d+)", out, re.M)
+    if not m:
+        raise RuntimeError("pdfinfo: no page count")
+    return int(m.group(1))
+
+def pdftotext_pages(pdf: str) -> list[str]:
+    out = subprocess.run(["pdftotext", "-enc", "UTF-8", pdf, "-"],
+                         capture_output=True, text=True, check=True).stdout
+    return split_pages(out)
+
+def render(pdf: str, n: int, dpi: int, work: str) -> str:
+    base = os.path.join(work, "page")
+    subprocess.run(["pdftoppm", "-r", str(dpi), "-f", str(n), "-l", str(n), "-png", "-singlefile", pdf, base],
+                   capture_output=True, check=True)
+    return base + ".png"
+
+def paddle_engine(det: str = DET, rec: str = REC):
+    from paddleocr import PaddleOCR  # lazy: only the OCR venv / GHA ocr step installs Paddle
+    model = PaddleOCR(text_detection_model_name=det, text_recognition_model_name=rec,
+                      use_doc_orientation_classify=True, use_doc_unwarping=False,
+                      use_textline_orientation=False, text_rec_score_thresh=SCORE_MIN)
+    def run(png: str) -> tuple[str, float]:
+        r = model.predict(png)[0]
+        scores = [float(s) for s in r["rec_scores"]]
+        items = [(t, tuple(float(v) for v in b)) for t, b in zip(r["rec_texts"], r["rec_boxes"])]
+        return lines_from_boxes(items), (sum(scores) / len(scores) if scores else 0.0)
+    return run
+
+def ocr_record(row: dict, engine, work: str, dpi: int = DPI) -> list[dict]:
+    pdf = os.path.join(work, "src.pdf")
+    fetch.download(row["url"], pdf)
+    try:
+        return route_pages(pdftotext_pages(pdf), page_count(pdf),
+                           lambda n: engine(render(pdf, n, dpi, work)))
+    finally:
+        os.remove(pdf)
+
+def put_text(rid: str, pages: list[dict], work: str) -> None:
+    path = os.path.join(work, "text.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(pages, f, ensure_ascii=False)
+    r2.put(f"text/{rid}.json", path, "application/json; charset=utf-8")
+
+def select_rows(ids: list[str], limit):
+    where = f" AND r.id IN ({','.join(d1.sql_q(i) for i in ids)})" if ids else ""
+    return d1._d1_json(" ".join(SELECT.format(ids=where).split()))[:limit]
+
+def main(argv=None):
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dry-run", action="store_true", help="OCR + print stats; no R2/D1 writes")
+    ap.add_argument("--limit", type=int, default=None, help="max records this run")
+    ap.add_argument("--ids", default=None, help="comma-separated record ids")
+    args = ap.parse_args(argv)
+    rows = select_rows([i for i in (args.ids or "").split(",") if i], args.limit)
+    engine = paddle_engine() if rows else None
+    ok = failed = 0
+    with tempfile.TemporaryDirectory() as work:
+        for i, row in enumerate(rows, 1):
+            t0 = time.time()
+            try:
+                pages = ocr_record(row, engine, work)
+                if not args.dry_run:
+                    put_text(row["id"], pages, work)  # before the marker: a crash in between means a retry
+                    path = os.path.join(work, "ocr.sql")
+                    with open(path, "w", encoding="utf-8") as f:
+                        f.write(marker_sql(row["id"], pages, ENGINE))
+                    d1.apply_sql(path)
+            except Exception as e:
+                failed += 1
+                print(f"[{i}/{len(rows)}] FAIL {row['id']}: {e}", flush=True)
+                continue
+            ok += 1
+            print(f"[{i}/{len(rows)}] ok   {row['id']} pages={len(pages)} "
+                  f"ocr={sum(p['src'] == 'ocr' for p in pages)} err={sum(p['src'] == 'err' for p in pages)} "
+                  f"chars={sum(len(p['text']) for p in pages)} {time.time() - t0:.0f}s", flush=True)
+    print(f"{'dry-run ' if args.dry_run else ''}ocr ok={ok} failed={failed}")
+    sys.exit(1 if failed else 0)
+
+if __name__ == "__main__":
+    main()

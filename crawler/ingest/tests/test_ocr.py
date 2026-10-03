@@ -59,3 +59,62 @@ def test_marker_sql_born_digital_file_writes_marker_only():
     assert db.execute("SELECT ocr_pages FROM record_ocr").fetchone() == (0,)
     assert db.execute("SELECT COUNT(*) FROM record_text").fetchone() == (1,)
     assert db.execute("SELECT status FROM text_index").fetchone() == ("indexed",)
+
+@pytest.fixture
+def world(monkeypatch):
+    w = {"rows": [], "applied": [], "put": [], "pdftotext": {}, "pages": {}, "sql": [], "fail_put": set()}
+    def d1_json(sql):
+        w["sql"].append(sql)
+        return w["rows"]
+    monkeypatch.setattr(ocr.d1, "_d1_json", d1_json)
+    monkeypatch.setattr(ocr.d1, "apply_sql", lambda path: w["applied"].append(open(path, encoding="utf-8").read()))
+    monkeypatch.setattr(ocr.fetch, "download", lambda url, dest: open(dest, "wb").write(url.encode()))
+    monkeypatch.setattr(ocr, "page_count", lambda pdf: w["pages"].get(open(pdf, "rb").read().decode(), 1))
+    monkeypatch.setattr(ocr, "pdftotext_pages", lambda pdf: w["pdftotext"].get(open(pdf, "rb").read().decode(), [CLEAN]))
+    monkeypatch.setattr(ocr, "render", lambda pdf, n, dpi, work: f"page{n}.png")
+    monkeypatch.setattr(ocr, "paddle_engine", lambda *a: (lambda png: (f"OCR {png}", 0.9)))
+    def put(key, path, ctype):
+        if key in w["fail_put"]:
+            raise RuntimeError("r2 down")
+        w["put"].append((key, open(path, encoding="utf-8").read(), ctype))
+    monkeypatch.setattr(ocr.r2, "put", put)
+    return w
+
+def run(*argv):
+    with pytest.raises(SystemExit) as e:
+        ocr.main(list(argv))
+    return e.value.code
+
+def test_live_run_uploads_all_pages_then_writes_marker(world):
+    world["rows"] = [{"id": "A", "url": "https://cdn/a.pdf"}]
+    world["pages"]["https://cdn/a.pdf"] = 2
+    world["pdftotext"]["https://cdn/a.pdf"] = [CLEAN, GARBLED]
+    assert run() == 0
+    key, body, ctype = world["put"][0]
+    assert key == "text/A.json" and ctype.startswith("application/json")
+    assert json.loads(body) == [{"n": 1, "text": CLEAN, "src": "pdf"},
+                                {"n": 2, "text": "OCR page2.png", "src": "ocr", "conf": 0.9}]
+    assert "INSERT OR REPLACE INTO record_ocr" in world["applied"][0]
+    assert "DELETE FROM record_text WHERE record_id='A'" in world["applied"][0]
+
+def test_no_text_layer_pdf_is_fully_ocrd(world):
+    world["rows"] = [{"id": "S", "url": "https://cdn/s.pdf"}]
+    world["pages"]["https://cdn/s.pdf"] = 3
+    world["pdftotext"]["https://cdn/s.pdf"] = []
+    assert run() == 0
+    assert [p["src"] for p in json.loads(world["put"][0][1])] == ["ocr", "ocr", "ocr"]
+
+def test_r2_failure_writes_no_marker_and_run_continues(world):
+    world["rows"] = [{"id": "BAD", "url": "https://cdn/b.pdf"}, {"id": "OK", "url": "https://cdn/o.pdf"}]
+    world["fail_put"].add("text/BAD.json")
+    assert run() == 1
+    assert len(world["applied"]) == 1 and "'OK'" in world["applied"][0] and "'BAD'" not in world["applied"][0]
+
+def test_dry_run_writes_nothing(world):
+    world["rows"] = [{"id": "A", "url": "https://cdn/a.pdf"}]
+    assert run("--dry-run") == 0
+    assert world["put"] == [] and world["applied"] == []
+
+def test_ids_filter_is_escaped_into_the_select(world):
+    run("--ids", "A,O'Hare")
+    assert "r.id IN ('A','O''Hare')" in world["sql"][0]
