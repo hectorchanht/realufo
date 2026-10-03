@@ -13,6 +13,8 @@ ARCHIVE_ROWS = {
     "canada": {"label": "Library and Archives Canada", "flag": "🇨🇦", "accent": "#ff6b6b", "coord": "Ottawa"},
     # NZDF 2010 OIA release (Crown copyright; no explicit licence on the release)
     "nz": {"label": "New Zealand Defence Force", "flag": "🇳🇿", "accent": "#7ad1c8", "coord": "Wellington"},
+    # Biblioteca Virtual de Defensa, "Expedientes OVNI" (CC BY 4.0, "Fuente: ..." credit in each summary)
+    "spain": {"label": "Spanish Air Force (BVD)", "flag": "🇪🇸", "accent": "#f5c84c", "coord": "Madrid"},
 }
 
 def _load(slug, data_dir):

@@ -1423,26 +1423,26 @@ export const CASE_STORY_TEXT: Record<string, CaseStory> = {
     ],
     sources: [
       {
-        url: "https://bibliotecavirtual.defensa.gob.es/BVMDefensa/exp_ovni/es/consulta/registro.do?id=38290",
+        id: "SPAIN-BVD-38290-Valencia-Motril-Madrid-1979",
         note: "Defence Virtual Library catalogue record"
       },
       {
-        url: "https://bibliotecavirtual.defensa.gob.es/BVMDefensa/exp_ovni/es/catalogo_imagenes/imagen.do?path=102241&posicion=1&registrardownload=1",
+        id: "SPAIN-BVD-38290-Valencia-Motril-Madrid-1979",
         page: 1,
         note: "File cover: case numbers and dates"
       },
       {
-        url: "https://bibliotecavirtual.defensa.gob.es/BVMDefensa/exp_ovni/es/catalogo_imagenes/imagen.do?path=102241&posicion=1&registrardownload=1",
+        id: "SPAIN-BVD-38290-Valencia-Motril-Madrid-1979",
         page: 2,
         note: "Air Operations Command summary, page 1"
       },
       {
-        url: "https://bibliotecavirtual.defensa.gob.es/BVMDefensa/exp_ovni/es/catalogo_imagenes/imagen.do?path=102241&posicion=1&registrardownload=1",
+        id: "SPAIN-BVD-38290-Valencia-Motril-Madrid-1979",
         page: 3,
         note: "Air Operations Command summary, page 2"
       },
       {
-        url: "https://bibliotecavirtual.defensa.gob.es/BVMDefensa/exp_ovni/es/catalogo_imagenes/imagen.do?path=102241&posicion=1&registrardownload=1",
+        id: "SPAIN-BVD-38290-Valencia-Motril-Madrid-1979",
         page: 4,
         note: "Summary, page 3, and document index"
       }
