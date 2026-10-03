@@ -20,6 +20,15 @@ describe("sitemap", () => {
     expect(xml).toContain("/cases</loc>");
   });
 
+  it("rss.xml lists newest live files as RSS 2.0 items linking to doc pages", async () => {
+    const res = await worker.fetch(new Request("https://realufo.org/rss.xml"), env as any, {} as any);
+    expect(res.headers.get("content-type")).toMatch(/rss\+xml/);
+    const xml = await res.text();
+    expect(xml).toMatch(/^<\?xml[^>]*><rss version="2.0"/);
+    expect(xml).toMatch(/<item><title>[^<]+<\/title><link>https:\/\/realufo\.org\/doc\/[^<]+<\/link><guid isPermaLink="true">/);
+    expect(xml).toMatch(/<pubDate>\w{3}, \d\d \w{3} \d{4}/);
+  });
+
   it("video docs carry video:video tags (thumbnail, title, content, date)", async () => {
     await env.DB.prepare("INSERT INTO assets(record_id,role,cdn_url,mime) VALUES('AARO-956955','thumb','https://cdn/t.jpg','image/jpeg')").run();
     const xml = await (await worker.fetch(new Request("https://realufo.org/sitemap.xml"), env as any, {} as any)).text();

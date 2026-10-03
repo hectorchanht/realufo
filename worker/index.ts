@@ -17,6 +17,7 @@ import { getCase } from "./routes/cases";
 import { serveWithMeta } from "./lib/meta";
 import { ask, recentAsks, setAskPublic, getSharedAsk } from "./routes/ask";
 import { sitemap } from "./routes/sitemap";
+import { rss } from "./routes/rss";
 import { llms, llmsFull } from "./routes/llms";
 import { hubsIndex, getHub } from "./routes/hubs";
 import { tick } from "./lib/xbot";
@@ -58,6 +59,7 @@ export default {
       return res ?? error(404, "not found");
     }
     if (url.pathname === "/sitemap.xml") return sitemap(req, env);
+    if (url.pathname === "/rss.xml") return rss(req, env);
     if (url.pathname === "/llms.txt") return llms(req, env);
     if (url.pathname === "/llms-full.txt") return llmsFull(req, env);
     return serveWithMeta(req, env); // SPA + assets, with per-route meta/OG injection for deep links

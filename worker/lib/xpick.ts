@@ -131,6 +131,16 @@ async function pickCandidate(env: Env): Promise<Candidate | null> {
   return r ? { stream: "pick", ref: r.id, record: r, link: `${SITE}/doc/${encodeURIComponent(r.id)}`, media: await mediaFor(env, r) } : null;
 }
 
+// Operator override (scripts/publish.sh): X_FORCE_PICK="ID[,ID]" posts those records
+// next, ignoring the pick-hour slots; budget and the once-per-record rule still apply.
+async function forcedCandidate(env: Env): Promise<Candidate | null> {
+  const ids = (env.X_FORCE_PICK ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (!ids.length) return null;
+  const r = await env.DB.prepare(`SELECT ${PICK_COLS} FROM records r WHERE r.id IN (SELECT value FROM json_each(?)) AND ${UNPOSTED} LIMIT 1`)
+    .bind(JSON.stringify(ids)).first<PickRecord>();
+  return r ? { stream: "pick", ref: r.id, record: r, link: `${SITE}/doc/${encodeURIComponent(r.id)}`, media: await mediaFor(env, r) } : null;
+}
+
 async function highlightCandidate(env: Env, now: Date): Promise<Candidate | null> {
   // Opt-in: votes are cheap to forge (anon ids are client-chosen), so this
   // stream puts user text on the official account only when the operator sets a bar.
@@ -164,6 +174,7 @@ async function pickDue(env: Env, now: Date): Promise<boolean> {
 export async function nextCandidate(env: Env, now: Date): Promise<Candidate | null> {
   const h = now.getUTCHours();
   return (
+    (await forcedCandidate(env)) ??
     (await releaseCandidate(env, now)) ??
     ((await pickDue(env, now)) ? await pickCandidate(env) : null) ??
     (h >= 20 && !(await postedToday(env, "highlight", now)) ? await highlightCandidate(env, now) : null)
