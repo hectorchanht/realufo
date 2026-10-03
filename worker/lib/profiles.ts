@@ -3,6 +3,7 @@
 export const SOCIAL_PROFILES: [name: string, url: string][] = [
   ["X", "https://x.com/realufo_org"],
   ["Bluesky", "https://bsky.app/profile/realufo.bsky.social"],
+  ["Facebook", "https://www.facebook.com/realufo.org/"],
   ["Instagram", "https://www.instagram.com/realufo_org/"],
   ["Threads", "https://www.threads.com/@realufo_org"],
   ["YouTube", "https://www.youtube.com/@realufo_org"],
