@@ -2,6 +2,13 @@
 
 Status 2026-10-03: research in progress, story not written. Archive searched over 317 PaddleOCR'd files plus pdftotext for the rest; re-check the remaining files once the OCR backfill finishes.
 
+## Re-search over full-page OCR search (2026-10-04, 356/361 PDFs OCR'd; D017 pending)
+
+- Still 0 hits: Dulce, Bennewitz, Manzano, Archuleta, Aquarius, Gasbuggy, Jicarilla, Cseh. "mutilation" only in the 2024 NDAA (records law).
+- "Bennewicz" → COMETA p.74 (only hit). "glider Kirtland" / "deadstick Kirtland" → CIA-UAP-003 p.92. "man from Mars" ranks the CIA page low (word search) — don't use it as the how-to.
+- False positives checked: "underground" (ICA-UAP-D001 Weather Underground; D134 "underground press"; FBI-UAP-D012 "underground nuclear explosion"), "Doty" (D104 OCR "DUTY"; Sgt James B. Doty, 1949 weather observer, 342HS1… p.139 / 38143685… p.103 — NOT AFOSI's Richard Doty), "Project Beta" (betatron / beta particle).
+- New optional evidence: DOW-UAP-D092 p.75 lists "Outline of Investigation of U.F.O.'s Proposed by Kirtland Air Force Base (Project POUNCE)"; DOW-UAP-D143 (AAWSAP DIRD, 2010) p.54 credits a laser-weapon figure to "AFRL/RDS, Kirtland AFB, NM" — independent sign that Kirtland hosts directed-energy work (COMETA's explanation).
+
 ## Evidence used in the draft (pages checked against the scans)
 
 | Record | Page | What it shows | Crop |
