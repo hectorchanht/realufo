@@ -22,7 +22,8 @@ export const AGENCY_HUBS: Entry[] = [
   { slug: "department-of-war", label: "Department of War", phrase: "from the U.S. Department of War (the Pentagon)", values: ["DoW", "Department of War"] },
   { slug: "fbi", label: "FBI", phrase: "from the Federal Bureau of Investigation (FBI)", values: ["FBI"] },
   { slug: "aaro", label: "AARO", phrase: "from the All-domain Anomaly Resolution Office (AARO)", values: ["AARO"] },
-  { slug: "nara", label: "National Archives", phrase: "held by the U.S. National Archives (NARA)", values: ["NARA"] },
+  // ponytail: agency values that today only occur on NARA-held files (archive 'nara'); match on archive if another source adds them.
+  { slug: "nara", label: "National Archives", phrase: "held by the U.S. National Archives (NARA)", values: ["Federal Aviation Administration", "U.S. Air Force (Project Blue Book)", "NARA"] },
   { slug: "nasa", label: "NASA", phrase: "from NASA", values: ["NASA"] },
   { slug: "cia", label: "CIA", phrase: "from the Central Intelligence Agency (CIA)", values: ["CIA", "Central Intelligence Agency"] },
   { slug: "department-of-state", label: "Department of State", phrase: "from the U.S. Department of State", values: ["Department of State", "DoS"] },

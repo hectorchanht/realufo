@@ -41,11 +41,6 @@ def wargov_links(paths):
     return out
 
 
-# NARA's landing page links each Pentagon Papers part to this bucket under the same file name
-PENTAGON = ("https://www.archives.gov/research/pentagon-papers",
-            "https://nara-media-001.s3.amazonaws.com/arcmedia/research/pentagon-papers/")
-
-
 def snapshot_sources():
     """cdn_url -> official URL. An asset listed twice keeps its longest (most exact) source:
     the NASA PDFs appear once with the wp-content file and once with the /uap/ landing page."""
@@ -53,8 +48,6 @@ def snapshot_sources():
     for slug in ARCHIVE_ROWS:
         for a in _load(slug, os.path.join(HERE, "ingest", "data")):
             u, src = (a.get("u") or a.get("l") or "").strip(), (a.get("s") or "").strip()
-            if src.rstrip("/") == PENTAGON[0]:
-                src = PENTAGON[1] + posixpath.basename(u)
             if u and src and len(src) > len(m.get(u, "")):
                 m[u] = quote(src, safe=":/%?=&#")  # aaro.mil paths carry raw spaces
     return m
