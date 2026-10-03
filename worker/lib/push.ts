@@ -17,8 +17,10 @@ export interface PushMsg {
 }
 
 const BATCH = 20;
-// ponytail: Workers allow ~1000 subrequests per invocation, so one send reaches at most
-// ~900 subscribers; move fan-out to Cloudflare Queues before the audience gets there.
+// ponytail: Workers allow ~1000 subrequests per invocation, and the cron tick shares that
+// budget with the X bot, social fan-out, polls and both push digests, so one send reaches
+// well under ~900 subscribers; hitting the cap stops the fan-out ("limit") without blaming
+// the subs. Move fan-out to Cloudflare Queues before the audience gets there.
 const MAX_RECIPIENTS = 900;
 const THROTTLE_MIN = 10;
 
@@ -37,7 +39,8 @@ export async function notify(env: Env, subs: PushSub[], msg: PushMsg): Promise<n
   let ok = 0;
   for (let i = 0; i < uniq.length; i += BATCH) {
     const res = await Promise.all(uniq.slice(i, i + BATCH).map(async (s) => [s, await send(env, s, m)] as const));
-    const stmts = res.map(([s, r]) =>
+    const limited = res.some(([, r]) => r === "limit");
+    const stmts = res.filter(([, r]) => r !== "limit").map(([s, r]) =>
       r === "ok"
         ? env.DB.prepare("UPDATE push_subs SET fail_count=0 WHERE endpoint=? AND fail_count>0").bind(s.endpoint)
         : r === "gone"
@@ -47,6 +50,7 @@ export async function notify(env: Env, subs: PushSub[], msg: PushMsg): Promise<n
     stmts.push(env.DB.prepare("DELETE FROM push_subs WHERE fail_count>=5"));
     await env.DB.batch(stmts);
     ok += res.filter(([, r]) => r === "ok").length;
+    if (limited) break; // out of subrequests: later batches would all fail too
   }
   return ok;
 }
@@ -110,8 +114,9 @@ export async function pushNewFiles(env: Env) {
   const newest = (await env.DB.prepare("SELECT max(created_at) m FROM records WHERE status='live'").first<{ m: string | null }>())?.m;
   if (!newest) return;
   const wm = await getState(env, "new_files");
-  await setState(env, "new_files", newest); // first: a crash mid-send never repeats the digest
-  if (!wm || newest <= wm) return; // first run starts from now: no backlog flood
+  if (wm && newest <= wm) return; // never move back (the newest record may have been hidden)
+  await setState(env, "new_files", newest); // before sending: a crash mid-send never repeats the digest
+  if (!wm) return; // first run starts from now: no backlog flood
   const range = [wm, newest];
   const { results: recs } = await env.DB.prepare(
     `SELECT r.id, coalesce(a.label, r.archive) src FROM records r LEFT JOIN archives a ON a.id=r.archive

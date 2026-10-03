@@ -63,6 +63,12 @@ describe("pushNewFiles", () => {
     expect(hits).toEqual([]);
   });
 
+  it("the watermark never moves backwards (newest record hidden)", async () => {
+    await env.DB.prepare("INSERT INTO push_state(k,v) VALUES('new_files','2999-01-01 00:00:00')").run();
+    await pushNewFiles(E);
+    expect(await env.DB.prepare("SELECT v FROM push_state WHERE k='new_files'").first("v")).toBe("2999-01-01 00:00:00");
+  });
+
   it("topic hub followers match by the topic rule", async () => {
     await sub("bb-fan");
     await env.DB.prepare("INSERT INTO follows(actor_id,kind,key,src) VALUES('bb-fan','hub','topic/project-blue-book','bell')").run();

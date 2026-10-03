@@ -22,13 +22,19 @@ const keysOk = (k: any) => {
 const b64 = (s: unknown, min: number, max: number): s is string =>
   typeof s === "string" && s.length >= min && s.length <= max && /^[A-Za-z0-9_-]+$/.test(s);
 
+// Always an object, so `b.x` never throws on a `null` / array / string body.
 async function body(req: Request): Promise<any> {
   try {
-    return await req.json();
+    const b = await req.json();
+    return b && typeof b === "object" ? b : {};
   } catch {
     return {};
   }
 }
+
+// Only real push services: the cron POSTs to every stored endpoint, so an arbitrary
+// https URL would turn the Worker into a request relay.
+const PUSH_HOST = /^(fcm\.googleapis\.com|web\.push\.apple\.com|[a-z0-9.-]+\.push\.services\.mozilla\.com|[a-z0-9.-]+\.notify\.windows\.com)$/;
 
 // Caller's actor id, or null when the request has no anon id (they'd all share "anon:none").
 const caller = (req: Request, env: Env) => (req.headers.get("X-Anon-Id") ? actorId(req, env.ANON_SALT) : Promise.resolve(null));
@@ -56,7 +62,7 @@ export async function subscribe(req: Request, env: Env) {
   } catch {
     // invalid
   }
-  if (!url || url.protocol !== "https:" || String(s.endpoint).length > 1000) return error(400, "bad endpoint");
+  if (!url || url.protocol !== "https:" || !PUSH_HOST.test(url.hostname) || String(s.endpoint).length > 1000) return error(400, "bad endpoint");
   if (!keysOk(s.keys)) return error(400, "bad keys");
   if (!(await allowWrite(env, req, "push"))) return error(429, "slow down");
   const p = b.prefs ?? {};
@@ -73,11 +79,12 @@ export async function subscribe(req: Request, env: Env) {
 export async function setPrefs(req: Request, env: Env) {
   if (!pushOn(env)) return error(404, "push off");
   const b = await body(req);
-  if (!(await owns(env, await caller(req, env), b.endpoint))) return error(404, "not subscribed");
+  const actor = await caller(req, env);
+  if (!(await owns(env, actor, b.endpoint))) return error(404, "not subscribed");
   const sets = PREFS.filter((k) => typeof b[k] === "boolean");
   if (!sets.length) return error(400, "nothing to set");
-  await env.DB.prepare(`UPDATE push_subs SET ${sets.map((k) => `${k}=?`).join(",")} WHERE endpoint=?`)
-    .bind(...sets.map((k) => Number(b[k])), b.endpoint)
+  await env.DB.prepare(`UPDATE push_subs SET ${sets.map((k) => `${k}=?`).join(",")} WHERE endpoint=? AND actor_id=?`)
+    .bind(...sets.map((k) => Number(b[k])), b.endpoint, actor)
     .run();
   return json({ ok: true });
 }
@@ -85,8 +92,9 @@ export async function setPrefs(req: Request, env: Env) {
 // Works with push off too, so a browser can always clean up. Follows stay (cost nothing).
 export async function unsubscribe(req: Request, env: Env) {
   const b = await body(req);
-  if (!(await owns(env, await caller(req, env), b.endpoint))) return error(404, "not subscribed");
-  await env.DB.prepare("DELETE FROM push_subs WHERE endpoint=?").bind(b.endpoint).run();
+  const actor = await caller(req, env);
+  if (!(await owns(env, actor, b.endpoint))) return error(404, "not subscribed");
+  await env.DB.prepare("DELETE FROM push_subs WHERE endpoint=? AND actor_id=?").bind(b.endpoint, actor).run();
   return json({ ok: true });
 }
 
@@ -117,10 +125,9 @@ const EXISTS: Record<string, string> = {
   record: "SELECT 1 FROM records WHERE id=?",
   case: "SELECT 1 FROM cases WHERE slug=?",
 };
-async function targetExists(env: Env, kind: unknown, key: unknown) {
-  if (typeof key !== "string" || typeof kind !== "string") return false;
+async function targetExists(env: Env, kind: string, key: string) {
   if (kind === "hub") return !!hubLabel(key);
-  return !!EXISTS[kind] && !!(await env.DB.prepare(EXISTS[kind]).bind(key).first());
+  return Object.hasOwn(EXISTS, kind) && !!(await env.DB.prepare(EXISTS[kind]).bind(key).first());
 }
 
 export async function getFollow(req: Request, env: Env) {
@@ -136,12 +143,15 @@ export async function toggleFollow(req: Request, env: Env) {
   const actor = await caller(req, env);
   if (!actor) return error(400, "missing anon id");
   const b = await body(req);
-  if (!(await targetExists(env, b.kind, b.key))) return error(404, "unknown target");
+  if (typeof b.kind !== "string" || typeof b.key !== "string") return error(400, "bad target");
+  const on = b.on === true; // the string "false" must not follow
+  // Unfollow skips the check so a follow whose target was since deleted can still go.
+  if (on && !(await targetExists(env, b.kind, b.key))) return error(404, "unknown target");
   if (!(await allowWrite(env, req, "follow"))) return error(429, "slow down");
-  if (b.on)
+  if (on)
     await env.DB.prepare("INSERT INTO follows(actor_id,kind,key,src) VALUES(?,?,?,'bell') ON CONFLICT(actor_id,kind,key) DO UPDATE SET src='bell'")
       .bind(actor, b.kind, b.key)
       .run();
   else await env.DB.prepare("DELETE FROM follows WHERE actor_id=? AND kind=? AND key=?").bind(actor, b.kind, b.key).run();
-  return json({ following: !!b.on });
+  return json({ following: on });
 }

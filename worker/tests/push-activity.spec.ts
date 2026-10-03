@@ -4,7 +4,7 @@ import worker from "../index";
 import { seedTestDB } from "./helpers";
 import { actorId } from "../lib/anon";
 import { b64u } from "../lib/webpush";
-import { clip, pushActivity } from "../lib/push";
+import { clip, notify, pushActivity } from "../lib/push";
 
 let E: any;
 let ua: { p256dh: string; auth: string };
@@ -111,6 +111,22 @@ describe("pushActivity", () => {
       await pushActivity(E, "thread", "t3", null, "x");
     }
     expect(await env.DB.prepare("SELECT 1 FROM push_subs WHERE actor_id=?").bind(b).first()).toBeNull();
+  });
+
+  it("hitting the subrequest cap keeps fail_count and stops the fan-out", async () => {
+    const subs = [];
+    for (let i = 0; i < 25; i++) {
+      await subscriber(`cap${i}`);
+      subs.push({ endpoint: `https://push.test/cap${i}`, ...ua });
+    }
+    vi.mocked(fetch).mockImplementation(async (input: any) => {
+      hits.push(String(input));
+      throw new Error("Too many subrequests.");
+    });
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(await notify(E, subs, { title: "t", body: "b", url: "/", tag: "x" })).toBe(0);
+    expect(hits).toHaveLength(20); // first batch only
+    expect(await env.DB.prepare("SELECT count(*) n FROM push_subs WHERE fail_count>0").first("n")).toBe(0);
   });
 
   it("does nothing while FEATURE_PUSH is off", async () => {

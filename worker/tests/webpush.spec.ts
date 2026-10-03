@@ -80,4 +80,19 @@ describe("webpush", () => {
     throws = true;
     expect(await send(e, sub, {})).toBe("error");
   });
+
+  it("send: the per-invocation subrequest cap is 'limit' (not the sub's fault); failures are logged without the endpoint path", async () => {
+    const { e } = await vapidEnv();
+    const ua = (await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"])) as CryptoKeyPair;
+    const sub = { endpoint: "https://fcm.googleapis.com/fcm/send/SECRET", p256dh: b64u.enc((await crypto.subtle.exportKey("raw", ua.publicKey)) as ArrayBuffer), auth: b64u.enc(crypto.getRandomValues(new Uint8Array(16))) };
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new Error("Too many subrequests.")).mockResolvedValueOnce(new Response("x".repeat(500), { status: 403 }));
+    expect(await send(e, sub, {})).toBe("limit");
+    expect(await send(e, sub, {})).toBe("error");
+    const logged = warn.mock.calls.map((c) => String(c[0]));
+    expect(logged.some((l) => l.includes("Too many subrequests"))).toBe(true);
+    const http = JSON.parse(logged.find((l) => l.includes('"status":403'))!);
+    expect(http).toEqual({ push: true, status: 403, endpointHost: "fcm.googleapis.com", body: "x".repeat(200) });
+    expect(logged.join()).not.toContain("SECRET");
+  });
 });

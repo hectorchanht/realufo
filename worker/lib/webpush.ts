@@ -8,7 +8,8 @@ export interface PushSub {
   p256dh: string;
   auth: string;
 }
-export type SendResult = "ok" | "gone" | "error";
+// "limit" = this invocation ran out of subrequests: says nothing about the subscription.
+export type SendResult = "ok" | "gone" | "error" | "limit";
 
 const te = new TextEncoder();
 
@@ -100,8 +101,14 @@ export async function send(env: Env, sub: PushSub, msg: unknown, opts: { ttl?: n
       body: await encrypt(sub, te.encode(JSON.stringify(msg))),
     });
     if (res.status === 404 || res.status === 410) return "gone";
-    return res.ok ? "ok" : "error";
-  } catch {
+    if (res.ok) return "ok";
+    // Host only: the endpoint path is the subscription's secret capability.
+    const body = (await res.text().catch(() => "")).slice(0, 200);
+    console.warn(JSON.stringify({ push: true, status: res.status, endpointHost: new URL(sub.endpoint).host, body }));
     return "error";
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.warn(JSON.stringify({ push: true, endpointHost: new URL(sub.endpoint).host, error: message }));
+    return /subrequest/i.test(message) ? "limit" : "error";
   }
 }
