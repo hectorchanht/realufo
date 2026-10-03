@@ -42,11 +42,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { useBootstrap, useFacets, useHubs, useRecords } from "../api/queries";
+import { useBootstrap, useFacets, useHubs, useRecords, useShorts } from "../api/queries";
 import { hubForFilters } from "../lib/hubLink";
 import { useSetFooterLinks } from "../lib/footerLinks";
 import { DocCard } from "../components/DocCard";
 import { LoadError } from "../components/LoadError";
+import { ShortsRow, shortHref } from "../components/ShortsRow";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
 
@@ -391,6 +392,9 @@ export function Archive() {
     },
     { keepPrevious: true },
   );
+  // Searching: matching Shorts (title/summary/page text or the posted Short's
+  // text) as a strip above the files; tap → the player, queue = this search.
+  const { data: shorts = [] } = useShorts(q, { enabled: !!q });
   const records = data?.records ?? [];
   const count = data?.count ?? 0;
   const totalPages = Math.ceil(count / RECORDS_PAGE_SIZE);
@@ -557,6 +561,15 @@ export function Archive() {
         <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>
       ) : (
         <>
+          {q && page === 1 && shorts.length > 0 && (
+            <section aria-labelledby="archive-shorts" className="mb-[18px]">
+              <h2 id="archive-shorts" className="mx-0.5 mb-3 font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
+                ◆ Shorts ({shorts.length})
+              </h2>
+              <ShortsRow shorts={shorts} href={(s) => shortHref(s, q)} />
+            </section>
+          )}
+
           {/* result count — line 187 */}
           <div className="mx-0.5 mb-3 font-mono text-[10px] uppercase tracking-[.8px] text-faint">
             <b className="text-signal">{count.toLocaleString()}</b> records

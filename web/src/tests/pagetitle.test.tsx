@@ -73,6 +73,7 @@ vi.mock("../api/queries", () => ({
   useBootstrap: () => ({ data: mockBootstrap, isLoading: false }),
   useFeed: () => ({ data: mockFeed, isLoading: false }),
   useRecords: () => ({ data: emptyRecords, isLoading: false }),
+  useShorts: () => ({ data: [] }),
   useFacets: () => ({ data: undefined }),
   useHubs: () => ({ data: undefined }),
   useRecord: () => ({ data: mockDetail, isLoading: false }),

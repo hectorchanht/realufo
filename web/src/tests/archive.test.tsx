@@ -85,10 +85,12 @@ const mockFacets: RecordFacets = {
 };
 
 const useRecordsMock = vi.fn();
+const useShortsMock = vi.fn((_q: string, _o?: { enabled?: boolean }) => ({ data: [] as unknown[] }));
 
 vi.mock("../api/queries", () => ({
   useBootstrap: () => ({ data: mockBootstrap, isLoading: false }),
   useRecords: (params: Record<string, unknown>) => useRecordsMock(params),
+  useShorts: (q: string, o?: { enabled?: boolean }) => useShortsMock(q, o),
   useFacets: () => ({ data: mockFacets }),
   useHubs: () => ({
     data: { hubs: [{ kind: "agency", slug: "department-of-war", label: "Department of War", count: 267, values: ["DoW", "Department of War"] }] },
@@ -325,5 +327,25 @@ describe("Archive", () => {
     useRecordsMock.mockReturnValue({ data: empty, isLoading: false });
     renderAppAt("/archive");
     expect(await screen.findByText(/no records match/i)).toBeInTheDocument();
+  });
+});
+
+describe("Archive Shorts strip", () => {
+  it("shows matching Shorts above results when searching, linking to the player with q", async () => {
+    useRecordsMock.mockImplementation(records);
+    useShortsMock.mockImplementation(((q: string) => ({
+      data: q ? [{ id: "DOW-UAP-PR104", title: "Two stars", thumb: null, clip: "https://c/x.mp4", showcase: true }] : [],
+    })) as any);
+    renderAppAt("/archive?q=star");
+    expect(await screen.findByRole("heading", { name: /shorts \(1\)/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /two stars/i })).toHaveAttribute("href", "/shorts/DOW-UAP-PR104?q=star");
+  });
+
+  it("no strip without a search", async () => {
+    useRecordsMock.mockImplementation(records);
+    renderAppAt("/archive");
+    await screen.findAllByText(/records/i);
+    expect(screen.queryByRole("heading", { name: /shorts/i })).not.toBeInTheDocument();
+    expect(useShortsMock).toHaveBeenCalledWith("", { enabled: false });
   });
 });

@@ -24,6 +24,7 @@ vi.mock("../api/queries", () => ({
     isLoading: false,
   }),
   useRecords: () => ({ data: { count: 0, records: [] }, isLoading: false, isPlaceholderData: false }),
+  useShorts: () => ({ data: [] }),
   useHubs: () => ({ data: { hubs: [{ kind: "agency", slug: "fbi", label: "FBI", count: 104, values: ["FBI"] }] } }),
 }));
 
