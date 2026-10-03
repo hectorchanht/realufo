@@ -255,7 +255,7 @@ describe("Doc", () => {
     expect(screen.queryByRole("link", { name: "Central Intelligence Agency" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Roswell, NM" })).toBeNull();
   });
-  it("shows FULL TEXT pages in a scroll box, continuation when truncated", () => {
+  it("shows FULL TEXT one page at a time in a scroll box, continuation when truncated", () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     useRecordMock.mockReturnValue({
       data: {
@@ -272,12 +272,14 @@ describe("Doc", () => {
     expect(screen.getByText("FULL TEXT")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "AI SUMMARY" })).toBeNull();
     expect(screen.getByText("2 of 9 pages · OCR, may contain errors")).toBeInTheDocument();
-    const box = screen.getByLabelText("Full text pages");
+    const box = screen.getByLabelText("Full text page");
     expect(box.className).toContain("overflow-y-auto");
     expect(box.textContent).toContain("First page words <script>x</script>");
-    expect(box.textContent).toContain("Fourth page words");
+    expect(box.textContent).not.toContain("Fourth page words");
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    expect(screen.getByLabelText("Full text page").textContent).toContain("Fourth page words");
     fireEvent.click(screen.getByRole("button", { name: "Text continues in the original file →" }));
-    expect(openSpy).toHaveBeenCalledWith("/api/file/rec1", "_blank", "noopener,noreferrer");
+    expect(openSpy).toHaveBeenCalledWith("/api/file/rec1#page=4", "_blank", "noopener,noreferrer"); // page turn set ?p=4
     openSpy.mockRestore();
   });
 
@@ -292,10 +294,10 @@ describe("Doc", () => {
     renderDoc();
     expect(screen.getByText("An AI paragraph.")).toBeInTheDocument();
     expect(screen.getByText("AI-generated from OCR text · may contain errors")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Full text pages")).toBeNull();
+    expect(screen.queryByLabelText("Full text page")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "FULL TEXT" }));
     expect(screen.queryByText("An AI paragraph.")).toBeNull();
-    expect(screen.getByLabelText("Full text pages").textContent).toContain("Page one words");
+    expect(screen.getByLabelText("Full text page").textContent).toContain("Page one words");
     fireEvent.click(screen.getByRole("button", { name: "AI SUMMARY" }));
     expect(screen.getByText("An AI paragraph.")).toBeInTheDocument();
   });

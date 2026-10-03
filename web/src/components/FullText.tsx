@@ -1,36 +1,58 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { FullText as FullTextData } from "../api/types";
 import { chip, off, on } from "./ImageTools";
 
+type Page = { n: number; text: string; src?: string; conf?: number };
+
+// Every page of the file (Worker GET /api/records/:id/text, R2 text/<id>.json for
+// re-OCR'd PDFs); the D1 pages in `data` are capped, so they only show until this loads.
+const loadAll = async (id: string): Promise<Page[]> => {
+  const res = await fetch(`/api/records/${encodeURIComponent(id)}/text?format=json`);
+  if (!res.ok) throw new Error(`full text ${res.status}`);
+  return ((await res.json()) as { pages: Page[] }).pages;
+};
+
 // PDF text under the doc summary (spec 2026-10-02-realufo-doc-fulltext). With
 // an AI summary (crawler ingest.summaries) an AI SUMMARY | FULL TEXT toggle
-// shows one at a time, summary first. All pages sit in a scroll box so a long
-// document doesn't push the rest of the page away. Images have no page text,
-// only an AI visual description (crawler ingest.visuals), shown on its own.
+// shows one at a time, summary first. The text is paginated, one PDF page at a
+// time (spec 2026-10-03-realufo-paddleocr-reocr), as Markdown or as JSON; the
+// whole file is linked as .md / .json. Images have no page text, only an AI
+// visual description (crawler ingest.visuals), shown on its own.
 export default function FullText({
+  id,
   data,
   kind,
   page,
+  onPageChange,
   onOpenOriginal,
+  load = loadAll,
 }: {
+  id: string;
   data: FullTextData | null | undefined;
   kind?: string;
-  /** ?p=N: open the text view scrolled to (and marking) page N. */
+  /** ?p=N: open the text view on page N. */
   page?: number;
+  /** Page turned (Doc mirrors it into ?p=N so every page has a link). */
+  onPageChange?: (n: number) => void;
   onOpenOriginal: () => void;
+  load?: (id: string) => Promise<Page[]>;
 }) {
   const [view, setView] = useState<"summary" | "text">(page ? "text" : "summary");
-  const box = useRef<HTMLDivElement>(null);
-  const hasPage = !!page && !!data?.pages.some((p) => p.n === page);
+  const [format, setFormat] = useState<"md" | "json">("md");
+  const [all, setAll] = useState<Page[] | null>(null);
+  const [cur, setCur] = useState<number | undefined>(page);
+  const hasText = !!data?.pages.length;
+  useEffect(() => {
+    if (!hasText) return;
+    let live = true;
+    load(id).then((p) => live && p.length && setAll(p)).catch(() => {}); // keep the capped pages
+    return () => { live = false; };
+  }, [id, hasText, load]);
   useEffect(() => {
     if (!page) return;
     setView("text");
-    const el = box.current?.querySelector<HTMLElement>(`[data-page="${page}"]`);
-    if (el && box.current) {
-      box.current.scrollTo?.({ top: el.offsetTop - box.current.offsetTop - 8 });
-      el.closest("section")?.scrollIntoView?.({ block: "start" });
-    }
-  }, [page, data]);
+    setCur(page);
+  }, [page]);
   if (!data?.pages.length) {
     if (!data?.aiSummary) return null;
     const label = kind === "image" ? "AI VISUAL DESCRIPTION" : "AI SUMMARY";
@@ -46,6 +68,15 @@ export default function FullText({
       </section>
     );
   }
+  const pages: Page[] = all ?? data.pages;
+  const idx = Math.max(0, pages.findIndex((p) => p.n === cur));
+  const shown = pages[idx];
+  const missing = !!cur && !pages.some((p) => p.n === cur);
+  const go = (i: number) => {
+    const n = pages[i].n;
+    setCur(n);
+    onPageChange?.(n);
+  };
   const showSummary = !!data.aiSummary && view === "summary";
   const tab = (k: "summary" | "text", label: string) => (
     <button
@@ -58,6 +89,19 @@ export default function FullText({
       {label}
     </button>
   );
+  const fmt = (k: "md" | "json", label: string) => (
+    <button
+      key={k}
+      type="button"
+      aria-pressed={format === k}
+      onClick={() => setFormat(k)}
+      className={`${chip} ${format === k ? on : off} px-[7px] py-[2px] text-[9px]`}
+    >
+      {label}
+    </button>
+  );
+  const arrow = "rounded-lg border border-line2 px-2.5 py-1 font-mono text-[11px] text-ink disabled:opacity-30";
+  const textUrl = `/doc/${encodeURIComponent(id)}/text`;
   return (
     <section aria-label="Full text" className="mb-[22px]">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 font-mono">
@@ -72,42 +116,55 @@ export default function FullText({
         <span className={`text-[10px] ${showSummary ? "text-amber" : "text-faint"}`}>
           {showSummary
             ? "AI-generated from OCR text · may contain errors"
-            : `${data.pages.length} of ${data.total_pages} pages · OCR, may contain errors`}
+            : `${all ? pages.length : `${pages.length} of ${data.total_pages}`} pages · OCR, may contain errors`}
         </span>
       </div>
       {showSummary ? (
         <p className="text-[13.5px] leading-[1.65] text-dim">{data.aiSummary}</p>
       ) : (
         <>
-          {page && !hasPage && (
+          {missing && (
             <button
               type="button"
               onClick={onOpenOriginal}
               className="mb-2 w-full rounded-xl border border-signal px-3 py-2 text-left font-mono text-[11px] text-signal"
             >
-              Page {page} isn't in the extracted text: open it in the original file →
+              Page {cur} isn't in the extracted text: open it in the original file →
             </button>
           )}
-          <div
-            ref={box}
-            tabIndex={0}
-            aria-label="Full text pages"
-            className="max-h-[80vh] overflow-y-auto overscroll-contain rounded-xl border border-line bg-surface px-3.5 pt-3"
-          >
-            {data.pages.map((p) => (
-              <div
-                key={p.n}
-                data-page={p.n}
-                className={`mb-4 ${p.n === page ? "-mx-2 rounded-lg px-2 py-1 ring-1 ring-signal" : ""}`}
-              >
-                <div className={`mb-1 font-mono text-[9px] tracking-[.5px] ${p.n === page ? "text-signal" : "text-faint"}`}>PAGE {p.n}</div>
-                <p className="text-[13.5px] leading-[1.65] text-dim" style={{ whiteSpace: "pre-line", overflowWrap: "anywhere" }}>
-                  {p.text}
-                </p>
-              </div>
-            ))}
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 font-mono">
+            <span className="flex items-center gap-1.5">
+              <button type="button" aria-label="Previous page" disabled={idx === 0} onClick={() => go(idx - 1)} className={arrow}>‹</button>
+              <span className="text-[10px] tracking-[.5px] text-signal">PAGE {shown.n} / {all ? pages.length : data.total_pages}</span>
+              <button type="button" aria-label="Next page" disabled={idx >= pages.length - 1} onClick={() => go(idx + 1)} className={arrow}>›</button>
+            </span>
+            <span className="flex items-center gap-1">
+              {fmt("md", "MD")}
+              {fmt("json", "JSON")}
+              <a href={textUrl} target="_blank" rel="noopener" className="ml-1.5 text-[10px] text-faint underline">↗ .md</a>
+              <a href={`${textUrl}?format=json`} target="_blank" rel="noopener" className="text-[10px] text-faint underline">.json</a>
+            </span>
           </div>
-          {data.truncated && (
+          <div
+            tabIndex={0}
+            aria-label="Full text page"
+            data-page={shown.n}
+            className="max-h-[80vh] overflow-y-auto overscroll-contain rounded-xl border border-line bg-surface px-3.5 py-3"
+          >
+            {format === "json" ? (
+              <pre className="font-mono text-[11.5px] leading-[1.5] text-dim" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                {JSON.stringify(shown, null, 2)}
+              </pre>
+            ) : (
+              <>
+                <div className="mb-1 font-mono text-[9px] tracking-[.5px] text-faint">## PAGE {shown.n}</div>
+                <p className="text-[13.5px] leading-[1.65] text-dim" style={{ whiteSpace: "pre-line", overflowWrap: "anywhere" }}>
+                  {shown.text.trim() || "(no text on this page)"}
+                </p>
+              </>
+            )}
+          </div>
+          {data.truncated && !all && (
             <button
               type="button"
               onClick={onOpenOriginal}

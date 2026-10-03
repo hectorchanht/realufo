@@ -770,7 +770,19 @@ export function Doc() {
         </div>
       )}
 
-      <FullText data={detail.fullText} kind={record.kind} page={pdfPage} onOpenOriginal={handleOpenOriginal} />
+      <FullText
+        id={id}
+        data={detail.fullText}
+        kind={record.kind}
+        page={pdfPage}
+        onPageChange={(n) => {
+          const sp = new URLSearchParams(paramsRef.current);
+          sp.set("p", String(n));
+          paramsRef.current = sp;
+          setSearchParams(sp, { replace: true });
+        }}
+        onOpenOriginal={handleOpenOriginal}
+      />
 
       {/* series prev/next — id neighbours (D029 ← D030 → D031), uapbrowser-style */}
       {(detail.series?.prev || detail.series?.next) && (
