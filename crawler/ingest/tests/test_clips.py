@@ -1,4 +1,4 @@
-from ingest.clips import window, ffmpeg_args, todo, key, vkey, clean_title, vertical_args, title_layout, fit, bars, fills
+from ingest.clips import window, ffmpeg_args, todo, key, vkey, clean_title, vertical_args, title_layout, fit, bars, fills, slate, trim
 
 def test_window_is_30s_from_35pct_kept_inside_the_video():
     assert window(20.0) == (0.0, 30.0)           # short video: whole (-t 30 is a no-op)
@@ -108,3 +108,15 @@ def test_vertical_args_crops_bars_then_fills():
     fc = a[a.index("-filter_complex") + 1]
     assert fc.startswith("[0:v]crop=616:1080:652:0,split[a][b];")
     assert "[b]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[fg]" in fc
+
+def test_slate_is_a_mostly_green_frame():
+    green, grey = bytes([40, 170, 20]) * 100, bytes([120, 120, 120]) * 100
+    assert slate(green) and not slate(grey)
+    assert not slate(green[:150] + grey[150:])                             # half green: footage
+
+def test_trim_drops_slates_at_both_ends():
+    S, F = True, False
+    assert trim([S] * 6 + [F] * 10, fps=2) == (3.5, None)                  # 3 s card + 1 sample margin
+    assert trim([S] * 6 + [F] * 10 + [S] * 4, fps=2) == (3.5, 4.0)         # closing card too
+    assert trim([F] * 10) == (0.0, None)                                   # wargov: no card
+    assert trim([S] * 4) == (0.0, None)                                    # all card: leave it

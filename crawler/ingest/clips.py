@@ -7,7 +7,8 @@ Output: clips/<archive>/<id>.mp4, with the record id burned in top-left and
 realufo.org bottom-right (reposts keep the source findable). The Worker bot treats the object's existence
 as "this video has a clip", so there is no D1 row. Clips are ≤30 s (short, loopable;
 the post links to the full video): 30 s from 35% in (same offset as thumbs: skips
-the DoD "Unclassified" slates), pulled back so it ends inside the video.
+the DoD "Unclassified" slates), pulled back so it ends inside the video. Short videos
+start at 0, so green slate frames at either end of the window are trimmed off (skip_slates).
 Idempotent: existing clips skipped unless --force (re-cut after a length change).
 
 --vertical writes the 9:16 twin for Reels/Shorts/TikTok (Spec 5 §7) to
@@ -87,6 +88,33 @@ def probe(url, start, length):
     w, h = map(int, crop[5:].split(":")[:2]) if crop else (iw, ih)
     return crop, fills(w, h)
 
+def slate(f, share=0.6) -> bool:
+    """rgb24 frame is a DoD/AARO "Unclassified" title card: mostly flat green."""
+    g = sum(f[i + 1] > f[i] + 40 and f[i + 1] > f[i + 2] + 40 for i in range(0, len(f) - 2, 3))
+    return g >= share * len(f) / 3
+
+def trim(flags, fps=10):
+    """(skip s, keep s or None) dropping leading/trailing slate frames plus one sample of margin
+    (fps sampling can land either side of the cut); all-slate keeps everything."""
+    a, b = 0, len(flags)
+    while a < b and flags[a]:
+        a += 1
+    while b > a and flags[b - 1]:
+        b -= 1
+    if a == b:
+        return 0.0, None
+    a, b = a + (a > 0), b - (b < len(flags))
+    return a / fps, ((b - a) / fps if b < len(flags) else None)
+
+def skip_slates(url, start, length, fps=10):
+    """(start, length) with slates trimmed off both ends of the window (32x18 frames at 10 fps)."""
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{start:.2f}", "-i", url, "-t", f"{length:.2f}",
+                          "-vf", f"fps={fps},scale=32:18,format=rgb24", "-an", "-f", "rawvideo", "-"],
+                         capture_output=True).stdout
+    n = 32 * 18 * 3
+    skip, keep = trim([slate(raw[i:i + n]) for i in range(0, len(raw) - n + 1, n)], fps)
+    return round(start + skip, 2), (keep if keep is not None else length - skip)
+
 def has_audio(url) -> bool:
     return bool(subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index",
                                 "-of", "csv=p=0", url], capture_output=True, text=True).stdout.strip())
@@ -161,7 +189,7 @@ def main(argv=None):
     done = failed = 0
     for i, row in enumerate(rows, 1):
         out = os.path.join(args.out, f"{row['id']}{'-v' if args.vertical else ''}.mp4")
-        start, length = window(row["duration"])
+        start, length = skip_slates(row["cdn_url"], *window(row["duration"]))
         # textfile= (not text=): ids and titles may hold ':' or quotes that break filtergraph syntax
         with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as idf:
             idf.write(row["id"])
