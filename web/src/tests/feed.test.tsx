@@ -153,7 +153,10 @@ describe("Feed", () => {
     vi.stubGlobal(
       "IntersectionObserver",
       class {
-        constructor(private cb: IntersectionObserverCallback) {}
+        cb: IntersectionObserverCallback;
+        constructor(cb: IntersectionObserverCallback) {
+          this.cb = cb;
+        }
         observe(target: Element) {
           this.cb([{ target, isIntersecting: true } as unknown as IntersectionObserverEntry], this as unknown as IntersectionObserver);
         }
