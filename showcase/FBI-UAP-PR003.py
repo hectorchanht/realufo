@@ -83,7 +83,11 @@ VO = os.path.join(D, "vo.mp4")
 # the agents' line sits low (y 1170) because their quote fills the top of that beat
 CAP = (subtitles([(t, tts(line)[0]) for t, line in SAY if not line.startswith(("Dot.", "But two"))], y=470)
        + subtitles([(t, tts(line)[0]) for t, line in SAY if line.startswith("But two")], y=1170))
-subprocess.run([F, "-v", "error", "-y", *ins, "-filter_complex", fc + ";[0:v]" + ",".join(CAP) + "[v]", "-map", "[v]", "-map", "[a]",
+# two steps: mixing the narration in the same graph as ~40 drawtext filters dropped the late lines (PR116 went
+# quiet after 16 s), so mix the audio on its own, then burn the subtitles
+MIXED = os.path.join(D, "mix.wav")
+subprocess.run([F, "-v", "error", "-y", *ins, "-filter_complex", fc, "-map", "[a]", MIXED], check=True)
+subprocess.run([F, "-v", "error", "-y", "-i", CAT, "-i", MIXED, "-vf", ",".join(CAP), "-map", "0:v", "-map", "1:a",
                 "-c:v", "libx264", "-profile:v", "high", "-pix_fmt", "yuv420p", "-preset", "veryfast", "-crf", "20",
                 "-c:a", "aac", "-b:a", "128k", VO], check=True)
 c = Cut(); c.segs = [VO]; c.save(OUT, bed=True)

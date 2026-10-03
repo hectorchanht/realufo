@@ -75,7 +75,7 @@ The goal is to make viewers feel "what if this showed up in front of us", in a r
 ## Before showing the user
 
 1. Pull frame 0 out of the render and **look at it**: would you tap it?
-2. Check duration, check there's an audio stream, and check per-second loudness. The voice should sit about 3 dB over the bed and stay quiet at the key moment.
+2. Check duration, check there's an audio stream, and check per-second loudness **in the voice band** (`highpass=f=300` first; the drone hides a missing voice in plain RMS). Every narration cue should show up, and the voice should stay quiet at the key moment. Mix the audio in its own ffmpeg step, then burn the subtitles in a second step: putting both in one graph silently dropped PR116's late lines.
 3. Commit the recipe (the mp4 is git-ignored) and send the mp4 with SendUserFile.
 4. **Never post until the user approves** ("no post until we make it good"). Posting a showcase Short uses `scripts/publish.sh --showcase` (publish skill), once per record. An already-posted record's re-cut goes to R2 under a new key (`<ID>-v2.mp4`), because the old key is edge-cached for 1 month.
 

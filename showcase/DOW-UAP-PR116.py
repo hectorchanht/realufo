@@ -117,7 +117,11 @@ fc += "[0:a]" + "".join(f"[n{i}]" for i in range(1, len(MIX)+1)) + f"amix=inputs
 VO = os.path.join(D, "vo.mp4")
 # subtitles, one line per sentence, under the headline (y 460); the crew-quote and "Up close" lines are skipped: already on screen verbatim
 CAP = subtitles([(t, tts(line)[0]) for t, line in SAY if not line.startswith(("In their words", "Up close"))])
-subprocess.run([F, "-v", "error", "-y", *ins, "-filter_complex", fc + ";[0:v]" + ",".join(CAP) + "[v]", "-map", "[v]", "-map", "[a]",
+# two steps: mixing the narration in the same graph as ~40 drawtext filters dropped the late lines (PR116 went
+# quiet after 16 s), so mix the audio on its own, then burn the subtitles
+MIXED = os.path.join(D, "mix.wav")
+subprocess.run([F, "-v", "error", "-y", *ins, "-filter_complex", fc, "-map", "[a]", MIXED], check=True)
+subprocess.run([F, "-v", "error", "-y", "-i", CAT, "-i", MIXED, "-vf", ",".join(CAP), "-map", "0:v", "-map", "1:a",
                 "-c:v", "libx264", "-profile:v", "high", "-pix_fmt", "yuv420p", "-preset", "veryfast", "-crf", "20",
                 "-c:a", "aac", "-b:a", "128k", VO], check=True)
 c = Cut(); c.segs = [VO]; c.save(OUT, bed=True)
