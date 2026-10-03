@@ -78,6 +78,52 @@ def sfx(text, seconds, influence=0.6):
             f.write(r.read())
     return out
 
+def words(mp3):
+    """Word timings [(text, start, end)] of a narration mp3 via ElevenLabs speech-to-text (scribe_v1),
+    cached next to it as .words.json. Drives word-by-word captions."""
+    out = mp3[:-4] + ".words.json"
+    if not os.path.exists(out):
+        key = os.environ.get("ELEVENLABS_API_KEY") or next((l.split("=", 1)[1].strip() for l in open(os.path.join(HERE, "..", ".env"))
+                                                          if l.startswith("ELEVENLABS_API_KEY=")), None)
+        b = "realufo" + hashlib.sha1(mp3.encode()).hexdigest()[:12]
+        body = (f"--{b}\r\nContent-Disposition: form-data; name=\"model_id\"\r\n\r\nscribe_v1\r\n"
+                f"--{b}\r\nContent-Disposition: form-data; name=\"timestamps_granularity\"\r\n\r\nword\r\n"
+                f"--{b}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a.mp3\"\r\nContent-Type: audio/mpeg\r\n\r\n").encode() \
+               + open(mp3, "rb").read() + f"\r\n--{b}--\r\n".encode()
+        req = urllib.request.Request("https://api.elevenlabs.io/v1/speech-to-text", data=body,
+                                     headers={"xi-api-key": key, "Content-Type": f"multipart/form-data; boundary={b}"})
+        with urllib.request.urlopen(req) as r:
+            ws = [(w["text"], w["start"], w["end"]) for w in json.loads(r.read())["words"] if w.get("type") == "word"]
+        json.dump(ws, open(out, "w"))
+    return [tuple(w) for w in json.load(open(out))]
+
+def captions(cues, y=460, fs=60, per=3, fix=None):
+    from PIL import ImageFont
+    """Word-by-word captions: for each (t0, mp3), words appear one by one in groups of <= `per`,
+    as drawtext filters (enable='between(t,..)') for the whole timeline. `fix` maps spoken -> shown words."""
+    vf = []
+    for t0, mp3 in cues:
+        raw = words(mp3)
+        groups, cur = [], []
+        for w, s, e in raw:  # <= per words, and a new group after each sentence end
+            cur.append(((fix or {}).get(w.strip(".,:;!?").lower(), w.rstrip(".,;:")), s, e))
+            if len(cur) == per or w[-1:] in ".!?":
+                groups.append(cur); cur = []
+        groups += [cur] if cur else []
+        for gi, grp in enumerate(groups):
+            full = " ".join(w for w, _, _ in grp)
+            size = min(fs, int(1000 / (0.62 * max(len(full), 1))))  # same rule as txt(), for the whole group
+            x = int((1080 - ImageFont.truetype(FONT, size).getlength(full)) / 2)  # left edge pinned: no jiggle as words add
+            end = t0 + grp[-1][2] + 0.25
+            if gi + 1 < len(groups):
+                end = min(end, t0 + groups[gi + 1][0][1])  # never overlap the next group
+            for i, (_, s, _) in enumerate(grp):
+                a = t0 + s
+                b = t0 + grp[i + 1][1] if i + 1 < len(grp) else end
+                vf.append(txt(" ".join(w for w, _, _ in grp[:i + 1]), y, size).replace("x=(w-text_w)/2", f"x={x}")
+                          + f":enable='gte(t,{a:.2f})*lt(t,{b:.2f})'")
+    return vf
+
 def _audio(say, seconds):
     """Audio input args + segment length: the narration line (beat stretched to fit it) or silence."""
     if not say:

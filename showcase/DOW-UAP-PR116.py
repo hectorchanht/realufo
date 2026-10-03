@@ -8,7 +8,7 @@ close-up (plain, then Ironbow) -> the form, boxes lighting up as they're read ->
 lesson (foil balloons are round, metallic, shiny; nobody could verify) -> "zoom in yourself" -> loop.
 Enhancement (no invented detail): close-ups are a 9-frame stack (the sensor keeps the target centred)
 + nlmeans denoise + CAS sharpen; the zoom plays through hqdn3d. The crew-quote beat sits on an AI
-illustration made to match the file (saved as DOW-UAP-PR116-ai.jpg), labelled "not evidence". ElevenLabs narration + SFX (lib.sfx) + ambient bed. ~34 s.
+illustration made to match the file (saved as DOW-UAP-PR116-ai.jpg), labelled "not evidence". ElevenLabs narration + word-by-word captions (lib.captions) + SFX (lib.sfx) + ambient bed. ~34 s.
 
 AI illustration, made to match the file (making-shorts skill, "AI illustrations"):
 1. the enhanced IR close-up at 29.3 s, cropped square -> threshold silhouette -> flood-fill the bright-spot
@@ -28,7 +28,7 @@ AI illustration, made to match the file (making-shorts skill, "AI illustrations"
 (needs pdftoppm for the D091 page)
 """
 import os, subprocess, urllib.request
-from lib import Cut, txt, tts, sfx, IRONBOW, FFMPEG as F, TMP as D, ENC, SILENT as SIL, HERE
+from lib import Cut, txt, tts, sfx, captions, IRONBOW, FFMPEG as F, TMP as D, ENC, SILENT as SIL, HERE
 
 U = "https://assets.realufo.org/videos/wargov/DOD_111830151.mp4"
 PDF = "https://assets.realufo.org/pdfs/wargov/DOW-UAP-D091_Range-Fouler-Debrief_Atlantic-Ocean_2020.pdf"
@@ -115,6 +115,9 @@ for i, (t, path, vol) in enumerate(MIX, 1):
     ins += ["-i", path]; fc += f"[{i}:a]aformat=channel_layouts=stereo,volume={vol},adelay={int(t*1000)}:all=1[n{i}];"
 fc += "[0:a]" + "".join(f"[n{i}]" for i in range(1, len(MIX)+1)) + f"amix=inputs={len(MIX)+1}:normalize=0:duration=first[a]"
 VO = os.path.join(D, "vo.mp4")
-subprocess.run([F, "-v", "error", "-y", *ins, "-filter_complex", fc, "-map", "0:v", "-map", "[a]", "-c:v", "copy",
+# word-by-word captions under the headline (y 460); the crew-quote line is skipped: it's already on screen verbatim
+CAP = captions([(t, tts(line)[0]) for t, line in SAY if not line.startswith("In their words")])
+subprocess.run([F, "-v", "error", "-y", *ins, "-filter_complex", fc + ";[0:v]" + ",".join(CAP) + "[v]", "-map", "[v]", "-map", "[a]",
+                "-c:v", "libx264", "-profile:v", "high", "-pix_fmt", "yuv420p", "-preset", "veryfast", "-crf", "20",
                 "-c:a", "aac", "-b:a", "128k", VO], check=True)
 c = Cut(); c.segs = [VO]; c.save(OUT, bed=True)
