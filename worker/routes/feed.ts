@@ -49,7 +49,8 @@ export async function feed(_req: Request, env: Env) {
 }
 
 // "Short clips" row: newest live videos that have a 9:16 twin in R2 (clips-v/ has no
-// D1 row; the object's existence is the flag, same as the X bot's clips/).
+// D1 row; the object's existence is the flag, same as the X bot's clips/). Portrait
+// videos (assets.crop w < h: phone clips padded to 16:9) lead — their twin is the whole picture.
 // Never fails the feed: an R2/D1 error just hides the row.
 export async function feedClips(env: Env) {
   try {
@@ -58,7 +59,9 @@ export async function feedClips(env: Env) {
     const { results } = await env.DB.prepare(
       `SELECT r.id, r.archive, r.title, ${thumbSql("r.id")} thumb FROM records r
        WHERE r.status='live' AND r.id IN (SELECT value FROM json_each(?))
-       ORDER BY r.created_at DESC, r.id DESC LIMIT 12`
+       ORDER BY (SELECT CAST(substr(a.crop, 1, instr(a.crop, ':') - 1) AS INT) < CAST(substr(a.crop, instr(a.crop, ':') + 1) AS INT)
+                 FROM assets a WHERE a.record_id=r.id AND a.role='full') DESC,
+                r.created_at DESC, r.id DESC LIMIT 12`
     ).bind(JSON.stringify(ids)).all<{ id: string; archive: string; title: string | null; thumb: string | null }>();
     return results.map(({ archive, ...r }) => ({
       ...r,

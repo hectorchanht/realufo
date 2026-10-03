@@ -24,7 +24,7 @@ from .models import R2_BASE
 
 CLIP = 30.0
 
-SELECT = """SELECT r.id, r.archive, r.title, a.cdn_url, a.duration FROM records r
+SELECT = """SELECT r.id, r.archive, r.title, a.cdn_url, a.duration, a.crop FROM records r
 JOIN assets a ON a.record_id=r.id AND a.role='full'
 WHERE r.status='live' AND a.mime LIKE 'video/%' ORDER BY r.id"""
 FONT = os.environ.get("CLIP_FONT", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
@@ -72,6 +72,14 @@ def fills(w, h, loss=0.1) -> bool:
     """True when cropping w x h content to 9:16 loses <= `loss` of it: fill the frame, else fit inside."""
     r = (w / h) / (9 / 16)
     return 1 - 1 / max(r, 1 / r) <= loss
+
+def stored(crop):
+    """assets.crop 'w:h:x:y' (thumbs.py backfill, or set by hand where bars() refuses, e.g. dark
+    night footage) -> (crop filter, fill?) like probe(); None when unset so the caller probes."""
+    if not crop:
+        return None
+    w, h = map(int, crop.split(":")[:2])
+    return f"crop={crop}", fills(w, h)
 
 def probe(url, start, length):
     """(crop filter or None, fill?) from <=10 s of cropdetect over the clip window."""
@@ -187,12 +195,16 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--force", action="store_true", help="re-cut clips that already exist")
     ap.add_argument("--vertical", action="store_true", help="cut the 9:16 twin to clips-v/ (Reels/Shorts/TikTok)")
+    ap.add_argument("--only", nargs="+", metavar="ID", help="just these record ids (with --force: re-cut them)")
     ap.add_argument("--out", default=os.path.join(tempfile.gettempdir(), "realufo-clips"))
     args = ap.parse_args(argv)
     keyf = vkey if args.vertical else key
     if not os.path.exists(FONT):
         sys.exit(f"clips need a TTF font at CLIP_FONT (missing: {FONT})")
-    rows = todo(d1._d1_json(" ".join(SELECT.split())), limit=args.limit, force=args.force, keyf=keyf)
+    rows = d1._d1_json(" ".join(SELECT.split()))
+    if args.only:
+        rows = [r for r in rows if r["id"] in args.only]
+    rows = todo(rows, limit=args.limit, force=args.force, keyf=keyf)
     os.makedirs(args.out, exist_ok=True)
     done = failed = 0
     for i, row in enumerate(rows, 1):
@@ -210,7 +222,7 @@ def main(argv=None):
                 with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as tf:
                     tf.write(ln)
                 tfs.append(tf.name)
-            crop, fill = probe(row["cdn_url"], start, length)
+            crop, fill = stored(row.get("crop")) or probe(row["cdn_url"], start, length)
             cmd = vertical_args(row["cdn_url"], start, length, out, tfs, fs, FONT, has_audio(row["cdn_url"]), idf.name,
                                 fit(len(row["id"]), 46), crop, fill)
         else:

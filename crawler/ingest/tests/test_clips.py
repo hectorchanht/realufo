@@ -131,3 +131,9 @@ def test_ffmpeg_args_burn_id_then_title_sized_to_the_width():
     assert "fontsize='min(32,(w-40)/9.36)'" in vf                          # 13-char id
     b = ffmpeg_args("u", 0.0, 30.0, "/tmp/o.mp4", "/tmp/id.txt", "/f.ttf")    # no title: id + realufo.org only
     assert b[b.index("-vf") + 1].count("drawtext=") == 2
+
+def test_stored_crop_beats_probe():
+    from ingest.clips import stored
+    assert stored("606:1080:656:0") == ("crop=606:1080:656:0", True)   # near-9:16 -> fill the frame
+    assert stored("960:720:160:0") == ("crop=960:720:160:0", False)
+    assert stored("") is None and stored(None) is None

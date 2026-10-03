@@ -41,6 +41,14 @@ describe("feedClips", () => {
     expect(clips[0]).toMatchObject({ title: "Title FC-2", clip: "https://assets.realufo.org/clips-v/wargov/FC-2.mp4" });
   });
 
+  it("puts portrait videos (crop w < h) first; landscape crops keep date order", async () => {
+    const crop = (id: string, c: string) =>
+      env.DB.prepare("INSERT INTO assets(record_id,role,cdn_url,mime,crop) VALUES (?,'full','x','video/mp4',?)").bind(id, c).run();
+    await crop("FC-1", "616:1080:652:0");
+    await crop("FC-2", "960:720:160:0");
+    expect((await feedClips(env as any)).map((c) => c.id)).toEqual(["FC-1", "FC-2"]);
+  });
+
   it("degrades to [] when R2 listing fails", async () => {
     const broken = { ...env, MEDIA: { list: () => Promise.reject(new Error("r2 down")) } };
     expect(await feedClips(broken as any)).toEqual([]);
