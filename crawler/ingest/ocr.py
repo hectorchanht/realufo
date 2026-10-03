@@ -70,7 +70,7 @@ def marker_sql(rid: str, pages: list[dict], engine: str) -> str:
     return "\n".join(sql) + "\n" + fts_sql(rid, pages)
 
 FTS_CAP = 90000  # chars; real pages are far smaller
-FTS_MAX_BYTES = 90000  # the quoted body as UTF-8: one D1 statement is capped near 100 KB (SQLITE_TOOBIG)
+FTS_MAX_BYTES = 95000  # the quoted body as UTF-8: one D1 statement is capped near 100 KB (SQLITE_TOOBIG)
 
 def _fit(text: str) -> str:
     t = text[:FTS_CAP]
