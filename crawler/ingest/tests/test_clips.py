@@ -1,4 +1,4 @@
-from ingest.clips import window, ffmpeg_args, todo, key, vkey, clean_title, vertical_args, title_layout, fit
+from ingest.clips import window, ffmpeg_args, todo, key, vkey, clean_title, vertical_args, title_layout, fit, bars, fills
 
 def test_window_is_30s_from_35pct_kept_inside_the_video():
     assert window(20.0) == (0.0, 30.0)           # short video: whole (-t 30 is a no-op)
@@ -48,7 +48,7 @@ def test_vertical_args_pad_blur_overlay_and_text():
     a = vertical_args("https://cdn/v.mp4", 210.0, 30.0, "/tmp/o.mp4", ["/tmp/t.txt"], 56, "/fonts/D.ttf")
     fc = a[a.index("-filter_complex") + 1]
     for part in ("scale=1080:1920:force_original_aspect_ratio=increase", "crop=1080:1920", "boxblur",
-                 "scale=1080:-2", "overlay=(W-w)/2:(H-h)/2", "textfile=/tmp/t.txt", "expansion=none",
+                 "scale=1080:1920:force_original_aspect_ratio=decrease", "overlay=(W-w)/2:(H-h)/2", "textfile=/tmp/t.txt", "expansion=none",
                  "fontfile=/fonts/D.ttf", "text=realufo.org"):
         assert part in fc
     assert a.index("-ss") < a.index("-i") and a[a.index("-t") + 1] == "30.00"
@@ -80,6 +80,7 @@ def test_title_layout_wraps_and_sizes_to_fit_the_frame():
     assert " ".join(lines) == t
     assert max(len(l) for l in lines) * fs * 0.72 <= 1000     # all-caps advance still fits 1080 - margins
     assert title_layout("Go Fast UAP") == (["Go Fast UAP"], 64)   # short: one line, capped size
+    assert title_layout("Navy 2021 Flyby video")[0] == ["Navy 2021 Flyby video"]   # ≤24 chars: no split
     lines, fs = title_layout("X" * 40)                         # no space to wrap: shrink instead
     assert lines == ["X" * 40] and 40 * fs * 0.72 <= 1000
 
@@ -89,3 +90,21 @@ def test_vertical_args_draw_one_centred_line_per_title_file():
     assert "textfile=/tmp/1.txt:expansion=none:fontsize=50:y=220," in fc
     assert "textfile=/tmp/2.txt:expansion=none:fontsize=50:y=285," in fc
     assert fc.count("x=(w-text_w)/2") == 3                    # both title lines + realufo.org
+
+def test_bars_crops_only_centred_one_axis_black_bars():
+    assert bars(1920, 1080, 616, 1080, 652, 0) == "crop=616:1080:652:0"    # AARO-956955: portrait in 16:9
+    assert bars(1920, 1080, 1920, 800, 0, 140) == "crop=1920:800:0:140"    # letterbox
+    assert bars(608, 1080, 608, 726, 0, 354) is None                       # night sky above, ground below
+    assert bars(1280, 720, 1280, 720, 0, 0) is None                        # nothing to crop
+    assert bars(1920, 1080, 1880, 1080, 20, 0) is None                     # <10%: not worth it
+    assert bars(1920, 1080, 400, 300, 760, 390) is None                    # bright dot in the dark: both axes
+
+def test_fills_near_vertical_content_and_fits_the_rest():
+    assert fills(616, 1080) and fills(608, 1080) and fills(1080, 1920)
+    assert not fills(1920, 1080) and not fills(1080, 1440)                 # 16:9, 3:4: fit inside
+
+def test_vertical_args_crops_bars_then_fills():
+    a = vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", ["/tmp/t.txt"], 56, "/f.ttf", crop="crop=616:1080:652:0", fill=True)
+    fc = a[a.index("-filter_complex") + 1]
+    assert fc.startswith("[0:v]crop=616:1080:652:0,split[a][b];")
+    assert "[b]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[fg]" in fc
