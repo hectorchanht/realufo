@@ -26,7 +26,8 @@ their full text, and page-level citations.
   a Markdown map of the site and the full text of every file.
 - [`sitemap.xml`](https://realufo.org/sitemap.xml) and [`rss.xml`](https://realufo.org/rss.xml).
 - Per-file full text: `https://realufo.org/doc/<id>/text` (Markdown) or `?format=json`.
-- Open dataset: record metadata and page text, exported by
+- [Open dataset on Hugging Face](https://huggingface.co/datasets/tung00/realufo-uap-archive):
+  record metadata and page text as JSONL, exported by
   [`scripts/export_dataset.py`](scripts/export_dataset.py).
 
 The records themselves are works of the U.S. government and in the public domain. Page text is

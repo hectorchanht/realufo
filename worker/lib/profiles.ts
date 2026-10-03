@@ -8,3 +8,6 @@ export const SOCIAL_PROFILES: [name: string, url: string][] = [
   ["Threads", "https://www.threads.com/@realufo_org"],
   ["YouTube", "https://www.youtube.com/@realufo_org"],
 ];
+
+// Open dataset (records + page text) exported by scripts/export_dataset.py.
+export const DATASET_URL = "https://huggingface.co/datasets/tung00/realufo-uap-archive";

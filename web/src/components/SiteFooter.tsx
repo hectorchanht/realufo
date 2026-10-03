@@ -10,7 +10,7 @@ import { useNavItems } from "./navItems";
 import { useFooterLinks } from "../lib/footerLinks";
 import { AppearanceSwitcher } from "./AppearanceSwitcher";
 import { Saucer } from "./Saucer";
-import { SOCIAL_PROFILES } from "../../../worker/lib/profiles";
+import { DATASET_URL, SOCIAL_PROFILES } from "../../../worker/lib/profiles";
 
 const GROUPS: [HubKind, string][] = [["topic", "Topics"], ["release", "Releases"], ["agency", "Agencies"], ["decade", "Decades"]];
 // Plain <a>: served by the Worker, not SPA routes.
@@ -19,6 +19,7 @@ const FILES = [
   ["llms-full.txt", "/llms-full.txt"],
   ["sitemap.xml", "/sitemap.xml"],
   ["RSS feed", "/rss.xml"],
+  ["Open dataset", DATASET_URL],
 ];
 
 // Brand marks (simple-icons, CC0), 24×24 paths keyed by SOCIAL_PROFILES name.

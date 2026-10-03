@@ -39,4 +39,6 @@ assert problems == [], problems
 assert ed.check([row], pages, expected=2) == ["1 records exported, site lists 2"]
 assert ed.check([row, row], [], expected=2) == ["duplicate record id DOW-UAP-D055"]
 assert ed.check([row], [{"id": "NOPE", "page": 1, "text": "x"}], expected=1) == ["page rows for unknown record NOPE"]
+assert ed.is_open({"license": "public-domain-usgov"}) and ed.is_open({"license": "cc-by-4.0"})
+assert not ed.is_open({"license": "lac-noncommercial"}) and not ed.is_open({"license": None})
 print("ok: export_dataset row builders")

@@ -10,6 +10,7 @@ import { caseStoryUrl, RELEASES_TITLE } from "./shared";
 import { agencyList, longDate, pad2, shortDate, type FaqItem, type ReleaseBlock, type TrackerData } from "./releases";
 import type { TopicBlock } from "./topics";
 import { sourceLinks } from "../../web/src/lib/sourceLinks";
+import { DATASET_URL } from "./profiles";
 
 // Same copy as the default block in web/index.html.
 export const DEFAULT_DESCRIPTION =
@@ -245,6 +246,7 @@ const FOOTER: Link[] = [
   { href: "/llms.txt", text: "llms.txt" },
   { href: "/llms-full.txt", text: "llms-full.txt" },
   { href: "/sitemap.xml", text: "sitemap.xml" },
+  { href: DATASET_URL, text: "Open dataset" },
 ];
 const STYLE =
   "<style>#root>.ssr{background:#07080c;color:#e6e6e6;font:16px/1.6 system-ui,sans-serif;max-width:860px;margin:0 auto;padding:24px 16px}" +

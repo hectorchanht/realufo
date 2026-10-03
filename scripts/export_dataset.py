@@ -6,6 +6,8 @@ Reads the live site's own APIs, so the export always matches what the site serve
 each record's fields and /doc/<id>/text?format=json for its pages.
 
 Writes <out>/records.jsonl, <out>/pages.jsonl and <out>/README.md (the dataset card).
+Only openly licensed records ship (OPEN_LICENSES); e.g. Library and Archives Canada's
+non-commercial files stay on the site but out of the dataset.
 Official content only: the site's AI summaries, TL;DRs and AI key moments are left out,
 so every value is either from the government record or machine-extracted page text.
 
@@ -28,6 +30,11 @@ RECORD_FIELDS = [
     "id", "title", "agency", "archive", "kind", "incident_date", "location", "doc_date", "release",
     "summary", "source_url", "source_site", "license", "realufo_url", "file_url",
 ]
+OPEN_LICENSES = {"public-domain-usgov", "cc-by-4.0"}
+
+
+def is_open(row: dict) -> bool:
+    return row.get("license") in OPEN_LICENSES
 
 
 def get_json(path: str, tries: int = 4):
@@ -126,7 +133,7 @@ def fetch(record_id: str):
 
 CARD = """---
 license: other
-license_name: public-domain-us-government-works
+license_name: public-domain-us-gov-and-cc-by-4.0
 pretty_name: RealUFO declassified UAP archive
 language:
 - en
@@ -148,7 +155,7 @@ configs:
 
 # RealUFO declassified UAP archive
 
-Metadata and page text for **{n_records} declassified U.S. government UAP/UFO records** mirrored by
+Metadata and page text for **{n_records} declassified government UAP/UFO records** mirrored by
 **[realufo.org](https://realufo.org)**: the Department of War's PURSUE releases, AARO case files,
 and FBI, CIA, NASA, State, Energy and National Archives documents ({n_pages} text pages).
 
@@ -165,7 +172,9 @@ PDF or watch the video, browse its full text page by page, and follow related fi
 
 ## Source and caveats
 
-- The records are works of the U.S. government and in the public domain. Dates and locations are
+- Each row's `license` field gives its license: `public-domain-usgov` (works of the U.S.
+  government, public domain) or `cc-by-4.0` (credit the source agency named in `agency`).
+  Files under more restrictive terms are on realufo.org but not in this dataset. Dates and locations are
   given as the agencies published them (free text, not normalised).
 - Page text is machine-extracted (text layer or OCR) and can contain errors; always check the
   original file (`file_url`) before quoting.
@@ -199,10 +208,15 @@ def main() -> int:
     with cf.ThreadPoolExecutor(args.workers) as ex:
         results = list(ex.map(fetch, ids))
     results.sort(key=lambda x: x[0]["id"])
+    if len(results) != total:
+        print(f"{len(results)} records fetched, site lists {total}", file=sys.stderr)
+        return 1
+    results = [x for x in results if is_open(x[0])]
     records = [r for r, _ in results]
     pages = [p for _, ps in results for p in ps]
+    print(f"{total - len(records)} records left out (license not open)", file=sys.stderr)
 
-    problems = check(records, pages, expected=total)
+    problems = check(records, pages, expected=len(records))
     if problems:
         print("\n".join(problems), file=sys.stderr)
         return 1

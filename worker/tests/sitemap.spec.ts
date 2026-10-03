@@ -57,6 +57,7 @@ describe("sitemap", () => {
     expect(md).toContain("## Agencies");
     expect(md).toContain("- [FBI UAP files](https://realufo.org/agency/fbi): ");
     expect(md).toContain("`/doc/<file id>/text` serves its full text page by page as Markdown");
+    expect(md).toContain("- [Open dataset](https://huggingface.co/datasets/tung00/realufo-uap-archive): ");
   });
 
   it("llms-full.txt streams every file with facts, summaries and page text", async () => {

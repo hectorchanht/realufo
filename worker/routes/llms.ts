@@ -2,6 +2,7 @@ import type { Env } from "../env";
 import { hubHref } from "../lib/ssr";
 import { hubTitle, type HubKind } from "../lib/hubs";
 import { listHubsCached } from "./hubs";
+import { DATASET_URL } from "../lib/profiles";
 import { docTitle, isoDate } from "../lib/pages";
 
 const KINDS: [HubKind, string][] = [["topic", "Topics"], ["release", "Releases"], ["agency", "Agencies"], ["location", "Locations"], ["decade", "Decades"]];
@@ -44,6 +45,7 @@ export async function llms(req: Request, env: Env) {
     link("Boards", "/boards", "anonymous discussion; user posts, not official records"),
     link("Sitemap", "/sitemap.xml", "every file page"),
     link("Full text of every file", "/llms-full.txt", "llms-full.txt, about 6 MB of Markdown"),
+    `- [Open dataset](${DATASET_URL}): record metadata and page text as JSONL on Hugging Face`,
     "",
     ...KINDS.flatMap(([k, heading]) => {
       const hs = hubs.filter((h) => h.kind === k);
