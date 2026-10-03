@@ -34,6 +34,17 @@ describe("ssr helpers", () => {
 });
 
 describe("docBody", () => {
+  it("docBody: TL;DR section before the AI summary, escaped", () => {
+    const html = docBody({
+      record: { id: "X-1", title: "X-1", summary: null, agency: null, agency_full: null, incident_date: null, location: null, doc_date: null, kind: "pdf" },
+      assets: [], promotedThreads: [], series: { prev: null, next: null }, release: null, related: [],
+      fullText: { pages: [{ n: 1, text: "p" }], truncated: false, total_pages: 1, aiSummary: "AI words" },
+      tldr: { bullets: ["<b>one</b>", "two", "three"], oneLiner: "Joke & more", cardUrl: null },
+    });
+    expect(html).toContain("<section><h2>TL;DR</h2><p>Joke &amp; more</p><ul><li>&lt;b&gt;one&lt;/b&gt;</li><li>two</li><li>three</li></ul></section>");
+    expect(html.indexOf("TL;DR")).toBeLessThan(html.indexOf("AI summary"));
+  });
+
   it("renders full text pages escaped, with continuation link only when truncated", () => {
     const ft = { pages: [{ n: 3, text: "Para one line\nline two\n\n\n\n<script>x</script>\n\n  \n" }], truncated: true, total_pages: 40 };
     const out = docBody(doc({}, { fullText: ft }));

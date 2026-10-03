@@ -40,6 +40,7 @@ import { LENS_MAGS, MediaFilters, MediaToolbar, TOOL_PARAMS, ZoomLens, adjustFil
 import type { ImageAdjust } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
 import { VerdictBar } from "../components/VerdictBar";
+import { TldrCard } from "../components/TldrCard";
 import { parseAiMoments, parseKeyMoments } from "../lib/keyMoments";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
@@ -201,6 +202,7 @@ export function Doc() {
   const [panel, setPanel] = useState<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const summaryRef = useRef<HTMLParagraphElement>(null);
   useEffect(() => {
     setView(DEFAULT_VIEW);
     setPic(null);
@@ -677,6 +679,14 @@ export function Doc() {
         {title}
       </h1>
 
+      <TldrCard
+        tldr={detail.tldr}
+        title={title}
+        onBoring={() => summaryRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" })}
+      />
+
+      <VerdictBar recordId={record.id} state={detail.verdicts} />
+
       {/* meta grid — prototype lines 360-365 */}
       <div className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line">
         <MetaCell label="Incident" value={record.incident_date || ""} />
@@ -686,11 +696,9 @@ export function Doc() {
       </div>
 
       {/* summary — prototype line 366 */}
-      <p className="mb-4 text-[14.5px] leading-[1.65] text-dim" style={{ whiteSpace: "pre-line" }}>
+      <p ref={summaryRef} className="mb-4 scroll-mt-16 text-[14.5px] leading-[1.65] text-dim" style={{ whiteSpace: "pre-line" }}>
         {media === "video" ? keyMoments.prose : record.summary || ""}
       </p>
-
-      <VerdictBar recordId={record.id} state={detail.verdicts} />
 
       {/* OPEN ORIGINAL — prototype line 367 */}
       <button

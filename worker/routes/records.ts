@@ -237,7 +237,7 @@ export async function loadRecord(env: Env, id: string, origin: string) {
     .first<RecordRow>();
   if (!record) return null;
   const releaseP = releaseOf(env, record);
-  const [assets, promoted, series, release, related, text, hubList] = await Promise.all([
+  const [assets, promoted, series, release, related, text, hubList, tldrRow] = await Promise.all([
     env.DB.prepare("SELECT role,cdn_url,mime,width,height,duration FROM assets WHERE record_id=?").bind(id).all(),
     env.DB.prepare(
       `SELECT t.id,t.no,t.title,t.stance,t.votes,t.source_record_id,b.slug boardSlug,b.accent accent
@@ -256,6 +256,9 @@ export async function loadRecord(env: Env, id: string, origin: string) {
       console.error("hub list failed", e);
       return [];
     }),
+    env.DB.prepare("SELECT bullets,one_liner,card_url FROM record_tldr WHERE record_id=? AND lang='en'")
+      .bind(id)
+      .first<{ bullets: string; one_liner: string; card_url: string | null }>(),
   ]);
   // Quality-filtered PDF text (crawler ingest.fulltext); null until extracted.
   // aiSummary from crawler ingest.summaries; null until generated.
@@ -265,9 +268,13 @@ export async function loadRecord(env: Env, id: string, origin: string) {
         total_pages: text.total_pages, aiSummary: text.ai_summary ?? null,
       }
     : null;
+  // Funny-but-true TL;DR (crawler ingest.tldr); null until generated.
+  const tldr = tldrRow
+    ? { bullets: JSON.parse(tldrRow.bullets) as string[], oneLiner: tldrRow.one_liner, cardUrl: tldrRow.card_url }
+    : null;
   const live = new Set(hubList.map((h) => `${h.kind}/${h.slug}`));
   return {
-    record, assets: assets.results, promotedThreads: promoted.results, series, release, related, fullText,
+    record, assets: assets.results, promotedThreads: promoted.results, series, release, related, fullText, tldr,
     hubs: hubsFor(record, release?.no ?? null, live),
   };
 }

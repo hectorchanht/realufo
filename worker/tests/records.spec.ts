@@ -220,4 +220,24 @@ describe("records", () => {
     expect(j.records.map((r: any) => r.id).sort()).toEqual(["LOCA-1", "LOCA-2"]);
     expect(j.count).toBe(2);
   });
+
+  it("tldr: detail carries it, list/related/feed cards carry the one-liner", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO records (id,archive,agency,title,kind,redacted,featured,created_at) VALUES ('TLDR-1','nara','TLDRAG','tldrz alpha','pdf',0,0,'2001-01-05')"
+      ),
+      env.DB.prepare(
+        "INSERT INTO record_tldr (record_id,lang,bullets,one_liner,input_hash,card_url) VALUES ('TLDR-1','en',?,?,'h','https://c/cards/TLDR-1.png')"
+      ).bind(JSON.stringify(["a", "b", "c"]), "Even the redactions look nervous."),
+      env.DB.prepare("INSERT INTO record_verdicts (actor_id,record_id,verdict) VALUES ('act-tldr','TLDR-1','unexplained')"),
+    ]);
+    const d: any = await loadRecord(env as any, "TLDR-1", "https://x");
+    expect(d.tldr).toEqual({ bullets: ["a", "b", "c"], oneLiner: "Even the redactions look nervous.", cardUrl: "https://c/cards/TLDR-1.png" });
+    expect(((await loadRecord(env as any, "FBI-UAP-D002", "https://x")) as any).tldr).toBeNull();
+    const list: any = await (await get("/api/records?q=tldrz&limit=10")).json();
+    expect(list.records[0].oneLiner).toBe("Even the redactions look nervous.");
+    const feed: any = await (await get("/api/feed")).json();
+    expect(feed.featured.find((r: any) => r.id === "TLDR-1").oneLiner).toBe("Even the redactions look nervous.");
+    expect(feed.featured.find((r: any) => r.id !== "TLDR-1")?.oneLiner ?? null).toBeNull();
+  });
 });

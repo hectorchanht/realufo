@@ -120,6 +120,34 @@ describe("serveWithMeta (via worker.fetch)", () => {
     expect(html.toLowerCase()).toContain("<title>");
   });
 
+  it("doc with a TL;DR: share card as og:image, one-liner in og:description, meta description untouched", async () => {
+    await env.DB.prepare(
+      "INSERT INTO record_tldr (record_id,lang,bullets,one_liner,input_hash,card_url) VALUES ('FBI-UAP-D003','en',?,?,'h','https://cdn/cards/FBI-UAP-D003-en-h.png')"
+    ).bind(JSON.stringify(["First fact bullet", "b", "c"]), "Even the redactions look nervous.").run();
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(new Request("https://x/doc/FBI-UAP-D003", { headers: { accept: "text/html" } }), { ...env, ASSETS: fakeAssets } as any, ctx);
+    await waitOnExecutionContext(ctx);
+    const html = await res.text();
+    expect(html).toContain('property="og:image" content="https://cdn/cards/FBI-UAP-D003-en-h.png"');
+    expect(html).toContain('property="og:description" content="Even the redactions look nervous. — First fact bullet"');
+    expect(html).not.toMatch(/name="description" content="Even the redactions/);
+    expect(html).toContain('name="twitter:card" content="summary_large_image"');
+    // structured data keeps the record's own image, never the text card
+    expect(html).toMatch(/"image":"[^"]+"/);
+    expect(html).not.toContain('"image":"https://cdn/cards/');
+  });
+
+  it("injectMeta: ogImage drives og:image + large card, image is the fallback", () => {
+    const out = injectMeta("<!--META-->", { title: "T", description: "D", url: "https://r/x", image: "https://r/thumb.jpg", ogImage: "https://r/card.png" });
+    expect(out).toContain('property="og:image" content="https://r/card.png"');
+    expect(out).not.toContain("thumb.jpg");
+  });
+
+  it("injectMeta: ogDescription defaults to description", () => {
+    const out = injectMeta("<!--META-->", { title: "T", description: "Plain", url: "https://r/x" });
+    expect(out).toContain('property="og:description" content="Plain"');
+  });
+
   it("/doc/:id percent-decodes the id (a live AARO id has a space; it 404'd)", async () => {
     await env.DB.prepare("INSERT OR IGNORE INTO records(id,archive,agency,title,kind,status) VALUES('SP ACE-1','aaro','AARO','SP ACE-1','pdf','live')").run();
     const ctx = createExecutionContext();

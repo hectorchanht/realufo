@@ -13,6 +13,14 @@ const OPTIONS: { v: Verdict; label: string; color: string }[] = [
 const pct = (n: number, total: number) => (total ? Math.round((n * 100) / total) : 0);
 // A second tap on the same option inside this window is a double-tap, not "clear my vote".
 const DOUBLE_TAP_MS = 600;
+// Below this many verdicts a big percentage is noise ("100% unexplained" from 1 vote).
+const MIN_CROWD = 5;
+// "? ? ?" is decoration: screen readers hear just the instruction.
+const TEASE = (
+  <>
+    <span aria-hidden="true">? ? ?</span> Judge it to reveal the crowd
+  </>
+);
 const plural = (n: number) => `${n} ${n === 1 ? "verdict" : "verdicts"}`;
 
 export function VerdictBar({ recordId, state }: { recordId: string; state?: VerdictState }) {
@@ -34,8 +42,16 @@ export function VerdictBar({ recordId, state }: { recordId: string; state?: Verd
   };
 
   return (
-    <section aria-label="Your verdict" className="mb-[22px] rounded-xl border border-line p-3">
-      <div className="mb-2 font-mono text-[11px] font-semibold tracking-[.4px] text-faint">YOUR VERDICT</div>
+    <section aria-label="WTF-meter" className="mb-[22px] rounded-xl border border-line p-3">
+      <div className="mb-2 font-mono text-[11px] font-semibold tracking-[.4px] text-faint">WTF-METER</div>
+      {/* always mounted so the number is announced when it appears after a vote */}
+      <div aria-live="polite">
+        {tally && total >= MIN_CROWD && (
+          <div className="mb-2 font-mono text-[20px] font-bold" style={{ color: "var(--red)" }}>
+            {pct(tally.unexplained, total)}% UNEXPLAINED
+          </div>
+        )}
+      </div>
       <div className="grid grid-cols-3 gap-2">
         {OPTIONS.map((o) => (
           <button
@@ -67,11 +83,13 @@ export function VerdictBar({ recordId, state }: { recordId: string; state?: Verd
               <span key={o.v}>{pct(tally[o.v], total)}%</span>
             ))}
           </div>
-          <div className="mt-1 font-mono text-[10px] text-faint">{plural(total)}</div>
+          <div className="mt-1 font-mono text-[10px] text-faint">
+            {total >= MIN_CROWD ? plural(total) : `Early days — ${plural(total)}`}
+          </div>
         </>
       ) : (
         <div className="mt-2 font-mono text-[10px] text-faint">
-          {mine ? "…" : total ? `${plural(total)} so far — vote to see the split` : "Be the first to weigh in"}
+          {mine ? "…" : <>{TEASE}{total ? ` · ${plural(total)}` : ""}</>}
         </div>
       )}
     </section>

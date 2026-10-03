@@ -149,17 +149,19 @@ Voice: extremely online, chaotic-funny, meme-literate, slang ok, lowercase energ
 Use EXACTLY ONE format for this post: ${format}. Don't stack other meme formats.
 End with this reply hook (or a close variant): "${hook}".
 FACTS ARE SACRED: mention only facts in the data (agency, place, year, length, what the summary says the footage shows, the official verdict in your own words). Always mention the place or the year. Never invent who filmed it, how it moved, or any detail not in the summary.
+If the data has a tldr: its joke is house copy — reuse or riff on it; its bullets are facts.
 Keep it PG-13 ("what the hell" ok, no f-bombs). Never claim experts or scientists are baffled.
 Aliens: you may joke about them, but never state or imply it IS aliens, and never call anything proof or a cover-up.
 Under 200 characters. Line breaks ok. No URLs, no website names, no @mentions, at most one hashtag: #UAP.${must ? ` It must include this exact text: "${must}".` : ""} Output only the post text.${recent.length ? `
 Your last posts (don't reuse their openers, catchphrases or hooks):
 ${recent.map((t) => "- " + t.replace(/\s*https?:\/\/\S+/g, "").replace(/\s*\n\s*/g, " ")).join("\n")}` : ""}`;
 
-function facts(c: Exclude<Candidate, { stream: "highlight" }>) {
+export function facts(c: Exclude<Candidate, { stream: "highlight" }>) {
   if (c.stream === "release") return { release: c.label, files: c.kinds, sample_titles: c.titles };
   const r = c.record;
   return { id: r.id, title: r.title, source: ARCHIVE_NAME[r.archive] ?? r.archive, agency: r.agency, kind: r.kind,
-    incident_date: r.incident_date, location: r.location, duration_s: r.duration, summary: r.summary?.slice(0, 500) };
+    incident_date: r.incident_date, location: r.location, duration_s: r.duration, summary: r.summary?.slice(0, 500),
+    ...(r.tldr_joke && r.tldr_bullets ? { tldr: { bullets: JSON.parse(r.tldr_bullets) as string[], joke: r.tldr_joke } } : {}) };
 }
 
 // 4-word phrases from recent posts: copy sharing one is a repeat ("the official verdict? unresolved.").
