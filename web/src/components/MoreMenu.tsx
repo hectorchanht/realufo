@@ -6,7 +6,12 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
+import { Download, Share } from "lucide-react";
+import { promptInstall, useInstallMode } from "../lib/install";
 import { MORE_ICON as MoreIcon, tabHref, type NavItem, type NavTab } from "./navItems";
+
+const itemCls = (sheet: boolean) =>
+  `flex w-full items-center gap-3 rounded-lg px-3 font-mono font-medium hover:bg-surface ${sheet ? "min-h-[48px] text-[14px]" : "min-h-[40px] text-[13px]"}`;
 
 export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]; activeTab: NavTab; sheet?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -58,7 +63,7 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
                 to={tabHref(item, activeTab)}
                 onClick={() => setOpen(false)}
                 aria-current={on ? "page" : undefined}
-                className={`flex items-center gap-3 rounded-lg px-3 font-mono font-medium hover:bg-surface ${sheet ? "min-h-[48px] text-[14px]" : "min-h-[40px] text-[13px]"}`}
+                className={itemCls(sheet)}
                 style={{ color: on ? "var(--signal)" : "var(--ink)" }}
               >
                 <Icon size={sheet ? 20 : 17} aria-hidden="true" />
@@ -67,6 +72,7 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
             </li>
           );
         })}
+        <InstallItem sheet={sheet} close={() => setOpen(false)} />
       </ul>
     </nav>
   );
@@ -101,5 +107,29 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
             )
           : list)}
     </div>
+  );
+}
+
+function InstallItem({ sheet, close }: { sheet: boolean; close: () => void }) {
+  const mode = useInstallMode();
+  const [help, setHelp] = useState(false);
+  if (!mode) return null;
+  const tap = () => {
+    if (mode === "ios") return setHelp((h) => !h);
+    close();
+    void promptInstall();
+  };
+  return (
+    <li>
+      <button type="button" onClick={tap} aria-expanded={mode === "ios" ? help : undefined} className={itemCls(sheet)} style={{ color: "var(--ink)" }}>
+        <Download size={sheet ? 20 : 17} aria-hidden="true" />
+        Install app
+      </button>
+      {help && (
+        <p className="px-3 pb-2 font-mono text-[12px] leading-relaxed text-dim">
+          Tap <Share size={13} aria-label="Share" className="inline align-[-2px]" /> then “Add to Home Screen”.
+        </p>
+      )}
+    </li>
   );
 }
