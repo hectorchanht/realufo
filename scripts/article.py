@@ -35,7 +35,8 @@ def d1(sql, read=False):
     os.unlink(f.name)
     if out.returncode:
         sys.exit(f"D1 failed: {out.stderr[-800:]}")
-    d = json.loads(re.search(r"^[\[{].*", out.stdout, re.S | re.M)[0])  # --file prints upload progress first
+    # --file prints upload progress first, and wrangler may print notices after the JSON
+    d = json.JSONDecoder().raw_decode(re.search(r"^[\[{].*", out.stdout, re.S | re.M)[0])[0]
     return (d[0] if isinstance(d, list) else d).get("results", [])
 
 
