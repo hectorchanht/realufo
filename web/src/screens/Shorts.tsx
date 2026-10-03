@@ -231,14 +231,16 @@ export default function Shorts() {
 
   // Everything else on the page (the app under the overlay) is inert while open.
   const [layer, setLayer] = useState<HTMLDivElement | null>(null);
-  // …except while the Composer (in the app tree, above the player) is open.
-  const { composer } = useOverlay();
+  // …except while the Composer or MediaViewer (in the app tree, above the
+  // player) is open.
+  const { composer, viewer } = useOverlay();
+  const overlay = !!(composer || viewer);
   useEffect(() => {
-    if (!layer || composer) return;
+    if (!layer || overlay) return;
     const others = [...document.body.children].filter((c) => c !== layer && !c.hasAttribute("inert"));
     others.forEach((c) => c.setAttribute("inert", ""));
     return () => others.forEach((c) => c.removeAttribute("inert"));
-  }, [layer, composer]);
+  }, [layer, overlay]);
 
   // Open on :id once; later :id changes come from scrolling, not navigation.
   useLayoutEffect(() => {
@@ -260,7 +262,7 @@ export default function Shorts() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (composer || e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement)?.closest?.("input,textarea")) return;
+      if (overlay || e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement)?.closest?.("input,textarea")) return;
       const n = { ArrowDown: 1, j: 1, ArrowUp: -1, k: -1 }[e.key];
       if (n) {
         e.preventDefault();

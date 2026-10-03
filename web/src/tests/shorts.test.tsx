@@ -10,13 +10,14 @@ const all: Short[] = [
 ];
 const useShortsMock = vi.fn();
 const likeShortMock = vi.fn();
+let commentImage: string | null = null;
 vi.mock("../api/queries", () => ({
   useBootstrap: () => ({ data: undefined, isLoading: false }),
   useHubs: () => ({ data: { hubs: [] } }),
   useShorts: (q: string, o?: { enabled?: boolean }) => useShortsMock(q, o),
   likeShort: (id: string) => likeShortMock(id),
   useComments: () => ({
-    data: { comments: [{ id: "C1", no: 1, body: "that's a balloon", handle: null, handleShow: null, stance: null, votes: 2, ago: "1h", image_url: null }] },
+    data: { comments: [{ id: "C1", no: 1, body: "that's a balloon", handle: null, handleShow: null, stance: null, votes: 2, ago: "1h", image_url: commentImage }] },
     isLoading: false,
   }),
   useVote: () => ({ mutate: vi.fn(), isPending: false }),
@@ -153,6 +154,29 @@ describe("Shorts player", () => {
     expect(container).not.toHaveAttribute("inert");
     fireEvent.keyDown(window, { key: "Escape" }); // composer's, not the player's
     expect(document.querySelector("[data-screen=shorts]")).toBeInTheDocument();
+  });
+
+  it("comments: an attached image opens the viewer over an un-inert app; outside click / Esc close only the viewer", async () => {
+    commentImage = "https://c/up.jpg";
+    useShortsMock.mockImplementation(() => ({ data: [all[0]], isFetched: true }));
+    try {
+      const { container } = renderAppAt("/shorts/A-1");
+      fireEvent.click(await screen.findByRole("button", { name: "Comments" }));
+      const open = () => fireEvent.click(screen.getByRole("button", { name: "open attached image" }));
+      open();
+      const viewer = document.querySelector("[data-media-viewer]")!;
+      expect(viewer).toBeInTheDocument();
+      expect(container).not.toHaveAttribute("inert");
+      fireEvent.click(viewer.querySelector("img")!.parentElement!.parentElement!); // the backdrop
+      expect(document.querySelector("[data-media-viewer]")).toBeNull();
+      expect(container).toHaveAttribute("inert");
+      open();
+      fireEvent.keyDown(window, { key: "Escape" }); // the viewer's, not the player's or the sheet's
+      expect(document.querySelector("[data-media-viewer]")).toBeNull();
+      expect(screen.getByRole("dialog", { name: "Comments" })).toBeInTheDocument();
+    } finally {
+      commentImage = null;
+    }
   });
 
   it("clicking beside the video closes the player; clicking the video doesn't", async () => {
