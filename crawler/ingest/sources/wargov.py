@@ -30,6 +30,7 @@ def candidates(csv_paths, dvids_map, taken):
                 if not dod:
                     continue                   # unresolved video -> skip
                 cdn = f"{R2_BASE}/videos/wargov/DOD_{dod}.mp4"; thumb = ""; origin = cdn
+                source = f"https://www.dvidshub.net/video/{r['DVIDS Video ID'].strip()}"
             else:
                 if not link:
                     continue
@@ -38,7 +39,7 @@ def candidates(csv_paths, dvids_map, taken):
                 else:
                     base = posixpath.basename(link.split("?")[0])
                     cdn = f"{R2_BASE}/images/wargov/{base}"; thumb = ""
-                origin = link
+                origin = source = link
             if cdn in seen:
                 continue
             seen.add(cdn)
@@ -52,7 +53,7 @@ def candidates(csv_paths, dvids_map, taken):
                           redacted=1 if (r.get("Redaction") or "").strip() else 0,
                           virin=(r.get("Image VIRIN") or "").strip(), r2_key=cdn[len(R2_BASE) + 1:],
                           cdn_url=cdn, mime=MIME[kind], thumb_url=thumb)
-            c._origin = origin
+            c._origin, c._source = origin, source
             out.append(c)
     return out
 

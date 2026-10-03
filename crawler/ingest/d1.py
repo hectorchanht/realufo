@@ -20,7 +20,7 @@ def emit_sql(cands, new_archives) -> str:
             f"{sql_q(c.id)},{sql_q(c.archive)},{sql_q(c.agency)},{sql_q(c.agency_full)},"
             f"{sql_q(c.title)},{sql_q(c.summary)},{sql_q(c.incident_date)},{sql_q(c.location)},"
             f"{sql_q(c.doc_date)},{sql_q(c.kind)},{int(c.redacted)},0,{sql_q(c.virin)},"
-            f"{sql_q(c.cdn_url)},{sql_q(c.archive)},'public-domain-usgov','live');")
+            f"{sql_q(getattr(c, '_source', '') or c.cdn_url)},{sql_q(c.archive)},'public-domain-usgov','live');")
         lines.append(
             "INSERT INTO assets(record_id,role,cdn_url,mime) "
             f"SELECT {sql_q(c.id)},'full',{sql_q(c.cdn_url)},{sql_q(c.mime)} "
