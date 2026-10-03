@@ -26,14 +26,13 @@
 // attribute+global CSS selector) — reproduced here as literal Tailwind
 // classes at the same 900px breakpoint AppShell itself uses, with the
 // `data-grid` attribute kept for markup parity.
-import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useBootstrap, useFeed, useHubs } from "../api/queries";
-import type { FeedClip, HubSummary } from "../api/types";
+import type { HubSummary, Short } from "../api/types";
 import { DocCard } from "../components/DocCard";
 import { LoadError } from "../components/LoadError";
+import { ShortsRow, shortHref } from "../components/ShortsRow";
 import { ThreadRow } from "../components/ThreadRow";
-import { docTitleParts } from "../lib/docTitle";
 import { useSetPageTitle } from "../lib/pageTitle";
 
 // Neutral copy shown until bootstrap's `stats` resolve (no fake numbers).
@@ -78,29 +77,10 @@ function BrowseStrip() {
   );
 }
 
-// "Short clips" row: the 9:16 social twins (≤30 s, title already burned in),
-// muted + looping, each playing only while ≥60% on screen. Reduced motion =
-// posters only. Hidden once the feed has answered with no clips.
-function ClipCarousel({ clips, loading }: { clips: FeedClip[]; loading: boolean }) {
-  const row = useRef<HTMLDivElement>(null);
-  // Plays even under prefers-reduced-motion: Android reports that for "animation scale 0" (a common
-  // battery/speed tweak), which left the row frozen on phones. Muted, short, and only while on screen.
-  useEffect(() => {
-    if (!row.current || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          const v = e.target as HTMLVideoElement;
-          if (e.isIntersecting) v.play().catch(() => {});
-          else v.pause();
-        }
-      },
-      { threshold: 0.6 }
-    );
-    row.current.querySelectorAll("video").forEach((v) => io.observe(v));
-    return () => io.disconnect();
-  }, [clips]);
-
+// "Short clips" row: the 9:16 Shorts we post to social (showcase Shorts first,
+// title already burned in), muted + looping, each playing only while ≥60% on
+// screen; a tap opens the Shorts player. Hidden once the feed has answered with no clips.
+function ClipCarousel({ clips, loading }: { clips: Short[]; loading: boolean }) {
   if (!loading && !clips.length) return null;
   return (
     <section aria-labelledby="feed-clips" className="mb-[26px]">
@@ -112,31 +92,7 @@ function ClipCarousel({ clips, loading }: { clips: FeedClip[]; loading: boolean 
           all videos ›
         </Link>
       </div>
-      <div ref={row} data-scroll aria-busy={loading} className="flex snap-x snap-mandatory gap-[10px] overflow-x-auto pb-1.5">
-        {loading
-          ? Array.from({ length: 4 }, (_, i) => (
-              <div key={i} aria-hidden="true" className="aspect-[9/16] w-[132px] shrink-0 rounded-[14px] border border-line bg-surface" />
-            ))
-          : clips.map((c) => (
-              <Link
-                key={c.id}
-                to={`/doc/${encodeURIComponent(c.id)}`}
-                aria-label={docTitleParts(c.id, c.title, "video").title}
-                className="aspect-[9/16] w-[132px] shrink-0 snap-start overflow-hidden rounded-[14px] border border-line bg-bg2"
-              >
-                <video
-                  src={c.clip}
-                  poster={c.thumb ?? undefined}
-                  muted
-                  loop
-                  playsInline
-                  preload="none"
-                  aria-hidden="true"
-                  className="h-full w-full object-cover"
-                />
-              </Link>
-            ))}
-      </div>
+      <ShortsRow shorts={clips} loading={loading} href={(s) => shortHref(s)} />
     </section>
   );
 }

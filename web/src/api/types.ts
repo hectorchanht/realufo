@@ -148,18 +148,19 @@ export interface ListRecordCard extends RecordCardBase {
 export type RecordCard = FeedRecordCard | ListRecordCard;
 
 /** A 9:16 short clip from GET /api/feed → `clips[]` (≤30 s MP4 on the CDN). */
-export interface FeedClip {
+export interface Short {
   id: string;
   title: string | null;
   thumb: string | null;
   clip: string;
+  showcase?: boolean;
 }
 
 export interface Feed {
   featured: FeedRecordCard[];
   hot: ThreadCard[];
   /** Optional: older cached responses predate it. */
-  clips?: FeedClip[];
+  clips?: Short[];
 }
 
 export interface RecordsListResponse {

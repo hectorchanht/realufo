@@ -19,6 +19,7 @@ import type {
   CreatePostResponse,
   CreateThreadResponse,
   Feed,
+  Short,
   RecordDetail,
   RecordFacets,
   RecordsListResponse,
@@ -61,6 +62,7 @@ export interface RecordsParams {
 export const qk = {
   bootstrap: ["bootstrap"] as const,
   feed: ["feed"] as const,
+  shorts: (q: string) => ["shorts", q] as const,
   records: (params: RecordsParams = {}) => ["records", params] as const,
   facets: ["recordFacets"] as const,
   record: (id: string) => ["record", id] as const,
@@ -117,6 +119,15 @@ export function useFeed() {
       delete (window as EarlyFeed).__feed;
       return early ? early.then((d) => d ?? api.get<Feed>("/api/feed")) : api.get<Feed>("/api/feed");
     },
+  });
+}
+
+// Shorts player queue / archive search strip. q="" = every Short.
+export function useShorts(q = "", { enabled = true } = {}) {
+  return useQuery({
+    queryKey: qk.shorts(q),
+    queryFn: () => api.get<Short[]>(`/api/shorts${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+    enabled,
   });
 }
 

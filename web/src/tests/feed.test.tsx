@@ -136,10 +136,10 @@ describe("Feed", () => {
     await screen.findByText(/file not found/i, { selector: "[data-screen='doc'] *" });
   });
 
-  it("renders the short clips row: muted inline clip tiles linking to /doc/:id", async () => {
+  it("renders the short clips row: muted inline clip tiles opening the Shorts player", async () => {
     renderAppAt("/");
     const tile = await screen.findByRole("link", { name: /Gulf of Oman orb/ });
-    expect(tile).toHaveAttribute("href", "/doc/vid1");
+    expect(tile).toHaveAttribute("href", "/shorts/vid1");
     const video = tile.querySelector("video") as HTMLVideoElement;
     expect(video).toHaveAttribute("src", "https://assets.realufo.org/clips-v/wargov/vid1.mp4");
     expect(video).toHaveAttribute("poster", "https://assets.realufo.org/thumbs/wargov/vid1.jpg");
