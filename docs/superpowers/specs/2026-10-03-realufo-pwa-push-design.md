@@ -120,7 +120,7 @@ Files: `web/src/api/client.ts` (hook), new `web/src/lib/outbox.ts`. No Backgroun
 
 ## Phase 2a — Push data model
 
-Migration `db/migrations/0034_push.sql` (latest existing is `0033_*`; re-check before writing, other chats add migrations):
+Migration `db/migrations/0035_push.sql` (latest existing is `0033_*`; re-check before writing, other chats add migrations):
 
 ```sql
 CREATE TABLE push_subs (
