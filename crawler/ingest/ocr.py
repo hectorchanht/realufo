@@ -109,6 +109,59 @@ def put_text(rid: str, pages: list[dict], work: str) -> None:
         json.dump(pages, f, ensure_ascii=False)
     r2.put(f"text/{rid}.json", path, "application/json; charset=utf-8")
 
+BENCH = [("PP-OCRv5_mobile_det", "en_PP-OCRv5_mobile_rec"),
+         ("PP-OCRv5_server_det", "en_PP-OCRv5_mobile_rec"),
+         ("PP-OCRv5_server_det", "PP-OCRv5_server_rec")]
+BENCH_DPI = (200, 300)
+SNIP = 400
+
+def _readable(t: str) -> bool:
+    return keep_page(clean_page(t))
+
+def bench_report(samples, results, today: str) -> str:
+    """samples [(id, page, pdftotext text)]; results {(det, rec, dpi): [(text, secs)] per sample}."""
+    n = len(samples)
+    rows = [f"| pdftotext (today) | – | {sum(_readable(old) for _, _, old in samples)}/{n} |"]
+    for (det, rec, dpi), res in results.items():
+        rows.append(f"| {det} + {rec} @{dpi} | {sum(s for _, s in res) / n:.1f} | "
+                    f"{sum(_readable(t) for t, _ in res)}/{n} |")
+    out = [f"# PaddleOCR benchmark ({today})", "",
+           f"{n} pages that fail `keep_page` today, from {len({s[0] for s in samples})} files. "
+           "Readable = passes `fulltext.keep_page`.", "",
+           "| config | s/page | readable |", "|---|---|---|", *rows, ""]
+    for i, (rid, page, old) in enumerate(samples):
+        out += [f"## {rid} p.{page}", "", "**pdftotext:**", "```", old[:SNIP], "```"]
+        for (det, rec, dpi), res in results.items():
+            out += [f"**{det} + {rec} @{dpi}:**", "```", res[i][0][:SNIP], "```"]
+        out.append("")
+    return "\n".join(out)
+
+def bench(rows, per_file: int, out_path: str) -> None:
+    samples, pdfs = [], []
+    with tempfile.TemporaryDirectory() as work:
+        for k, row in enumerate(rows):
+            pdf = os.path.join(work, f"{k}.pdf")
+            fetch.download(row["url"], pdf)
+            texts, count = pdftotext_pages(pdf), page_count(pdf)
+            old = [clean_page(texts[n - 1]) if n <= len(texts) else "" for n in range(1, count + 1)]
+            for n in [n for n in range(1, count + 1) if not keep_page(old[n - 1])][:per_file]:
+                samples.append((row["id"], n, old[n - 1]))
+                pdfs.append(pdf)
+        results = {}
+        for det, rec in BENCH:
+            engine = paddle_engine(det, rec)
+            for dpi in BENCH_DPI:
+                res = []
+                for (rid, n, _), pdf in zip(samples, pdfs):
+                    t0 = time.time()
+                    text, _ = engine(render(pdf, n, dpi, work))
+                    res.append((text, time.time() - t0))
+                    print(f"{det}+{rec}@{dpi} {rid} p.{n} {res[-1][1]:.1f}s", flush=True)
+                results[(det, rec, dpi)] = res
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(bench_report(samples, results, time.strftime("%Y-%m-%d")))
+    print(f"wrote {out_path}")
+
 def select_rows(ids: list[str], limit):
     where = f" AND r.id IN ({','.join(d1.sql_q(i) for i in ids)})" if ids else ""
     return d1._d1_json(" ".join(SELECT.format(ids=where).split()))[:limit]
@@ -118,8 +171,14 @@ def main(argv=None):
     ap.add_argument("--dry-run", action="store_true", help="OCR + print stats; no R2/D1 writes")
     ap.add_argument("--limit", type=int, default=None, help="max records this run")
     ap.add_argument("--ids", default=None, help="comma-separated record ids")
+    ap.add_argument("--bench", action="store_true", help="time model/dpi variants on failing pages of --ids")
+    ap.add_argument("--bench-pages", type=int, default=3, help="--bench: failing pages per file")
+    ap.add_argument("--out", default="../docs/launch/ocr-bench.md", help="--bench report path")
     args = ap.parse_args(argv)
     rows = select_rows([i for i in (args.ids or "").split(",") if i], args.limit)
+    if args.bench:
+        bench(rows, args.bench_pages, args.out)
+        sys.exit(0)
     engine = paddle_engine() if rows else None
     ok = failed = 0
     with tempfile.TemporaryDirectory() as work:

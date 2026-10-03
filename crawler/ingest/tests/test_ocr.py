@@ -118,3 +118,13 @@ def test_dry_run_writes_nothing(world):
 def test_ids_filter_is_escaped_into_the_select(world):
     run("--ids", "A,O'Hare")
     assert "r.id IN ('A','O''Hare')" in world["sql"][0]
+
+def test_bench_report_tables_speed_and_readability_per_config():
+    samples = [("A", 2, "~~ garbled"), ("B", 1, "")]
+    results = {("detM", "recM", 200): [(CLEAN, 1.0), ("", 3.0)],
+               ("detS", "recS", 300): [(CLEAN, 4.0), (CLEAN, 6.0)]}
+    md = ocr.bench_report(samples, results, "2026-10-03")
+    assert "| pdftotext (today) | – | 0/2 |" in md
+    assert "| detM + recM @200 | 2.0 | 1/2 |" in md
+    assert "| detS + recS @300 | 5.0 | 2/2 |" in md
+    assert "## A p.2" in md and "## B p.1" in md
