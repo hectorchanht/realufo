@@ -46,6 +46,8 @@ WORDNUM = {"two": "2", "three": "3", "four": "4", "five": "5", "six": "6", "seve
            "seventy": "70", "eighty": "80", "ninety": "90", "dozen": "12", "hundred": "100", "thousand": "1000"}
 BANNED = re.compile(r"\b(aliens?|extraterrestrials?|confirmed|proof|hoax"
                     r"|weather balloon|drones?|balloons?|birds?|stars?|planes?|satellites?|spaceships?|kites?"
+                    # backfill 2026-10-03: "just early fireworks", "the same fishing fleet"
+                    r"|fireworks?|flares?|lanterns?|meteors?|meteorites?|rockets?|reflections?|boats?|ships?|fleets?|fishing"
                     # dry-run crutch: "coffee break" on 3 of 10 files that never mention coffee
                     r"|coffee)\b", re.I)
 # Openers the model leans on for every file ("Paperwork so thick…" on 3 of 10 in the dry run).
@@ -180,6 +182,10 @@ def generate(row: dict, chat=_respond, recent=()) -> dict:
             return t
     raise ValueError(why)
 
+def failing_stored(rows, stored: dict):
+    """Rows whose stored TL;DR no longer passes check() (e.g. after the guard grew)."""
+    return [r for r in rows if r["id"] in stored and check(stored[r["id"]], build_input(r))]
+
 def todo(rows, force: bool = False, limit: int | None = None):
     out = [r for r in rows if force or r.get("input_hash") != input_hash(build_input(r))]
     return out[:limit] if limit else out
@@ -197,9 +203,18 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=None, help="max records this run")
     ap.add_argument("--ids", nargs="*", default=None, help="only these record ids")
     ap.add_argument("--force", action="store_true", help="regenerate even when the input is unchanged")
+    ap.add_argument("--recheck", action="store_true", help="regenerate only stored TL;DRs that fail the current check()")
     args = ap.parse_args(argv)
     ids = f" AND r.id IN ({','.join(d1.sql_q(i) for i in args.ids)})" if args.ids else ""
-    rows = todo(d1._d1_json(" ".join(SELECT.format(ids=ids).split())), args.force, args.limit)
+    rows = d1._d1_json(" ".join(SELECT.format(ids=ids).split()))
+    if args.recheck:
+        stored = {r["id"]: {"bullets": json.loads(r["bullets"]), "one_liner": r["one_liner"]} for r in d1._d1_json(
+            f"SELECT record_id id, bullets, one_liner FROM record_tldr WHERE lang='{LANG}'")}
+        rows = failing_stored(rows, stored)[:args.limit] if args.limit else failing_stored(rows, stored)
+        for r in rows:
+            print(f"recheck: {r['id']}: {check(stored[r['id']], build_input(r))}")
+    else:
+        rows = todo(rows, args.force, args.limit)
     pending, ok, failed = [], 0, 0
     # Daily runs compare against the newest stored jokes too, not just this run's.
     recent = [r["one_liner"] for r in reversed(d1._d1_json(

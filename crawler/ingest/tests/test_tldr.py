@@ -186,3 +186,16 @@ def test_generate_retries_on_repeated_phrase():
         return replies[len(calls) - 1]
     out = tldr.generate(ROW, chat=fake, recent=[GOOD["one_liner"]])
     assert out["one_liner"] == "Navy jets, one object, no follow-up." and "reused" in calls[1]
+
+def test_check_rejects_more_object_guesses_unless_in_source():
+    for o in ("Sweden called them celestial, but they were just early fireworks.",
+              "Same angles on the same fishing fleet.", "Turns out it was flares.", "A meteor with a filing number."):
+        assert "don't say" in (tldr.check({**GOOD, "one_liner": o}, tldr.build_input(ROW)) or ""), o
+    src = tldr.build_input({**ROW, "summary": ROW["summary"] + " AARO assessed the objects as flares."})
+    assert tldr.check({**GOOD, "one_liner": "Turns out it was flares."}, src) is None
+
+def test_failing_stored_picks_rows_whose_tldr_fails_check_now():
+    stored = {"a": {"bullets": GOOD["bullets"], "one_liner": GOOD["one_liner"]},
+              "b": {"bullets": GOOD["bullets"], "one_liner": "Just early fireworks."}}
+    rows = [{**ROW, "id": "a"}, {**ROW, "id": "b"}, {**ROW, "id": "c"}]
+    assert [r["id"] for r in tldr.failing_stored(rows, stored)] == ["b"]
