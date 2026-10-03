@@ -18,6 +18,7 @@ export interface Env {
   X_MONTHLY_USD_CAP?: string;
   X_HIGHLIGHT_MIN_VOTES?: string;
   X_SINCE?: string; // "YYYY-MM-DD"; empty = no release posts
+  X_FORCE_PICK?: string; // "ID[,ID]": post these records next, outside pick slots (scripts/publish.sh)
   X_API_KEY?: string; // secrets: OAuth 1.0a user context for the bot account
   X_API_SECRET?: string;
   X_ACCESS_TOKEN?: string;

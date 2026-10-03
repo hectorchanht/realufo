@@ -70,6 +70,19 @@ describe("release candidates", () => {
   });
 });
 
+describe("forced pick (X_FORCE_PICK)", () => {
+  it("posts the named record outside pick slots, once, and only if live", async () => {
+    await rec("XT-F1", "video");
+    await clip("XT-F1");
+    const early = T("2026-10-10T08:00:00"); // no pick slot reached
+    expect(await nextCandidate(E(), early)).toBeNull();
+    const c = await nextCandidate(E({ X_FORCE_PICK: "NOPE, XT-F1" }), early);
+    expect(c).toMatchObject({ stream: "pick", ref: "XT-F1", media: { key: "clips/wargov/XT-F1.mp4" } });
+    await posted("pick", "XT-F1", early);
+    expect(await nextCandidate(E({ X_FORCE_PICK: "XT-F1" }), early)).toBeNull(); // already posted
+  });
+});
+
 describe("daily pick", () => {
   it("prefers a video that has a clip, once per UTC day after 14:00", async () => {
     await rec("XT-V1", "video");

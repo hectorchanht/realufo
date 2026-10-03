@@ -3,7 +3,8 @@
     python3 -m ingest.clips --dry-run --limit 2   # encode locally, no upload
     python3 -m ingest.clips                       # encode + R2 upload
 
-Output: clips/<archive>/<id>.mp4. The Worker bot treats the object's existence
+Output: clips/<archive>/<id>.mp4, with the record id burned in top-left and
+realufo.org bottom-right (reposts keep the source findable). The Worker bot treats the object's existence
 as "this video has a clip", so there is no D1 row. Clips are ≤30 s (short, loopable;
 the post links to the full video): 30 s from 35% in (same offset as thumbs: skips
 the DoD "Unclassified" slates), pulled back so it ends inside the video.
@@ -11,8 +12,8 @@ Idempotent: existing clips skipped unless --force (re-cut after a length change)
 
 --vertical writes the 9:16 twin for Reels/Shorts/TikTok (Spec 5 §7) to
 clips-v/<archive>/<id>.mp4: the full frame centred on a blurred, cropped copy of
-itself, clean title in the top band and realufo.org in the bottom band. Needs a
-TTF at $CLIP_FONT (default: DejaVu Sans Bold from apt fonts-dejavu-core); the path
+itself, record id + clean title in the top band and realufo.org in the bottom band.
+Both need a TTF at $CLIP_FONT (default: DejaVu Sans Bold from apt fonts-dejavu-core); the path
 must not contain spaces, ':' or quotes (ffmpeg filtergraph syntax).
 """
 import argparse, os, re, subprocess, sys, tempfile
@@ -50,7 +51,11 @@ def title_layout(t, width=1000, em=0.72, max_fs=64):
     if len(t) > 20 and " " in t:
         i = min((i for i, c in enumerate(t) if c == " "), key=lambda i: abs(i - len(t) / 2))
         lines = [t[:i], t[i + 1:]]
-    return lines, min(max_fs, int(width / (em * max(map(len, lines)))))
+    return lines, fit(max(map(len, lines)), max_fs, width, em)
+
+def fit(n, max_fs, width=1000, em=0.72) -> int:
+    """Largest fontsize ≤ max_fs at which n chars fit `width` px (see title_layout for em)."""
+    return min(max_fs, int(width / (em * max(n, 1))))
 
 def has_audio(url) -> bool:
     return bool(subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index",
@@ -62,15 +67,19 @@ def window(duration):
         return 0.0, CLIP
     return round(min(duration * 0.35, duration - CLIP), 2), CLIP
 
-def ffmpeg_args(url, start, length, out):
+def ffmpeg_args(url, start, length, out, id_file, font):
+    mark = f"fontfile={font}:fontcolor=white:borderw=2:bordercolor=black"
+    vf = ("scale='trunc(min(1280,iw)/2)*2':-2,"
+          f"drawtext={mark}:textfile={id_file}:expansion=none:fontsize=32:x=20:y=20,"
+          f"drawtext={mark}:text=realufo.org:fontsize=26:x=w-text_w-20:y=h-text_h-20")
     return ["ffmpeg", "-v", "error", "-y", "-ss", f"{start:.2f}", "-i", url, "-t", f"{length:.2f}",
             "-map", "0:v:0", "-map", "0:a:0?",
-            "-vf", "scale='trunc(min(1280,iw)/2)*2':-2", "-fpsmax", "30",
+            "-vf", vf, "-fpsmax", "30",
             "-c:v", "libx264", "-profile:v", "main", "-pix_fmt", "yuv420p", "-preset", "veryfast",
             "-crf", "23", "-maxrate", "1500k", "-bufsize", "3000k",
             "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-movflags", "+faststart", out]
 
-def vertical_args(url, start, length, out, title_files, fontsize, font, audio=True):
+def vertical_args(url, start, length, out, title_files, fontsize, font, audio=True, id_file=None, id_fontsize=46):
     """title_files: one textfile per line (each drawtext centres its own line)."""
     band = f"fontfile={font}:fontcolor=white:borderw=3:bordercolor=black:x=(w-text_w)/2"
     title = "".join(f"drawtext={band}:textfile={f}:expansion=none:fontsize={fontsize}:y={220 + round(i * fontsize * 1.3)},"
@@ -79,6 +88,7 @@ def vertical_args(url, start, length, out, title_files, fontsize, font, audio=Tr
           "[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20[bg];"
           "[b]scale=1080:-2[fg];"
           "[bg][fg]overlay=(W-w)/2:(H-h)/2,"
+          + (f"drawtext={band}:textfile={id_file}:expansion=none:fontsize={id_fontsize}:y=150," if id_file else "") +
           f"{title}"
           f"drawtext={band}:text=realufo.org:fontsize=44:y=h-300[v]")
     a = ["ffmpeg", "-v", "error", "-y", "-ss", f"{start:.2f}", "-i", url]
@@ -111,14 +121,17 @@ def main(argv=None):
     ap.add_argument("--out", default=os.path.join(tempfile.gettempdir(), "realufo-clips"))
     args = ap.parse_args(argv)
     keyf = vkey if args.vertical else key
-    if args.vertical and not os.path.exists(FONT):
-        sys.exit(f"--vertical needs a TTF font at CLIP_FONT (missing: {FONT})")
+    if not os.path.exists(FONT):
+        sys.exit(f"clips need a TTF font at CLIP_FONT (missing: {FONT})")
     rows = todo(d1._d1_json(" ".join(SELECT.split())), limit=args.limit, force=args.force, keyf=keyf)
     os.makedirs(args.out, exist_ok=True)
     done = failed = 0
     for i, row in enumerate(rows, 1):
         out = os.path.join(args.out, f"{row['id']}{'-v' if args.vertical else ''}.mp4")
         start, length = window(row["duration"])
+        # textfile= (not text=): ids and titles may hold ':' or quotes that break filtergraph syntax
+        with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as idf:
+            idf.write(row["id"])
         if args.vertical:
             lines, fs = title_layout(clean_title(row["id"], row.get("title")))
             tfs = []
@@ -126,10 +139,12 @@ def main(argv=None):
                 with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as tf:
                     tf.write(ln)
                 tfs.append(tf.name)
-            cmd = vertical_args(row["cdn_url"], start, length, out, tfs, fs, FONT, has_audio(row["cdn_url"]))
+            cmd = vertical_args(row["cdn_url"], start, length, out, tfs, fs, FONT, has_audio(row["cdn_url"]), idf.name,
+                                fit(len(row["id"]), 46))
         else:
-            cmd = ffmpeg_args(row["cdn_url"], start, length, out)
+            cmd = ffmpeg_args(row["cdn_url"], start, length, out, idf.name, FONT)
         p = subprocess.run(cmd, capture_output=True, text=True)
+        os.unlink(idf.name)
         if args.vertical:
             for f in tfs:
                 os.unlink(f)

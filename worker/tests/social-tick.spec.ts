@@ -65,8 +65,9 @@ describe("social tick", () => {
     await tick(e, NOW, noSleep, A);
     expect(await rows()).toMatchObject([{ platform: "fb", status: "posted", remote_id: "R-fb" }, { platform: "ig", status: "posted", remote_id: "R-ig" }]);
     expect(seen).toHaveLength(2);
-    expect(seen[0].p.media).toEqual({ kind: "video", key: "clips/wargov/ST-V1.mp4", url: "https://assets.realufo.org/clips/wargov/ST-V1.mp4", size: 100 });
-    expect(seen[0].p.text.endsWith("\n\nhttps://realufo.org/doc/ST-V1")).toBe(true);
+    expect(seen[0].p.media).toMatchObject({ kind: "video", key: "clips/wargov/ST-V1.mp4", size: 100 });
+    expect(seen[0].p.media!.url).toMatch(/^https:\/\/assets\.realufo\.org\/clips\/wargov\/ST-V1\.mp4\?v=\w{8}$/);
+    expect(seen[0].p.text).toContain("\n\nhttps://realufo.org/doc/ST-V1\n\n#UFO #UAP");
     expect(seen[1].p.media!.key).toBe("clips-v/wargov/ST-V1.mp4");
     expect(seen[1].p.text).toContain("🔗 link in bio");
   });
@@ -130,7 +131,8 @@ describe("social tick", () => {
     await addX("ST-V9");
     await tick(E({ FEATURE_SOCIAL_IG: "on", FEATURE_SOCIAL_YT: "on" }), NOW, noSleep,
       { ig: fake("ig", { vertical: true, needs: "media" }), yt: fake("yt", { vertical: true, needs: "video" }) });
-    expect(seen[0].p.media).toEqual({ kind: "image", key: "thumbs/wargov/ST-V9.jpg", url: "https://assets.realufo.org/thumbs/wargov/ST-V9.jpg", size: 50 });
+    expect(seen[0].p.media).toMatchObject({ kind: "image", key: "thumbs/wargov/ST-V9.jpg", size: 50 });
+    expect(seen[0].p.media!.url).toMatch(/^https:\/\/assets\.realufo\.org\/thumbs\/wargov\/ST-V9\.jpg\?v=\w{8}$/);
     expect(await rows()).toMatchObject([{ platform: "ig", status: "posted" }, { platform: "yt", status: "failed", error: "no video" }]);
   });
 

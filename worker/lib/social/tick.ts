@@ -1,7 +1,7 @@
 import type { Env } from "../../env";
 import { mediaFor, sqlTime } from "../xpick";
 import { SocialError, isAuth, log, CDN, wait, type Adapter, type Ctx, type Platform, type SocialMedia, type SocialPost, type Sleep } from "./common";
-import { compose, archiveOf } from "./text";
+import { compose, archiveOf, type PostRecord } from "./text";
 import { fb, ig, threads } from "./meta";
 import { bsky } from "./bsky";
 import { yt } from "./yt";
@@ -20,12 +20,21 @@ const FLAG: Record<Platform, keyof Env> = {
 const MAX_ATTEMPTS = 3;
 const TIMEOUT_MS = 3600_000;
 
-type XRow = { id: number; text: string; media: string | null };
-type Row = { id: number; attempts: number; status: string; container_id: string | null; created_at: string; text: string; media: string | null };
+type XRow = { id: number; text: string; media: string | null } & RecCols;
+// Record behind a pick post, for the headline and hashtags (compose()).
+type RecCols = { rid: string | null; rkind: string | null; rtitle: string | null; rloc: string | null };
+const REC_COLS = "r.id rid, r.kind rkind, r.title rtitle, r.location rloc";
+const REC_JOIN = "LEFT JOIN records r ON x.stream='pick' AND r.id=x.ref";
+const recOf = (x: RecCols): PostRecord | null => (x.rid ? { id: x.rid, kind: x.rkind ?? "", title: x.rtitle, location: x.rloc } : null);
+type Row = { id: number; attempts: number; status: string; container_id: string | null; created_at: string; text: string; media: string | null } & RecCols;
+
+// ?v=<etag>: assets.realufo.org caches for a month, so a re-cut clip at the same key
+// would otherwise reach the platforms as the stale cached copy.
+const cdnUrl = (key: string, o: R2Object) => `${CDN}${key}?v=${o.etag.slice(0, 8)}`;
 
 async function image(env: Env, key: string): Promise<SocialMedia | null> {
   const o = await env.MEDIA.head(key);
-  return o ? { kind: "image", key, url: CDN + key, size: o.size } : null;
+  return o ? { kind: "image", key, url: cdnUrl(key, o), size: o.size } : null;
 }
 
 // x_posts.media → what this platform gets. Vertical platforms use the clips-v/ twin;
@@ -37,14 +46,14 @@ async function mediaOf(env: Env, media: string | null, vertical: boolean): Promi
   if (kind !== "clip") return image(env, key);
   const k = vertical ? key.replace(/^clips\//, "clips-v/") : key;
   const o = await env.MEDIA.head(k);
-  if (o) return { kind: "video", key: k, url: CDN + k, size: o.size };
+  if (o) return { kind: "video", key: k, url: cdnUrl(k, o), size: o.size };
   const [, archive, file] = key.split("/");
   const t = await mediaFor(env, { id: file.replace(/\.mp4$/, ""), archive, kind: "image" });
   return t ? image(env, t.key) : null;
 }
 
-async function postFor(env: Env, p: Platform, a: Adapter, x: { text: string; media: string | null }): Promise<SocialPost> {
-  const c = compose(p, x.text, archiveOf(x.media));
+async function postFor(env: Env, p: Platform, a: Adapter, x: { text: string; media: string | null } & RecCols): Promise<SocialPost> {
+  const c = compose(p, x.text, archiveOf(x.media), recOf(x));
   return { ...c, media: await mediaOf(env, x.media, a.vertical) };
 }
 
@@ -88,7 +97,7 @@ async function send(env: Env, p: Platform, a: Adapter, row: { id: number; attemp
 
 async function resume(env: Env, p: Platform, a: Adapter, ctx: Ctx) {
   const { results } = await env.DB.prepare(
-    `SELECT s.id, s.attempts, s.status, s.container_id, s.created_at, x.text, x.media FROM social_posts s JOIN x_posts x ON x.id=s.x_post_id
+    `SELECT s.id, s.attempts, s.status, s.container_id, s.created_at, x.text, x.media, ${REC_COLS} FROM social_posts s JOIN x_posts x ON x.id=s.x_post_id ${REC_JOIN}
      WHERE s.platform=? AND (s.status='processing' OR (s.status='pending' AND s.attempts>0))`
   ).bind(p).all<Row>();
   for (const row of results) {
@@ -121,7 +130,7 @@ async function runPlatform(env: Env, p: Platform, a: Adapter, mode: string, ctx:
   const since = env.SOCIAL_SINCE ?? "";
   if (!since) return;
   const x = await env.DB.prepare(
-    `SELECT x.id, x.text, x.media FROM x_posts x
+    `SELECT x.id, x.text, x.media, ${REC_COLS} FROM x_posts x ${REC_JOIN}
      WHERE x.status='posted' AND x.created_at >= ?
        AND NOT EXISTS (SELECT 1 FROM social_posts s WHERE s.x_post_id=x.id AND s.platform=?)
      ORDER BY x.created_at, x.id LIMIT 1`

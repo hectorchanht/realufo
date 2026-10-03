@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { compose, linkOf, stripUrls, clip, graphemes, bskyFacets, archiveOf, tagsFor, ytTitle } from "../lib/social/text";
+import { compose, linkOf, stripUrls, clip, graphemes, bskyFacets, archiveOf, tagsFor, ytTitle, placeTag, idTag } from "../lib/social/text";
 
 const LINK = "https://realufo.org/doc/DOW-UAP-PR019";
 const X = `📼 Gulf of Oman, 2023: the orb that wouldn't quit\n📍 Dept. of War · 30 s clip\n${LINK}`;
@@ -19,9 +19,25 @@ describe("social text", () => {
     expect(tagsFor(null)).toBe("#UFO #UAP #Pentagon #declassified");
   });
 
-  it("fb / threads keep the link at the end", () => {
-    expect(compose("fb", X, "wargov").text).toBe(`${stripUrls(X)}\n\n${LINK}`);
-    expect(compose("threads", X, "wargov").text.endsWith(`\n\n${LINK}`)).toBe(true);
+  it("fb / threads: text, link, then hashtags", () => {
+    expect(compose("fb", X, "wargov").text).toBe(`${stripUrls(X)}\n\n${LINK}\n\n#UFO #UAP #Pentagon #declassified #DeptOfWar`);
+    expect(compose("threads", X, "wargov").text).toContain(`\n\n${LINK}\n\n#UFO #UAP`);
+  });
+
+  it("pick posts lead with the file title + id and tag the place and id on every platform", () => {
+    const rec = { id: "DOW-UAP-PR104", kind: "video", title: "DOW-UAP-PR104, Unresolved UAP Report, Yellow Sea, 2025", location: "Yellow Sea" };
+    const head = "DOW-UAP-PR104 — Unresolved UAP Report, Yellow Sea, 2025 · declassified UAP video";
+    for (const p of ["fb", "threads", "bsky", "ig", "yt", "tiktok"] as const) {
+      const t = compose(p, X, "wargov", rec).text;
+      expect(t.startsWith(head), p).toBe(true);
+      expect(t, p).toContain("#DOWUAPPR104");
+      if (p !== "bsky") expect(t, p).toContain("#YellowSea");
+    }
+    expect(compose("yt", X, "wargov", rec).title).toBe("DOW-UAP-PR104 — Unresolved UAP Report, Yellow Sea, 2025 · declassified UAP video #Shorts");
+    expect(graphemes(compose("bsky", `${"🛸 word ".repeat(60)}\n${LINK}`, "wargov", rec).text)).toBeLessThanOrEqual(300);
+    expect(placeTag("Northeastern U.S.; Afghanistan")).toBe("#NortheasternUS");
+    expect(placeTag("N/A")).toBeNull();
+    expect(idTag("AARO-22-F-0863")).toBe("#AARO22F0863");
   });
 
   it("ig drops the dead link for 'link in bio' + tags", () => {
@@ -64,17 +80,17 @@ describe("social text", () => {
     expect(compose("tiktok", "b".repeat(5000), null).text.length).toBeLessThanOrEqual(2200);
   });
 
-  it("bsky trims the body, never the link", () => {
+  it("bsky trims the body, never the link or tags", () => {
     const long = `${"🛸 word ".repeat(60)}\n${LINK}`;
     const t = compose("bsky", long, null).text;
     expect(graphemes(t)).toBeLessThanOrEqual(300);
-    expect(t.endsWith(`…\n\n${LINK}`)).toBe(true);
+    expect(t.endsWith(`…\n\n${LINK}\n\n#UFO #UAP`)).toBe(true);
   });
 
   it("threads trims to 500 keeping the link", () => {
     const t = compose("threads", `${"x".repeat(700)} ${LINK}`, null).text;
     expect(t.length).toBeLessThanOrEqual(500);
-    expect(t.endsWith(LINK)).toBe(true);
+    expect(t.endsWith(`${LINK}\n\n#UFO #UAP #Pentagon #declassified`)).toBe(true);
   });
 
   it("bsky facet offsets are UTF-8 bytes with emoji before the link", () => {
