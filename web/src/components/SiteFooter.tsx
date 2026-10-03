@@ -67,7 +67,7 @@ export default function SiteFooter() {
           ))}
         </ul>
       </div>
-      <nav aria-label="Site" className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-x-8 gap-y-6">
+      <nav aria-label="Site" className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] sm:gap-x-8">
         {page?.links.length
           ? col(page.title, page.links.map((l) => (
               <li key={l.to}><Link className="text-signal hover:underline" to={l.to}>{l.text}</Link></li>
