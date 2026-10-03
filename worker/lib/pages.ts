@@ -7,7 +7,7 @@ import { loadHub, listHubsCached } from "../routes/hubs";
 import type { HubKind } from "./hubs";
 import {
   DEFAULT_DESCRIPTION, type DocData, type Link, docBody, docFooter, threadBody, boardBody, caseBody, homeBody, tabBody,
-  section, docLinks, countList, docTitle, docTitleParts, boardHref, docHref, hubBody, browseBody, hubHref, docMoments, snippet, askBody,
+  section, docLinks, countList, docTitle, boardHref, docHref, hubBody, browseBody, hubHref, docMoments, snippet, askBody, distinctSummary,
 } from "./ssr";
 import { loadSharedAsk } from "../routes/ask";
 import { askHref, askIdOf } from "./ask";
@@ -162,15 +162,24 @@ const docPage: Loader = async (env, g, url) => {
   // Official summary unless it's a one-liner (AARO/NARA) and an AI summary exists;
   // no summary at all → build one from the record's facts.
   const ai = d.fullText?.aiSummary;
-  const base = ((ai && (x.summary ?? "").length < 80 ? ai : x.summary) || "").trim();
+  // Boilerplate openings shared across a release (same first 100 chars) would give
+  // many files one search snippet: keep only this file's own sentences, else the
+  // AI summary, else the facts line below.
+  const { results: sib } = (x.summary?.length ?? 0) >= 100
+    ? await env.DB.prepare("SELECT summary FROM records WHERE status='live' AND id<>? AND substr(summary,1,100)=substr(?,1,100) LIMIT 50")
+        .bind(x.id, x.summary).all<{ summary: string }>()
+    : { results: [] };
+  const own = sib.length ? distinctSummary(x.summary!, sib.map((r) => r.summary)) : x.summary;
+  const base = ((ai && (own ?? "").length < 80 ? ai : own) || "").trim();
   // Under ~100 chars (AARO videos with no summary, one-line image captions): add a
   // sentence from the facts so the search snippet says what and where the file is.
   const what = { pdf: "document", video: "video", image: "image" }[x.kind] ?? "file";
   const verb = { pdf: "Read the original document", video: "Watch the original footage", image: "View the full-resolution image" }[x.kind] ?? "Open the original file";
-  const when = [x.incident_date, x.location && x.location !== "N/A" ? x.location : null].filter(Boolean).join(", ");
-  const lead = `Declassified UAP ${what}${agency ? ` from ${agency}` : ""}${base ? "" : `: ${docTitleParts(x.id, x.title, x.kind).title}`}${when ? ` (${when})` : ""}.`;
-  const description = base.length >= 100 ? base : [base && (/[.!?]$/.test(base) ? base : base + "."), lead, `${verb} on RealUFO.`].filter(Boolean).join(" ");
+  const when = [x.incident_date, x.location].filter((v) => v && v !== "N/A").join(", ");
   const title = docTitle(x.title, x.id, x.kind);
+  // Full title (with the id) when there's no summary: same-titled videos stay apart.
+  const lead = `Declassified UAP ${what}${agency ? ` from ${agency}` : ""}${base ? "" : `: ${title}`}${when ? ` (${when})` : ""}.`;
+  const description = base.length >= 100 ? base : [base && (/[.!?]$/.test(base) ? base : base + "."), lead, `${verb} on RealUFO.`].filter(Boolean).join(" ");
   // Same pick as thumbSql, from the assets already loaded.
   const thumb =
     d.assets.find((a) => a.role === "thumb") ?? d.assets.find((a) => a.role === "full" && a.mime?.startsWith("image/"));

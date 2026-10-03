@@ -36,6 +36,15 @@ const squash = (s: string) =>
 export function docTitleParts(id: string, raw: string | null | undefined, kind?: string): { id: string; title: string; showId: boolean } {
   let t = raw || "";
   let label = id;
+  // National Archives filename "<record group>_<NAID>_<title>" (341_110677_Numerical_File):
+  // drop the numbers, name the group; FBI (RG 65) case files read as file + part.
+  const nara = t.match(/^(\d+)_(?:HS1-)?\d+_\s*(.+)$/);
+  if (nara) {
+    const rest = nara[2].replace(/_/g, " ").replace(/\s+/g, " ").replace(/^box\d*\s+/i, "").trim();
+    const fbi = nara[1] === "65" && rest.match(/^(\d+-[A-Z]+-\d+)(?:\s+(Section|Serial|Sub)\s+0*(\w+))?$/i);
+    const part = fbi && fbi[2] ? `, ${fbi[2][0].toUpperCase()}${fbi[2].slice(1).toLowerCase()} ${fbi[3]}` : "";
+    return { id: label, title: fbi ? `FBI file ${fbi[1]}${part}` : `${rest} (National Archives RG ${nara[1]})`, showId: false };
+  }
   const code = t.match(/^([A-Z]{2,6}-UAP-[A-Za-z0-9-]+?)(?=[,_\s:])/)?.[1];
   if (t.startsWith(id) && /^[,_\s:]/.test(t.slice(id.length))) t = t.slice(id.length);
   // A video/image slug borrowing its PDF twin's code (DOW-UAP-PR019 is both) gets
@@ -51,6 +60,28 @@ export function docTitleParts(id: string, raw: string | null | undefined, kind?:
   const inId = words.filter((w) => b.includes(w)).length;
   const respelled = (long.includes(short) && short.length >= long.length / 2) || (words.length > 0 && inId / words.length >= 0.6);
   return { id: label, title: t, showId: !respelled };
+}
+
+// The part of an official summary that isn't boilerplate shared with sibling
+// records (49 AARO videos open with the same three sentences): leading
+// sentences inside the longest shared opening are dropped. Unchanged when the
+// opening is already distinct; null when what's left is short or still shared.
+// Sentence ends skip initialisms ("U.S. House").
+export function distinctSummary(s: string, siblings: string[]): string | null {
+  const shared = Math.max(0, ...siblings.map((o) => {
+    let i = 0;
+    while (i < s.length && s[i] === o[i]) i++;
+    return i;
+  }));
+  if (shared < 100) return s;
+  let end = 0;
+  for (const m of s.matchAll(/(?<![A-Z]\.[A-Z])[.!?]["”]?\s+(?=[A-Z“"])/g)) {
+    const e = m.index + m[0].length;
+    if (e > shared) break;
+    end = e;
+  }
+  const rest = s.slice(end).trim();
+  return rest.length >= 100 && shared - end < 60 ? rest : null;
 }
 
 export type RecordLink = { id: string; title: string; kind?: string };

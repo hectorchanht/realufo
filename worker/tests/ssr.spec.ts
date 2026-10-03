@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { docTitleParts, esc, docHref, boardHref, injectBody, docBody, docFooter, threadBody, caseBody, homeBody, type DocData, hubBody, browseBody, hubHref } from "../lib/ssr";
+import { distinctSummary, docTitleParts, esc, docHref, boardHref, injectBody, docBody, docFooter, threadBody, caseBody, homeBody, type DocData, hubBody, browseBody, hubHref } from "../lib/ssr";
 
 const doc = (over: Partial<DocData["record"]> = {}, rest: Partial<DocData> = {}): DocData => ({
   record: {
@@ -223,8 +223,14 @@ const CASES: [string, string, string, boolean, string][] = [
   ["DOW-UAP-D085", "DOW-UAP-D085_Transmission-of-CIA-Scientific-Advisory-Panel-Rept_1953", "Transmission-of-CIA-Scientific-Advisory-Panel-Rept 1953", true, "DOW-UAP-D085"],
   ["AARO-IMG-Go_Fast_UAP", "Go Fast UAP", "Go Fast UAP", false, "AARO-IMG-Go_Fast_UAP"],
   ["AARO-AARO_Puerto_Rico_UAP_Case_Resolution.pdf", "Puerto Rico UAP Case Resolution", "Puerto Rico UAP Case Resolution", false, "AARO-AARO_Puerto_Rico_UAP_Case_Resolution.pdf"],
-  ["341110677NumericalFile", "341_110677_Numerical_File,_5-2500", "341 110677 Numerical File, 5-2500", false, "341110677NumericalFile"],
-  ["65-hs1-834228961-62-hq-83894-section-1", "65_HS1-834228961_62-HQ-83894_Section_001", "65 HS1-834228961 62-HQ-83894 Section 001", false, "65-hs1-834228961-62-hq-83894-section-1"],
+  // National Archives filenames "<record group>_<NAID>_<title>": the numbers go,
+  // the record group is named; FBI case files read as file + part.
+  ["341110677NumericalFile", "341_110677_Numerical_File,_5-2500", "Numerical File, 5-2500 (National Archives RG 341)", false, "341110677NumericalFile"],
+  ["38143685box7IncidentSummaries1-100", "38_143685_box7_Incident_Summaries_1-100", "Incident Summaries 1-100 (National Archives RG 38)", false, "38143685box7IncidentSummaries1-100"],
+  ["65-hs1-834228961-62-hq-83894-section-1", "65_HS1-834228961_62-HQ-83894_Section_001", "FBI file 62-HQ-83894, Section 1", false, "65-hs1-834228961-62-hq-83894-section-1"],
+  ["65-hs1-101634279-100-de-18221-serial-844", "65_HS1-101634279_100-DE-18221_Serial_844", "FBI file 100-DE-18221, Serial 844", false, "65-hs1-101634279-100-de-18221-serial-844"],
+  ["65-hs1-834228961-62-hq-83894-sub-a", "65_HS1-834228961_62-HQ-83894_SUB_A", "FBI file 62-HQ-83894, Sub A", false, "65-hs1-834228961-62-hq-83894-sub-a"],
+  ["65-hs1-101634279-100-de-26505", "65_HS1-101634279_100-DE-26505", "FBI file 100-DE-26505", false, "65-hs1-101634279-100-de-26505"],
   ["AARO-956955", "Navy 2021 Flyby video", "Navy 2021 Flyby video", true, "AARO-956955"],
   ["DOW-UAP", "DOW-UAP-PR057a, \"Spherical UAP in clouds\"", "\"Spherical UAP in clouds\"", true, "DOW-UAP-PR057a"],
   ["AARO-AARO_Al_Taqaddam_Case_Resolution_Final.pdf", "Al Taqaddum Case Resolution", "Al Taqaddum Case Resolution", false, "AARO-AARO_Al_Taqaddam_Case_Resolution_Final.pdf"],
@@ -246,5 +252,25 @@ describe("docTitleParts (same cases as web/src/tests/docTitle.test.ts)", () => {
     expect(docTitleParts("WARGOV-VID-111688723", raw, "video").id).toBe("DOW-UAP-PR019 (video)");
     expect(docTitleParts("DOW-UAP-PR019", raw, "pdf").id).toBe("DOW-UAP-PR019");
     expect(docTitleParts("WARGOV-VID-111688723", raw).id).toBe("DOW-UAP-PR019"); // kind unknown: unchanged
+  });
+});
+
+describe("distinctSummary", () => {
+  const boiler = "On March 6, 2026, eight members of the U.S. House of Representatives requested access to 51 records. AARO identified a collection of responsive materials held on a classified network. ";
+  const a = boiler + "AARO assesses that this video, whose origin is unknown, shows a bright object crossing the frame over water near the coast.";
+  const b = boiler + "This clip shows two dim lights holding position above a ridge line for about nine seconds before the sensor slews away.";
+  it("keeps a summary whose opening is already distinct", () => {
+    expect(distinctSummary(a, ["Something else entirely, long enough to matter for the snippet comparison here."])).toBe(a);
+  });
+  it("drops the shared leading sentences", () => {
+    expect(distinctSummary(a, [b])).toBe("AARO assesses that this video, whose origin is unknown, shows a bright object crossing the frame over water near the coast.");
+  });
+  it("does not split at an initialism", () => {
+    const c = "The United States Central Command submitted a report to the U.S. All-domain Anomaly Resolution Office consisting of five seconds of infrared video from a platform.";
+    const d = "The United States Central Command submitted a report to the U.S. All-domain Anomaly Resolution Office consisting of a still image derived from a military system.";
+    expect(distinctSummary(c, [d])).toBeNull();
+  });
+  it("null for an exact duplicate", () => {
+    expect(distinctSummary(a, [a])).toBeNull();
   });
 });

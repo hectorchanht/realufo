@@ -81,10 +81,18 @@ async function sameSecret(a: string, b: string) {
   return x.length === y.length && x.every((v, i) => v === y[i]);
 }
 
+const LEGACY_PATH = /^\/(aaro|about|argentina|brazil|canada|chile|foia|geipan|glossary|italy|nara|nasa|peru|search|spain|stories|timeline|uk|whatsnew)(\/|$)/;
+
 export default {
   async fetch(req: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
     if (url.hostname.startsWith("www.")) return Response.redirect(`https://${url.hostname.slice(4)}${url.pathname}${url.search}`, 301);
+    // The old static site moved to release.realufo.org; its realufo.org URLs are
+    // still in search indexes. /map stays: this app has its own.
+    if (LEGACY_PATH.test(url.pathname)) {
+      const p = url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`;
+      return Response.redirect(`https://release.realufo.org${p}${url.search}`, 301);
+    }
     if (url.pathname.startsWith("/api/")) {
       const res = await dispatch(req, env);
       return res ?? error(404, "not found");

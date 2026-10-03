@@ -189,6 +189,21 @@ describe("serveWithMeta (via worker.fetch)", () => {
     expect(www.headers.get("location")).toBe("https://realufo.org/doc/A?b=1");
   });
 
+  it("old static-site paths 301 to release.realufo.org (with its trailing slash)", async () => {
+    const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
+    for (const [from, to] of [
+      ["https://realufo.org/stories/tic-tac/", "https://release.realufo.org/stories/tic-tac/"],
+      ["https://realufo.org/aaro", "https://release.realufo.org/aaro/"],
+      ["https://realufo.org/search/?q=x", "https://release.realufo.org/search/?q=x"],
+    ]) {
+      const res = await worker.fetch(new Request(from), fakeEnv, createExecutionContext());
+      expect(res.status).toBe(301);
+      expect(res.headers.get("location")).toBe(to);
+    }
+    const map = await worker.fetch(new Request("https://realufo.org/map/"), fakeEnv, createExecutionContext());
+    expect(map.headers.get("location")).toBe("https://realufo.org/map");
+  });
+
   it("injects fixed meta for a tab screen like /archive", async () => {
     const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
     const ctx = createExecutionContext();
@@ -232,7 +247,7 @@ describe("serveWithMeta (via worker.fetch)", () => {
       },
     } as any;
     const ctx = createExecutionContext();
-    const res = await worker.fetch(new Request("https://x/about", { headers: { accept: "text/html" } }), fakeEnv, ctx);
+    const res = await worker.fetch(new Request("https://x/some-static-page", { headers: { accept: "text/html" } }), fakeEnv, ctx);
     await waitOnExecutionContext(ctx);
     expect(called).toBe(true);
     expect(await res.text()).toBe("passthrough");
@@ -342,7 +357,7 @@ describe("pre-rendered body", () => {
     await env.DB.prepare("INSERT INTO records(id,archive,agency,kind,title,summary,location,status) VALUES ('XD-V1','aaro','AARO','video','XD-V1, GOFAST - UAP','', 'Atlantic Ocean','live')").run();
     const html = await get("/doc/XD-V1");
     const d = html.match(/<meta name="description" content="([^"]*)"/)![1];
-    expect(d).toBe("Declassified UAP video from AARO: GOFAST - UAP (Atlantic Ocean). Watch the original footage on RealUFO.");
+    expect(d).toBe("Declassified UAP video from AARO: XD-V1 — GOFAST - UAP (Atlantic Ocean). Watch the original footage on RealUFO.");
     expect(d.length).toBeGreaterThanOrEqual(70);
   });
 
