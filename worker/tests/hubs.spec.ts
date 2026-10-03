@@ -212,6 +212,7 @@ describe("hub highlights", () => {
 describe("agency backgrounds", () => {
   it("an agency with AGENCY_TEXT carries the background block; missing sources drop; others unchanged", async () => {
     const { id } = (await env.DB.prepare("SELECT id FROM records WHERE agency='AARO' AND status='live' LIMIT 1").first<{ id: string }>())!;
+    const saved = AGENCY_TEXT.aaro;
     AGENCY_TEXT.aaro = {
       background: "AARO is the Pentagon office for UAP reports. It began in 2022.",
       sources: [{ id, page: 1, note: "Fixture source" }, { id: "NOPE-UAP-X999", page: 1, note: "Missing file" }],
@@ -227,7 +228,15 @@ describe("agency backgrounds", () => {
       const fbi: any = await (await call("/api/hubs/agency/fbi")).json();
       expect(fbi.topic).toBeUndefined();
     } finally {
-      delete AGENCY_TEXT.aaro;
+      if (saved) AGENCY_TEXT.aaro = saved;
+      else delete AGENCY_TEXT.aaro;
+    }
+  });
+  it("AARO, NARA and NASA have backgrounds", () => {
+    expect(Object.keys(AGENCY_TEXT).sort()).toEqual(["aaro", "nara", "nasa"]);
+    for (const t of Object.values(AGENCY_TEXT)) {
+      expect(t.background.length).toBeGreaterThan(400);
+      expect(t.sources.length).toBeGreaterThanOrEqual(3);
     }
   });
 });

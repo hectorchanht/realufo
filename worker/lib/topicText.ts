@@ -121,4 +121,50 @@ export const TOPIC_TEXT: Record<string, TopicText> = {
 // Agency hub backgrounds (spec 2026-10-03-realufo-case-stories-batch2-design):
 // the AARO/NARA/NASA overviews moved from release.realufo.org. Same shape and
 // rules as topic texts: every source is an archive file (PDF page = ?p=).
-export const AGENCY_TEXT: Record<string, TopicText> = {};
+export const AGENCY_TEXT: Record<string, TopicText> = {
+  aaro: {
+  background:
+    "The All-domain Anomaly Resolution Office (AARO) is the U.S. Department of Defense office that investigates unidentified anomalous phenomena (UAP). It grew out of a Navy-led UAP Task Force that the Deputy Secretary of Defense approved in August 2020. A successor group, the Airborne Object Identification and Management Synchronization Group (AOIMSG), was set up under the Under Secretary of Defense for Intelligence and Security to replace it. After the FY2022 National Defense Authorization Act, AOIMSG was renamed AARO on 15 July 2022 and given a wider mission. AARO reports to Congress in coordination with the Office of the Director of National Intelligence.\n\nDr. Sean Kirkpatrick was asked to stand up and lead the office in early 2022. By March 2024 Tim Phillips was acting director, and an August 2024 organization chart shows Jon Kosloski as director with Phillips as his deputy.\n\nThe files in this archive are AARO's own releases. They include Volume I of its Historical Record Report, presented to the press in March 2024; case resolutions such as the one on the Navy's January 2015 \"Go Fast\" video; and FOIA releases, from a director's biography to organization charts and press emails.\n\nTheir conclusions are consistent. Volume I found no evidence that any U.S. government investigation, academic research or official review panel had confirmed a UAP sighting as extraterrestrial technology, and it notes that the vast majority of cases lack usable data. AARO judged with high confidence that the Go Fast object did not move at anomalous speeds. A metal specimen publicly alleged to come from a crashed extraterrestrial vehicle in 1947 was assessed by Oak Ridge National Laboratory as terrestrial in origin, and AARO concurred.",
+  lore: "Popular accounts say the U.S. government is secretly reverse-engineering recovered alien craft; AARO's Historical Record Report says it found no empirical evidence for those claims.",
+  sources: [
+    { id: "AARO-AARO_Historical_Record_Report_Vol_1_2024.pdf", page: 24, note: "UAP Task Force (2020), then AOIMSG" },
+    { id: "AARO-AARO_Historical_Record_Report_Vol_1_2024.pdf", page: 25, note: "AARO established 15 July 2022" },
+    { id: "AARO-AARO_Historical_Record_Report_Vol_1_2024.pdf", page: 7, note: "No evidence of extraterrestrial technology" },
+    { id: "AARO-23-F-0922_1", page: 1, note: "Kirkpatrick asked to stand up AARO" },
+    { id: "AARO-24-F-0922", page: 1, note: "Phillips, acting director, March 2024" },
+    { id: "AARO-24-F-0448", page: 1, note: "Org chart, August 2024: Kosloski director" },
+    { id: "AARO-AARO_GoFast_Case_Resolution_Card_Methodology_Final.pdf", page: 1, note: "Go Fast: no anomalous speeds" },
+    { id: "AARO-AAROs_Supplement_to_ORNLs_Analysis_of_a_Metallic_Specimen", page: 1, note: "Alleged 1947 crash metal: terrestrial" },
+  ],
+},
+  nara: {
+  background:
+    "The National Archives and Records Administration (NARA) keeps the U.S. government's permanent records. Every file this archive lists under NARA belongs to one work: \"United States–Vietnam Relations, 1945–1967,\" the Defense Department study known as the Pentagon Papers. The 49 files run to about 8,300 pages, stamped as declassified under Executive Order 13526 in 2011.\n\nNone of these volumes is about UFOs or UAP. They are a history of American policy in Vietnam. In a memo of 15 January 1969, task force chairman Leslie H. Gelb explains that Secretary of Defense Robert S. McNamara ordered the study on 17 June 1967 and asked for work that was \"encyclopedic and objective.\" The task force had full access to the Secretary of Defense's files and some CIA and State Department material, but no White House files, and it was not allowed to interview the people involved. It produced thirty-seven studies and fifteen collections of documents.\n\nThe outline runs from Vietnam in the 1940s through the Geneva Accords, the Kennedy and Johnson commitments, the air war against North Vietnam and the search for a settlement. Some volumes are narrative studies with summaries and chronologies; others reprint the public statements and internal documents of each administration from Roosevelt to Johnson. One chronology records Under Secretary of State George Ball urging the President in July 1965 to cut America's losses and negotiate. A negotiations volume covers five contact tracks of 1964–66, including Canadian diplomats' visits to Hanoi and two U.S. bombing pauses.\n\nNARA's UFO-related holdings surface in other agencies' files here. A 1994 Air Force report says the Air Force had turned Project Blue Book over to NARA, and a 2025 AARO paper says AARO is working with NARA to transfer UAP records for permanent storage and public access.",
+  lore: "Roswell is often assumed to sit in the Project Blue Book files at the National Archives; the 1994 Air Force report says NARA told Congressman Schiff it was not part of them.",
+  sources: [
+    { id: "NARA-Pentagon-Papers-Index", page: 4, note: "Cover: U.S.–Vietnam Relations 1945–1967, declassified 2011" },
+    { id: "NARA-Pentagon-Papers-Index", page: 6, note: "Gelb memo: McNamara's 1967 order, access, output" },
+    { id: "NARA-Pentagon-Papers-Index", page: 9, note: "Outline of studies, Parts I–IV" },
+    { id: "NARA-Pentagon-Papers-Index", page: 10, note: "Outline: justification and settlement volumes" },
+    { id: "NARA-Pentagon-Papers-Part-IV-C-7-a", page: 6, note: "Ball memo: cut losses, negotiate (1965)" },
+    { id: "NARA-Pentagon-Papers-Part-VI-C-1", page: 4, note: "Five negotiating tracks, 1964–66" },
+    { id: "DOD-USAF-Roswell-Report-1994", page: 3, note: "Blue Book turned over to NARA; Roswell not in it" },
+    { id: "AARO-AARO_Declassification_Info_Paper_2025", page: 4, note: "AARO transferring UAP records to NARA" },
+  ],
+},
+  nasa: {
+  background:
+    "NASA, the U.S. civilian space agency, appears in this archive in two ways: as the keeper of astronaut flight records that mention unexplained lights and objects, and as the sponsor of a 2022–2023 scientific study of UAP.\n\nThe flight records are air-to-ground transcripts and crew debriefings. On Gemini 7 in 1965, Frank Borman told Houston \"we have a bogey at ten o'clock high,\" then described what looked like hundreds of little particles about three or four miles away; the crew also had their booster in sight. A February 1962 NASA memo asked for a detailed account of the luminous particles John Glenn reported around his Friendship 7 spacecraft, for scientific evaluation.\n\nIn June 2022 NASA set up an independent study team of outside experts. Its terms of reference posed eight questions: which civilian, commercial and new data, and which analysis techniques, could shed light on the nature and origins of UAP. They called for about eight to twelve members; the final report lists 16, chaired by David Spergel of the Simons Foundation. The foreword says the study \"is not a review of previous UAP incidents\" and that NASA is appointing a Director of UAP Research.\n\nThe report finds that UAP are often caught by chance on sensors not designed or calibrated for them, without full metadata. It recommends that NASA use its Earth-observing satellites and commercial high-resolution imagery, apply artificial intelligence and machine learning, explore crowdsourced smartphone data, and make better use of the Aviation Safety Reporting System for pilot reports. One of the panel's discussion papers adds that there is \"no reason to conclude that existing UAP reports have an extraterrestrial source.\"",
+  lore: "Glenn's luminous particles are often retold as an early astronaut UFO sighting; a 1962 NASA draft memo reasoned that their consistency over three orbits meant they were associated with the spacecraft itself.",
+  sources: [
+    { id: "NASA-UAP-D003", page: 1, note: "Gemini 7: Borman's bogey and particles" },
+    { id: "NASA-UAP-D015", page: 55, note: "1962 memo on Glenn's luminous particles" },
+    { id: "NASA-UAP-D015", page: 35, note: "Particles tied to the spacecraft itself" },
+    { id: "NASA-UAPISTTermsofReference_Signed", page: 2, note: "Eight questions; 8 to 12 members" },
+    { id: "NASA-uap-independent-study-team-final-report", page: 2, note: "16 members, chair David Spergel" },
+    { id: "NASA-uap-independent-study-team-final-report", page: 9, note: "Foreword: June 2022, not a case review" },
+    { id: "NASA-uap-independent-study-team-final-report", page: 23, note: "Overall conclusions and recommendations" },
+    { id: "NASA-uap-independent-study-team-final-report", page: 35, note: "No reason to conclude extraterrestrial" },
+  ],
+},
+};
