@@ -7,10 +7,15 @@ import { TOPIC_RULES } from "./topics";
 
 export type FollowKind = "thread" | "record" | "case" | "hub";
 
-// Posting somewhere follows it ('auto'); obeys the subscriber's "replies" pref.
+// Posting somewhere follows it ('auto'). Only inserts the row; the subscriber's "replies" pref
+// is applied when pushes are sent. Best-effort: never rejects, so a failed insert can't turn an
+// already-committed post into a 500 (and a client retry that duplicates it).
 export const autoFollow = (env: Env, actor: string | null, kind: FollowKind, key: string) =>
   actor
-    ? env.DB.prepare("INSERT OR IGNORE INTO follows(actor_id,kind,key,src) VALUES(?,?,?,'auto')").bind(actor, kind, key).run()
+    ? env.DB.prepare("INSERT OR IGNORE INTO follows(actor_id,kind,key,src) VALUES(?,?,?,'auto')")
+        .bind(actor, kind, key)
+        .run()
+        .then(() => undefined, (e) => console.error("autoFollow", e))
     : Promise.resolve();
 
 // After the response: ctx.waitUntil in production. Tests pass a ctx without waitUntil,

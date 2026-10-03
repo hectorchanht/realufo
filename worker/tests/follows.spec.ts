@@ -3,7 +3,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import worker from "../index";
 import { seedTestDB } from "./helpers";
 import { actorId } from "../lib/anon";
-import { followUrl, hubLabel } from "../lib/follows";
+import { autoFollow, followUrl, hubLabel } from "../lib/follows";
 
 beforeAll(() => seedTestDB(env.DB));
 const call = (p: string, init?: RequestInit) => worker.fetch(new Request("https://x" + p, init), env as any, {} as any);
@@ -36,6 +36,13 @@ describe("auto-follow on posting", () => {
     const before = (await env.DB.prepare("SELECT count(*) c FROM follows").first<{ c: number }>())!.c;
     expect((await as(null, "/api/records/CIA-UAP-017/comments", { body: "anon" })).status).toBe(201);
     expect((await env.DB.prepare("SELECT count(*) c FROM follows").first<{ c: number }>())!.c).toBe(before);
+  });
+});
+
+describe("autoFollow is best-effort", () => {
+  it("resolves even when the insert rejects (e.g. follows table missing)", async () => {
+    const bad = { DB: { prepare: () => ({ bind: () => ({ run: async () => { throw new Error("no such table: follows"); } }) }) } } as any;
+    await expect(autoFollow(bad, "someone", "thread", "t1")).resolves.toBeUndefined();
   });
 });
 
