@@ -92,18 +92,21 @@ export function AskCard({ question, data, footer }: { question: string; data: { 
         })}
       </p>
       {data.sources.length > 0 && (
-        <ol className="mt-3 flex flex-col gap-1.5">
+        <ol className="mt-3.5 flex flex-col gap-2.5">
           {data.sources.map((s) => (
             <li
               key={s.n}
               id={`ask-src-${s.n}`}
               data-flash={flash === s.n ? "true" : "false"}
-              className="flex items-center gap-2 rounded-lg border border-line px-2 py-1.5 transition-colors data-[flash=true]:border-signal"
+              className="relative flex items-center gap-2 rounded-lg border border-line px-2 py-1.5 transition-colors data-[flash=true]:border-signal"
             >
-              <Link to={`/doc/${s.record_id}`} className="flex items-center gap-2">
-                <span className="w-5 flex-none font-mono text-[10px] text-faint">[{s.n}]</span>
-                {s.thumb && <img src={s.thumb} alt="" loading="lazy" className="h-8 w-8 flex-none rounded object-cover" />}
-              </Link>
+              {/* source number sits on the top border, legend-style, so it takes no row space */}
+              <span className="absolute -top-1.5 left-2 bg-surface px-1 font-mono text-[9px] leading-none text-faint">[{s.n}]</span>
+              {s.thumb && (
+                <Link to={`/doc/${s.record_id}`} className="flex-none">
+                  <img src={s.thumb} alt="" loading="lazy" className="h-8 w-8 rounded object-cover" />
+                </Link>
+              )}
               {/* id, title (2 lines) and one wrapping chip row stack, so chips never squeeze the title on phones */}
               <div className="flex min-w-0 flex-1 flex-col">
                 <Link to={`/doc/${s.record_id}`} className="text-[12px] leading-snug text-ink hover:text-signal">
