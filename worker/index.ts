@@ -23,6 +23,7 @@ import { llms, llmsFull } from "./routes/llms";
 import { hubsIndex, getHub } from "./routes/hubs";
 import { tick } from "./lib/xbot";
 import { tick as socialTick } from "./lib/social/tick";
+import { pollTick } from "./lib/xpoll";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -59,6 +60,7 @@ async function runTick(env: Env) {
   const logErr = (who: string) => (e: unknown) => console.log(JSON.stringify({ [who]: true, crashed: String(e).slice(0, 300) }));
   await tick(env).catch(logErr("xbot"));
   await socialTick(env).catch(logErr("social"));
+  await pollTick(env).catch(logErr("xpoll"));
 }
 
 // POST /__tick (Authorization: Bearer ADMIN_TOKEN): one cron tick on demand, for
