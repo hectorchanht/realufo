@@ -3,7 +3,10 @@
 // the URL follows it (replace) so the address bar is always the shareable Short.
 // Queue = the ?q= search results when they contain :id, else every Short.
 // Starts muted (autoplay policy); the sound button / tapping a video toggles all.
+// Portaled to <body> with the app behind it made inert, so Tab/screen readers
+// stay in the player.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useShorts } from "../api/queries";
 import { goBack } from "../components/navItems";
@@ -20,8 +23,6 @@ export default function Shorts() {
   const q = params.get("q") ?? "";
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  useSetPageTitle("SHORTS", "Declassified UAP clips");
-
   const searched = useShorts(q, { enabled: !!q });
   const inQ = !!searched.data?.some((s) => s.id === id);
   const all = useShorts("", { enabled: !q || (searched.isFetched && !inQ) });
@@ -34,13 +35,23 @@ export default function Shorts() {
   const opened = useRef(false);
   const idx = shorts?.findIndex((s) => s.id === id) ?? -1;
   const found = idx >= 0;
+  useSetPageTitle("SHORTS", "Declassified UAP clips", found ? docTitleParts(id, shorts![idx].title, "video").title : undefined);
+
+  // Everything else on the page (the app under the overlay) is inert while open.
+  const [layer, setLayer] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!layer) return;
+    const others = [...document.body.children].filter((c) => c !== layer && !c.hasAttribute("inert"));
+    others.forEach((c) => c.setAttribute("inert", ""));
+    return () => others.forEach((c) => c.removeAttribute("inert"));
+  }, [layer]);
 
   // Open on :id once; later :id changes come from scrolling, not navigation.
   useLayoutEffect(() => {
-    if (opened.current || !found) return;
+    if (opened.current || !root) return;
     opened.current = true;
-    document.getElementById(`short-${id}`)?.scrollIntoView?.({ block: "start" });
-  }, [found, id]);
+    root.children[idx]?.scrollIntoView?.({ block: "start" });
+  }, [root, idx]);
 
   useAutoplayInView(root, [shorts], (v) => {
     const sid = v.dataset.id;
@@ -53,7 +64,7 @@ export default function Shorts() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.closest?.("input,textarea")) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement)?.closest?.("input,textarea")) return;
       const step = { ArrowDown: 1, j: 1, ArrowUp: -1, k: -1 }[e.key];
       if (step) {
         e.preventDefault();
@@ -65,14 +76,14 @@ export default function Shorts() {
   }, [navigate, pathname, root]);
 
   const back = (
-    <button type="button" onClick={() => goBack(navigate, pathname)} aria-label="Back"
+    <button type="button" onClick={() => goBack(navigate, pathname)}
       className="absolute left-3 top-3 z-10 rounded-full bg-black/50 px-3 py-1.5 font-mono text-[13px] text-white">
-      ‹ Shorts
+      ‹ Back
     </button>
   );
 
-  return (
-    <div data-screen="shorts" className="fixed inset-0 z-[60] bg-black">
+  return createPortal(
+    <div ref={setLayer} data-screen="shorts" className="fixed inset-0 z-[60] bg-black">
       {back}
       {pending ? (
         <div className="grid h-full place-items-center font-mono text-[11px] text-white/60">◉ loading signal…</div>
@@ -85,11 +96,11 @@ export default function Shorts() {
           </div>
         </div>
       ) : (
-        <div ref={setRoot} data-scroll className="h-full snap-y snap-mandatory overflow-y-auto">
+        <div ref={setRoot} data-scroll className="h-full snap-y snap-mandatory overflow-y-auto overscroll-contain">
           {shorts!.map((s, i) => {
             const title = docTitleParts(s.id, s.title, "video").title;
             return (
-              <section key={s.id} id={`short-${s.id}`} className="relative flex h-[100dvh] snap-start items-center justify-center">
+              <section key={s.id} className="relative flex h-[100dvh] snap-start items-center justify-center">
                 <video
                   data-testid="short-video"
                   data-id={s.id}
@@ -127,6 +138,7 @@ export default function Shorts() {
           })}
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }

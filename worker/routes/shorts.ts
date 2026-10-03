@@ -7,16 +7,34 @@ import { ftsQuery, metaMatch } from "./records";
 export type Short = { id: string; title: string | null; thumb: string | null; clip: string; showcase: boolean };
 const MAX = 200;
 
+// ponytail: per-isolate 5-min memo of the two R2 listings (each a Class A op;
+// the archive strip calls this per debounced search). A new Short shows up within
+// 5 min; key by bucket binding so a different/broken binding never hits it.
+const TTL_MS = 5 * 60_000;
+let memo = new WeakMap<object, { at: number; ids: Promise<[string[], string[]]> }>();
+function listings(env: Env): Promise<[string[], string[]]> {
+  const hit = memo.get(env.MEDIA);
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.ids;
+  const ids = Promise.all([clipIds(env, "showcase/"), clipIds(env, "clips-v/")]);
+  memo.set(env.MEDIA, { at: Date.now(), ids });
+  ids.catch(() => memo.delete(env.MEDIA)); // never memoize a failure
+  return ids;
+}
+// Tests seed R2 per file; the memo would otherwise outlive a file's storage.
+export const clearShortsMemo = () => {
+  memo = new WeakMap();
+};
+
 // A Short = a live record with a 9:16 video in R2: an operator showcase Short
 // (showcase/, scripts/publish.sh --showcase, wins) or the auto-cut twin (clips-v/).
 // The object's existence is the flag — no D1 table. Order: showcase by newest
 // post, showcase without a post row, then twins (portrait sources first — their
 // twin is the whole picture — then newest). q = the archive search (metadata or
 // page text) or, for showcase Shorts, every word in the posted text.
-// Never throws: an R2/D1 error is an empty list (the feed must not fail).
+// Never throws: an R2/D1 error is logged and an empty list (the feed must not fail).
 export async function listShorts(env: Env, { q = "", limit = MAX }: { q?: string; limit?: number } = {}): Promise<Short[]> {
   try {
-    const [showcase, twins] = await Promise.all([clipIds(env, "showcase/"), clipIds(env, "clips-v/")]);
+    const [showcase, twins] = await listings(env);
     if (!showcase.length && !twins.length) return [];
     const where = ["r.status='live'", "(r.id IN (SELECT id FROM sc) OR r.id IN (SELECT id FROM cv))"];
     const bind: unknown[] = [JSON.stringify(showcase), JSON.stringify(twins)];
@@ -39,13 +57,14 @@ export async function listShorts(env: Env, { q = "", limit = MAX }: { q?: string
             FROM assets a WHERE a.record_id=r.id AND a.role='full') portrait
        FROM records r WHERE ${where.join(" AND ")}
        ORDER BY showcase DESC, posted DESC, portrait DESC, r.created_at DESC, r.id DESC LIMIT ?`
-    ).bind(...bind, Math.min(MAX, Math.max(1, limit || MAX)))
+    ).bind(...bind, Math.min(MAX, Math.max(1, Math.floor(limit) || MAX)))
       .all<{ id: string; archive: string; title: string | null; thumb: string | null; showcase: number }>();
     return results.map(({ id, archive, title, thumb, showcase }) => ({
       id, title, thumb, showcase: !!showcase,
       clip: `https://assets.realufo.org/${showcase ? "showcase" : "clips-v"}/${archive}/${encodeURIComponent(id)}.mp4`,
     }));
-  } catch {
+  } catch (e) {
+    console.error("listShorts", e);
     return [];
   }
 }

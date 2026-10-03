@@ -1,7 +1,7 @@
 import { env, createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { seedTestDB } from "./helpers";
-import { listShorts } from "../routes/shorts";
+import { listShorts, clearShortsMemo } from "../routes/shorts";
 import worker from "../index";
 
 const rec = (id: string, status = "live", title = `Title ${id}`) =>
@@ -12,6 +12,7 @@ const ids = (xs: { id: string }[]) => xs.map((x) => x.id);
 
 describe("listShorts", () => {
   beforeAll(async () => {
+    clearShortsMemo();
     await seedTestDB(env.DB);
     await rec("SH-1"); await rec("SH-2"); await rec("SH-3", "failed"); await rec("SH-4");
     await rec("SH-5", "live", "Gimbal over the sea"); await rec("SH-6"); await rec("SH 7");
@@ -54,9 +55,24 @@ describe("listShorts", () => {
     expect(await listShorts(env as any, { limit: 2 })).toHaveLength(2);
   });
 
-  it("degrades to [] when R2 listing fails", async () => {
+  it("a fractional limit is floored, not a SQLite error", async () => {
+    expect(await listShorts(env as any, { limit: 2.5 })).toHaveLength(2);
+  });
+
+  it("degrades to [] when R2 listing fails, and logs it", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
     const broken = { ...env, MEDIA: { list: () => Promise.reject(new Error("r2 down")) } };
     expect(await listShorts(broken as any)).toEqual([]);
+    expect(log).toHaveBeenCalledWith("listShorts", expect.any(Error));
+    log.mockRestore();
+  });
+
+  it("lists R2 once per bucket for a few minutes (one list per prefix, not per call)", async () => {
+    const list = vi.fn((o: R2ListOptions) => env.MEDIA.list(o));
+    const counted = { ...env, MEDIA: { list } };
+    await listShorts(counted as any);
+    await listShorts(counted as any, { q: "gimbal" });
+    expect(list).toHaveBeenCalledTimes(2);
   });
 
   it("GET /api/shorts?q= serves the list; /api/feed clips still come from it", async () => {

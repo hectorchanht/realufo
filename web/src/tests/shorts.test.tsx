@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, act, waitFor } from "@testing-library/react";
 import type { Short } from "../api/types";
 import { renderAppAt } from "./util";
 
@@ -14,7 +14,30 @@ vi.mock("../api/queries", () => ({
   useHubs: () => ({ data: { hubs: [] } }),
   useShorts: (q: string, o?: { enabled?: boolean }) => useShortsMock(q, o),
 }));
+// jsdom has no IntersectionObserver: record the callback so a test can "swipe".
+let fire: IntersectionObserverCallback = () => {};
+vi.stubGlobal(
+  "IntersectionObserver",
+  class {
+    constructor(cb: IntersectionObserverCallback) {
+      fire = cb;
+    }
+    observe() {}
+    disconnect() {}
+  }
+);
+const scrolled: Element[] = [];
+Element.prototype.scrollIntoView = function (this: Element) {
+  scrolled.push(this);
+};
+const scrollBy = vi.fn();
+Element.prototype.scrollBy = scrollBy as unknown as Element["scrollBy"];
+vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+
 beforeEach(() => {
+  scrolled.length = 0;
+  scrollBy.mockClear();
   useShortsMock.mockReset();
   useShortsMock.mockImplementation((q: string) =>
     q ? { data: all.filter((s) => s.title!.toLowerCase().includes(q)), isFetched: true } : { data: all, isFetched: true }
@@ -50,5 +73,32 @@ describe("Shorts player", () => {
     renderAppAt("/shorts/NOPE");
     expect(await screen.findByText(/short not found/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /open the file/i })).toHaveAttribute("href", "/doc/NOPE");
+  });
+
+  it("opens scrolled to :id and the tab title follows the Short on screen", async () => {
+    renderAppAt("/shorts/B%202");
+    const videos = (await screen.findAllByTestId("short-video")) as HTMLVideoElement[];
+    expect(scrolled.at(-1)).toBe(videos[1].parentElement);
+    await waitFor(() => expect(document.title).toMatch(/Second/));
+    act(() => fire([{ target: videos[2], isIntersecting: true } as unknown as IntersectionObserverEntry], {} as IntersectionObserver));
+    await waitFor(() => expect(document.title).toMatch(/Third/));
+  });
+
+  it("arrow / j / k step one slide; with Cmd/Ctrl/Alt held they're left to the browser", async () => {
+    renderAppAt("/shorts/A-1");
+    await screen.findAllByTestId("short-video");
+    fireEvent.keyDown(window, { key: "ArrowDown", metaKey: true });
+    fireEvent.keyDown(window, { key: "j", ctrlKey: true });
+    expect(scrollBy).not.toHaveBeenCalled();
+    fireEvent.keyDown(window, { key: "j" });
+    expect(scrollBy).toHaveBeenCalledTimes(1);
+  });
+
+  it("the page behind the player is inert; back button is named by its text", async () => {
+    const { container } = renderAppAt("/shorts/A-1");
+    await screen.findAllByTestId("short-video");
+    expect(container).toHaveAttribute("inert");
+    expect(screen.getByRole("button", { name: "‹ Back" })).toBeInTheDocument();
+    expect(document.querySelector("[data-screen=shorts] [data-scroll]")).toHaveClass("overscroll-contain");
   });
 });

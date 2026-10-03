@@ -122,12 +122,16 @@ export function useFeed() {
   });
 }
 
-// Shorts player queue / archive search strip. q="" = every Short.
+// Shorts player queue / archive search strip. q="" = every Short. Fetched once
+// per session: a refetch that slots in a newly posted Short would shift every
+// slide under the viewer mid-watch.
 export function useShorts(q = "", { enabled = true } = {}) {
   return useQuery({
     queryKey: qk.shorts(q),
     queryFn: () => api.get<Short[]>(`/api/shorts${q ? `?q=${encodeURIComponent(q)}` : ""}`),
     enabled,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
   });
 }
 
