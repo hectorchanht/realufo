@@ -965,4 +965,506 @@ export const CASE_STORY_TEXT_2: Record<string, CaseStory> = {
       ],
       updated: "2026-10-03"
     },
+  "belgian-wave": {
+      title: "Belgian wave 1990: radar locks, no visual contact and no identified craft",
+      sections: [
+        {
+          heading: "A wave of reports from November 1989",
+          paras: [
+            "A U.S. Defense Department information report on Belgium, with information dated 26 March 1990 and sent to the Defense Intelligence Agency on 30 March, summed up the situation in four sentences: numerous UFO sightings had been made in Belgium since November 1989, the credibility of some of the people reporting them was good, some had been explained by natural or man-made phenomena and some had not, and the Belgian Air Force was still investigating [3].",
+            "One of the earliest entries in the Belgian sighting catalogue is from Eupen on the evening of 29 November 1989. A gendarmerie chief, on the advice of his colleagues Von Montigny and Nicholl, phoned Bierset airport; Bierset later called back to say it could not detect any target on its radar and that the object had to be moving below 1,000 m [8]. The physicist Auguste Meessen, who investigated the wave, wrote that it began on a massive scale that evening and that by 30 March 1990 visual reports had grown to about 500 [6].",
+            "The Belgian Air Force's own report notes that strange phenomena had been reported regularly in Belgian airspace since the beginning of December 1989, mostly through the gendarmerie, but that before the night of 30–31 March its radar stations could in no case confirm these visual observations, and interceptors sent up had never established that anything was there [1]."
+          ],
+          quote: {
+            text: "Some sightings have been explained by natural/manmade phenomena, some have not.",
+            who: "U.S. Department of Defense information report IIR 6 807 0136 90, March 1990",
+            src: 3
+          }
+        },
+        {
+          heading: "What Belgium told the Americans",
+          paras: [
+            "The Defense Department report draws on two Belgian newspapers. The first quoted Léon Brenig, a 43-year-old professor at the Free University of Brussels, who said that at 8:30 p.m. on Sunday 18 March 1990, on the Ardennes motorway in the Beaufays area east of Liège, he saw a triangular object about the size of a ping-pong ball, with a yellow light around it and a reddish centre, moving slowly and silently at an apparent 500 to 1,000 m; it did not move or behave like an aircraft [3].",
+            "The second covered a television interview with Colonel Wilfried De Brouwer, chief of operations of the Belgian Air Force. De Brouwer noted the large number of sightings, particularly in November 1989 in the Liège area, and said the Air Force and the Ministry of Defence were taking the issue seriously. He addressed the idea that the objects were U.S. B-2 or F-117 stealth aircraft, saying that no U.S. Air Force overflight requests had ever been received for such a mission and that the reports did not match the observable characteristics of either aircraft [4].",
+            "The report's comments add that the Belgian Air Force had attributed some sightings to inversion layers, laser beams and other high-intensity lighting hitting clouds, but that a remarkable number occurred on clear nights with nothing else nearby to explain them. A field comment records that the U.S. Air Force confirmed to the Belgian Air Force and Ministry of Defence that no U.S. stealth aircraft were operating in the Ardennes area during the periods in question [4]."
+          ],
+          quote: {
+            text: "BAF experts have not been able to explain the phenomena either.",
+            who: "U.S. Department of Defense information report, summarising Col. De Brouwer",
+            src: 4
+          }
+        },
+        {
+          heading: "The night of 30–31 March 1990",
+          paras: [
+            "The Belgian Air Force report on the night was established by Major P. Lambrechts of the Air Staff. It records that at 23:00 the master controller at the Glons radar centre (CRC) took a call from A. Renkin, a gendarmerie sergeant, who could see from his home at Ramillies three unusual lights above Thorembais and Gembloux. They were brighter than stars or planets, stationary, set out as an equilateral triangle and changing colour between red, green and yellow [1].",
+            "Glons asked the Wavre gendarmerie to send a patrol, which confirmed the lights at 23:28; Captain Pinson described points the size of a large star, changing colour continuously. Glons had meanwhile picked up an unidentified radar contact about 5 km north of Beauvechain, moving west at about 25 knots, and the Semmerzake radar confirmed a contact at the same position between 23:49 and 23:59. At 23:56 Glons gave the scramble order, and at 00:05 two F-16s on quick-reaction alert took off from the 1st Wing [1].",
+            "Between 00:07 and 00:54 the pilots made nine interception attempts under Glons control. They had brief radar contacts several times and in three cases locked on for a few seconds, each time followed by a change in the target's behaviour. On the first lock, at 00:13, the target was recorded changing speed from 150 to 970 knots and altitude from 9,000 to 5,000 feet, back up to 11,000 feet and then down to ground level, before the lock broke [1]. The radio transcript has the pilot reporting a contact at 9,000 feet, heading 250, at 970 knots [2]. The same transcript shows how uncertain the chase was: a blinking orange light the pilots were directed toward turned out to be on the ground, and another contact was identified as civilian traffic [2]. The jets left the Glons frequency at 01:02 and landed at 01:10 and 01:16 [1]."
+          ],
+          quote: {
+            text: "The pilots never had a visual contact with the UFO.",
+            who: "Belgian Air Force report by Major P. Lambrechts (English translation)",
+            src: 1
+          }
+        },
+        {
+          heading: "What the Air Force concluded",
+          paras: [
+            "The Lambrechts report states that this was the first time a radar contact had been correlated across several Air Force sensors, including the ground radars, the Beauvechain approach radar and the F-16 radar, in the same area as visual sightings. It judged the on-duty gendarmes objective, held that the speeds and altitude changes measured during the locks ruled out aircraft, and rejected optical illusions, planets, sounding balloons and hologram projections. It also excluded the presence of B-2 or F-117 stealth aircraft, remotely piloted vehicles, ultralights and AWACS [1].",
+            "The report was just as plain about what it could not explain. Although supersonic speeds were measured several times, no shock wave was reported; and although ground witnesses eventually reported eight points of light, the radars recorded only one contact at a time. The weather that night was clear, with 8 to 15 km visibility and slight temperature inversions at ground level and at 3,000 feet [1].",
+            "On 11 July 1990 De Brouwer held a press conference on the F-16 intervention. According to Meessen, he cited a recorded sequence in which the target went from 280 km/h to more than 1,800 km/h in a few seconds, and said the studies carried out had not determined the nature of the object [6]. The UK Ministry of Defence files released in 2009 include De Brouwer's own account and an official Belgian Air Force statement sent to the MoD in November 1993; a letter from Malcolm Rifkind states that the MoD was not informed of the incident at the time and concluded there was no threat to the UK [5]."
+          ],
+          quote: {
+            text: "F-16 pilots obtained “lock-ons” with their radars but were unable to explain the phenomena.",
+            who: "The National Archives (UK), guide to the MoD UFO files, on DEFE 24/1960",
+            src: 5
+          }
+        },
+        {
+          heading: "Later analysis",
+          paras: [
+            "Defence Minister Guy Coëme gave Meessen personal access to the second F-16's radar recording and to the data from both ground radars [6]. Meessen concluded that the anomalous echoes on the ground radars came from masses of humid air, which he called invisible clouds, and that the F-16 radar's Doppler measurement of speed could be falsified by interference between waves returned from different parts of such a mass, which resolved what he called the great riddle of the F-16 recordings. He still maintained that the ground radars had captured two unidentified tracks during the wave [7].",
+            "Retellings often present the F-16 locks as proof of a craft accelerating far beyond any known aircraft, but the Air Force report records that the pilots never saw anything, and the physicist given the recordings by the Defence Minister concluded that the extreme speeds were an artefact of the radar's speed measurement [1][7].",
+            "The wave's best-known photograph, taken at Petit-Rechain, was exposed as a fake in July 2011, when its author admitted the hoax [9]. And despite claims that AARO treats the wave as a reference case, AARO's 2024 historical record report, which covers U.S. government involvement with UAP, does not discuss Belgium [10]. No document found identifies what was seen over Belgium in 1989–90."
+          ]
+        }
+      ],
+      timeline: [
+        { date: "1989-11-29", event: "Eupen gendarmes report a light; Bierset airport finds no target on its radar", src: 8 },
+        { date: "1990-03-18", event: "Professor Léon Brenig reports a triangular light near Beaufays, east of Liège", src: 3 },
+        { date: "1990-03-30", event: "U.S. information report 'Belgium and the UFO issue' sent to the DIA", src: 3 },
+        { date: "1990-03-30", event: "23:00: gendarme A. Renkin reports three lights over Thorembais–Gembloux to Glons radar centre", src: 1 },
+        { date: "1990-03-31", event: "00:05: two F-16s scramble; nine interception attempts, three brief radar locks, no visual contact", src: 1 },
+        { date: "1990-03-31", event: "01:16: second F-16 lands", src: 1 },
+        { date: "1990-07-11", event: "Col. De Brouwer holds a press conference on the F-16 intervention", src: 6 },
+        { date: "1993-11", event: "Belgian Air Force sends an official statement to the UK Ministry of Defence", src: 5 },
+        { date: "2011-07-26", event: "The Petit-Rechain photograph is revealed as a fake", src: 9 }
+      ],
+      sources: [
+        { url: "https://ufologie.patrickgross.org/htm/belrap01.htm", note: "Belgian Air Force report on the night of 30–31 March 1990, by Major P. Lambrechts (full text, English translation)" },
+        { url: "https://ufologie.patrickgross.org/htm/beldoc01.htm", note: "Transcript of pilot–controller radio exchanges, Glons interception frequency, 30–31 March 1990 (times GMT)" },
+        { url: "http://web.archive.org/web/20230123224536/http://www.noufors.com/images/12%20Documents%20that%20take%20UFOs%20seriously/1990-Belgium.pdf", page: 2, note: "U.S. DoD intelligence information report IIR 6 807 0136 90, 'Belgium and the UFO issue', March 1990: summary and the Brenig sighting (pp. 1–2)" },
+        { url: "http://web.archive.org/web/20230123224536/http://www.noufors.com/images/12%20Documents%20that%20take%20UFOs%20seriously/1990-Belgium.pdf", page: 5, note: "Same report: Col. De Brouwer's remarks and field comments on stealth aircraft (pp. 3–5)" },
+        { url: "https://cdn.nationalarchives.gov.uk/documents/aug-2009-highlights-guide.pdf", page: 4, note: "The National Archives (UK), highlights guide to the 2009 MoD UFO file release: DEFE 24/1960 and DEFE 24/1970 on Belgium" },
+        { url: "http://www.astrosurf.com/luxorion/Illustrations/ovni-vague-belge-meessens-analyse-radarF16.pdf", page: 3, note: "Auguste Meessen (UCL), study of the F-16 radar recordings: the wave, the 11 July 1990 press conference and access to the data (pp. 1–4, French)" },
+        { url: "http://www.astrosurf.com/luxorion/Illustrations/ovni-vague-belge-meessens-analyse-radarF16.pdf", page: 31, note: "Same study: conclusions on 'invisible clouds' and falsified Doppler speeds (French)" },
+        { url: "https://www.cobeps.org/pdf/belgian_wave_130310.pdf", page: 16, note: "Franck Boitte (COBEPS), Belgian sighting catalogue entry for Eupen, 29 November 1989" },
+        { url: "https://www.cobeps.org/pdf/belgian_wave_130310.pdf", page: 1, note: "Same paper: the 2011 Petit-Rechain photo hoax confession" },
+        { id: "AARO-AARO_Historical_Record_Report_Vol_1_2024.pdf", note: "AARO Historical Record Report Vol. 1 (2024): covers U.S. government involvement with UAP; no mention of Belgium" }
+      ],
+      updated: "2026-10-03"
+    },
+  "cosford": {
+      title: "Cosford 1993: a re-entering rocket, and a Shawbury sighting 90 minutes later",
+      sections: [
+        {
+          heading: "Thirty reports in one night",
+          paras: [
+            "The Ministry of Defence file DEFE 24/2086, released at The National Archives, covers UFO reports from the night of 30–31 March 1993 [1]. The Archives' guide to the release says it deals with bright lights seen across central England in the early hours by police officers and military witnesses, including a police patrol at RAF Cosford, near Wolverhampton [2].",
+            "The list kept by Sec(AS)2a, the MoD branch that handled UFO reports, runs from a sighting at 21:00 on 30 March in the Quantock Hills, Somerset, to one at 02:40 on 31 March at RAF Shawbury. Most reports cluster between 01:09 and 01:20, from Devon, Cornwall, Somerset, Staffordshire and Pembrokeshire [5]. British Summer Time had begun only on 28 March, and some signals mixed local time with GMT [5].",
+            "The case takes its name from a two-man RAF police patrol at Cosford, which reported at 01:15 two bright lights about 1,000 feet above the ground, moving fast towards the south-east [5]. According to David Clarke, the patrol rang ahead to warn the Meteorological Office observer at RAF Shawbury, about 20 miles away, that the object was coming his way [6]."
+          ],
+          quote: {
+            text: "The file includes more than 30 sightings during a six-hour period.",
+            who: "The National Archives, August 2009 release guide",
+            src: 2
+          }
+        },
+        {
+          heading: "What the Shawbury observer reported",
+          paras: [
+            "The desk officer's handwritten note on the Shawbury sighting, with the witness's name blacked out, gives the time as 2.40 am local. The object was stationary, then moved straight up and zig-zagged; it showed two red lights and a narrow white beam, like a laser, that seemed to be searching the ground. At its lowest it was put at about 400–500 feet, 1 or 2 km from the base; it then passed directly overhead at about 4,000 feet heading almost due south, now showing three red lights [4].",
+            "Clarke identifies the observer as Wayne Elliott. Elliott's own Met log, kept in GMT, records the Cosford warning at 0030Z and his observation at 0140Z, which places his sighting at 02:40 BST, about an hour and a half after the Cosford report [6].",
+            "In a 1996 interview for the Met Office magazine Mercury, Elliott described the beam sweeping the countryside and a low humming noise as the lights crossed the airfield; he said he did not recognise the object as either a fast jet or a helicopter [6]."
+          ],
+          quote: {
+            text: "Guesstimate of objects size: somewhere between C-130 and 747.",
+            who: "Sec(AS)2a handwritten note on the Shawbury sighting, MoD file",
+            src: 4
+          }
+        },
+        {
+          heading: "Nick Pope's case to his superiors",
+          paras: [
+            "On 6 April 1993 Sec(AS)2a asked London Air Traffic Control Centre (Military) to copy the radar data to video tape for examination [4]. On 16 April the desk officer, Nick Pope, wrote to the head of his department that nothing had been detected on air defence radar at RAF Neatishead or on air traffic control radar, argued that the reports did not fit a satellite re-entry, included the Shawbury report and raised the speculated US aircraft Aurora [4]. His line manager added: \"It would certainly appear that some unidentified object was seen.\" [4]",
+            "The Assistant Chief of the Air Staff, Air Marshal Sir Anthony Bagnall, was then briefed that there was evidence a UFO had evaded UK defences [2]. Clarke dates that briefing to 22 April and quotes it as saying the sightings \"match some of the reported characteristics of the so-called Aurora\"; inquiries by the British air attaché at the Pentagon drew a blank [6]."
+          ],
+          quote: {
+            text: "It seems that an unidentified object of unknown origin was operating in the UK Air Defence Region without being detected on radar",
+            who: "Nick Pope, Sec(AS)2a minute, 16 April 1993",
+            src: 4
+          }
+        },
+        {
+          heading: "The radar replay and the rocket",
+          paras: [
+            "The radar replay, sent to Sec(AS)2a on 19 April, listed an aircraft transponding overhead Shawbury at 0146Z, heading south at about 20,300 feet, during the time of the Met observer's sighting. The released file shows no sign that this entry was followed up [4].",
+            "On 7 May Pope told DI55 that radar returns over Devon and Cornwall between 01:10 and 01:20 were probably clutter, and that the UFO group BUFORA had pointed to the re-entry of a Russian rocket booster, catalogue number 22586. RAF Fylingdales gave him a re-entry time of 02:20 local [4], with an error margin of an hour either way [6]. Pope accepted that the decay might explain some high-level sightings, but not the low-level ones, the report of a low hum or the Shawbury Met officer. The head of Sec(AS) wrote on the minute: \"I suggest you now drop this subject.\" [4]",
+            "Object 22586 was the second stage of the Tsiklon-2 rocket that put Kosmos 2238 into orbit on 30 March 1993. McDowell's catalogue lists it re-entering that same night, at about 23:45 UTC on 30 March, with the time marked uncertain [7]; Clarke, citing US Space Command and NASA data, gives 1.15 am BST [6]. The National Archives' 2009 release concluded that the majority of sightings were caused by this rocket re-entering the atmosphere [2][3]. In March 1994 Pope himself wrote to the Spanish researcher Vicente-Juan Ballester Olmos that most of the night's sightings could be attributed to it [6]."
+          ]
+        },
+        {
+          heading: "Shawbury revisited, and what the files show",
+          paras: [
+            "In 2005 an airman who had served at Shawbury told the Daily Mail the lights were a Dyfed-Powys police helicopter using its searchlight to follow a stolen car. Elliott told Clarke the same year that the hum and the beam were very similar to what he would expect of a police helicopter; flight logs no longer existed, so the identification cannot be confirmed [6].",
+            "Popular accounts describe a single huge triangular craft passing over Cosford and then Shawbury in quick succession; the MoD papers instead record two bright lights at Cosford at 01:15 and, about 90 minutes later, red lights and a beam at Shawbury, and Pope's original notes describe no triangle [5][6].",
+            "DEFE 24/2086 was part of the fourth instalment of MoD UFO files released in August 2009 [3]. A parallel DI55 file, DEFE 23/254, opened in 2019, contains no evidence of further investigation after the Assistant Chief of the Air Staff became involved [6]."
+          ]
+        }
+      ],
+      timeline: [
+        { date: "1993-03-30", event: "Kosmos 2238 is launched on a Tsiklon-2 rocket; its second stage (object 22586) re-enters within hours.", src: 7 },
+        { date: "1993-03-30", event: "21:00: first report on the Sec(AS)2a list, from the Quantock Hills, Somerset.", src: 5 },
+        { date: "1993-03-31", event: "01:09–01:20: most reports cluster; at 01:15 an RAF police patrol at Cosford sees two bright lights heading south-east.", src: 5 },
+        { date: "1993-03-31", event: "02:40 BST: the Met observer at RAF Shawbury reports red lights and a narrow beam searching the ground.", src: 6 },
+        { date: "1993-04-06", event: "Sec(AS)2a asks LATCC(Mil) to copy the radar data to video tape.", src: 4 },
+        { date: "1993-04-16", event: "Pope's minute concludes an unidentified object operated in UK airspace undetected by radar.", src: 4 },
+        { date: "1993-04-19", event: "Radar replay lists an aircraft overhead Shawbury at 0146Z.", src: 4 },
+        { date: "1993-04-22", event: "The Assistant Chief of the Air Staff is briefed; the sightings are compared with the rumoured Aurora aircraft.", src: 6 },
+        { date: "1993-05-07", event: "Pope sends DI55 the rocket re-entry information; he is told to drop the subject.", src: 4 },
+        { date: "1994-03", event: "Pope writes that most of the night's sightings can be attributed to the re-entry.", src: 6 },
+        { date: "2009-08", event: "The National Archives releases DEFE 24/2086 in its fourth instalment of MoD UFO files.", src: 3 }
+      ],
+      sources: [
+        { url: "https://discovery.nationalarchives.gov.uk/details/record?catid=-5839206&catln=7", note: "The National Archives catalogue: DEFE 24/2086, UFO reports sightings, 30/31 March 1993 (digital copy, with redactions)" },
+        { url: "https://cdn.nationalarchives.gov.uk/documents/aug-2009-highlights-guide.pdf", page: 4, note: "The National Archives, Highlights Guide to the August 2009 UFO file release: 'Cosford incident, 31 March 1993'" },
+        { url: "https://cdn.nationalarchives.gov.uk/documents/ufo-transcript-aug-09.pdf", page: 4, note: "The National Archives, script of the August 2009 UFO files podcast by Dr David Clarke (Cosford: pp. 4–5)" },
+        { url: "http://www.uk-ufo.org/cosford/modpage.html", note: "Joe McGonagle, 'The MoD Investigation': transcripts and scans of the Sec(AS)2a file obtained under FOI (minutes of 6, 16 and 19 April and 7 May 1993; desk officer's notes)" },
+        { url: "http://www.uk-ufo.org/cosford/sightings.html", note: "Joe McGonagle, sighting reports of 30–31 March 1993 compiled from the Sec(AS)2a list, with scans of MoD and RAF Police reports" },
+        { url: "https://drclarke.substack.com/p/case-closed-30th-anniversary-of-the", note: "David Clarke, 'Case Closed: 30th anniversary of the Cosford UFO flap' (2023), quoting DEFE 24/2086/1, DEFE 24/1967/1 and the RAF Shawbury Met log" },
+        { url: "https://planet4589.org/space/gcat/tsv/cat/satcat.tsv", note: "Jonathan McDowell, General Catalog of Artificial Space Objects: 1993-018A Kosmos-2238 and 1993-018B Tsiklon-2 second stage (object 22586)" }
+      ],
+      updated: "2026-10-03"
+    },
+  "gimbal": {
+    "title": "Gimbal 2015: a Navy infrared clip the Pentagon still lists as unresolved",
+    "sections": [
+      {
+        "heading": "What the clip shows",
+        "paras": [
+          "The realufo.org archive holds the video as a 34-second clip titled \"GIMBAL - UAP\", credited to Naval Air Systems Command and dated 2015 [1]. It is a recording of an infrared sensor display. An oblong object with a glowing halo sits just below the crosshair; the screen reads \"IR\" and \"NAR Z 2.0\", a figure of 25010 at lower right holds steady throughout, and the bearing at the top swings from 53° left to 4° right as the clip runs. About 12 seconds in, the \"WHT\" label changes to \"BLK\" and the image inverts, so the bright object turns dark. In the last few seconds the outline of the object visibly changes its orientation on the screen [1].",
+          "The Department of Defense's office for these reports, AARO, describes the clip in a single line and lists it as an unresolved case [5]. No official record cited here gives the exact date, the location, the crew or the object's range."
+        ],
+        "quote": {
+          "text": "Video of a U.S. Navy F/A-18 jet crew’s encounter with an unexplained anomalous phenomena (UAP).",
+          "who": "AARO, Official UAP Imagery page",
+          "src": 5
+        }
+      },
+      {
+        "heading": "From leak to official release",
+        "paras": [
+          "The footage reached the public through The New York Times on 16 December 2017, in its report on the Pentagon's Advanced Aerospace Threat Identification Program. The Times described a recording from a Navy F/A-18 Super Hornet \"showing an aircraft surrounded by some kind of glowing aura traveling at high speed and rotating as it moves\", with the pilots heard trying to understand it. \"There's a whole fleet of them,\" one exclaims. The paper added that defense officials declined to release the location and date of the incident [3].",
+          "On 27 April 2020 the Department of Defense authorized the release of three unclassified Navy videos, one taken in November 2004 and two in January 2015, which had been circulating after unauthorized releases in 2007 and 2017. It said the Navy had already acknowledged that the circulating videos were Navy videos, that their release revealed no sensitive capabilities or systems, and that it was releasing them to clear up public misconceptions about whether the footage was real. The files were posted to the Naval Air Systems Command FOIA reading room [2].",
+          "The clip is widely described as \"declassified\", but the Pentagon's statement calls all three \"unclassified\" videos that had already leaked; what changed in 2020 was that the release became authorized [2]."
+        ],
+        "quote": {
+          "text": "The aerial phenomena observed in the videos remain characterized as \"unidentified.\"",
+          "who": "Department of Defense statement, 27 April 2020",
+          "src": 2
+        }
+      },
+      {
+        "heading": "The squadron behind the reports",
+        "paras": [
+          "In May 2019 the Times published accounts from Navy pilots who said they had seen strange objects almost daily from the summer of 2014 to March 2015, high over the East Coast, during training off the aircraft carrier Theodore Roosevelt from Virginia to Florida. Lt. Ryan Graves and Lt. Danny Accoin of the VFA-11 \"Red Rippers\" squadron, based at Naval Air Station Oceana in Virginia, spoke on the record; three other squadron pilots spoke without being named [4].",
+          "The pilots said the objects began appearing on their radar after an upgrade from 1980s-era equipment. Graves recounted a near miss in late 2014, when a squadron mate said something like a sphere encasing a cube flew between two jets east of Virginia Beach, and said a flight safety report was filed. A Navy spokesman, Joseph Gradisher, told the paper that new reporting guidance updated instructions sent to the fleet in 2015, after the Roosevelt incidents. The Roosevelt left the coast of Florida for the Persian Gulf in March 2015 [4].",
+          "The 2019 article does not tie the Gimbal clip to a named flight or crew [4]. Its account places the encounters off the East Coast in the same months to which the Pentagon dates two of its released videos [2]."
+        ],
+        "quote": {
+          "text": "one of them like a spinning top moving against the wind",
+          "who": "The New York Times, 26 May 2019",
+          "src": 4
+        }
+      },
+      {
+        "heading": "What the official assessments say",
+        "paras": [
+          "The intelligence community's June 2021 preliminary assessment covered 144 reports from U.S. government sources, from 2004 to 2021, and identified only one object with high confidence, a large deflating balloon. In 18 incidents, observers reported unusual movement, including objects that appeared to stay stationary in winds aloft or move against the wind. The report does not name any individual video [7].",
+          "AARO's 2024 historical report summarizes that assessment, including its caution that such observations could be the result of sensor errors, spoofing or observer misperception and need more rigorous analysis. It also records that the Navy led the UAP Task Force from 2020. It does not discuss the Gimbal video [8].",
+          "AARO has published an analysis of the other January 2015 clip, GO FAST. It assessed the object at about 13,000 feet and roughly 45 mph, in winds of about 60 knots, and concluded with high confidence that it showed no anomalous speeds or flight characteristics [6]. No comparable analysis of Gimbal has been released. On AARO's imagery page, captured in September 2026, GO FAST appears with a case resolution while Gimbal is still listed as an unresolved case [5]. What turns the object on screen is not settled by any official document."
+        ],
+        "quote": {
+          "text": "the UAP did not demonstrate any anomalous speeds or flight characteristics",
+          "who": "AARO, GO FAST case slide, Senate hearing, 19 November 2024",
+          "src": 6
+        }
+      }
+    ],
+    "timeline": [
+      {
+        "date": "2014-06",
+        "event": "Summer: VFA-11 pilots training off the USS Theodore Roosevelt begin reporting objects almost daily over the East Coast.",
+        "src": 4
+      },
+      {
+        "date": "2015-01",
+        "event": "Two of the three Navy videos the Pentagon released in 2020 are recorded this month.",
+        "src": 2
+      },
+      {
+        "date": "2015-03",
+        "event": "The Roosevelt leaves the coast of Florida for the Persian Gulf; the pilots say the sightings tapered off.",
+        "src": 4
+      },
+      {
+        "date": "2017-12-16",
+        "event": "The New York Times publishes the footage with its report on the Pentagon's AATIP program.",
+        "src": 3
+      },
+      {
+        "date": "2019-05-26",
+        "event": "The Times publishes on-the-record accounts from VFA-11 pilots.",
+        "src": 4
+      },
+      {
+        "date": "2020-04-27",
+        "event": "The Department of Defense authorizes release of the three unclassified Navy videos.",
+        "src": 2
+      },
+      {
+        "date": "2021-06-25",
+        "event": "ODNI's preliminary assessment covers 144 reports from 2004 to 2021; one is identified.",
+        "src": 7
+      },
+      {
+        "date": "2024-02",
+        "event": "AARO's Historical Record Report Vol. I is issued; it does not discuss Gimbal.",
+        "src": 8
+      },
+      {
+        "date": "2024-11-19",
+        "event": "AARO tells a Senate hearing that GO FAST showed no anomalous speeds or flight characteristics.",
+        "src": 6
+      },
+      {
+        "date": "2025-03-31",
+        "event": "The Gimbal clip is posted to DVIDS as \"GIMBAL - UAP\".",
+        "src": 1
+      },
+      {
+        "date": "2026-09",
+        "event": "AARO's imagery page still lists Gimbal as an unresolved case.",
+        "src": 5
+      }
+    ],
+    "sources": [
+      {
+        "id": "AARO-DOD_110891172",
+        "note": "\"GIMBAL - UAP\", 34-second Navy infrared video; DVIDS copy credited to Naval Air Systems Command, dated 2015"
+      },
+      {
+        "url": "https://www.defense.gov/News/Releases/Release/Article/2165713/statement-by-the-department-of-defense-on-the-release-of-historical-navy-videos/",
+        "note": "Statement by the Department of Defense on the Release of Historical Navy Videos, 27 April 2020"
+      },
+      {
+        "url": "https://www.nytimes.com/2017/12/16/us/politics/pentagon-program-ufo-harry-reid.html",
+        "note": "H. Cooper, R. Blumenthal, L. Kean, The New York Times, 16 December 2017"
+      },
+      {
+        "url": "https://www.nytimes.com/2019/05/26/us/politics/ufo-sightings-navy-pilots.html",
+        "note": "H. Cooper, R. Blumenthal, L. Kean, \"'Wow, What Is That?' Navy Pilots Report Unexplained Flying Objects\", The New York Times, 26 May 2019"
+      },
+      {
+        "url": "https://www.aaro.mil/UAP-Cases/Official-UAP-Imagery/",
+        "note": "AARO, Official UAP Imagery: \"Unresolved Case: GIMBAL Video\" (page as captured September 2026)"
+      },
+      {
+        "id": "AARO-SASC_AARO_Open_Hearing_Case_Slides_19Nov2024",
+        "page": 5,
+        "note": "AARO case slides, Senate Armed Services subcommittee hearing, 19 November 2024: GO FAST"
+      },
+      {
+        "url": "https://www.dni.gov/files/ODNI/documents/assessments/Prelimary-Assessment-UAP-20210625.pdf",
+        "page": 5,
+        "note": "ODNI, Preliminary Assessment: Unidentified Aerial Phenomena, 25 June 2021 (pp. 4–5)"
+      },
+      {
+        "id": "AARO-AARO_Historical_Record_Report_Vol_1_2024.pdf",
+        "page": 24,
+        "note": "AARO, Report on the Historical Record of U.S. Government Involvement with UAP, Vol. I, February 2024"
+      }
+    ],
+    "updated": "2026-10-03"
+  },
+  "rendlesham": {
+      title: "Rendlesham Forest 1980: one memo, a radiation query and \"no defence significance\"",
+      sections: [
+        {
+          heading: "The deputy base commander's memo",
+          paras: [
+            "The Ministry of Defence file on Rendlesham opens with a single typed page on the letterhead of the USAF's 81st Combat Support Group, dated 13 January 1981, headed \"Unexplained Lights\" and addressed to RAF/CC. It is signed by Lt Col Charles I. Halt, Deputy Base Commander [1].",
+            "Halt wrote that early in the morning of 27 December 1980, at about 3 a.m., two USAF security police patrolmen saw unusual lights outside the back gate at RAF Woodbridge. Thinking an aircraft might have crashed or been forced down, they asked permission to investigate, and the on-duty flight chief let three patrolmen go out on foot. They reported a glowing object in the forest, about two to three metres across the base and two metres high, with a pulsing red light on top and blue lights underneath; it was \"hovering or on legs\". As they approached, it maneuvered through the trees and disappeared, animals on a nearby farm went into a frenzy, and the object was briefly seen again about an hour later near the back gate [1].",
+            "The memo did not go straight to the Ministry. On 15 January 1981 Squadron Leader D. H. Moreland, the RAF Commander at Bentwaters, sent a copy to MOD (DS8a), describing it as a report on \"mysterious sightings in the Rendlesham forest near RAF Woodbridge\" and forwarding it for information and such action as was considered necessary [2]."
+          ],
+          quote: {
+            text: "The object was described as being metalic in appearance and triangular in shape",
+            who: "Lt Col Charles I. Halt, memo \"Unexplained Lights\", 13 January 1981",
+            src: 1
+          }
+        },
+        {
+          heading: "Depressions, radiation and lights in the sky",
+          paras: [
+            "According to the memo, three depressions 1½ inches deep and 7 inches in diameter were found the next day where the object had been seen on the ground. The following night, which Halt dates 29 December, the area was checked for radiation: beta/gamma readings of 0.1 milliroentgens were recorded, peaking in the three depressions and near the centre of the triangle they formed, with moderate readings of .05 to .07 on the side of a nearby tree facing them [1].",
+            "Later that night, Halt wrote, a red sun-like light was seen through the trees. It moved about, pulsed, appeared to throw off glowing particles and then broke into five separate white objects and disappeared. Three star-like objects then appeared low in the sky, two to the north and one to the south, moving in sharp angular movements and showing red, green and blue lights. The object to the south stayed visible for two or three hours and \"beamed down a stream of light from time to time.\" Halt stated that numerous individuals, including himself, witnessed these later events [1].",
+            "The dates are themselves a problem. In November 1983 a correspondent told the Ministry that Suffolk Constabulary had confirmed officers were called to the scene at 4.11 a.m. on 26 December 1980, that all they could see was the lighthouse, and that they returned at 10.30 that morning to examine the reported landing marks; he concluded that the date of 27 December in Halt's memo was wrong [7]. The Ministry's own later statement kept Halt's dates of 27 and 29 December [9]."
+          ]
+        },
+        {
+          heading: "Questions inside the Ministry, 1981",
+          paras: [
+            "The report was not simply filed. In late January 1981 an Ops(GE) staff officer passed the memo to DI55, the Defence Intelligence branch concerned, explaining that DS8 had asked whether any other department would have an interest, and asking in particular whether the radioactivity readings were unusual or within the normal background range [3].",
+            "The reply came from DI52 on 23 February 1981. It said that, like DI55, it knew of no serious explanation for the phenomena. It noted that background radioactivity varies considerably, assumed the 0.1 milliroentgen reading was per hour, and judged it significantly higher than an average background of about 0.015, adding that the way the US report was written suggested the reading was greater than the Americans had expected [4].",
+            "A March 1983 minute from DS8 recalls that Ops(GE) had suggested asking the USAF for tape recordings in February 1981, but says the Ministry's files did not appear to show the outcome of those investigations [5]. Popular accounts often say the site showed radiation ten times above background on the morning after the landing, but the memo dates the radiation check to the following night and the Ministry's only assessment in the file compares 0.1 with a background of about 0.015, less than seven times higher [1][4]."
+          ],
+          quote: {
+            text: "seems significantly higher than the average background of about 0.015 mr.",
+            who: "DI52 minute to DI55, 23 February 1981",
+            src: 4
+          }
+        },
+        {
+          heading: "1983: the story breaks",
+          paras: [
+            "The case reached the public through a News of the World article of 2 October 1983. A background note prepared for three parliamentary questions that followed records that Halt's report had been examined by the Air Staff and DS8, that there was no question of any contact with \"alien beings\", and that no unidentified object had been seen on any radar recordings, as the newspaper alleged. It added that a BBC investigation had suggested the pulsating light of the Orfordness lighthouse, some six to seven miles away, as a possible explanation, and stated that the Ministry made no attempt to identify the likely explanation for individual reports [6].",
+            "Once the memo was public, the Ministry handed it out. In a letter of 6 June 1984 it told an enquirer that it had received Halt's report and satisfied itself that it contained nothing of defence interest, and enclosed a copy of the report [8]."
+          ],
+          quote: {
+            text: "It was concluded that there was nothing of defence interest in the alleged sighting.",
+            who: "MoD background note on parliamentary questions, October 1983",
+            src: 6
+          }
+        },
+        {
+          heading: "The file's release and the Ministry's last word",
+          paras: [
+            "A note on the Ministry's file records that a copy was sent to a requester under the Code of Practice on Access to Government Information on 11 May 2001, with five documents withheld; two were released in September 2001, and the last three were released in July 2002 after the Parliamentary Ombudsman recommended it [10]. The National Archives opened a redacted digital copy, DEFE 24/1948/1, on 17 August 2009 [1].",
+            "A later unclassified statement in the file sums up the Ministry's position. It says Halt's report was examined by the staff responsible for the air defence of the United Kingdom, that no evidence was found of any threat, that no further investigations were carried out, and that nothing had altered the view that the lights were of no defence significance. It adds that no unidentified object was seen on radar. It mentions the theory that the lights were the beam of the Orford Ness lighthouse seen through the trees, and suggestions that fireball activity might explain some of them [9]. The file does not identify what the airmen saw."
+          ],
+          quote: {
+            text: "In the absence of any hard evidence, the MOD remains open-minded about these sightings.",
+            who: "MoD statement \"UFO Sighting at Rendlesham Forest\" (DEFE 24/1948)",
+            src: 9
+          }
+        }
+      ],
+      timeline: [
+        { date: "1980-12-26", event: "4.11 a.m.: Suffolk police are called to the scene, according to a 1983 letter in the file.", src: 7 },
+        { date: "1980-12-27", event: "About 3 a.m. (Halt's date): patrolmen report a glowing object in the forest outside RAF Woodbridge's back gate.", src: 1 },
+        { date: "1980-12-29", event: "Halt's date for the radiation check of the three depressions and the lights seen later that night.", src: 1 },
+        { date: "1981-01-13", event: "Halt signs his memo \"Unexplained Lights\", addressed to RAF/CC.", src: 1 },
+        { date: "1981-01-15", event: "Sqn Ldr D. H. Moreland forwards the memo to MOD (DS8a).", src: 2 },
+        { date: "1981-02-23", event: "DI52 replies that 0.1 mr seems significantly higher than average background.", src: 4 },
+        { date: "1983-10-02", event: "The News of the World publishes the story; three parliamentary questions follow.", src: 6 },
+        { date: "1984-06-06", event: "The MoD sends an enquirer a copy of Halt's report.", src: 8 },
+        { date: "2001-05-11", event: "The MoD releases the file to a requester under the Code of Practice.", src: 10 },
+        { date: "2009-08-17", event: "The National Archives opens DEFE 24/1948/1.", src: 1 }
+      ],
+      sources: [
+        { url: "https://discovery.nationalarchives.gov.uk/details/r/C10342055", page: 6, note: "DEFE 24/1948/1: Halt memo, 13 Jan 1981" },
+        { url: "https://discovery.nationalarchives.gov.uk/details/r/C10342055", page: 5, note: "Sqn Ldr Moreland's covering letter, 15 Jan 1981" },
+        { url: "https://discovery.nationalarchives.gov.uk/details/r/C10342055", page: 7, note: "Ops(GE) minute to DI55, Jan 1981" },
+        { url: "https://discovery.nationalarchives.gov.uk/details/r/C10342055", page: 11, note: "DI52 radiation assessment, 23 Feb 1981" },
+        { url: "https://discovery.nationalarchives.gov.uk/details/r/C10342055", page: 177, note: "DS8 minute on the case, March 1983" },
+        { url: "https://discovery.nationalarchives.gov.uk/details/r/C10342055", page: 150, note: "Background note on parliamentary questions, 1983" },
+        { url: "https://discovery.nationalarchives.gov.uk/details/r/C10342055", page: 136, note: "Correspondent's letter on police call-out, 1983" },
+        { url: "https://discovery.nationalarchives.gov.uk/details/r/C10342055", page: 89, note: "MoD letter enclosing Halt's report, 1984" },
+        { url: "https://discovery.nationalarchives.gov.uk/details/r/C10342055", page: 20, note: "MoD statement: UFO sighting at Rendlesham Forest" },
+        { url: "https://discovery.nationalarchives.gov.uk/details/r/C10342055", page: 4, note: "File note on the 2001-02 release" }
+      ],
+      updated: "2026-10-03"
+    },
+  "tic-tac": {
+      title: "Nimitz \"Tic Tac\" 2004: one video, a leaked summary and records nobody kept",
+      sections: [
+        {
+          heading: "A training flight turned into a real-world intercept",
+          paras: [
+            "In November 2004 David Fravor commanded Strike Fighter Squadron 41, the Black Aces, aboard USS Nimitz with Carrier Air Wing Eleven, at the start of a workup cycle before deployment. In his written statement to the House Oversight Committee in July 2023, he said his flight of two F/A-18Fs launched for a two-versus-two air-to-air exercise controlled by the cruiser USS Princeton, and was told the training was suspended for real-world tasking. The Princeton controller, he wrote, had been watching objects on the ship's Aegis system for the previous two weeks, coming down from above 80,000 feet to 20,000 feet [3].",
+            "Arriving at 20,000 feet, the four crew members saw a patch of white water on a calm sea and, over it, a small white Tic Tac shaped object with no rotors, no rotor wash and no wings. Fravor descended toward it; the object turned to face his jet and climbed, and when he pulled his nose onto it at about half a mile it accelerated and disappeared. As the flight turned back toward its combat air patrol point, roughly 60 miles east, the controller reported that the object had reappeared on Princeton's SPY-1 radar at that point [3].",
+            "At the hearing Fravor agreed that it was a 40-foot object and said that Princeton, Nimitz and the E-2 tracked it, while the fighters' own radars never picked it up [4]."
+          ],
+          quote: {
+            text: "This Tic Tac Object had just traveled 60 miles in a very short period of time (less than a minute)",
+            who: "Cmdr David Fravor (ret.), statement to the House Oversight Committee, 2023",
+            src: 3
+          }
+        },
+        {
+          heading: "The unofficial executive summary",
+          paras: [
+            "The most detailed account is an unsigned, undated 13-page executive summary that later circulated publicly; Fravor calls it the \"Unofficial Official Report\" [3]. It dates the activity to approximately 10–16 November 2004 and says Princeton detected multiple \"Anomalous Aerial Vehicles\" on several occasions, descending from about 60,000 feet to about 50 feet in a matter of seconds, hovering, then leaving at high speed [6].",
+            "Its figures differ from Fravor's later accounts: 60,000 rather than 80,000 feet, visual contact at approximately one mile rather than half a mile, and a length of approximately 46 feet rather than 40 [6][3][4]. It places the 14 November intercept at approximately N31 20' W117 10', about 70 nautical miles south of the U.S.–Mexico border and 30 nautical miles off the Baja California coast, and notes that the E-2C did not see the object on radar until Princeton steered it there [7]."
+          ],
+          quote: {
+            text: "solid white, smooth, with no edges.",
+            who: "Executive summary of the 2004 Nimitz incidents",
+            src: 6
+          }
+        },
+        {
+          heading: "How the FLIR video was taken",
+          paras: [
+            "Back aboard Nimitz, Fravor told a crew preparing to launch what he had seen, and that crew took the targeting-pod video [3]. The executive summary names the weapons system officer as Lt Chad Underwood of VFA-41, in a second F/A-18F section that launched at about 1500 local time and flew south at 20,000 feet. His radar showed tracks 30 to 40 nautical miles south but could never lock on; the FLIR, slaved to the radar, pointed down the track and showed an object [8].",
+            "The accounts disagree on the radar. Fravor told Congress that when the second jet tried to lock on, the object \"jammed the radar\" [4]; the summary records that Underwood reported no jamming cues [8]. Fravor added that Underwood went through the black-and-white TV and infrared modes and saw no IR plume or other sign of propulsion [5].",
+            "Fravor's statement calls it an approximately 90-second video [3]. The copy AARO posted to DVIDS, credited to Naval Air Systems Command, runs 1 minute 16 seconds [1]."
+          ],
+          quote: {
+            text: "just appeared as if the radar couldn't hack it.",
+            who: "Lt Chad Underwood, as recorded in the executive summary",
+            src: 8
+          }
+        },
+        {
+          heading: "Leaked twice, released once",
+          paras: [
+            "On 27 April 2020 the Department of Defense authorized the release of three unclassified Navy videos, one taken in November 2004 and two in January 2015, which had been circulating after unauthorized releases in 2007 and 2017. It said the release revealed no sensitive capabilities and was meant to clear up misconceptions about whether the footage was real [2].",
+            "The video is often described as declassified in 2020 after first leaking in 2017, but the Pentagon's own statement calls it unclassified and dates the first unauthorized release to 2007 [2]. Fravor credits To The Stars Academy with working with the reporters behind the New York Times articles of December 2017, which brought the case to wide attention [3]."
+          ],
+          quote: {
+            text: "The aerial phenomena observed in the videos remain characterized as \"unidentified.\"",
+            who: "Department of Defense statement, 27 April 2020",
+            src: 2
+          }
+        },
+        {
+          heading: "Records nobody kept",
+          paras: [
+            "Fravor testified that the incident was never investigated: none of his crew were questioned, the tapes were never collected, and no one contacted him until Jay Stratton in 2009 [3]. The executive summary is consistent with this. Strike group leadership was told that an email mission report to Third Fleet intelligence was the only report required; it arrived on or about 14 November 2004, was read but not forwarded up the chain, and was probably deleted later. The strike group's operations officer said they never considered the object a threat and knew of no weapons testing or experimental aircraft in the area [9].",
+            "In 2025 a workshop sponsored by AARO pointed to the loss: weak retention policies, its synthesis says, have cost critical records, \"as in the well-known Nimitz case\" [10]. None of the released documents identifies what the crews saw."
+          ],
+          quote: {
+            text: "it was not likely archived but deleted at some point later as there is no requirement to keep these reports",
+            who: "Third Fleet deputy intelligence officer, as recorded in the executive summary",
+            src: 9
+          }
+        }
+      ],
+      timeline: [
+        { date: "2004-11-10", event: "Approximate start of the period in which USS Princeton repeatedly detects unidentified objects near the Nimitz strike group.", src: 6 },
+        { date: "2004-11-14", event: "Fravor's two F/A-18Fs are sent to Princeton's contact and see a white Tic Tac shaped object over the sea.", src: 3 },
+        { date: "2004-11-14", event: "A second VFA-41 jet, with Lt Chad Underwood as WSO, records the object on its FLIR targeting pod.", src: 8 },
+        { date: "2004-11-14", event: "On or about this day, an email mission report reaches Third Fleet intelligence; it goes no further.", src: 9 },
+        { date: "2007", event: "First unauthorized release of the Navy video.", src: 2 },
+        { date: "2009", event: "Jay Stratton contacts Fravor to investigate the encounter.", src: 3 },
+        { date: "2017", event: "Second unauthorized release; the New York Times publishes its December articles.", src: 2 },
+        { date: "2020-04-27", event: "The Department of Defense authorizes release of the video; the phenomena remain \"unidentified\".", src: 2 },
+        { date: "2023-07-26", event: "Fravor testifies before the House Oversight subcommittee on national security.", src: 4 },
+        { date: "2025-08-05", event: "AARO-sponsored workshop opens; its synthesis cites the Nimitz case as an example of lost records.", src: 10 }
+      ],
+      sources: [
+        { id: "AARO-DOD_110872545-1920x1080-9000k", note: "FLIR – UAP video (1:16), Naval Air Systems Command, via AARO/DVIDS" },
+        { url: "https://www.defense.gov/News/Releases/Release/Article/2165713/statement-by-the-department-of-defense-on-the-release-of-historical-navy-videos/", note: "DoD statement on the release of historical Navy videos, 27 April 2020" },
+        { url: "https://docs.house.gov/meetings/GO/GO06/20230726/116282/HHRG-118-GO06-Wstate-FravorD-20230726.pdf", note: "David Fravor's written statement, House Oversight, 26 July 2023" },
+        { url: "https://docs.house.gov/meetings/GO/GO06/20230726/116282/HHRG-118-GO06-Transcript-20230726.pdf", page: 45, note: "Hearing transcript, Serial No. 118-53: Fravor on the 40-foot object and radar tracking" },
+        { url: "https://docs.house.gov/meetings/GO/GO06/20230726/116282/HHRG-118-GO06-Transcript-20230726.pdf", page: 46, note: "Hearing transcript: Fravor on the FLIR modes and no IR plume" },
+        { url: "https://www.documentcloud.org/documents/20743466-nimitz-unredacted/", page: 1, note: "Unofficial executive summary of the 2004 Nimitz incidents, summary page" },
+        { url: "https://www.documentcloud.org/documents/20743466-nimitz-unredacted/", page: 5, note: "Executive summary: intercept location and E-2C radar" },
+        { url: "https://www.documentcloud.org/documents/20743466-nimitz-unredacted/", page: 9, note: "Executive summary: F/A-18F FLIR tracking, Lt Underwood" },
+        { url: "https://www.documentcloud.org/documents/20743466-nimitz-unredacted/", page: 13, note: "Executive summary: mission report and strike group leadership" },
+        { id: "AARO-2025_UAP_Workshop_Paper", page: 9, note: "2025 UAP Workshop synthesis (AUI, sponsored by AARO)" }
+      ],
+      updated: "2026-10-03"
+    },
 };
