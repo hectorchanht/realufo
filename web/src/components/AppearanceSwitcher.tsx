@@ -1,4 +1,4 @@
-// Accent + scanlines controls, shown as a SiteFooter column. Dark/light stays
+// Accent + scanlines controls, shown in the SiteFooter bottom bar. Dark/light stays
 // a one-click ThemeToggle in the header. State + persistence live in ThemeProvider.
 import { useTheme, type Accent } from "../theme/useTheme";
 
