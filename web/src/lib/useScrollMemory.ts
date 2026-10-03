@@ -12,10 +12,11 @@ const saved = new Map<string, number>();
 const RESTORE_MS = 1500;
 
 /** Scroll-memory key for a URL: media-tool params (?br=, ?lens=, …) only restyle
- * the file page, so they must not count as a new page. */
+ * the file page and ?p=N only turns its full-text page, so neither counts as a new page. */
 export function scrollKey(pathname: string, search: string): string {
   const sp = new URLSearchParams(search);
   for (const k of TOOL_PARAMS) sp.delete(k);
+  sp.delete("p");
   const qs = sp.toString();
   return qs ? `${pathname}?${qs}` : pathname;
 }

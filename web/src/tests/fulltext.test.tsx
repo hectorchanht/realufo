@@ -55,4 +55,24 @@ describe("FullText paginated view", () => {
     screen.getByText(/Page 7 isn't in the extracted text/).click();
     expect(open).toHaveBeenCalled();
   });
+
+  it("a ?p=N link scrolls the block into view; turning pages doesn't", () => {
+    const into = vi.fn();
+    Element.prototype.scrollIntoView = into;
+    const { rerender } = render(<FullText id="X" data={data} page={2} load={never} onOpenOriginal={() => {}} />);
+    expect(into).toHaveBeenCalledTimes(1);
+    const onPage = vi.fn();
+    rerender(<FullText id="X" data={data} page={2} load={never} onPageChange={onPage} onOpenOriginal={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Previous page" }));
+    rerender(<FullText id="X" data={data} page={1} load={never} onPageChange={onPage} onOpenOriginal={() => {}} />);
+    expect(into).toHaveBeenCalledTimes(1);
+  });
+
+  it("a new page starts at the top of the text box", () => {
+    render(<FullText id="X" data={data} page={1} load={never} onOpenOriginal={() => {}} />);
+    const box = screen.getByLabelText("Full text page");
+    box.scrollTop = 300;
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    expect(screen.getByLabelText("Full text page").scrollTop).toBe(0);
+  });
 });

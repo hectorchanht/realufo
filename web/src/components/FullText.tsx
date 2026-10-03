@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FullText as FullTextData } from "../api/types";
 import { chip, off, on } from "./ImageTools";
 
@@ -48,10 +48,15 @@ export default function FullText({
     load(id).then((p) => live && p.length && setAll(p)).catch(() => {}); // keep the capped pages
     return () => { live = false; };
   }, [id, hasText, load]);
+  const section = useRef<HTMLElement>(null);
+  const box = useRef<HTMLDivElement>(null);
+  const turned = useRef<number | undefined>(undefined); // last page set by our own prev/next, echoed back as ?p=
   useEffect(() => {
     if (!page) return;
     setView("text");
     setCur(page);
+    // A ?p=N link from elsewhere jumps to the block; our own page turns keep the scroll.
+    if (page !== turned.current) section.current?.scrollIntoView?.({ block: "start" });
   }, [page]);
   if (!data?.pages.length) {
     if (!data?.aiSummary) return null;
@@ -74,6 +79,8 @@ export default function FullText({
   const missing = !!cur && !pages.some((p) => p.n === cur);
   const go = (i: number) => {
     const n = pages[i].n;
+    turned.current = n;
+    if (box.current) box.current.scrollTop = 0; // a new page starts at its top
     setCur(n);
     onPageChange?.(n);
   };
@@ -103,7 +110,7 @@ export default function FullText({
   const arrow = "rounded-lg border border-line2 px-2.5 py-1 font-mono text-[11px] text-ink disabled:opacity-30";
   const textUrl = `/doc/${encodeURIComponent(id)}/text`;
   return (
-    <section aria-label="Full text" className="mb-[22px]">
+    <section ref={section} aria-label="Full text" className="mb-[22px]">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 font-mono">
         {data.aiSummary ? (
           <span className="flex gap-1">
@@ -146,6 +153,7 @@ export default function FullText({
             </span>
           </div>
           <div
+            ref={box}
             tabIndex={0}
             aria-label="Full text page"
             data-page={shown.n}
