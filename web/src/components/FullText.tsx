@@ -128,7 +128,35 @@ export default function FullText({
         </span>
       </div>
       {showSummary ? (
-        <p className="text-[13.5px] leading-[1.65] text-dim">{data.aiSummary}</p>
+        <>
+          <p className="text-[13.5px] leading-[1.65] text-dim">{data.aiSummary}</p>
+          {(data.aiSections?.length ?? 0) > 1 && (
+            <div className="mt-3">
+              <div className="mb-1.5 font-mono text-[10px] tracking-[.5px] text-faint">IN THIS FILE</div>
+              <ul className="max-h-[40vh] overflow-y-auto overscroll-contain rounded-xl border border-line">
+                {data.aiSections!.map((s) => {
+                  const label = s.from === s.to ? `p. ${s.from}` : `pp. ${s.from}–${s.to}`;
+                  return (
+                    <li key={`${s.from}-${s.to}`} className="border-b border-line last:border-b-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setView("text");
+                          turned.current = s.from;
+                          setCur(s.from);
+                          onPageChange?.(s.from);
+                        }}
+                        className="w-full px-3 py-2 text-left text-[12.5px] leading-[1.5] text-dim hover:bg-surface"
+                      >
+                        <span className="font-mono text-[10px] text-signal">{label}</span> · {s.text}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </>
       ) : (
         <>
           {missing && (

@@ -254,6 +254,8 @@ export interface FullText {
   total_pages: number;
   /** AI paragraph from crawler ingest.summaries; null until generated. */
   aiSummary?: string | null;
+  /** Section summaries of the map-reduce AI summary; null for one-section files. */
+  aiSections?: { from: number; to: number; text: string }[] | null;
 }
 
 export type HubKind = "release" | "topic" | "agency" | "location" | "decade";

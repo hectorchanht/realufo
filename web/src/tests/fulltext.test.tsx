@@ -85,4 +85,19 @@ describe("FullText paginated view", () => {
     expect(box.querySelectorAll("br").length).toBeGreaterThan(0);
     expect(box.textContent).not.toContain("**");
   });
+
+  it("AI SUMMARY shows the section outline; a row opens FULL TEXT at its first page", () => {
+    const onPage = vi.fn();
+    const withSecs = { ...data, aiSections: [{ from: 1, to: 1, text: "Cover memo." }, { from: 2, to: 2, text: "Witness statement." }] };
+    render(<FullText id="X" data={withSecs} load={never} onPageChange={onPage} onOpenOriginal={() => {}} />);
+    expect(screen.getByText("IN THIS FILE")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /p\. 2 · Witness statement\./ }));
+    expect(onPage).toHaveBeenLastCalledWith(2);
+    expect(screen.getByText("two")).toBeInTheDocument();
+  });
+
+  it("no outline with fewer than 2 sections", () => {
+    render(<FullText id="X" data={{ ...data, aiSections: [{ from: 1, to: 2, text: "All." }] }} load={never} onOpenOriginal={() => {}} />);
+    expect(screen.queryByText("IN THIS FILE")).toBeNull();
+  });
 });
