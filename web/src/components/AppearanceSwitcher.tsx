@@ -19,7 +19,7 @@ const ACCENT_SWATCH: Record<Accent, string> = {
 export function AppearanceSwitcher() {
   const { accent, scanlines, setAccent, setScanlines } = useTheme();
   return (
-    <ul className="space-y-2" data-appearance-switcher>
+    <ul className="flex flex-wrap items-center gap-x-4 gap-y-2" data-appearance-switcher>
       <li className="flex gap-1.5">
         {ACCENTS.map((a) => (
           <button
