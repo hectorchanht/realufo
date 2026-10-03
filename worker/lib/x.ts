@@ -53,9 +53,17 @@ async function call(s: XSecrets, method: string, path: string, body?: { json?: u
   return text ? JSON.parse(text) : {};
 }
 
-export async function createPost(s: XSecrets, text: string, mediaIds: string[] = []): Promise<string> {
+// A showcase post's text may be a thread: parts joined by THREAD_SEP. The first part
+// carries the media; xbot posts the rest as a reply chain.
+export const THREAD_SEP = "\n---\n";
+
+export async function createPost(s: XSecrets, text: string, mediaIds: string[] = [], replyTo?: string): Promise<string> {
   const j = await call(s, "POST", "/2/tweets", {
-    json: { text, ...(mediaIds.length ? { media: { media_ids: mediaIds } } : {}) },
+    json: {
+      text,
+      ...(mediaIds.length ? { media: { media_ids: mediaIds } } : {}),
+      ...(replyTo ? { reply: { in_reply_to_tweet_id: replyTo } } : {}),
+    },
   });
   return String(j.data.id);
 }

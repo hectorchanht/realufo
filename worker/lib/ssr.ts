@@ -174,6 +174,7 @@ export type DocData = {
   fullText?: { pages: { n: number; text: string }[]; truncated: boolean; total_pages: number; aiSummary?: string | null } | null;
   hubs?: Partial<Record<"release" | "agency" | "location" | "decade", string>>;
   tldr?: { bullets: string[]; oneLiner: string; cardUrl: string | null } | null;
+  articles?: { title: string; thread_id: string | null; evidence: { id: string; label: string }[] }[];
 };
 
 const RELATED_HEADING: Record<string, string> = {
@@ -281,6 +282,10 @@ export function docBody(d: DocData): string {
     tldrSection(d),
     fullTextSection(d),
     series.length ? `<p>${series.join(" · ")}</p>` : "",
+    ...(d.articles ?? []).map((a) => section(`Look-alike files: ${a.title}`, [
+      ...a.evidence.map((e) => ({ href: docHref(e.id), text: `${e.id}: ${e.label}` })),
+      ...(a.thread_id ? [{ href: threadHref(a.thread_id), text: "Full story and evidence" }] : []),
+    ])),
     ...d.related.map((g) => section(`${RELATED_HEADING[g.key] ?? "Related"}: ${g.label}`, docLinks(g.records))),
     section("Discussion", d.promotedThreads.map((t) => ({ href: threadHref(t.id), text: t.title }))),
   ].join("");

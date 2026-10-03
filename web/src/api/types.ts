@@ -226,6 +226,17 @@ export interface PromotedThread {
   accent: string;
 }
 
+/** An operator-written article this record is evidence in (e.g. a look-alike pair). */
+export interface Article {
+  slug: string;
+  title: string;
+  image_url: string | null;
+  /** Site thread the article is published as (OP = story, replies = evidence). */
+  thread_id: string | null;
+  /** Each record's best moment (seconds into its video, null for documents) and close-up. */
+  evidence: { id: string; t: number | null; label: string; image_url: string | null }[];
+}
+
 /** Quality-filtered PDF text (crawler ingest.fulltext), capped ~30k chars. */
 export interface FullText {
   pages: { n: number; text: string }[];
@@ -276,6 +287,7 @@ export interface RecordDetail {
   record: RecordFull;
   assets: Asset[];
   promotedThreads: PromotedThread[];
+  articles?: Article[];
   /** Neighbours in the id series (NASA-UAP-D029 ← D030 → D031). */
   series?: { prev: string | null; next: string | null; prevTitle?: string | null; nextTitle?: string | null; prevKind?: RecordKind | null; nextKind?: RecordKind | null };
   /** war.gov release this file came out in (null for other archives). */

@@ -39,6 +39,7 @@ import { goBack } from "../components/navItems";
 import { LENS_MAGS, MediaFilters, MediaToolbar, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams } from "../components/ImageTools";
 import type { ImageAdjust } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
+import { Articles } from "../components/Articles";
 import { VerdictBar } from "../components/VerdictBar";
 import { TldrCard } from "../components/TldrCard";
 import { parseAiMoments, parseKeyMoments } from "../lib/keyMoments";
@@ -681,6 +682,9 @@ export function Doc() {
       )}
       {media === "video" && (keyMoments.moments.length > 0 || aiMoments.length > 0) && (
         <KeyMoments official={keyMoments.moments} ai={aiMoments} videoRef={videoRef} onSeek={seekTo} />
+      )}
+      {detail.articles && detail.articles.length > 0 && (
+        <Articles articles={detail.articles} currentId={record.id} onSeek={seekTo} />
       )}
 
       {/* chips row — prototype line 358 */}

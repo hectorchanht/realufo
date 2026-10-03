@@ -63,6 +63,23 @@ describe("tick", () => {
     expect(r[0].text.endsWith("\nhttps://realufo.org/doc/XT-V1")).toBe(true);
     expect(xCalls).toEqual([]);
   });
+  it("showcase thread: the head tweet carries the video, the other parts reply in a chain", async () => {
+    await env.MEDIA.put("showcase/wargov/XT-V1.mp4", new Uint8Array(1024));
+    const base = vi.mocked(globalThis.fetch).getMockImplementation()!;
+    const sent: any[] = [];
+    vi.mocked(globalThis.fetch).mockImplementation(async (input: any, init?: any) => {
+      if (!String(input).endsWith("/2/tweets")) return base(input, init);
+      sent.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({ data: { id: `T${sent.length}` } }), { status: 201 });
+    });
+    await tick(E({ X_FORCE_SHOWCASE: "XT-V1", X_SHOWCASE_TEXT: "Head text\n---\nreply one\n---\nreply two" }), NOW, noSleep);
+    expect(sent.map((b) => b.reply?.in_reply_to_tweet_id ?? null)).toEqual([null, "T1", "T2"]);
+    expect(sent[0].media.media_ids).toEqual(["M1"]);
+    expect(sent[0].text).toBe("Head text\nhttps://realufo.org/doc/XT-V1");
+    expect(sent.slice(1).map((b) => [b.text, b.media])).toEqual([["reply one", undefined], ["reply two", undefined]]);
+    expect((await rows())[0]).toMatchObject({ stream: "showcase", status: "posted", tweet_id: "T1" });
+    await env.MEDIA.delete("showcase/wargov/XT-V1.mp4");
+  });
   it("on: uploads the clip in chunks and posts with its media id", async () => {
     await tick(E(), NOW, noSleep);
     expect(xCalls).toEqual(["/2/media/upload/initialize", "/2/media/upload/M1/append", "/2/media/upload/M1/append", "/2/media/upload/M1/finalize", "/2/tweets"]);

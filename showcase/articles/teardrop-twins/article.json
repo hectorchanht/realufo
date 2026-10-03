@@ -1,0 +1,47 @@
+{
+  "slug": "teardrop-twins",
+  "title": "Teardrop twins: two crews, 3,000 km apart, filmed the same \"tail\" UAP",
+  "hero": "hero.jpg",
+  "short": "short.mp4",
+  "showcase_record": "DOW-UAP-PR028",
+  "parts": [
+    "Two military crews. 3,000+ km apart. Five months apart.\nBoth filmed a round object with a rigid \"tail\" hanging straight down 👀\nPentagon files DOW-UAP-PR028 & PR029, side by side 🧵",
+    "1/ Greece, Jan 2024. The crew's own report:\n\"ROUND DIAMOND SHAPE WITH STRAIGHT, NON MANUEVERABLE TAIL\"\n~434 knots. Seen ONLY on the short-wave IR camera; switch to normal video and it vanishes.",
+    "2/ Gulf of Oman, Jun 2024. Different crew, different aircraft:\n\"GLOWING HOT SPHERICAL OBJECT WITH A VERTICAL UNWAVERING CYLINDRICAL POLE/BAR ATTACHED ON THE BOTTOM\"\n~140 knots. Crew's verdict: \"Benign\".",
+    "3/ The tell: the tail never swings. Step through frame by frame: whatever the camera does, it points straight DOWN.\nThat's gravity. A light round body with something hanging under it is the classic balloon + payload silhouette.",
+    "4/ And 434 knots? That's a dot timed from a fast jet with no range to it. AARO's GoFast card: the \"high-speed\" object was really doing 5-92 mph; the speed was \"motion parallax\". Far, slow things look fast from a moving jet.",
+    "5/ Bonus: the dark ring around both isn't a force field 😅 It's the sensor's sharpening filter overshooting at a bright edge. Similar cameras → same halo.\nAARO still lists both as unresolved. Object or balloon?",
+    "6/ Check it yourself, free:\n• realufo.org/archive → search \"teardrop\" → Video\n• open each file, tap the moment, press , and . to step frames\n• read both crews' mission reports in the file text"
+  ],
+  "evidence": [
+    {
+      "id": "DOW-UAP-PR028",
+      "t": 15,
+      "label": "Greece, Jan 2024: the \"tail\" hangs straight down",
+      "image": "DOW-UAP-PR028.jpg",
+      "evidence": "SWIR video. AARO's description: \"an inverted teardrop with a vertically linear trailing mass suspended below\". At 0:56 the operator switches to visible light and loses it."
+    },
+    {
+      "id": "DOW-UAP-PR029",
+      "t": 5.4,
+      "label": "Gulf of Oman, Jun 2024: same shape, same straight-down tail",
+      "image": "DOW-UAP-PR029.jpg",
+      "evidence": "IR video over the sea. AARO uses the exact same words: \"an inverted teardrop with a vertically linear trailing mass suspended below\"."
+    },
+    {
+      "id": "DOW-UAP-D025",
+      "label": "Mission report for the Greece video",
+      "evidence": "\"ROUND DIAMOND SHAPE WITH STRAIGHT, NON MANUEVERABLE 'TAIL'\" … \"APPROX 434 KNOTS\" … \"THE UAP ONLY APPEARED ON THE SWIR CAMERA\". The event lasted about 2 minutes."
+    },
+    {
+      "id": "DOW-UAP-D027",
+      "label": "Mission report for the Gulf of Oman video",
+      "evidence": "\"GLOWING HOT SPHERICAL UNIDENTIFIED OBJECT WITH A VERTICAL UNWAVERING CYLINDRICAL POLE/BAR ATTACHED ON THE BOTTOM\" … \"MOVING AT 140KNOTS\". The observing aircraft was at 23,999 ft, 163 kts. Observer assessment: Benign."
+    },
+    {
+      "id": "AARO-AARO_GoFast_Case_Resolution_Card_Methodology_Final.pdf",
+      "label": "Why a far, slow object can look fast",
+      "evidence": "AARO's GoFast resolution: reported \"near ocean's surface\" at \"high speeds\"; assessed at about 13,000 ft doing 5-92 mph. \"The object's apparent high speed is attributable to motion parallax.\" The same effect applies to any speed called out from a moving jet without a range."
+    }
+  ]
+}

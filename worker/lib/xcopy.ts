@@ -2,6 +2,7 @@ import { docTitle } from "./ssr";
 import type { Env } from "../env";
 import { ASK_LLM_MODEL, answerText } from "./ask";
 import { ARCHIVE_NAME, type Candidate } from "./xpick";
+import { THREAD_SEP } from "./x";
 
 // Post text (Spec 4 §4.5). Voice: extremely online — one random meme format + reply
 // hook per post. AI writes, code guarantees: no stray URLs (billing), facts anchored
@@ -189,7 +190,12 @@ export async function draft(env: Env, c: Candidate, rand: () => number = Math.ra
   // banned-claims check applied (the caller has already rejected unclean titles).
   if (c.stream === "highlight") return { text: finalize(c, template(c)) ?? finalize(c, template(c), true)!, ai: false };
   // Showcase: the operator wrote the text; still stripped of links/tags, link appended, ≤280.
-  if (c.stream === "showcase") return { text: finalize(c, c.text, true) ?? finalize(c, c.text.slice(0, 180).trimEnd() + "…", true)!, ai: false };
+  // A THREAD_SEP-split text is a thread: only the first tweet gets this treatment, replies go as written (each ≤280).
+  if (c.stream === "showcase") {
+    const [first, ...rest] = c.text.split(THREAD_SEP);
+    const head = finalize(c, first, true) ?? finalize(c, first.slice(0, 180).trimEnd() + "…", true)!;
+    return { text: [head, ...rest.map((r) => fit(r.trim(), 280))].join(THREAD_SEP), ai: false };
+  }
   const recent = await recentPosts(env);
   const seen = new Set(recent.flatMap((t) => [...grams(t)]));
   // up to 3 tries, each with a fresh format/hook; a repeat or a stray catchphrase burns one

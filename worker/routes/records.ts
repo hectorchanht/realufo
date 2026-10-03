@@ -5,6 +5,7 @@ import { hubsFor } from "../lib/hubs";
 import { listHubsCached } from "./hubs";
 import { isoDate, yearOf, decadeOf, wargovReleases, facetCounts } from "../lib/facets";
 import { verdictState } from "./verdicts";
+import { uploadUrl } from "../lib/upload";
 // Re-exported for callers that predate lib/facets (lib/xpick.ts).
 export { wargovReleases };
 
@@ -244,7 +245,7 @@ export async function loadRecord(env: Env, id: string, origin: string) {
     .first<RecordRow>();
   if (!record) return null;
   const releaseP = releaseOf(env, record);
-  const [assets, promoted, series, release, related, text, hubList, tldrRow] = await Promise.all([
+  const [assets, promoted, series, release, related, text, hubList, tldrRow, articleRows] = await Promise.all([
     env.DB.prepare("SELECT role,cdn_url,mime,width,height,duration FROM assets WHERE record_id=?").bind(id).all(),
     env.DB.prepare(
       `SELECT t.id,t.no,t.title,t.stance,t.votes,t.source_record_id,b.slug boardSlug,b.accent accent
@@ -266,6 +267,14 @@ export async function loadRecord(env: Env, id: string, origin: string) {
     env.DB.prepare("SELECT bullets,one_liner,card_url FROM record_tldr WHERE record_id=? AND lang='en'")
       .bind(id)
       .first<{ bullets: string; one_liner: string; card_url: string | null }>(),
+    // Articles this record is evidence in (migration 0025), each with all its evidence rows.
+    env.DB.prepare(
+      `SELECT a.slug, a.title, a.image_key, a.thread_id, e.record_id, e.t, e.label, e.image_key e_image
+         FROM articles a JOIN article_records e ON e.slug=a.slug
+        WHERE a.slug IN (SELECT slug FROM article_records WHERE record_id=?) ORDER BY a.created_at DESC, e.pos`
+    )
+      .bind(id)
+      .all<ArticleRow>(),
   ]);
   // Quality-filtered PDF text (crawler ingest.fulltext); null until extracted.
   // aiSummary from crawler ingest.summaries; null until generated.
@@ -282,8 +291,29 @@ export async function loadRecord(env: Env, id: string, origin: string) {
   const live = new Set(hubList.map((h) => `${h.kind}/${h.slug}`));
   return {
     record, assets: assets.results, promotedThreads: promoted.results, series, release, related, fullText, tldr,
+    articles: groupArticles(env, articleRows.results),
     hubs: hubsFor(record, release?.no ?? null, live),
   };
+}
+
+type ArticleRow = {
+  slug: string; title: string; image_key: string | null; thread_id: string | null;
+  record_id: string; t: number | null; label: string; e_image: string | null;
+};
+
+export type Article = {
+  slug: string; title: string; image_url: string | null; thread_id: string | null;
+  evidence: { id: string; t: number | null; label: string; image_url: string | null }[];
+};
+
+function groupArticles(env: Env, rows: ArticleRow[]): Article[] {
+  const out = new Map<string, Article>();
+  for (const r of rows) {
+    const a = out.get(r.slug) ?? { slug: r.slug, title: r.title, image_url: uploadUrl(env, r.image_key), thread_id: r.thread_id, evidence: [] };
+    a.evidence.push({ id: r.record_id, t: r.t, label: r.label, image_url: uploadUrl(env, r.e_image) });
+    out.set(r.slug, a);
+  }
+  return [...out.values()];
 }
 
 export async function getRecord(req: Request, env: Env, p: Record<string, string>) {

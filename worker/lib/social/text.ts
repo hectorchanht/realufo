@@ -1,5 +1,6 @@
 import type { Platform } from "./common";
 import { docTitle } from "../ssr";
+import { THREAD_SEP } from "../x";
 
 // Per-platform copy from the X text (Spec 5 §3.2). Pure; no I/O.
 
@@ -61,8 +62,11 @@ export function ytTitle(base: string): string {
 
 // Every platform: headline (title + id) for search, the X line for voice, link, hashtags.
 export function compose(p: Platform, xText: string, archive: string | null, rec?: PostRecord | null): { text: string; title: string; link: string | null } {
+  // An X thread (showcase) becomes one long post; Bluesky's 300 graphemes only fit the first tweet.
+  const parts = xText.split(THREAD_SEP);
+  xText = p === "bsky" ? parts[0] : parts.join("\n\n");
   const link = linkOf(xText);
-  const line = stripUrls(xText);
+  const line = stripUrls(xText).replace(/\n{3,}/g, "\n\n");
   const head = rec ? headlineFor(rec) : null;
   const body = head ? `${head}\n\n${line}` : line;
   const tags = tagsFor(archive, rec);

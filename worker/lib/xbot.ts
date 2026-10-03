@@ -1,5 +1,5 @@
 import type { Env } from "../env";
-import { createPost, uploadMedia, mediaStatus, XError, type XSecrets, type Source } from "./x";
+import { createPost, uploadMedia, mediaStatus, XError, THREAD_SEP, type XSecrets, type Source } from "./x";
 import { nextCandidate, withinBudget, costOf, sqlTime, type Media } from "./xpick";
 import { draft, isClean } from "./xcopy";
 
@@ -22,8 +22,9 @@ const r2Source = (env: Env, key: string, size: number): Source => ({
 
 async function post(env: Env, s: XSecrets, row: Row, mediaIds: string[]) {
   let tweet: string;
+  const [first, ...replies] = row.text.split(THREAD_SEP);
   try {
-    tweet = await createPost(s, row.text, mediaIds);
+    tweet = await createPost(s, first, mediaIds);
   } catch (e) {
     if (!(e instanceof XError)) {
       // network error after send: X may have created it → manual check, never auto-retried
@@ -47,6 +48,16 @@ async function post(env: Env, s: XSecrets, row: Row, mediaIds: string[]) {
     await env.DB.prepare("UPDATE x_posts SET status='posted', tweet_id=?, error=NULL WHERE id=?").bind(tweet, row.id).run();
   } catch (e) {
     log({ postedUnrecorded: row.id, tweet, error: String(e).slice(0, 200) }); // stays pending/attempts=0: never re-posted
+  }
+  // Thread replies: best effort, never retried (the head is what the row tracks).
+  // ponytail: a failed reply stops the chain; finish it by hand from the logged ids.
+  for (let i = 0, prev = tweet; i < replies.length; i++) {
+    try {
+      prev = await createPost(s, replies[i], [], prev);
+      log({ reply: row.id, n: i + 1, tweet: prev });
+    } catch (e) {
+      return log({ replyFailed: row.id, n: i + 1, after: prev, error: String(e).slice(0, 200) });
+    }
   }
 }
 

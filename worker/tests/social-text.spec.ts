@@ -19,6 +19,12 @@ describe("social text", () => {
     expect(tagsFor(null)).toBe("#UFO #UAP #Pentagon #declassified");
   });
 
+  it("an X thread (showcase) is one long post; Bluesky keeps only the head tweet", () => {
+    const t = `Head line\n${LINK}\n---\nreply one\n---\nreply two`;
+    expect(compose("fb", t, "wargov").text).toBe(`Head line\n\nreply one\n\nreply two\n\n${LINK}\n\n#UFO #UAP #Pentagon #declassified #DeptOfWar`);
+    expect(compose("bsky", t, "wargov").text).not.toContain("reply");
+  });
+
   it("fb / threads: text, link, then hashtags", () => {
     expect(compose("fb", X, "wargov").text).toBe(`${stripUrls(X)}\n\n${LINK}\n\n#UFO #UAP #Pentagon #declassified #DeptOfWar`);
     expect(compose("threads", X, "wargov").text).toContain(`\n\n${LINK}\n\n#UFO #UAP`);

@@ -53,9 +53,21 @@ class Cut:
         subprocess.run([FFMPEG, "-v", "error", "-y", *inputs, *SILENT, "-filter_complex", fc, "-map", "[v]", "-map", f"{n}:a",
                         "-t", str(seconds), *ENC, out], check=True)
         self.segs.append(out)
-    def save(self, out):
+    def save(self, out, bed=False):
+        """bed=True lays a synthesized ambient drone under the cut (no music licence needed)."""
         lst = os.path.join(TMP, "list.txt")
         open(lst, "w").write("".join(f"file '{s}'\n" for s in self.segs))
+        cat = os.path.join(TMP, "cat.mp4") if bed else out
         subprocess.run([FFMPEG, "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy",
-                        "-movflags", "+faststart", out], check=True)
+                        "-movflags", "+faststart", cat], check=True)
+        if bed:
+            h, m, sec = subprocess.run([FFMPEG, "-i", cat], capture_output=True, text=True).stderr.split("Duration: ")[1].split(",")[0].split(":")
+            d = int(h) * 3600 + int(m) * 60 + float(sec)
+            drone = ("aevalsrc='0.10*sin(2*PI*55*t)+0.06*sin(2*PI*82.4*t)*(0.6+0.4*sin(2*PI*0.25*t))+0.03*sin(2*PI*220*t)*(0.5+0.5*sin(2*PI*0.5*t))'"
+                     f":s=44100:d={d:.2f}")
+            fc = (f"[1:a]aformat=channel_layouts=stereo[a];[2:a]lowpass=f=400,volume=0.6,aformat=channel_layouts=stereo[n];[a][n]amix=inputs=2:normalize=0,"
+                  f"afade=t=in:d=1,afade=t=out:st={d - 1.5:.2f}:d=1.5,volume=1.4[bed]")
+            subprocess.run([FFMPEG, "-v", "error", "-y", "-i", cat, "-f", "lavfi", "-i", drone, "-f", "lavfi", "-i",
+                            f"anoisesrc=color=brown:amplitude=0.05:d={d:.2f}", "-filter_complex", fc, "-map", "0:v", "-map", "[bed]",
+                            "-c:v", "copy", "-c:a", "aac", "-b:a", "128k", "-shortest", "-movflags", "+faststart", out], check=True)
         print("wrote", out, os.path.getsize(out) // 1024, "KB")
