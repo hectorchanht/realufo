@@ -103,7 +103,13 @@ export async function loadHub(env: Env, kind: string, slug: string, origin: stri
   const highlights = highlightsOf(hlRow, records);
   const release =
     me.kind === "release"
-      ? await releaseBlock(env, origin, Number(me.slug), (highlights?.picks ?? []).map((p) => ({ id: p.id, title: docTitle(p.title, p.id, p.kind) })))
+      ? await releaseBlock(env, origin, Number(me.slug), (highlights?.picks ?? []).map((p) => ({ id: p.id, title: docTitle(p.title, p.id, p.kind) }))).catch(
+          (e) => {
+            // Same as highlights: the hub's own files still render without it.
+            console.error("release block failed", e);
+            return null;
+          }
+        )
       : undefined;
   return {
     kind: me.kind, slug: me.slug, title: hubTitle(me), intro: hubIntro(me, sel.release, stats), stats, records, highlights,

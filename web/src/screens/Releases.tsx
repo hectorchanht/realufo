@@ -10,8 +10,11 @@ import { RELEASES_TITLE } from "../../../worker/lib/shared";
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
 export default function Releases() {
-  const { data, isLoading } = useReleases();
+  const { data, isLoading, isError } = useReleases();
   useSetPageTitle("RELEASES", "", RELEASES_TITLE);
+  if (isError && !data) {
+    return <div data-screen="releases" className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">release data unavailable.</div>;
+  }
   if (isLoading || !data) {
     return <div data-screen="releases" className="font-mono text-[11px] text-faint">◉ loading signal…</div>;
   }

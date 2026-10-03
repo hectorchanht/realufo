@@ -23,7 +23,8 @@ import { agencyList, longDate } from "./releases";
 // doesn't exist; serveWithMeta then serves index.html untouched.
 // canonicalPath: overrides the request path as the canonical URL (a shared
 // answer's duplicates point at the earliest copy).
-export type Page = { meta: Omit<MetaInput, "url">; body: string; footer?: Link[]; canonicalPath?: string };
+// noStore: a degraded fallback — served, but never memoized (meta.ts cachedPage).
+export type Page = { meta: Omit<MetaInput, "url">; body: string; footer?: Link[]; canonicalPath?: string; noStore?: boolean };
 export type Loader = (env: Env, groups: Record<string, string>, url: URL) => Promise<Page | null>;
 
 // records.doc_date is "M/D/YY" (war.gov) or a bare year (AARO) → ISO 8601 date.
@@ -367,7 +368,7 @@ const releasesPage: Loader = async (env, _g, url) => {
     d = await trackerData(env, url.origin);
   } catch (e) {
     console.error("release tracker failed", e);
-    return { meta, body: tabBody(RELEASES_TITLE, RELEASES_DESCRIPTION) };
+    return { meta, body: tabBody(RELEASES_TITLE, RELEASES_DESCRIPTION), noStore: true };
   }
   const last = d.series[d.series.length - 1];
   return {

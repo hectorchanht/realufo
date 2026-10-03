@@ -66,6 +66,22 @@ describe("hub API", () => {
     expect(h.release.faq[0].q).toBe("When was Release 02 published?");
   });
 
+  it("a failing release block degrades to the plain release hub instead of a 500", async () => {
+    const DB = {
+      prepare: (sql: string) => {
+        if (sql.includes("GROUP BY 1,2,3")) throw new Error("D1 down");
+        return env.DB.prepare(sql);
+      },
+    };
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(new Request("https://hubfail.test/api/hubs/release/2"), { ...env, DB } as any, ctx);
+    await waitOnExecutionContext(ctx);
+    expect(res.status).toBe(200);
+    const h: any = await res.json();
+    expect(h.records.length).toBe(8);
+    expect(h.release).toBeNull();
+  });
+
   it("non-release hubs have no release block", async () => {
     const h: any = await (await call("/api/hubs/agency/fbi")).json();
     expect(h).not.toHaveProperty("release");

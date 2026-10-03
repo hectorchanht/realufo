@@ -642,6 +642,18 @@ describe("release tracker pages (crawler HTML)", () => {
     expect(html).not.toContain("FAQPage");
   });
 
+  it("a degraded /releases is not memoized: the next good request gets the full page", async () => {
+    const broken = { prepare: () => { throw new Error("D1 down"); } };
+    const go = async (DB: unknown) => {
+      const ctx = createExecutionContext();
+      const res = await worker.fetch(new Request("https://flaky.test/releases", { headers: { accept: "text/html" } }), { ...env, ASSETS: fakeAssets, DB } as any, ctx);
+      await waitOnExecutionContext(ctx);
+      return res.text();
+    };
+    expect(await go(broken)).not.toContain('"@type":"FAQPage"');
+    expect(await go(env.DB)).toContain('"@type":"FAQPage"');
+  });
+
   it("/release/2 has what's new, dated prev link, tracker link and FAQ", async () => {
     const html = await get("/release/2");
     expect(html).toContain("<h1>Pentagon UFO Files Release 02 (12 Jun 2026): 8 Files</h1>");

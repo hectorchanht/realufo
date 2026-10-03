@@ -103,7 +103,18 @@ const PAGE_TTL = 3600;
 // ponytail: crawlers may see up to 1h-old related lists / replies; humans get
 // fresh data from the SPA's API calls. Purge or shorten PAGE_TTL if that matters.
 async function cachedPage(url: URL, load: () => Promise<Page | null>): Promise<Page | null> {
-  return cachedJson(`${url.origin}/__page${url.pathname}`, load, PAGE_TTL);
+  // A noStore page (degraded fallback) goes out but isn't cached: returning null
+  // from the memo's loader skips the store.
+  let fallback: Page | null = null;
+  const page = await cachedJson(`${url.origin}/__page${url.pathname}`, async () => {
+    const p = await load();
+    if (p?.noStore) {
+      fallback = p;
+      return null;
+    }
+    return p;
+  }, PAGE_TTL);
+  return page ?? fallback;
 }
 
 const shell = async (env: Env, url: URL) => (await env.ASSETS.fetch(new Request(new URL("/index.html", url)))).text();
