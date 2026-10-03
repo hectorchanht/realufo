@@ -20,9 +20,22 @@ describe("votes", () => {
   });
 
   it("dedups across repeated on-votes from same actor", async () => {
-    await vote({ target_type: "post", target_id: "t1" }, "v2");
-    const again: any = await vote({ target_type: "post", target_id: "t1" }, "v2");
+    await vote({ target_type: "post", target_id: "47CE4205" }, "v2");
+    const again: any = await vote({ target_type: "post", target_id: "47CE4205" }, "v2");
     expect(again.voted).toBe(false); // second call toggles off, not double-count
+  });
+
+  it("400s without an anon id and 404s an unknown target, recording no vote", async () => {
+    const post = (headers: Record<string, string>, target_id: string) =>
+      worker.fetch(
+        new Request("https://x/api/votes", { method: "POST", headers, body: JSON.stringify({ target_type: "thread", target_id }) }),
+        env as any,
+        {} as any
+      );
+    expect((await post({}, "t1")).status).toBe(400);
+    expect((await post({ "X-Anon-Id": "v7" }, "NOPE")).status).toBe(404);
+    const n = await env.DB.prepare("SELECT count(*) c FROM votes WHERE actor_id='anon:none' OR target_id='NOPE'").first<{ c: number }>();
+    expect(n!.c).toBe(0);
   });
 
   it("400s an unknown target_type", async () => {

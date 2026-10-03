@@ -19,8 +19,11 @@ export async function toggleVote(req: Request, env: Env) {
   // not, so require `typeof table === "string"` to close that off.
   if (typeof table !== "string" || typeof targetId !== "string" || !targetId.trim()) return error(400, "bad target");
 
-  if (!(await allowWrite(env, req, "vote"))) return error(429, "slow down — too many votes");
+  // Header-less callers would all share the "anon:none" actor and toggle each other's votes.
   const actor = await actorId(req, env.ANON_SALT);
+  if (actor === "anon:none") return error(400, "missing anon id");
+  if (!(await env.DB.prepare(`SELECT 1 FROM ${table} WHERE id=?`).bind(targetId).first())) return error(404, "target not found");
+  if (!(await allowWrite(env, req, "vote"))) return error(429, "slow down — too many votes");
   const existing = await env.DB.prepare("SELECT id FROM votes WHERE actor_id=? AND target_type=? AND target_id=?")
     .bind(actor, b.target_type, targetId)
     .first<{ id: number }>();
