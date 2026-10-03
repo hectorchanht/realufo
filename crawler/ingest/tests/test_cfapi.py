@@ -55,3 +55,19 @@ def test_api_failure_raises(monkeypatch, calls):
                         lambda req, timeout=None: FakeResp({"success": False, "errors": [{"message": "nope"}]}))
     with pytest.raises(RuntimeError, match="nope"):
         cfapi.embed(["x"])
+
+def test_respond_calls_gpt_oss_with_instructions_and_returns_output_text(monkeypatch):
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
+    seen = []
+    def fake_urlopen(req, timeout=None):
+        seen.append(req)
+        return FakeResp({"success": True, "result": {"output": [
+            {"type": "reasoning", "content": [{"type": "reasoning_text", "text": "thinking"}]},
+            {"type": "message", "content": [{"type": "output_text", "text": '{"lede": "x"}'}]}]}})
+    monkeypatch.setattr(cfapi.urllib.request, "urlopen", fake_urlopen)
+    assert cfapi.respond("be snarky", "files...") == '{"lede": "x"}'
+    (req,) = seen
+    assert req.full_url.endswith("/ai/run/@cf/openai/gpt-oss-120b")
+    body = json.loads(req.data)
+    assert body["instructions"] == "be snarky" and body["input"] == "files..." and body["reasoning"] == {"effort": "low"}

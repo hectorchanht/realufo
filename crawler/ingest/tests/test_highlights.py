@@ -26,10 +26,10 @@ def test_validate_rejects_too_few_picks_or_empty_lede():
     assert hl.validate({"lede": " ", "picks": [{"id": "A-1", "why": "w"}, {"id": "B-2", "why": "w"}]}, IDS) is None
     assert hl.validate(["not", "a", "dict"], IDS) is None
 
-def test_validate_trims_why_to_25_words():
+def test_validate_trims_why_to_the_word_cap():
     long = " ".join(["word"] * 40)
     out = hl.validate({"lede": "L.", "picks": [{"id": "A-1", "why": long}, {"id": "B-2", "why": "ok"}]}, IDS)
-    assert len(out["picks"][0]["why"].split()) == 25
+    assert len(out["picks"][0]["why"].split()) == hl.WHY_WORDS
 
 def test_build_prompt_longest_summaries_first_and_capped():
     files = [{"id": "short", "title": "S", "text": "tiny"},
@@ -75,7 +75,7 @@ def test_main_keeps_going_when_one_hub_fetch_fails(monkeypatch, capsys):
     monkeypatch.setattr(hl, "get_json", fake_get)
     monkeypatch.setattr(hl.d1, "_d1_json", lambda sql: [])
     monkeypatch.setattr(hl.d1, "execute", writes.append)
-    monkeypatch.setattr(hl.cfapi, "chat", lambda *a, **k: '{"lede": "L.", "picks": [{"id": "A-1", "why": "w"}, {"id": "B-2", "why": "w"}]}')
+    monkeypatch.setattr(hl.cfapi, "respond", lambda *a, **k: '{"lede": "L.", "picks": [{"id": "A-1", "why": "w"}, {"id": "B-2", "why": "w"}]}')
     try:
         hl.main([])
     except SystemExit:
@@ -95,7 +95,7 @@ def test_system_prompt_asks_for_distinct_picks_and_exact_facts():
 
 def test_long_why_ends_on_a_whole_sentence_not_mid_word():
     why = ("Four minutes of infrared footage at 500 mph. The Pentagon's camera budget clearly peaked in 1998. "
-           "Also positrons are basically tiny angry electrons that the budget office would very much like to")
+           "Also positrons are basically tiny angry electrons that the budget office would very much like to never discuss again at any meeting ever because frankly the forms alone take")
     out = hl.validate({"lede": "L.", "picks": [{"id": "A-1", "why": why}, {"id": "B-2", "why": "w"}]}, IDS)
     assert out["picks"][0]["why"] == "Four minutes of infrared footage at 500 mph. The Pentagon's camera budget clearly peaked in 1998."
 
@@ -108,3 +108,37 @@ def test_summary_trim_ends_on_a_sentence_so_the_model_never_sees_a_cut_off_word(
     p = hl.build_prompt("R", [{"id": "A-1", "title": "a", "text": text}])
     summary = p.split("summary: ", 1)[1].split("\n", 1)[0]
     assert summary.endswith("light.") and len(summary) <= hl.PER_FILE
+
+def test_clip_does_not_treat_us_abbreviation_as_a_sentence_end():
+    text = "A 1948 memo suggesting UFOs might be Soviet flying wings. The U.S. Air Force then spent a decade arguing about it with itself in triplicate forms"
+    assert hl.clip(text, 25) == "A 1948 memo suggesting UFOs might be Soviet flying wings."
+
+def test_clip_keeps_a_closing_quote():
+    t = "He said “stop.” Then the tape ran out and nobody filed anything at all for forty years apparently ok"
+    assert hl.clip(t, 12) == "He said “stop.”"
+
+def test_scrub_drops_reporter_jabs_and_object_guesses_but_keeps_facts():
+    assert hl.scrub("26 seconds of infrared footage from a gunship. Someone really wanted to prove they saw something.") == \
+        "26 seconds of infrared footage from a gunship."
+    assert hl.scrub("Five bright spots in the sky. Maybe aliens, maybe just stars. Probably stars.") == "Five bright spots in the sky."
+    assert hl.scrub("A 'bogey' was spotted. No one knew what it was. Probably a bird.") == "A 'bogey' was spotted. No one knew what it was."
+    assert hl.scrub("15 minutes of video from a cop's phone. Just a cop with a phone.") == "15 minutes of video from a cop's phone."
+    kept = "What stands out is the obsession with bird identification in the U.S. Air Force files."
+    assert hl.scrub(kept) == kept
+
+def test_validate_drops_a_pick_that_is_all_jab():
+    obj = {"lede": "L.", "picks": [{"id": "A-1", "why": "Someone really wanted attention."},
+                                   {"id": "B-2", "why": "Radar track."}, {"id": "C-3", "why": "Film."}]}
+    assert [p["id"] for p in hl.validate(obj, IDS)["picks"]] == ["B-2", "C-3"]
+
+def test_scrub_strips_a_leaked_joke_label():
+    assert hl.scrub("1952 film shot on a Bell & Howell camera. Joke: The real UFO was the paperwork.") == \
+        "1952 film shot on a Bell & Howell camera. The real UFO was the paperwork."
+    assert hl.scrub("Fact: Radar track over Iraq. Punchline: nobody filed the form.") == "Radar track over Iraq. nobody filed the form."
+
+def test_scrub_drops_kite_guess():
+    assert hl.scrub("Five soldiers saw an angular object. Could be a particularly obstinate kite.") == "Five soldiers saw an angular object."
+
+def test_why_cap_leaves_room_for_the_punchline():
+    # prompt asks for 25 words; the cap is looser so a slightly long joke isn't cut mid-punchline
+    assert hl.WHY_WORDS >= 35
