@@ -35,7 +35,7 @@ def d1(sql, read=False):
     os.unlink(f.name)
     if out.returncode:
         sys.exit(f"D1 failed: {out.stderr[-800:]}")
-    d = json.loads(out.stdout)
+    d = json.loads(re.search(r"^[\[{].*", out.stdout, re.S | re.M)[0])  # --file prints upload progress first
     return (d[0] if isinstance(d, list) else d).get("results", [])
 
 
@@ -77,26 +77,30 @@ def main():
             for i, e in enumerate(a["evidence"])]
     d1("\n".join(sql))
 
-    thread = d1(f"SELECT thread_id FROM articles WHERE slug={q(slug)}", read=True)[0]["thread_id"]
-    if not thread:
+    # Site thread, Reddit-style: OP = the story (thread numbering dropped) + hero; one reply per piece of
+    # evidence, its doc link (with ?t=) embeds the record at that moment. Made once, text refreshed on re-runs.
+    thread = f"ar_{slug}"
+    op = "\n\n".join(re.sub(r"^\d+/\s*", "", p) for p in a["parts"])
+    replies = [(f"{thread}_{i}", f"{e['label']}\n\n{e['evidence']}\n\n{doc_link(e)}", imgs[e["id"]]) for i, e in enumerate(a["evidence"], 1)]
+    if d1(f"SELECT thread_id FROM articles WHERE slug={q(slug)}", read=True)[0]["thread_id"]:
+        print("== site thread (refresh text)")
+        rows = [f"UPDATE threads SET title={q(a['title'][:120])}, op_body={q(op)} WHERE id={q(thread)};",
+                f"UPDATE posts SET body={q(op)} WHERE id={q(thread + '_op')};"]
+        rows += [f"UPDATE posts SET body={q(b)} WHERE id={q(pid)};" for pid, b, _ in replies]
+    else:
         print("== site thread")
-        thread = f"ar_{slug}"
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         no = int(datetime.now().timestamp()) % 9000 + 24419000
-        # Reddit-style: OP = the story (thread numbering dropped) + hero; one reply per piece of evidence,
-        # its doc link (with ?t=) embeds the record at that moment.
-        op = "\n\n".join(re.sub(r"^\d+/\s*", "", p) for p in a["parts"])
         src = a.get("showcase_record") or ids[0]
         rows = [f"""INSERT INTO threads(id,no,board_id,title,stance,op_body,op_handle,op_id,tags,votes,reply_count,img_count,source_record_id,hot,created_at)
                     VALUES({q(thread)},{no},'uap',{q(a['title'][:120])},'analyst',{q(op)},'RealUFO',{q(thread + '_op')},'[]',0,{len(ids)},{len([k for k in [hero, *imgs.values()] if k])},{q(src)},0,{q(now)});""",
                 f"""INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,source_record_id,image_r2_key,image_kind,is_op,created_at)
                     VALUES({q(thread + '_op')},{no},{q(thread)},{q(op)},'RealUFO','analyst',0,{q(src)},{q(hero)},{q(hero and 'upload')},1,{q(now)});"""]
-        for i, e in enumerate(a["evidence"], 1):
-            body = f"{e['label']}\n\n{e['evidence']}\n\n{doc_link(e)}"
-            rows.append(f"""INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,image_r2_key,image_kind,is_op,created_at)
-                    VALUES({q(f'{thread}_{i}')},{no + i},{q(thread)},{q(body)},'RealUFO','analyst',0,{q(imgs[e['id']])},{q(imgs[e['id']] and 'upload')},0,{q(now)});""")
+        rows += [f"""INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,image_r2_key,image_kind,is_op,created_at)
+                    VALUES({q(pid)},{no + i},{q(thread)},{q(b)},'RealUFO','analyst',0,{q(img)},{q(img and 'upload')},0,{q(now)});"""
+                 for i, (pid, b, img) in enumerate(replies, 1)]
         rows.append(f"UPDATE articles SET thread_id={q(thread)} WHERE slug={q(slug)};")
-        d1("\n".join(rows))
+    d1("\n".join(rows))
     print(f"   {SITE}/thread/{thread}")
 
     urls = [f"{SITE}/thread/{thread}", *[f"{SITE}/doc/{i}" for i in ids]]

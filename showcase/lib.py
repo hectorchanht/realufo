@@ -1,6 +1,6 @@
 """Shared bits for showcase recipes: 9:16 1080x1920, safe-zone text, 30 fps segments, concat.
 Text sits below the app top tabs (~200 px) and above the caption/buttons area (bottom ~450 px)."""
-import os, subprocess, tempfile
+import hashlib, json, os, subprocess, tempfile, urllib.request
 
 FFMPEG = os.environ.get("FFMPEG", "ffmpeg")
 FONT = os.environ.get("CLIP_FONT", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
@@ -38,19 +38,53 @@ def ramp_lut(r, g, b):
 # web/src/components/ImageTools.tsx "ironbow": black → indigo → magenta → orange → yellow → white
 IRONBOW = ramp_lut("0 0.15 0.55 0.85 0.98 1 1", "0 0 0.02 0.2 0.5 0.8 1", "0 0.45 0.6 0.25 0.05 0.2 1")
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+VOICE = os.environ.get("ELEVENLABS_VOICE", "nPczCjzI2devNBz1zQrb")  # "Brian": deep, calm narrator
+
+def _dur(path):
+    h, m, sec = subprocess.run([FFMPEG, "-i", path], capture_output=True, text=True).stderr.split("Duration: ")[1].split(",")[0].split(":")
+    return int(h) * 3600 + int(m) * 60 + float(sec)
+
+def tts(text):
+    """ElevenLabs narration → (mp3 path, seconds), cached in showcase/.tts by text + voice.
+    Key: ELEVENLABS_API_KEY in the environment or the repo-root .env."""
+    out = os.path.join(HERE, ".tts", hashlib.sha1(f"{VOICE}|{text}".encode()).hexdigest()[:16] + ".mp3")
+    if not os.path.exists(out):
+        key = os.environ.get("ELEVENLABS_API_KEY") or next((l.split("=", 1)[1].strip() for l in open(os.path.join(HERE, "..", ".env"))
+                                                          if l.startswith("ELEVENLABS_API_KEY=")), None)
+        if not key:
+            raise SystemExit("ELEVENLABS_API_KEY missing (repo-root .env)")
+        req = urllib.request.Request(f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE}?output_format=mp3_44100_128",
+            data=json.dumps({"text": text, "model_id": "eleven_multilingual_v2",
+                             "voice_settings": {"stability": 0.45, "similarity_boost": 0.8, "style": 0.35}}).encode(),
+            headers={"xi-api-key": key, "Content-Type": "application/json", "Accept": "audio/mpeg"})
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        with urllib.request.urlopen(req) as r, open(out, "wb") as f:
+            f.write(r.read())
+    return out, _dur(out)
+
+def _audio(say, seconds):
+    """Audio input args + segment length: the narration line (beat stretched to fit it) or silence."""
+    if not say:
+        return SILENT, seconds
+    path, d = tts(say)
+    return ["-i", path], max(seconds, d + 0.4)
+
 class Cut:
     def __init__(self):
         self.segs = []
-    def seg(self, inputs, vf, seconds):
+    def seg(self, inputs, vf, seconds, say=None):
         out = os.path.join(TMP, f"s{len(self.segs)}.mp4")
-        subprocess.run([FFMPEG, "-v", "error", "-y", *inputs, *SILENT, "-vf", vf, "-map", "0:v", "-map", "1:a",
+        audio, seconds = _audio(say, seconds)
+        subprocess.run([FFMPEG, "-v", "error", "-y", *inputs, *audio, "-vf", vf, "-af", "apad", "-map", "0:v", "-map", "1:a",
                         "-t", str(seconds), *ENC, out], check=True)
         self.segs.append(out)
-    def seg_fc(self, inputs, fc, seconds):
+    def seg_fc(self, inputs, fc, seconds, say=None):
         """Like seg, but a -filter_complex over several inputs that ends in [v]."""
         out = os.path.join(TMP, f"s{len(self.segs)}.mp4")
         n = sum(1 for x in inputs if x == "-i")
-        subprocess.run([FFMPEG, "-v", "error", "-y", *inputs, *SILENT, "-filter_complex", fc, "-map", "[v]", "-map", f"{n}:a",
+        audio, seconds = _audio(say, seconds)
+        subprocess.run([FFMPEG, "-v", "error", "-y", *inputs, *audio, "-filter_complex", fc + f";[{n}:a]apad[au]", "-map", "[v]", "-map", "[au]",
                         "-t", str(seconds), *ENC, out], check=True)
         self.segs.append(out)
     def save(self, out, bed=False):
@@ -61,13 +95,12 @@ class Cut:
         subprocess.run([FFMPEG, "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy",
                         "-movflags", "+faststart", cat], check=True)
         if bed:
-            h, m, sec = subprocess.run([FFMPEG, "-i", cat], capture_output=True, text=True).stderr.split("Duration: ")[1].split(",")[0].split(":")
-            d = int(h) * 3600 + int(m) * 60 + float(sec)
+            d = _dur(cat)
             drone = ("aevalsrc='0.10*sin(2*PI*55*t)+0.06*sin(2*PI*82.4*t)*(0.6+0.4*sin(2*PI*0.25*t))+0.03*sin(2*PI*220*t)*(0.5+0.5*sin(2*PI*0.5*t))'"
                      f":s=44100:d={d:.2f}")
             fc = (f"[1:a]aformat=channel_layouts=stereo[a];[2:a]lowpass=f=400,volume=0.6,aformat=channel_layouts=stereo[n];[a][n]amix=inputs=2:normalize=0,"
-                  f"afade=t=in:d=1,afade=t=out:st={d - 1.5:.2f}:d=1.5,volume=1.4[bed]")
+                  f"afade=t=in:d=1,afade=t=out:st={d - 1.5:.2f}:d=1.5,volume=0.9[bed];[0:a][bed]amix=inputs=2:normalize=0[mix]")
             subprocess.run([FFMPEG, "-v", "error", "-y", "-i", cat, "-f", "lavfi", "-i", drone, "-f", "lavfi", "-i",
-                            f"anoisesrc=color=brown:amplitude=0.05:d={d:.2f}", "-filter_complex", fc, "-map", "0:v", "-map", "[bed]",
+                            f"anoisesrc=color=brown:amplitude=0.05:d={d:.2f}", "-filter_complex", fc, "-map", "0:v", "-map", "[mix]",
                             "-c:v", "copy", "-c:a", "aac", "-b:a", "128k", "-shortest", "-movflags", "+faststart", out], check=True)
         print("wrote", out, os.path.getsize(out) // 1024, "KB")
