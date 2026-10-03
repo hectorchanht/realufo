@@ -6,6 +6,7 @@ ARCHIVE_ROWS = {
     "aaro": {"label": "AARO", "flag": "🇺🇸", "accent": "#6ea8ff", "coord": "Pentagon"},
     "nasa": {"label": "NASA", "flag": "🇺🇸", "accent": "#46dfff", "coord": "NASA HQ"},
     "nara": {"label": "NARA", "flag": "🇺🇸", "accent": "#4df0a6", "coord": "National Archives"},
+    "congress": {"label": "Congress", "flag": "🇺🇸", "accent": "#f2b84b", "coord": "U.S. Capitol"},
 }
 
 def _load(slug, data_dir):

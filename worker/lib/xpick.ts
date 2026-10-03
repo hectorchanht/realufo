@@ -19,7 +19,7 @@ export type Candidate =
   | { stream: "highlight"; ref: string; thread: { id: string; title: string; body: string; votes: number }; media: Media };
 
 // No dots: X auto-links bare domains like war.gov and bills them as URLs.
-export const ARCHIVE_NAME: Record<string, string> = { wargov: "Dept. of War", aaro: "AARO", nara: "National Archives", nasa: "NASA" };
+export const ARCHIVE_NAME: Record<string, string> = { wargov: "Dept. of War", aaro: "AARO", nara: "National Archives", nasa: "NASA", congress: "U.S. Congress" };
 
 const CDN = "https://assets.realufo.org/";
 export const SITE = "https://realufo.org";

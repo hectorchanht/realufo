@@ -6,7 +6,7 @@ import { THREAD_SEP } from "../x";
 
 const URL_RE = /https?:\/\/\S+/g;
 const SITE_TAGS = "#UFO #UAP #Pentagon #declassified";
-const ARCHIVE_TAG: Record<string, string> = { wargov: "#DeptOfWar", aaro: "#AARO", nara: "#NationalArchives", nasa: "#NASA" };
+const ARCHIVE_TAG: Record<string, string> = { wargov: "#DeptOfWar", aaro: "#AARO", nara: "#NationalArchives", nasa: "#NASA", congress: "#Congress" };
 
 export type Facet = { index: { byteStart: number; byteEnd: number }; features: { $type: string; uri: string }[] };
 
