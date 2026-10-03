@@ -127,8 +127,8 @@ def window(duration):
 
 def ffmpeg_args(url, start, length, out, id_file, font, title_file=None, id_len=20, title_len=40):
     """Output width varies (<=1280), so id/title fontsizes shrink with w to fit (em as title_layout)."""
-    # translucent box: readable on white-hot IR frames and over redaction blocks
-    mark = f"fontfile={font}:fontcolor=white:borderw=2:bordercolor=black:box=1:boxcolor=black@0.45:boxborderw=8"
+    # text only (no box): a thick outline + soft shadow keeps it readable on white-hot IR frames
+    mark = f"fontfile={font}:fontcolor=white:borderw=3:bordercolor=black:shadowcolor=black@0.6:shadowx=2:shadowy=2"
     size = lambda fs, n: f"'min({fs},(w-40)/{0.72 * max(n, 1):.2f})'"
     vf = ("scale='trunc(min(1280,iw)/2)*2':-2,"
           f"drawtext={mark}:textfile={id_file}:expansion=none:fontsize={size(32, id_len)}:x=20:y=20,"
@@ -148,8 +148,7 @@ def vertical_args(url, start, length, out, title_files, fontsize, font, audio=Tr
     bars first; fill zooms near-9:16 content to the whole frame, else it is fitted as large as fits."""
     # Text stays inside the Reels/Shorts/TikTok safe zone: below the top tabs (~200 px)
     # and above the caption/buttons area (bottom ~450 px) of the 1080x1920 frame.
-    band = f"fontfile={font}:fontcolor=white:borderw=3:bordercolor=black:x=(w-text_w)/2"
-    boxed = f"{band}:box=1:boxcolor=black@0.45:boxborderw=10"
+    band = f"fontfile={font}:fontcolor=white:borderw=3:bordercolor=black:shadowcolor=black@0.6:shadowx=2:shadowy=2:x=(w-text_w)/2"
     title = "".join(f"drawtext={band}:textfile={f}:expansion=none:fontsize={fontsize}:y={340 + round(i * fontsize * 1.3)},"
                     for i, f in enumerate(title_files))
     cover = "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920"
@@ -157,9 +156,9 @@ def vertical_args(url, start, length, out, title_files, fontsize, font, audio=Tr
           f"[a]{cover},boxblur=20[bg];"
           f"[b]{cover if fill else 'scale=1080:1920:force_original_aspect_ratio=decrease'}[fg];"
           "[bg][fg]overlay=(W-w)/2:(H-h)/2,"
-          + (f"drawtext={boxed}:textfile={id_file}:expansion=none:fontsize={id_fontsize}:y=270," if id_file else "") +
+          + (f"drawtext={band}:textfile={id_file}:expansion=none:fontsize={id_fontsize}:y=270," if id_file else "") +
           f"{title}"
-          f"drawtext={boxed}:text=realufo.org:fontsize=44:y=1420[v]")
+          f"drawtext={band}:text=realufo.org:fontsize=44:y=1420[v]")
     a = ["ffmpeg", "-v", "error", "-y", "-ss", f"{start:.2f}", "-i", url]
     if not audio:
         a += ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100"]
