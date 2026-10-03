@@ -16,11 +16,16 @@ import { ThemeProvider } from './theme/ThemeProvider'
 import App from './App.tsx'
 import { startOutbox } from './lib/outbox'
 import { sendRaw } from './api/client'
+import { carryOverFollows } from './lib/identity'
 
 const queryClient = makeQueryClient()
 
 // Offline writes (lib/outbox.ts): replay on start/online/visible; refetch everything once sent.
 startOutbox(sendRaw, () => void queryClient.invalidateQueries())
+
+// After an ID import (lib/identity.ts): copy the old id's follows to the new one;
+// the push resync below waits for it so the subscription moves to the new id too.
+const carried = carryOverFollows()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -37,6 +42,6 @@ createRoot(document.getElementById('root')!).render(
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {})
-    void import('./lib/push').then((m) => m.resyncPush())
+    void carried.then(() => import('./lib/push')).then((m) => m.resyncPush())
   })
 }

@@ -106,3 +106,45 @@ describe("follows API", () => {
     expect(await (await get("f2", "/api/follows?kind=thread&key=t1")).json()).toEqual({ following: true });
   });
 });
+
+describe("follows merge (ID import)", () => {
+  const OLD = "11111111-1111-4111-8111-111111111111";
+  const NEW = "22222222-2222-4222-8222-222222222222";
+  const rows = async (anon: string) =>
+    (await env.DB.prepare("SELECT kind,key,src FROM follows WHERE actor_id=? ORDER BY kind,key")
+      .bind(await actorId(new Request("https://x", { headers: { "X-Anon-Id": anon } }), env.ANON_SALT))
+      .all()).results;
+
+  it("copies the old id's follows to the caller, unions, bell wins; old rows kept", async () => {
+    await post(OLD, "/api/follows", { kind: "thread", key: "t1", on: true }); // bell
+    await post(OLD, "/api/threads/t2/posts", { body: "auto here" }); // auto on t2
+    await post(OLD, "/api/records/CIA-UAP-017/comments", { body: "auto rec" }); // auto on record
+    await post(NEW, "/api/threads/t1/posts", { body: "new id auto t1" }); // NEW already auto-follows t1
+    await post(NEW, "/api/follows", { kind: "hub", key: "agency/fbi", on: true });
+    const res = await post(NEW, "/api/follows/merge", { from: OLD }, { ...env, FEATURE_PUSH: "off" });
+    expect(res.status).toBe(200);
+    expect(await rows(NEW)).toEqual([
+      { kind: "hub", key: "agency/fbi", src: "bell" },
+      { kind: "record", key: "CIA-UAP-017", src: "auto" },
+      { kind: "thread", key: "t1", src: "bell" },
+      { kind: "thread", key: "t2", src: "auto" },
+    ]);
+    expect((await rows(OLD)).length).toBe(3);
+  });
+
+  it("an auto row never downgrades an existing bell", async () => {
+    const A = "33333333-3333-4333-8333-333333333333";
+    const B = "44444444-4444-4444-8444-444444444444";
+    await post(A, "/api/threads/t2/posts", { body: "auto" });
+    await post(B, "/api/follows", { kind: "thread", key: "t2", on: true });
+    await post(B, "/api/follows/merge", { from: A });
+    expect(await rows(B)).toEqual([{ kind: "thread", key: "t2", src: "bell" }]);
+  });
+
+  it("rejects missing anon id, non-UUID or same id", async () => {
+    expect((await post(null, "/api/follows/merge", { from: OLD })).status).toBe(400);
+    expect((await post(NEW, "/api/follows/merge", { from: "not-a-uuid" })).status).toBe(400);
+    expect((await post(NEW, "/api/follows/merge", {})).status).toBe(400);
+    expect((await post(NEW, "/api/follows/merge", { from: NEW })).status).toBe(400);
+  });
+});

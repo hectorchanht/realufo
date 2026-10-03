@@ -29,7 +29,7 @@ import { tick } from "./lib/xbot";
 import { tick as socialTick } from "./lib/social/tick";
 import { pollTick } from "./lib/xpoll";
 import { pushNewFiles, pushDaily } from "./lib/push";
-import { pushConfig, subscribe, setPrefs, unsubscribe, pushMe, getFollow, toggleFollow } from "./routes/push";
+import { pushConfig, subscribe, setPrefs, unsubscribe, pushMe, getFollow, toggleFollow, mergeFollows } from "./routes/push";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -70,6 +70,7 @@ on("POST", "/api/push/unsubscribe", unsubscribe);
 on("GET", "/api/push/me", pushMe);
 on("GET", "/api/follows", getFollow);
 on("POST", "/api/follows", toggleFollow);
+on("POST", "/api/follows/merge", mergeFollows);
 
 // X bot first (Spec 4; FEATURE_X gates it), then mirror to other platforms (Spec 5;
 // FEATURE_SOCIAL_* gate it). Social failing never affects X.

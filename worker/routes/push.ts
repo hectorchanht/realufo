@@ -2,7 +2,7 @@
 // Every call is scoped to the caller's salted anon id (X-Anon-Id).
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
-import { actorId } from "../lib/anon";
+import { actorId, saltedHash } from "../lib/anon";
 import { allowWrite } from "../lib/ratelimit";
 import { b64u } from "../lib/webpush";
 import { followUrl, hubLabel, type FollowKind } from "../lib/follows";
@@ -154,4 +154,25 @@ export async function toggleFollow(req: Request, env: Env) {
       .run();
   else await env.DB.prepare("DELETE FROM follows WHERE actor_id=? AND kind=? AND key=?").bind(actor, b.kind, b.key).run();
   return json({ following: on });
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// After "Upload ID" (web lib/identity.ts) this browser carries a new anon id; it
+// sends its previous raw id once so what it followed keeps notifying. The raw id
+// is the bearer secret, so presenting it proves ownership. Copy, not move: the old
+// id may still be in use on another device. On overlap a bell beats an auto row.
+export async function mergeFollows(req: Request, env: Env) {
+  const actor = await caller(req, env);
+  if (!actor) return error(400, "missing anon id");
+  const b = await body(req);
+  if (typeof b.from !== "string" || !UUID.test(b.from) || b.from === req.headers.get("X-Anon-Id")) return error(400, "bad from");
+  if (!(await allowWrite(env, req, "follow"))) return error(429, "slow down");
+  await env.DB.prepare(
+    `INSERT INTO follows(actor_id,kind,key,src,created_at) SELECT ?, kind, key, src, created_at FROM follows WHERE actor_id=? AND true
+     ON CONFLICT(actor_id,kind,key) DO UPDATE SET src='bell' WHERE excluded.src='bell'`,
+  )
+    .bind(actor, await saltedHash(b.from, env.ANON_SALT))
+    .run();
+  return json({ ok: true });
 }
