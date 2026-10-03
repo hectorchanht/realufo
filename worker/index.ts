@@ -1,6 +1,6 @@
 import type { Env } from "./env";
 import { on, dispatch } from "./router";
-import { error } from "./lib/json";
+import { error, json } from "./lib/json";
 import { health } from "./routes/health";
 import { bootstrap } from "./routes/bootstrap";
 import { feed } from "./routes/feed";
@@ -50,6 +50,33 @@ on("GET", "/api/cases/:slug", getCase);
 on("GET", "/api/cases/:slug/comments", listCaseComments);
 on("POST", "/api/cases/:slug/comments", addCaseComment);
 
+// X bot first (Spec 4; FEATURE_X gates it), then mirror to other platforms (Spec 5;
+// FEATURE_SOCIAL_* gate it). Social failing never affects X.
+async function runTick(env: Env) {
+  const logErr = (who: string) => (e: unknown) => console.log(JSON.stringify({ [who]: true, crashed: String(e).slice(0, 300) }));
+  await tick(env).catch(logErr("xbot"));
+  await socialTick(env).catch(logErr("social"));
+}
+
+// POST /__tick (Authorization: Bearer ADMIN_TOKEN): one cron tick on demand, for
+// scripts/publish.sh. ?force=ID sets X_FORCE_PICK for this call only. Same work and
+// budgets as the cron. Unset ADMIN_TOKEN = endpoint off (404).
+async function manualTick(req: Request, env: Env) {
+  const token = env.ADMIN_TOKEN;
+  const auth = req.headers.get("authorization") ?? "";
+  if (!token || req.method !== "POST" || !(await sameSecret(auth, `Bearer ${token}`))) return error(404, "not found");
+  const force = new URL(req.url).searchParams.get("force");
+  await runTick(force ? { ...env, X_FORCE_PICK: force } : env);
+  return json({ ok: true });
+}
+
+// Constant-time compare (hash both, then compare digests).
+async function sameSecret(a: string, b: string) {
+  const h = async (s: string) => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
+  const [x, y] = [await h(a), await h(b)];
+  return x.length === y.length && x.every((v, i) => v === y[i]);
+}
+
 export default {
   async fetch(req: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
@@ -58,6 +85,7 @@ export default {
       const res = await dispatch(req, env);
       return res ?? error(404, "not found");
     }
+    if (url.pathname === "/__tick") return manualTick(req, env);
     if (url.pathname === "/sitemap.xml") return sitemap(req, env);
     if (url.pathname === "/rss.xml") return rss(req, env);
     if (url.pathname === "/llms.txt") return llms(req, env);
@@ -65,12 +93,6 @@ export default {
     return serveWithMeta(req, env); // SPA + assets, with per-route meta/OG injection for deep links
   },
   async scheduled(_c: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
-    // X bot first (Spec 4; FEATURE_X gates it), then mirror to other platforms (Spec 5;
-    // FEATURE_SOCIAL_* gate it). Social failing never affects X.
-    const logErr = (who: string) => (e: unknown) => console.log(JSON.stringify({ [who]: true, crashed: String(e).slice(0, 300) }));
-    ctx.waitUntil((async () => {
-      await tick(env).catch(logErr("xbot"));
-      await socialTick(env).catch(logErr("social"));
-    })());
+    ctx.waitUntil(runTick(env));
   },
 } satisfies ExportedHandler<Env>;

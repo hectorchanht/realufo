@@ -1,112 +1,96 @@
 #!/usr/bin/env bash
 # Publish one archive record to X and every enabled social platform right now.
 #
-#   scripts/publish.sh RECORD_ID [GIT_REF]     (GIT_REF defaults to HEAD)
-#   scripts/publish.sh --drain [GIT_REF]       no new X post: just run the fan-out every
-#                                              minute until every posted X post (since
-#                                              SOCIAL_SINCE) has a row on every enabled
-#                                              platform — re-posts soft-deleted rows
+#   scripts/publish.sh RECORD_ID     post RECORD_ID to X, then mirror it everywhere
+#   scripts/publish.sh --drain       no new X post: re-run the fan-out until every posted
+#                                    X post (since SOCIAL_SINCE) has a live row on every
+#                                    enabled platform — re-posts soft-deleted rows
 #
-# How: deploys GIT_REF from a clean worktree with an every-minute cron and
-# X_FORCE_PICK=RECORD_ID (neither is committed). The X bot posts the record at
-# the next minute, the social fan-out mirrors it in the same tick, and this
-# script polls D1 until every enabled platform has a final row, then redeploys
-# GIT_REF unchanged (normal "0 */3 * * *" cron) — also on Ctrl-C or error.
+# How: calls POST https://realufo.org/__tick (one cron tick on demand, ?force=ID for the
+# X pick) every 30 s until done. No deploys, no cron changes. Needs ADMIN_TOKEN in the
+# repo-root .env, matching the Worker secret of the same name (one-time setup below).
 set -euo pipefail
 
-ID=${1:?usage: scripts/publish.sh RECORD_ID [GIT_REF]}
-REF=${2:-HEAD}
+ID=${1:?usage: scripts/publish.sh RECORD_ID | --drain}
 ROOT=$(git rev-parse --show-toplevel)
-W=$(mktemp -d)/publish-wt
+SITE=${PUBLISH_SITE:-https://realufo.org}
 TIMEOUT_MIN=${PUBLISH_TIMEOUT_MIN:-15}
-
-# The repo-root .env holds a narrow CLOUDFLARE_API_TOKEN that can't deploy; --env-file
+DRAIN=; [ "$ID" = "--drain" ] && DRAIN=1
+# The repo-root .env holds a narrow CLOUDFLARE_API_TOKEN that can't read D1; --env-file
 # /dev/null makes wrangler use the OAuth login instead.
 q() {
   npx wrangler d1 execute realufo-db --remote --env-file /dev/null --json --command "$1" 2>/dev/null |
     python3 -c 'import json,sys; d=json.load(sys.stdin); d=d[0] if isinstance(d,list) else d; print(json.dumps(d.get("results",[])))'
 }
 
-DRAIN=; [ "$ID" = "--drain" ] && DRAIN=1
+TOKEN=$(grep -s '^ADMIN_TOKEN=' "$ROOT/.env" | cut -d= -f2- || true)
+if [ -z "$TOKEN" ]; then
+  cat <<'EOF'
+ADMIN_TOKEN is not set. One-time setup (run yourself; the value is never printed):
+  t=$(openssl rand -hex 32) && printf '\nADMIN_TOKEN=%s\n' "$t" >> .env &&
+  printf %s "$t" | npx wrangler secret put ADMIN_TOKEN --env-file /dev/null
+EOF
+  exit 1
+fi
+tick() {
+  local code
+  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 300 -X POST -H "Authorization: Bearer $TOKEN" "$SITE/__tick${1:+?force=$1}")
+  [ "$code" = 200 ] || { echo "!! /__tick returned $code (deployed code lacks /__tick, or ADMIN_TOKEN differs from the Worker secret)"; exit 1; }
+}
+
+cfg="$ROOT/wrangler.jsonc"
+since=$(grep -o '"SOCIAL_SINCE": "[^"]*"' "$cfg" | cut -d'"' -f4)
+plats=$(grep -o '"FEATURE_SOCIAL_[A-Z]*": "on"' "$cfg" | sed 's/"FEATURE_SOCIAL_\([A-Z]*\)".*/\1/' | tr 'A-Z' 'a-z' | sed 's/.*/"&"/' | paste -sd, -)
+enabled=$(echo "$plats" | tr ',' '\n' | grep -c .)
 
 if [ -z "$DRAIN" ]; then
-echo "== preflight $ID"
-rec=$(q "SELECT id,kind,status,(SELECT count(*) FROM x_posts p WHERE p.stream='pick' AND p.ref=r.id) posted FROM records r WHERE id='${ID//\'/}'")
-python3 - "$rec" <<'PY'
+  echo "== preflight $ID"
+  rec=$(q "SELECT id,kind,status,(SELECT count(*) FROM x_posts p WHERE p.stream='pick' AND p.ref=r.id) posted FROM records r WHERE id='${ID//\'/}'")
+  python3 - "$rec" <<'PY'
 import json, sys
 r = json.loads(sys.argv[1])
 if not r: sys.exit("record not found")
 r = r[0]
 if r["status"] != "live": sys.exit(f"record is {r['status']}, not live")
-if r["posted"]: sys.exit("already published as a pick (X_FORCE_PICK only posts unposted records)")
+if r["posted"]: sys.exit("already published as a pick (to re-post one platform, soft-delete its row and use --drain)")
 print(f"ok: {r['id']} ({r['kind']})")
 PY
-today=$(q "SELECT count(*) n FROM x_posts WHERE status!='failed' AND date(created_at)=date('now')")
-echo "X posts today: $today (X_DAILY_MAX in wrangler.jsonc caps it)"
+  echo "X posts today: $(q "SELECT count(*) n FROM x_posts WHERE status!='failed' AND date(created_at)=date('now')") (X_DAILY_MAX caps it)"
 fi
 
-restore() {
-  echo "== restoring normal deploy of $REF"
-  (cd "$W" && git checkout -- wrangler.jsonc && pnpm run deploy >"$W/restore.log" 2>&1 && grep -E "Current Version ID|schedule" "$W/restore.log") ||
-    echo "!! RESTORE FAILED — redeploy $REF yourself (log: $W/restore.log)"
-  git -C "$ROOT" worktree remove --force "$W" 2>/dev/null || true
-}
-
-git -C "$ROOT" worktree add --detach "$W" "$REF" >/dev/null
-trap restore EXIT
-cp "$ROOT/.dev.vars" "$W/" 2>/dev/null || true
-(cd "$W" && pnpm install --frozen-lockfile >/dev/null && cd web && pnpm install --frozen-lockfile >/dev/null)
-sed -i '' 's|"crons": \["0 \*/3 \* \* \*"\]|"crons": ["* * * * *"]|' "$W/wrangler.jsonc"
-grep -q '"\* \* \* \* \*"' "$W/wrangler.jsonc" || { echo "cron line not found in wrangler.jsonc"; exit 1; }
-enabled=$(grep -o '"FEATURE_SOCIAL_[A-Z]*": "on"' "$W/wrangler.jsonc" | wc -l | tr -d ' ')
-
-VARS=(); [ -z "$DRAIN" ] && VARS=(--var "X_FORCE_PICK:$ID")
-echo "== deploying $REF with every-minute cron ${DRAIN:+(drain)}${DRAIN:-+ X_FORCE_PICK=$ID}"
-# Same steps as `pnpm run deploy`, with the extra var on the wrangler call.
-(cd "$W" && npx wrangler d1 migrations apply realufo-db --remote --env-file /dev/null && pnpm build:web &&
-  npx wrangler deploy --env-file /dev/null ${VARS[@]+"${VARS[@]}"}) >"$W/deploy.log" 2>&1 || { tail -20 "$W/deploy.log"; exit 1; }
-grep -E "Current Version ID" "$W/deploy.log"
-
-if [ -n "$DRAIN" ]; then
-  since=$(grep -o '"SOCIAL_SINCE": "[^"]*"' "$W/wrangler.jsonc" | cut -d'"' -f4)
-  plats=$(grep -o '"FEATURE_SOCIAL_[A-Z]*": "on"' "$W/wrangler.jsonc" | sed 's/"FEATURE_SOCIAL_\([A-Z]*\)".*/\1/' | tr 'A-Z' 'a-z' | sed "s/.*/'&'/" | paste -sd, -)
-  echo "== draining unposted X posts since $since to: $plats (up to ${TIMEOUT_MIN} min)"
-  deadline=$(( $(date +%s) + TIMEOUT_MIN * 60 ))
-  while :; do
-    sleep 30
-    left=$(q "SELECT count(*) n FROM x_posts x, (SELECT value p FROM json_each('[${plats//\'/\"}]')) pl WHERE x.status='posted' AND x.created_at >= '$since' AND NOT EXISTS (SELECT 1 FROM social_posts s WHERE s.x_post_id=x.id AND s.platform=pl.p AND s.deleted_at IS NULL)")
-    busy=$(q "SELECT count(*) n FROM social_posts WHERE status IN ('pending','processing') AND deleted_at IS NULL")
-    echo "missing=$left busy=$busy" >&2
-    [[ "$left" == *'"n": 0'* && "$busy" == *'"n": 0'* ]] && break
-    [ "$(date +%s)" -ge "$deadline" ] && { echo "timed out"; break; }
-  done
-  q "SELECT x.ref, s.platform, s.status, coalesce(s.remote_id, substr(s.error,1,100)) detail FROM social_posts s JOIN x_posts x ON x.id=s.x_post_id WHERE s.deleted_at IS NULL AND s.created_at >= datetime('now','-30 minutes') ORDER BY x.id, s.platform" |
-    python3 -c 'import json,sys
-for r in json.load(sys.stdin): print("%-16s %-8s %-10s %s" % (r["ref"], r["platform"], r["status"], r["detail"] or ""))'
-  exit 0
-fi
-
-echo "== waiting for X + $enabled social platforms (up to ${TIMEOUT_MIN} min)"
+echo "== ticking $SITE/__tick every 30 s (up to ${TIMEOUT_MIN} min) for: $plats"
 deadline=$(( $(date +%s) + TIMEOUT_MIN * 60 ))
 while :; do
-  sleep 30
-  x=$(q "SELECT id,status,tweet_id,error FROM x_posts WHERE stream='pick' AND ref='${ID//\'/}'")
-  s=$(q "SELECT s.platform,s.status,s.remote_id,substr(s.error,1,160) error FROM social_posts s JOIN x_posts p ON p.id=s.x_post_id WHERE p.stream='pick' AND p.ref='${ID//\'/}' ORDER BY s.platform")
-  done_=$(python3 - "$x" "$s" "$enabled" <<'PY'
+  if [ -n "$DRAIN" ]; then tick ""; else tick "$ID"; fi
+  if [ -n "$DRAIN" ]; then
+    left=$(q "SELECT count(*) n FROM x_posts x, (SELECT value p FROM json_each('[$plats]')) pl WHERE x.status='posted' AND x.created_at >= '$since' AND NOT EXISTS (SELECT 1 FROM social_posts s WHERE s.x_post_id=x.id AND s.platform=pl.p AND s.deleted_at IS NULL)")
+    busy=$(q "SELECT count(*) n FROM social_posts WHERE status IN ('pending','processing') AND deleted_at IS NULL")
+    echo "missing=$left busy=$busy"
+    [[ "$left" == *'"n": 0'* && "$busy" == *'"n": 0'* ]] && break
+  else
+    x=$(q "SELECT status FROM x_posts WHERE stream='pick' AND ref='${ID//\'/}'")
+    s=$(q "SELECT s.status FROM social_posts s JOIN x_posts p ON p.id=s.x_post_id WHERE p.stream='pick' AND p.ref='${ID//\'/}' AND s.deleted_at IS NULL")
+    done_=$(python3 - "$x" "$s" "$enabled" <<'PY'
 import json, sys
 x, s, n = json.loads(sys.argv[1]), json.loads(sys.argv[2]), int(sys.argv[3])
 xs = x[0]["status"] if x else "none"
-busy = [r for r in s if r["status"] in ("pending", "processing")]
-print(f"x={xs} social={len(s)}/{n} busy={len(busy)}", file=sys.stderr)
+busy = sum(r["status"] in ("pending", "processing") for r in s)
+print(f"x={xs} social={len(s)}/{n} busy={busy}", file=sys.stderr)
 print("1" if xs == "failed" or (xs == "posted" and len(s) >= n and not busy) else "0")
 PY
 )
-  [ "$done_" = 1 ] && break
-  [ "$(date +%s)" -ge "$deadline" ] && { echo "timed out; rows so far below"; break; }
+    [ "$done_" = 1 ] && break
+  fi
+  [ "$(date +%s)" -ge "$deadline" ] && { echo "timed out (YouTube's daily cap or slow uploads finish on later cron ticks)"; break; }
+  sleep 30
 done
+
 echo "== result"
-python3 - "$x" "$s" <<'PY'
-import json, sys
-for r in json.loads(sys.argv[1]): print(f"x        {r['status']:10} {r.get('tweet_id') or r.get('error') or ''}")
-for r in json.loads(sys.argv[2]): print(f"{r['platform']:8} {r['status']:10} {r.get('remote_id') or r.get('error') or ''}")
-PY
+if [ -n "$DRAIN" ]; then where="s.created_at >= datetime('now','-$((TIMEOUT_MIN + 5)) minutes')"; else where="x.stream='pick' AND x.ref='${ID//\'/}'"; fi
+q "SELECT x.ref, s.platform, s.status, coalesce(s.remote_id, substr(s.error,1,100)) detail FROM social_posts s JOIN x_posts x ON x.id=s.x_post_id WHERE s.deleted_at IS NULL AND $where ORDER BY x.id, s.platform" |
+  python3 -c 'import json,sys
+for r in json.load(sys.stdin): print("%-16s %-8s %-10s %s" % (r["ref"], r["platform"], r["status"], r["detail"] or ""))'
+if [ -z "$DRAIN" ]; then
+  q "SELECT status, tweet_id FROM x_posts WHERE stream='pick' AND ref='${ID//\'/}'" | python3 -c 'import json,sys
+for r in json.load(sys.stdin): print("%-16s %-8s %-10s %s" % ("", "x", r["status"], r["tweet_id"] or ""))'
+fi
