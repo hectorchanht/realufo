@@ -120,3 +120,12 @@ def test_trim_drops_slates_at_both_ends():
     assert trim([S] * 6 + [F] * 10 + [S] * 4, fps=2) == (3.5, 4.0)         # closing card too
     assert trim([F] * 10) == (0.0, None)                                   # wargov: no card
     assert trim([S] * 4) == (0.0, None)                                    # all card: leave it
+
+def test_ffmpeg_args_burn_id_then_title_sized_to_the_width():
+    a = ffmpeg_args("u", 0.0, 30.0, "/tmp/o.mp4", "/tmp/id.txt", "/f.ttf", "/tmp/t.txt", 13, 40)
+    vf = a[a.index("-vf") + 1]
+    assert vf.index("textfile=/tmp/id.txt") < vf.index("textfile=/tmp/t.txt") < vf.index("text=realufo.org")
+    assert "textfile=/tmp/t.txt:expansion=none:fontsize='min(28,(w-40)/28.80)':x=20:y=64" in vf
+    assert "fontsize='min(32,(w-40)/9.36)'" in vf                          # 13-char id
+    b = ffmpeg_args("u", 0.0, 30.0, "/tmp/o.mp4", "/tmp/id.txt", "/f.ttf")    # no title: id + realufo.org only
+    assert b[b.index("-vf") + 1].count("drawtext=") == 2
