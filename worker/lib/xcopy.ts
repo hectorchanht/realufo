@@ -61,7 +61,7 @@ export const stripLinks = (t: string) => t.replace(LINK_RE, "").replace(/[ \t]{2
 
 // pick: nothing — the appended /doc/<id> link carries the id
 export const mustContain = (c: Candidate) =>
-  c.stream === "pick" ? "" : c.stream === "release" ? c.label : "RealUFO";
+  c.stream === "pick" || c.stream === "showcase" ? "" : c.stream === "release" ? c.label : "RealUFO";
 
 const yearOf = (d: string | null) => /\b(?:19|20)\d{2}\b/.exec(d ?? "")?.[0] ?? null;
 
@@ -121,6 +121,7 @@ export function template(c: Candidate, rand: () => number = Math.random): string
     const title = room > 10 ? fit(stripLinks(docTitle(r.title ?? "", r.id, r.kind)), room) : "";
     return `📼 ${title}\n📍 ${meta}\n${foot}`;
   }
+  if (c.stream === "showcase") return c.text;
   return `🔥 top thread on RealUFO this week (${c.thread.votes} votes): "${fit(stripLinks(c.thread.title), 160)}" thoughts? 👇 #UAP`;
 }
 
@@ -187,6 +188,8 @@ export async function draft(env: Env, c: Candidate, rand: () => number = Math.ra
   // Highlights: user-written text is a prompt-injection surface → fixed template,
   // banned-claims check applied (the caller has already rejected unclean titles).
   if (c.stream === "highlight") return { text: finalize(c, template(c)) ?? finalize(c, template(c), true)!, ai: false };
+  // Showcase: the operator wrote the text; still stripped of links/tags, link appended, ≤280.
+  if (c.stream === "showcase") return { text: finalize(c, c.text, true) ?? finalize(c, c.text.slice(0, 180).trimEnd() + "…", true)!, ai: false };
   const recent = await recentPosts(env);
   const seen = new Set(recent.flatMap((t) => [...grams(t)]));
   // up to 3 tries, each with a fresh format/hook; a repeat or a stray catchphrase burns one

@@ -25,7 +25,7 @@ type XRow = { id: number; text: string; media: string | null } & RecCols;
 // Record behind a pick post, for the headline and hashtags (compose()).
 type RecCols = { rid: string | null; rkind: string | null; rtitle: string | null; rloc: string | null };
 const REC_COLS = "r.id rid, r.kind rkind, r.title rtitle, r.location rloc";
-const REC_JOIN = "LEFT JOIN records r ON x.stream='pick' AND r.id=x.ref";
+const REC_JOIN = "LEFT JOIN records r ON x.stream IN ('pick','showcase') AND r.id=x.ref";
 const recOf = (x: RecCols): PostRecord | null => (x.rid ? { id: x.rid, kind: x.rkind ?? "", title: x.rtitle, location: x.rloc } : null);
 type Row = { id: number; attempts: number; status: string; container_id: string | null; created_at: string; text: string; media: string | null } & RecCols;
 

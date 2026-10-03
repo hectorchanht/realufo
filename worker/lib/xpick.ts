@@ -13,6 +13,8 @@ export type PickRecord = {
 export type Candidate =
   | { stream: "release"; ref: string; label: string; link: string; kinds: Record<string, number>; titles: string[]; media: Media }
   | { stream: "pick"; ref: string; record: PickRecord; link: string; media: Media }
+  // operator-made video + text about one record (POST /__tick?showcase=ID&text=…)
+  | { stream: "showcase"; ref: string; record: PickRecord; link: string; media: Media; text: string }
   | { stream: "highlight"; ref: string; thread: { id: string; title: string; body: string; votes: number }; media: Media };
 
 // No dots: X auto-links bare domains like war.gov and bills them as URLs.
@@ -131,6 +133,22 @@ async function pickCandidate(env: Env): Promise<Candidate | null> {
   return r ? { stream: "pick", ref: r.id, record: r, link: `${SITE}/doc/${encodeURIComponent(r.id)}`, media: await mediaFor(env, r) } : null;
 }
 
+// Operator showcase (scripts/publish.sh --showcase): X_FORCE_SHOWCASE=ID + X_SHOWCASE_TEXT post
+// the video at R2 showcase/<archive>/<ID>.mp4 with that text, once per record.
+async function showcaseCandidate(env: Env): Promise<Candidate | null> {
+  const id = (env.X_FORCE_SHOWCASE ?? "").trim();
+  const text = (env.X_SHOWCASE_TEXT ?? "").trim();
+  if (!id || !text) return null;
+  const r = await env.DB.prepare(
+    `SELECT ${PICK_COLS} FROM records r WHERE r.id=? AND r.status='live'
+     AND NOT EXISTS (SELECT 1 FROM x_posts p WHERE p.stream='showcase' AND p.ref=r.id)`
+  ).bind(id).first<PickRecord>();
+  if (!r) return null;
+  const key = `showcase/${r.archive}/${r.id}.mp4`;
+  const o = await env.MEDIA.head(key);
+  return o ? { stream: "showcase", ref: r.id, record: r, link: `${SITE}/doc/${encodeURIComponent(r.id)}`, media: { key, mime: "video/mp4", size: o.size }, text } : null;
+}
+
 // Operator override (scripts/publish.sh): X_FORCE_PICK="ID[,ID]" posts those records
 // next, ignoring the pick-hour slots; budget and the once-per-record rule still apply.
 async function forcedCandidate(env: Env): Promise<Candidate | null> {
@@ -174,6 +192,7 @@ async function pickDue(env: Env, now: Date): Promise<boolean> {
 export async function nextCandidate(env: Env, now: Date): Promise<Candidate | null> {
   const h = now.getUTCHours();
   return (
+    (await showcaseCandidate(env)) ??
     (await forcedCandidate(env)) ??
     (await releaseCandidate(env, now)) ??
     ((await pickDue(env, now)) ? await pickCandidate(env) : null) ??

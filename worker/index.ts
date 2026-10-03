@@ -59,14 +59,18 @@ async function runTick(env: Env) {
 }
 
 // POST /__tick (Authorization: Bearer ADMIN_TOKEN): one cron tick on demand, for
-// scripts/publish.sh. ?force=ID sets X_FORCE_PICK for this call only. Same work and
+// scripts/publish.sh. ?force=ID sets X_FORCE_PICK for this call only; ?showcase=ID&text=…
+// sets X_FORCE_SHOWCASE/X_SHOWCASE_TEXT. Same work and
 // budgets as the cron. Unset ADMIN_TOKEN = endpoint off (404).
 async function manualTick(req: Request, env: Env) {
   const token = env.ADMIN_TOKEN;
   const auth = req.headers.get("authorization") ?? "";
   if (!token || req.method !== "POST" || !(await sameSecret(auth, `Bearer ${token}`))) return error(404, "not found");
-  const force = new URL(req.url).searchParams.get("force");
-  await runTick(force ? { ...env, X_FORCE_PICK: force } : env);
+  const q = new URL(req.url).searchParams;
+  const over: Partial<Env> = {};
+  if (q.get("force")) over.X_FORCE_PICK = q.get("force")!;
+  if (q.get("showcase")) Object.assign(over, { X_FORCE_SHOWCASE: q.get("showcase")!, X_SHOWCASE_TEXT: q.get("text") ?? "" });
+  await runTick({ ...env, ...over });
   return json({ ok: true });
 }
 

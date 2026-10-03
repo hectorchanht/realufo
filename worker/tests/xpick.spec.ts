@@ -70,6 +70,23 @@ describe("release candidates", () => {
   });
 });
 
+describe("showcase (X_FORCE_SHOWCASE)", () => {
+  it("posts the operator video + text for a live record, once, only if the video exists", async () => {
+    await rec("XT-S1", "video");
+    const early = T("2026-10-10T08:00:00");
+    const S = { X_FORCE_SHOWCASE: "XT-S1", X_SHOWCASE_TEXT: "only 3 of 289 frames 👀" };
+    expect(await nextCandidate(E(S), early)).toBeNull(); // no showcase video uploaded yet
+    await env.MEDIA.put("showcase/wargov/XT-S1.mp4", new Uint8Array(50));
+    const c = await nextCandidate(E(S), early);
+    expect(c).toMatchObject({ stream: "showcase", ref: "XT-S1", text: "only 3 of 289 frames 👀", media: { key: "showcase/wargov/XT-S1.mp4", mime: "video/mp4" } });
+    const { draft } = await import("../lib/xcopy");
+    expect((await draft(env as any, c!)).text).toBe("only 3 of 289 frames 👀\nhttps://realufo.org/doc/XT-S1");
+    await posted("showcase", "XT-S1", early);
+    expect(await nextCandidate(E(S), early)).toBeNull(); // once per record
+    expect(await nextCandidate(E({ X_FORCE_SHOWCASE: "XT-S1" }), early)).toBeNull(); // no text, no post
+  });
+});
+
 describe("forced pick (X_FORCE_PICK)", () => {
   it("posts the named record outside pick slots, once, and only if live", async () => {
     await rec("XT-F1", "video");
