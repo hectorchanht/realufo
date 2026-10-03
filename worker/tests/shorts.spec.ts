@@ -1,7 +1,7 @@
 import { env, createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { describe, it, expect, beforeAll, vi } from "vitest";
 import { seedTestDB } from "./helpers";
-import { listShorts, clearShortsMemo } from "../routes/shorts";
+import { listShorts, queryShorts, clearShortsMemo } from "../routes/shorts";
 import worker from "../index";
 
 const rec = (id: string, status = "live", title = `Title ${id}`) =>
@@ -66,6 +66,12 @@ describe("listShorts", () => {
     expect(ids(await listShorts(env as any, { limit: 2, offset: 2 }))).toEqual(all.slice(2, 4));
   });
 
+  it("total counts every match, not just the page", async () => {
+    expect(await queryShorts(env as any, { limit: 2 })).toMatchObject({ total: 5, shorts: expect.any(Array) });
+    expect((await queryShorts(env as any, { q: "gimbal" })).total).toBe(1);
+    expect((await queryShorts(env as any, { q: "!!" })).total).toBe(0);
+  });
+
   it("a fractional limit is floored, not a SQLite error", async () => {
     expect(await listShorts(env as any, { limit: 2.5 })).toHaveLength(2);
   });
@@ -86,14 +92,15 @@ describe("listShorts", () => {
     expect(list).toHaveBeenCalledTimes(2);
   });
 
-  it("GET /api/shorts?q= serves the list; /api/feed clips still come from it", async () => {
+  it("GET /api/shorts?q= serves { shorts, total }; facets carry the Shorts total; /api/feed clips still come from it", async () => {
     const get = async (p: string) => {
       const ctx = createExecutionContext();
       const res = await worker.fetch(new Request("https://x" + p), env as any, ctx);
       await waitOnExecutionContext(ctx);
       return res.json() as Promise<any>;
     };
-    expect(ids(await get("/api/shorts?q=gimbal"))).toEqual(["SH-5"]);
+    expect(await get("/api/shorts?q=gimbal")).toMatchObject({ shorts: [{ id: "SH-5" }], total: 1 });
+    expect((await get("/api/records/facets")).shorts).toBe(5);
     expect(ids((await get("/api/feed")).clips).slice(0, 2)).toEqual(["SH-6", "SH-5"]);
   });
 });

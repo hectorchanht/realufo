@@ -41,12 +41,13 @@ export const clearShortsMemo = () => {
 // post, showcase without a post row, then twins (portrait sources first — their
 // twin is the whole picture — then newest). q = the archive search (metadata or
 // page text) or, for showcase Shorts, every word in the posted text.
+// total = every match, not just this page (0 for an offset past the end).
 // Never throws: an R2/D1 error is logged and an empty list (the feed must not fail).
-export async function listShorts(env: Env, { q = "", limit = MAX, offset = 0 }: { q?: string; limit?: number; offset?: number } = {}): Promise<Short[]> {
+export async function queryShorts(env: Env, { q = "", limit = MAX, offset = 0 }: { q?: string; limit?: number; offset?: number } = {}): Promise<{ shorts: Short[]; total: number }> {
   try {
     const [sc, cv] = await listings(env);
     const showcase = [...sc.keys()], twins = [...cv.keys()];
-    if (!showcase.length && !twins.length) return [];
+    if (!showcase.length && !twins.length) return { shorts: [], total: 0 };
     const where = ["r.status='live'", "(r.id IN (SELECT id FROM sc) OR r.id IN (SELECT id FROM cv))"];
     const bind: unknown[] = [JSON.stringify(showcase), JSON.stringify(twins)];
     q = q.trim();
@@ -61,7 +62,7 @@ export async function listShorts(env: Env, { q = "", limit = MAX, offset = 0 }: 
     }
     const { results } = await env.DB.prepare(
       `WITH sc(id) AS (SELECT value FROM json_each(?)), cv(id) AS (SELECT value FROM json_each(?))
-       SELECT r.id, r.archive, r.title, ${thumbSql("r.id")} thumb,
+       SELECT r.id, r.archive, r.title, ${thumbSql("r.id")} thumb, count(*) OVER () total,
          r.id IN (SELECT id FROM sc) showcase,
          CASE WHEN r.id IN (SELECT id FROM sc) THEN (SELECT max(x.created_at) FROM x_posts x WHERE x.stream='showcase' AND x.ref=r.id) END posted,
          (SELECT CAST(substr(a.crop, 1, instr(a.crop, ':') - 1) AS INT) < CAST(substr(a.crop, instr(a.crop, ':') + 1) AS INT)
@@ -69,21 +70,25 @@ export async function listShorts(env: Env, { q = "", limit = MAX, offset = 0 }: 
        FROM records r WHERE ${where.join(" AND ")}
        ORDER BY showcase DESC, posted DESC, portrait DESC, r.created_at DESC, r.id DESC LIMIT ? OFFSET ?`
     ).bind(...bind, Math.min(MAX, Math.max(1, Math.floor(limit) || MAX)), Math.max(0, Math.floor(offset) || 0))
-      .all<{ id: string; archive: string; title: string | null; thumb: string | null; showcase: number }>();
-    return results.map(({ id, archive, title, thumb, showcase }) => ({
+      .all<{ id: string; archive: string; title: string | null; thumb: string | null; showcase: number; total: number }>();
+    const shorts = results.map(({ id, archive, title, thumb, showcase }) => ({
       id, title, thumb, showcase: !!showcase,
       // ?v=etag: assets.realufo.org caches a month, so a re-cut Short gets a new URL.
       clip: `https://assets.realufo.org/${showcase ? "showcase" : "clips-v"}/${archive}/${encodeURIComponent(id)}.mp4?v=${(showcase ? sc : cv).get(id)!.slice(0, 8)}`,
     }));
+    return { shorts, total: results[0]?.total ?? 0 };
   } catch (e) {
     console.error("listShorts", e);
-    return [];
+    return { shorts: [], total: 0 };
   }
 }
 
-// GET /api/shorts?q=&limit=&offset= — the Shorts player queue (paged) and the archive search strip.
+export const listShorts = async (env: Env, opts?: Parameters<typeof queryShorts>[1]) => (await queryShorts(env, opts)).shorts;
+
+// GET /api/shorts?q=&limit=&offset= → { shorts, total } — the Shorts player
+// queue (paged), the archive search strip and the archive Shorts grid.
 export async function shorts(req: Request, env: Env) {
   const u = new URL(req.url);
   const n = (k: string) => Number(u.searchParams.get(k)) || 0;
-  return json(await listShorts(env, { q: u.searchParams.get("q") ?? "", limit: n("limit") || MAX, offset: n("offset") }));
+  return json(await queryShorts(env, { q: u.searchParams.get("q") ?? "", limit: n("limit") || MAX, offset: n("offset") }));
 }

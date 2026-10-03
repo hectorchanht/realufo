@@ -124,7 +124,8 @@ export function useFeed() {
 }
 
 // Shorts player queue / archive search strip, SHORTS_PAGE at a time (`data` =
-// every page loaded so far; fetchNextPage/hasNextPage for more). q="" = every
+// every page loaded so far; `total` = every match; fetchNextPage/hasNextPage for
+// more). q="" = every
 // Short. Fetched once per session: a refetch that slots in a newly posted Short
 // would shift every slide under the viewer mid-watch.
 export const SHORTS_PAGE = 60;
@@ -132,15 +133,15 @@ export function useShorts(q = "", { enabled = true } = {}) {
   const r = useInfiniteQuery({
     queryKey: qk.shorts(q),
     queryFn: ({ pageParam }) =>
-      api.get<Short[]>(`/api/shorts?${new URLSearchParams({ ...(q ? { q } : {}), limit: String(SHORTS_PAGE), offset: String(pageParam) })}`),
+      api.get<{ shorts: Short[]; total: number }>(`/api/shorts?${new URLSearchParams({ ...(q ? { q } : {}), limit: String(SHORTS_PAGE), offset: String(pageParam) })}`),
     initialPageParam: 0,
-    getNextPageParam: (last, pages) => (last.length < SHORTS_PAGE ? undefined : pages.length * SHORTS_PAGE),
+    getNextPageParam: (last, pages) => (last.shorts.length < SHORTS_PAGE ? undefined : pages.length * SHORTS_PAGE),
     enabled,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
   });
-  const data = useMemo(() => r.data?.pages.flat(), [r.data]);
-  return { ...r, data };
+  const data = useMemo(() => r.data?.pages.flatMap((p) => p.shorts), [r.data]);
+  return { ...r, data, total: r.data?.pages[0]?.total };
 }
 
 // `keepPrevious`: keep the old page visible until the new one lands (Archive

@@ -6,6 +6,7 @@ import { listHubsCached, topicMembers } from "./hubs";
 import { TOPIC_RULES } from "../lib/topics";
 import { isoDate, yearOf, decadeOf, wargovReleases, facetCounts } from "../lib/facets";
 import { verdictState } from "./verdicts";
+import { queryShorts } from "./shorts";
 import { uploadUrl } from "../lib/upload";
 // Re-exported for callers that predate lib/facets (lib/xpick.ts).
 export { wargovReleases };
@@ -233,7 +234,7 @@ async function relatedOf(env: Env, r: RecordRow, release: { no: number } | null)
 
 // Archive filter options with global counts (not narrowed by other filters).
 export async function recordFacets(_req: Request, env: Env) {
-  const f = await facetCounts(env);
+  const [f, { total: shorts }] = await Promise.all([facetCounts(env), queryShorts(env, { limit: 1 })]);
   return json({
     releases: f.releases.map(({ no, date, count }) => ({ no, date, count })),
     kinds: f.kinds,
@@ -241,6 +242,7 @@ export async function recordFacets(_req: Request, env: Env) {
     decades: f.decades,
     locations: f.locations,
     flags: f.flags,
+    shorts,
   });
 }
 

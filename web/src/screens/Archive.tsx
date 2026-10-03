@@ -371,6 +371,9 @@ export function Archive() {
   const flags = facets?.flags;
   const kindCount = (k: string) => facets?.kinds?.find((x) => x.name === k)?.count;
 
+  // "shorts" swaps the records grid for the Shorts grid: only q applies there,
+  // so every other filter control is disabled and its pill hidden.
+  const showShorts = type === "shorts";
   // One removable pill per active filter, in the order the controls appear.
   type Pill = { label: string; remove: Record<string, string | null> };
   const pills = ([
@@ -383,7 +386,7 @@ export function Archive() {
     type && { label: TYPE_LABELS[type] ?? type, remove: { type: null } },
     redacted && { label: redacted === "1" ? "Redacted" : "Unredacted", remove: { redacted: null } },
     ...HAS_FLAGS.filter(([k]) => has.includes(k)).map(([k, label]) => ({ label, remove: { has: hasParam(has.filter((h) => h !== k)) } })),
-  ] as (Pill | "" | undefined)[]).filter((p): p is Pill => !!p);
+  ] as (Pill | "" | undefined)[]).filter((p): p is Pill => !!p && (!showShorts || "q" in p.remove || "type" in p.remove));
 
   const { data, isLoading, isError, error, refetch, isPlaceholderData } = useRecords(
     {
@@ -396,8 +399,7 @@ export function Archive() {
   // Searching: matching Shorts (title/summary/page text or the posted Short's
   // text) as a strip above the files; tap → the player, queue = this search.
   // The Shorts type chip shows them all (still narrowed by q) as a grid.
-  const showShorts = type === "shorts";
-  const { data: shorts = [], hasNextPage: moreShorts, fetchNextPage, isFetchingNextPage, isLoading: shortsLoading } = useShorts(q, { enabled: !!q || showShorts });
+  const { data: shorts = [], total: shortsTotal, hasNextPage: moreShorts, fetchNextPage, isFetchingNextPage, isLoading: shortsLoading } = useShorts(q, { enabled: !!q || showShorts });
   const records = data?.records ?? [];
   const count = data?.count ?? 0;
   const totalPages = Math.ceil(count / RECORDS_PAGE_SIZE);
@@ -427,76 +429,78 @@ export function Archive() {
         />
       </form>
 
-      {/* archive chip row — lines 174-178 */}
-      <div data-scroll className="mb-1.5 flex gap-[7px] overflow-x-auto pb-2.5">
-        <ArchiveChip selected={archive === ""} style={archiveChipStyle(archive === "", true)} onClick={() => setParam("archive", null)}>
-          {/* prototype archChips seeds the "all" entry with flag:'🛰' (RealUFO.dc.html:591) */}
-          <span aria-hidden="true">🛰</span>
-          All
-        </ArchiveChip>
-        {archives.map((a) => (
-          <ArchiveChip
-            key={a.id}
-            selected={archive === a.id}
-            style={archiveChipStyle(archive === a.id, false, a.accent)}
-            onClick={() => setParams({ archive: a.id, ...(a.id === "wargov" ? {} : { release: null }) })}
-          >
-            <span aria-hidden="true">{a.flag}</span>
-            {chipLabel(a.label)} <span className="opacity-60">{abbreviateCount(a.count)}</span>
+      <fieldset disabled={showShorts} className="m-0 min-w-0 border-0 p-0 disabled:opacity-40">
+        {/* archive chip row — lines 174-178 */}
+        <div data-scroll className="mb-1.5 flex gap-[7px] overflow-x-auto pb-2.5">
+          <ArchiveChip selected={archive === ""} style={archiveChipStyle(archive === "", true)} onClick={() => setParam("archive", null)}>
+            {/* prototype archChips seeds the "all" entry with flag:'🛰' (RealUFO.dc.html:591) */}
+            <span aria-hidden="true">🛰</span>
+            All
           </ArchiveChip>
-        ))}
-      </div>
-
-      {/* war.gov release chips */}
-      {showReleases && (
-        <div data-scroll className="mb-1.5 flex gap-1.5 overflow-x-auto pb-1.5">
-          <TypeChip selected={release === ""} style={typeChipStyle(release === "")} onClick={() => setParam("release", null)}>
-            All releases
-          </TypeChip>
-          {facets!.releases.map((r) => {
-            const on = release === String(r.no);
-            return (
-              <span key={r.no} title={`war.gov release ${r.no} · ${r.date}`} className="flex-none">
-                <TypeChip selected={on} style={typeChipStyle(on)} onClick={() => setParam("release", String(r.no))}>
-                  R{String(r.no).padStart(2, "0")} <span className="opacity-60">{abbreviateCount(r.count)}</span>
-                </TypeChip>
-              </span>
-            );
-          })}
+          {archives.map((a) => (
+            <ArchiveChip
+              key={a.id}
+              selected={archive === a.id}
+              style={archiveChipStyle(archive === a.id, false, a.accent)}
+              onClick={() => setParams({ archive: a.id, ...(a.id === "wargov" ? {} : { release: null }) })}
+            >
+              <span aria-hidden="true">{a.flag}</span>
+              {chipLabel(a.label)} <span className="opacity-60">{abbreviateCount(a.count)}</span>
+            </ArchiveChip>
+          ))}
         </div>
-      )}
 
-      {/* agency / decade / location */}
-      <div className="mb-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-        <FacetSelect
-          label="Agency"
-          all="All agencies"
-          value={filter.agency ?? ""}
-          options={(facets?.agencies ?? []).map((a) => ({ value: a.name, label: `${a.name} (${a.count})` }))}
-          onChange={(v) => setParam("agency", v)}
-        />
-        <FacetSelect
-          label="Decade"
-          all="Any decade"
-          value={filter.decade ?? ""}
-          options={(facets?.decades ?? []).map((d) => ({ value: String(d.decade), label: `${d.decade}s (${d.count})` }))}
-          onChange={(v) => setParam("decade", v)}
-        />
-        <FacetSelect
-          label="Location"
-          all="Any location"
-          value={location}
-          options={(facets?.locations ?? []).map((l) => ({ value: l.name, label: `${l.name} (${l.count})` }))}
-          onChange={(v) => setParam("location", v)}
-        />
-        <FacetSelect label="Sort" all="Featured first" value={filter.sort ?? ""} options={SORTS} onChange={(v) => setParam("sort", v)} />
-      </div>
+        {/* war.gov release chips */}
+        {showReleases && (
+          <div data-scroll className="mb-1.5 flex gap-1.5 overflow-x-auto pb-1.5">
+            <TypeChip selected={release === ""} style={typeChipStyle(release === "")} onClick={() => setParam("release", null)}>
+              All releases
+            </TypeChip>
+            {facets!.releases.map((r) => {
+              const on = release === String(r.no);
+              return (
+                <span key={r.no} title={`war.gov release ${r.no} · ${r.date}`} className="flex-none">
+                  <TypeChip selected={on} style={typeChipStyle(on)} onClick={() => setParam("release", String(r.no))}>
+                    R{String(r.no).padStart(2, "0")} <span className="opacity-60">{abbreviateCount(r.count)}</span>
+                  </TypeChip>
+                </span>
+              );
+            })}
+          </div>
+        )}
+
+        {/* agency / decade / location */}
+        <div className="mb-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+          <FacetSelect
+            label="Agency"
+            all="All agencies"
+            value={filter.agency ?? ""}
+            options={(facets?.agencies ?? []).map((a) => ({ value: a.name, label: `${a.name} (${a.count})` }))}
+            onChange={(v) => setParam("agency", v)}
+          />
+          <FacetSelect
+            label="Decade"
+            all="Any decade"
+            value={filter.decade ?? ""}
+            options={(facets?.decades ?? []).map((d) => ({ value: String(d.decade), label: `${d.decade}s (${d.count})` }))}
+            onChange={(v) => setParam("decade", v)}
+          />
+          <FacetSelect
+            label="Location"
+            all="Any location"
+            value={location}
+            options={(facets?.locations ?? []).map((l) => ({ value: l.name, label: `${l.name} (${l.count})` }))}
+            onChange={(v) => setParam("location", v)}
+          />
+          <FacetSelect label="Sort" all="Featured first" value={filter.sort ?? ""} options={SORTS} onChange={(v) => setParam("sort", v)} />
+        </div>
+      </fieldset>
 
       {/* type chips */}
       <div className="mb-1.5 px-0.5 py-1">
         <div className="flex gap-1.5">
           {["", ...Object.keys(TYPE_LABELS)].map((k) => {
-            const n = k ? kindCount(k) : totalRecords;
+            const n = k === "shorts" ? facets?.shorts : k ? kindCount(k) : totalRecords;
             return (
               <TypeChip key={k} selected={type === k} style={typeChipStyle(type === k)} onClick={() => setParam("type", k || null)}>
                 {TYPE_LABELS[k] ?? "All"} {n != null && <span className="opacity-60">{abbreviateCount(n)}</span>}
@@ -507,7 +511,7 @@ export function Archive() {
       </div>
 
       {/* redaction (exclusive pair) + has-flags (combine) */}
-      <div data-scroll className="mb-3 flex items-center gap-1.5 overflow-x-auto pb-1.5">
+      <fieldset disabled={showShorts} data-scroll className="m-0 mb-3 flex min-w-0 items-center gap-1.5 overflow-x-auto border-0 p-0 pb-1.5 disabled:opacity-40">
         {(
           [
             ["1", "Redacted", flags?.redacted],
@@ -532,7 +536,7 @@ export function Archive() {
             </TypeChip>
           );
         })}
-      </div>
+      </fieldset>
 
       {pills.length > 0 && (
         <ul aria-label="Active filters" className="mx-0.5 mb-2.5 flex flex-wrap items-center gap-1.5">
@@ -565,7 +569,7 @@ export function Archive() {
       ) : showShorts ? (
         <>
           <div className="mx-0.5 mb-3 font-mono text-[10px] uppercase tracking-[.8px] text-faint">
-            <b className="text-signal">{shorts.length.toLocaleString()}{moreShorts ? "+" : ""}</b> shorts · tap one to play
+            <b className="text-signal">{(shortsTotal ?? shorts.length).toLocaleString()}</b> shorts · tap one to play
           </div>
           <ShortsRow grid shorts={shorts} href={(s) => shortHref(s, q)} />
           {moreShorts && (
@@ -583,7 +587,7 @@ export function Archive() {
           {q && page === 1 && shorts.length > 0 && (
             <section aria-labelledby="archive-shorts" className="mb-[18px]">
               <h2 id="archive-shorts" className="mx-0.5 mb-3 font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
-                ◆ Shorts ({shorts.length}{moreShorts ? "+" : ""})
+                ◆ Shorts ({shortsTotal ?? shorts.length})
               </h2>
               <ShortsRow shorts={shorts} href={(s) => shortHref(s, q)} />
             </section>

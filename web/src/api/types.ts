@@ -177,6 +177,8 @@ export interface RecordFacets {
   decades: { decade: number; count: number }[];
   locations: { name: string; count: number }[];
   flags: Record<"redacted" | "unredacted" | "ai" | "text" | "moments" | "featured", number>;
+  /** Every live Short (the archive "Shorts" type chip). Optional: older cached responses predate it. */
+  shorts?: number;
 }
 
 // ---------------------------------------------------------------------------

@@ -82,6 +82,7 @@ const mockFacets: RecordFacets = {
   decades: [{ decade: 1950, count: 40 }],
   locations: [{ name: "Harare, Zimbabwe", count: 1 }],
   flags: { redacted: 282, unredacted: 312, ai: 370, text: 429, moments: 165, featured: 14 },
+  shorts: 12,
 };
 
 const useRecordsMock = vi.fn();
@@ -341,14 +342,15 @@ describe("Archive Shorts strip", () => {
     expect(screen.getByRole("link", { name: /two stars/i })).toHaveAttribute("href", "/shorts/DOW-UAP-PR104?q=star");
   });
 
-  it("says n+ when more matching Shorts are on later pages", async () => {
+  it("counts every matching Short, not just the loaded page", async () => {
     useRecordsMock.mockImplementation(records);
     useShortsMock.mockImplementation((() => ({
       data: [{ id: "DOW-UAP-PR104", title: "Two stars", thumb: null, clip: "https://c/x.mp4" }],
+      total: 75,
       hasNextPage: true,
     })) as any);
     renderAppAt("/archive?q=star");
-    expect(await screen.findByRole("heading", { name: /shorts \(1\+\)/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /shorts \(75\)/i })).toBeInTheDocument();
   });
 
   it("Shorts type chip swaps the records grid for every Short, with more on demand", async () => {
@@ -356,13 +358,21 @@ describe("Archive Shorts strip", () => {
     const fetchNextPage = vi.fn();
     useShortsMock.mockImplementation((() => ({
       data: [{ id: "DOW-UAP-PR104", title: "Two stars", thumb: null, clip: "https://c/x.mp4", showcase: true }],
+      total: 75,
       hasNextPage: true,
       fetchNextPage,
     })) as any);
-    renderAppAt("/archive?type=shorts");
-    expect(await screen.findByRole("link", { name: /two stars/i })).toHaveAttribute("href", "/shorts/DOW-UAP-PR104");
-    expect(screen.getByRole("button", { name: /^shorts/i })).toHaveAttribute("aria-pressed", "true");
-    expect(useShortsMock).toHaveBeenCalledWith("", { enabled: true });
+    renderAppAt("/archive?type=shorts&archive=nara&redacted=1&q=star");
+    expect(await screen.findByRole("link", { name: /two stars/i })).toHaveAttribute("href", "/shorts/DOW-UAP-PR104?q=star");
+    expect(screen.getByRole("button", { name: /^shorts 12/i })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("75")).toBeInTheDocument();
+    expect(useShortsMock).toHaveBeenCalledWith("star", { enabled: true });
+    // Only q applies to Shorts: the other filters are disabled, their pills hidden.
+    expect(screen.getByRole("button", { name: /^redacted/i })).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: /agency/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^docs/i })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: /remove redacted/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /remove “star”/i })).toBeInTheDocument();
     expect(screen.queryByText(/no records match/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /more shorts/i }));
     expect(fetchNextPage).toHaveBeenCalled();
