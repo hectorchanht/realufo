@@ -422,6 +422,11 @@ const termsPage: Loader = async () => ({
   body: `<h1>Terms</h1>${TERMS_HTML}`,
 });
 
+const notificationsPage: Loader = async () => ({
+  meta: { title: "Notifications", description: "Choose which RealUFO updates reach this device.", type: "website", robots: "noindex" },
+  body: "<h1>Notifications</h1>",
+});
+
 // A Short is the doc's video cut 9:16: same page for crawlers, canonical = the doc.
 const shortPage: Loader = async (env, g, url) => {
   const p = await docPage(env, g, url);
@@ -439,6 +444,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/releases" }), load: releasesPage },
   { pattern: new URLPattern({ pathname: "/privacy" }), load: privacyPage },
   { pattern: new URLPattern({ pathname: "/terms" }), load: termsPage },
+  { pattern: new URLPattern({ pathname: "/notifications" }), load: notificationsPage },
   { pattern: new URLPattern({ pathname: "/release/:slug" }), load: hubPage("release") },
   { pattern: new URLPattern({ pathname: "/topic/:slug" }), load: hubPage("topic") },
   { pattern: new URLPattern({ pathname: "/agency/:slug" }), load: hubPage("agency") },

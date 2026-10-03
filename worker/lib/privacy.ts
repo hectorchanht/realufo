@@ -7,6 +7,7 @@ export const PRIVACY_HTML = `
 <h2>What we store</h2>
 <ul>
 <li><b>Anonymous browser id.</b> Your browser makes a random id and keeps it in local storage. We store only a salted hash of it, to attribute votes and posts and to apply rate limits.</li>
+<li><b>Notifications (optional).</b> If you turn them on, we store your browser's push address, your notification choices and what you follow, linked to the hashed anonymous id. Turning notifications off deletes the push address.</li>
 <li><b>IP address.</b> Used only for rate limiting and stored as a salted hash, never in plain form.</li>
 <li><b>What you post.</b> Comments, threads, votes, verdicts and uploaded images are public. Uploads pass through Cloudflare's CSAM scanning.</li>
 <li><b>Ask questions.</b> Questions you ask are logged with the hashed browser id so we can improve answers. They are shown publicly only if you choose to share them.</li>
