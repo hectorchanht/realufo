@@ -150,3 +150,15 @@ def test_each_record_is_written_alone_so_one_bad_row_fails_only_itself(monkeypat
     with pytest.raises(SystemExit) as e:
         summaries.main([])
     assert e.value.code == 1 and len(written) == 1 and "'B'" in written[0][0]
+
+def test_section_text_is_cut_at_a_sentence_end_not_mid_list():
+    raw = ("The pages contain an FBI reply to Mrs. Dow about a saucer club. A convention form lists speakers and events "
+           "for July 1966. Dates: August 31, 1966; July 1966; September 2, 1966; October 4, 1966; and several more later entries.")
+    t = summaries._short(raw, 20)  # 37 words > 20 + 10 slack
+    assert t.endswith(".") and "Dates:" not in t
+
+def test_prompts_forbid_absence_claims_and_page_restating():
+    for p in (summaries.SYSTEM, summaries.SECTION_SYSTEM, summaries.GROUP_SYSTEM):
+        assert "does not mention" in p          # the rule names the forbidden claim
+    for p in (summaries.SECTION_SYSTEM, summaries.GROUP_SYSTEM):
+        assert "page numbers" in p and "UFO" in p
