@@ -8,8 +8,10 @@ def test_window_is_30s_from_35pct_kept_inside_the_video():
     assert window(40.0) == (10.0, 30.0)          # 35% (14 s) + 30 would overrun: end-aligned
 
 def test_ffmpeg_args_are_x_compatible():
-    a = ffmpeg_args("https://cdn/v.mp4", 210.0, 60.0, "/tmp/o.mp4")
+    a = ffmpeg_args("https://cdn/v.mp4", 210.0, 60.0, "/tmp/o.mp4", "/tmp/id.txt", "/fonts/D.ttf")
     j = " ".join(a)
+    vf = a[a.index("-vf") + 1]
+    assert "textfile=/tmp/id.txt" in vf and "text=realufo.org" in vf and "fontfile=/fonts/D.ttf" in vf
     assert a[a.index("-ss") + 1] == "210.00" and a[a.index("-t") + 1] == "60.00"
     assert a.index("-ss") < a.index("-i")        # input seek: fast on CDN range requests
     for flag in ("libx264", "yuv420p", "+faststart", "aac", "0:a:0?", "-fpsmax"):
@@ -54,6 +56,10 @@ def test_vertical_args_pad_blur_overlay_and_text():
     for flag in ("libx264", "yuv420p", "+faststart", "aac"):
         assert flag in a
     assert a[-1] == "/tmp/o.mp4"
+
+def test_vertical_args_burns_the_id_above_the_title():
+    fc = (a := vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", "/tmp/t.txt", "/f.ttf", id_file="/tmp/id.txt"))[a.index("-filter_complex") + 1]
+    assert fc.index("textfile=/tmp/id.txt") < fc.index("textfile=/tmp/t.txt")
 
 def test_vertical_args_adds_silent_audio_when_source_has_none():
     a = vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", "/tmp/t.txt", "/f.ttf", audio=False)

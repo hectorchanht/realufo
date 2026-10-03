@@ -8,6 +8,7 @@ on:
     inputs:
       dry_run: { description: "dry run (no writes)", type: boolean, default: true }
       sources: { description: "comma sources", default: "wargov,aaro,nasa,nara" }
+      force_clips: { description: "re-cut every existing clip (after a clip format change)", type: boolean, default: false }
 jobs:
   ingest:
     runs-on: ubuntu-latest
@@ -60,11 +61,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           LIVE: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run == 'false' }}
+          FORCE: ${{ github.event.inputs.force_clips == 'true' && '--force' || '' }}
         run: |
           set -o pipefail
           if [ "$LIVE" = "true" ]; then
-            python -m ingest.clips | tee -a ingest-summary.txt
-            python -m ingest.clips --vertical | tee -a ingest-summary.txt
+            python -m ingest.clips $FORCE | tee -a ingest-summary.txt
+            python -m ingest.clips --vertical $FORCE | tee -a ingest-summary.txt
           else
             python -m ingest.clips --dry-run --limit 1 | tee -a ingest-summary.txt
             python -m ingest.clips --vertical --dry-run --limit 1 | tee -a ingest-summary.txt
