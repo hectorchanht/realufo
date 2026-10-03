@@ -1,3 +1,4 @@
+from ingest import thumbs
 from ingest.thumbs import todo, insert_sql
 
 def _row(id, mime, role_url="u"):
@@ -55,3 +56,32 @@ def test_crop_sql_stores_box_or_empty():
     from ingest.thumbs import crop_sql
     assert crop_sql(7, "crop=616:1080:652:0") == "UPDATE assets SET crop='616:1080:652:0' WHERE id=7;"
     assert crop_sql(7, None) == "UPDATE assets SET crop='' WHERE id=7;"
+
+def _page(path, fill, text=False):
+    from PIL import Image, ImageDraw
+    im = Image.new("L", (200, 260), fill)
+    if text:
+        d = ImageDraw.Draw(im)
+        for y in range(20, 240, 12):
+            d.text((15, y), "UNCLASSIFIED MEMORANDUM FOR RECORD 1949", fill=0)
+    im.save(path)
+    return str(path)
+
+def test_blank_page_flags_uniform_sheets_not_text(tmp_path):
+    assert thumbs.blank_page(_page(tmp_path / "black.jpg", 0))
+    assert thumbs.blank_page(_page(tmp_path / "grey.jpg", 170))
+    assert not thumbs.blank_page(_page(tmp_path / "memo.jpg", 255, text=True))
+
+def test_pick_page_skips_blank_leading_pages_or_takes_the_asked_one(tmp_path):
+    pages = [_page(tmp_path / "page-02.jpg", 0), _page(tmp_path / "page-03.jpg", 255, text=True),
+             _page(tmp_path / "page-01.jpg", 0)]
+    assert thumbs.pick_page(pages) == (pages[1], 3)
+    assert thumbs.pick_page(pages, 2) == (pages[0], 2)
+    blank = [_page(tmp_path / "page-1.jpg", 0), _page(tmp_path / "page-2.jpg", 0)]
+    assert thumbs.pick_page(blank) == (blank[0], 1)   # all blank: page 1
+
+def test_parse_redo_and_redo_sql():
+    assert thumbs.parse_redo(["NASA-UAP-D015", "DOW-UAP-D084:8"]) == {"NASA-UAP-D015": None, "DOW-UAP-D084": 8}
+    sql = thumbs.redo_sql({"id": "O'X", "key": "thumbs/wargov/O'X-p8.jpg"})
+    assert sql == ("UPDATE assets SET cdn_url='https://assets.realufo.org/thumbs/wargov/O''X-p8.jpg' "
+                   "WHERE record_id='O''X' AND role='thumb';")
