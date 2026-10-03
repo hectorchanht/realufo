@@ -198,6 +198,22 @@ describe("serveWithMeta (via worker.fetch)", () => {
     expect(www.headers.get("location")).toBe("https://realufo.org/doc/A?b=1");
   });
 
+  it("a renamed record id 301s to its new id on doc, doc text and shorts URLs", async () => {
+    const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
+    for (const [from, to] of [
+      ["https://realufo.org/doc/DOW-UAP", "https://realufo.org/doc/DOW-UAP-PR057a"],
+      ["https://realufo.org/doc/DOW-UAP?t=12", "https://realufo.org/doc/DOW-UAP-PR057a?t=12"],
+      ["https://realufo.org/doc/DOW-UAP/text", "https://realufo.org/doc/DOW-UAP-PR057a/text"],
+      ["https://realufo.org/shorts/DOW-UAP", "https://realufo.org/shorts/DOW-UAP-PR057a"],
+    ]) {
+      const res = await worker.fetch(new Request(from), fakeEnv, createExecutionContext());
+      expect(res.status).toBe(301);
+      expect(res.headers.get("location")).toBe(to);
+    }
+    const kept = await worker.fetch(new Request("https://realufo.org/doc/DOW-UAP-PR104"), fakeEnv, createExecutionContext());
+    expect(kept.status).not.toBe(301);
+  });
+
   it("old static-site paths 301 to release.realufo.org (with its trailing slash)", async () => {
     const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
     for (const [from, to] of [

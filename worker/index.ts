@@ -92,6 +92,11 @@ async function sameSecret(a: string, b: string) {
   return x.length === y.length && x.every((v, i) => v === y[i]);
 }
 
+// Record ids fixed after they went live (old → new); their old URLs keep working.
+// DOW-UAP: ingest cut "DOW-UAP-PR057a" short (crawler/ingest/mapping.py _CODE).
+const RENAMED: Record<string, string> = { "DOW-UAP": "DOW-UAP-PR057a" };
+const RENAMED_PATH = /^\/(doc|shorts)\/([^/]+)(\/text)?$/;
+
 const LEGACY_PATH = /^\/(aaro|about|argentina|brazil|canada|chile|foia|geipan|glossary|italy|nara|nasa|peru|search|spain|stories|timeline|uk|whatsnew)(\/|$)/;
 
 export default {
@@ -104,6 +109,9 @@ export default {
       const p = url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`;
       return Response.redirect(`https://release.realufo.org${p}${url.search}`, 301);
     }
+    const renamed = url.pathname.match(RENAMED_PATH);
+    const to = renamed && RENAMED[renamed[2]]; // keys are plain ASCII: no decode (a bad % would throw)
+    if (to) return Response.redirect(`${url.origin}/${renamed[1]}/${encodeURIComponent(to)}${renamed[3] ?? ""}${url.search}`, 301);
     if (url.pathname.startsWith("/api/")) {
       const res = await dispatch(req, env);
       return res ?? error(404, "not found");

@@ -36,3 +36,13 @@ def test_derive_id_hash_tier_avoids_taken_collision():
 def test_is_r2_hosted():
     assert is_r2_hosted("https://assets.realufo.org/pdfs/aaro/x.pdf")
     assert not is_r2_hosted("https://www.aaro.mil/x.jpg")
+def test_derive_id_keeps_a_lowercase_part_suffix():
+    # "PR057a" used to fail the \b after "PR057" and backtrack to "DOW-UAP"
+    assert derive_id('DOW-UAP-PR057a, "Spherical UAP in clouds"', "wargov",
+                     "https://assets.realufo.org/videos/wargov/DOD_111719752.mp4", set()) == "DOW-UAP-PR057a"
+    assert derive_id("DOW-UAP-PR057, Foo", "wargov", "https://x/y.mp4", set()) == "DOW-UAP-PR057"
+
+def test_derive_id_stops_at_an_underscore_before_words():
+    # "\b" counts "_" as a word char, so "D085_Transmission" also fell back to "DOW-UAP"
+    assert derive_id("DOW-UAP-D085_Transmission-of-CIA-Scientific-Advisory-Panel", "wargov",
+                     "https://x/d085.pdf", set()) == "DOW-UAP-D085"

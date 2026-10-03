@@ -5,7 +5,10 @@ _AGENCY = {
     "CIA": "CIA", "FBI": "FBI", "NASA": "NASA", "AARO": "AARO", "NARA": "NARA",
     "Department of War": "DoW", "Department of Defense": "DoD", "Navy": "Navy",
 }
-_CODE = re.compile(r"^([A-Z0-9]{2,}(?:[-_][A-Z0-9]+){1,5})\b")
+# Leading record code, e.g. "DOW-UAP-PR118, ...". A part may end in one lowercase
+# letter ("PR057a"); the code ends where no letter/digit follows ("\b" fails here:
+# it treats "_" as a word char and splits "PR057a", both fell back to "DOW-UAP").
+_CODE = re.compile(r"^([A-Z0-9]{2,}(?:[-_][A-Z0-9]+[a-z]?){1,5})(?![A-Za-z0-9])")
 
 def short_agency(ag: str, slug: str) -> str:
     ag = (ag or "").split("/")[0].strip()
