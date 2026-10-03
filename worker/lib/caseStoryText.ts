@@ -252,52 +252,52 @@ export const CASE_STORY_TEXT: Record<string, CaseStory> = {
     ],
     sources: [
       {
-        url: "https://github.com/hectorchanht/war-gov-ufo-release/releases/download/pdfs-v1/AIR-1080-6-897-Volume-1-1978-1981.pdf",
+        id: "NZ-AIR-1080-6-897-Volume-1-1978-1981",
         page: 191,
         note: "RNZAF report: introduction"
       },
       {
-        url: "https://github.com/hectorchanht/war-gov-ufo-release/releases/download/pdfs-v1/AIR-1080-6-897-Volume-1-1978-1981.pdf",
+        id: "NZ-AIR-1080-6-897-Volume-1-1978-1981",
         page: 193,
         note: "RNZAF report: radar, 21 Dec light, Venus"
       },
       {
-        url: "https://github.com/hectorchanht/war-gov-ufo-release/releases/download/pdfs-v1/AIR-1080-6-897-Volume-1-1978-1981.pdf",
+        id: "NZ-AIR-1080-6-897-Volume-1-1978-1981",
         page: 194,
         note: "RNZAF report: squid fleet, radar blips"
       },
       {
-        url: "https://github.com/hectorchanht/war-gov-ufo-release/releases/download/pdfs-v1/AIR-1080-6-897-Volume-1-1978-1981.pdf",
+        id: "NZ-AIR-1080-6-897-Volume-1-1978-1981",
         page: 195,
         note: "RNZAF report: 20/21 December summary"
       },
       {
-        url: "https://github.com/hectorchanht/war-gov-ufo-release/releases/download/pdfs-v1/AIR-1080-6-897-Volume-1-1978-1981.pdf",
+        id: "NZ-AIR-1080-6-897-Volume-1-1978-1981",
         page: 197,
         note: "RNZAF report: 31 December flight north"
       },
       {
-        url: "https://github.com/hectorchanht/war-gov-ufo-release/releases/download/pdfs-v1/AIR-1080-6-897-Volume-1-1978-1981.pdf",
+        id: "NZ-AIR-1080-6-897-Volume-1-1978-1981",
         page: 199,
         note: "RNZAF report: conclusions and signature"
       },
       {
-        url: "https://github.com/hectorchanht/war-gov-ufo-release/releases/download/pdfs-v1/AIR-1080-6-897-Volume-1-1978-1981.pdf",
+        id: "NZ-AIR-1080-6-897-Volume-1-1978-1981",
         page: 135,
         note: "DSIR interim report: findings, Argosy film"
       },
       {
-        url: "https://github.com/hectorchanht/war-gov-ufo-release/releases/download/pdfs-v1/AIR-1080-6-897-Volume-1-1978-1981.pdf",
+        id: "NZ-AIR-1080-6-897-Volume-1-1978-1981",
         page: 136,
         note: "DSIR interim report: radar, unexplained data"
       },
       {
-        url: "https://github.com/hectorchanht/war-gov-ufo-release/releases/download/pdfs-v1/AIR-1080-6-897-Volume-1-1978-1981.pdf",
+        id: "NZ-AIR-1080-6-897-Volume-1-1978-1981",
         page: 19,
         note: "Maccabee 1979 summary of filmed flight"
       },
       {
-        url: "https://github.com/hectorchanht/war-gov-ufo-release/releases/download/pdfs-v1/AIR-1080-6-897-Volume-1-1978-1981.pdf",
+        id: "NZ-AIR-1080-6-897-Volume-1-1978-1981",
         page: 1,
         note: "NZDF release cover sheet"
       }

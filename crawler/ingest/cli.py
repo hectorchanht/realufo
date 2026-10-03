@@ -57,7 +57,7 @@ def run(sources, dry_run=False, limit=None):
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--sources", default="wargov,aaro,nasa,nara,congress,dod,canada")
+    ap.add_argument("--sources", default="wargov,aaro,nasa,nara,congress,dod,canada,nz")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--limit", type=int, default=None)
     args = ap.parse_args(argv)

@@ -11,6 +11,8 @@ ARCHIVE_ROWS = {
     "dod": {"label": "DoD FOIA", "flag": "🇺🇸", "accent": "#ff8a7a", "coord": "Pentagon"},
     # Library and Archives Canada NRC UFO files (non-commercial reuse, attribution in each summary)
     "canada": {"label": "Library and Archives Canada", "flag": "🇨🇦", "accent": "#ff6b6b", "coord": "Ottawa"},
+    # NZDF 2010 OIA release (Crown copyright; no explicit licence on the release)
+    "nz": {"label": "New Zealand Defence Force", "flag": "🇳🇿", "accent": "#7ad1c8", "coord": "Wellington"},
 }
 
 def _load(slug, data_dir):
