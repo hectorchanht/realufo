@@ -16,23 +16,49 @@ export const ACTION = "rounded-md border border-line2 px-2.5 py-1 font-mono text
 
 const CHIP_KINDS: HubKind[] = ["release", "agency", "location", "decade"];
 
+const CHIP = "rounded-[5px] border border-line px-1.5 py-px font-mono text-[9px]";
+
 // Small links from a source row to the hubs it belongs to (R06, FBI, 1950s…).
-function HubChips({ hubs, labels }: { hubs?: HubLinks; labels: Map<string, string> }) {
-  if (!hubs) return null;
-  const chips = CHIP_KINDS.filter((k) => hubs[k]).map((k) => {
+function hubChips(hubs: HubLinks | undefined, labels: Map<string, string>) {
+  if (!hubs) return [];
+  return CHIP_KINDS.filter((k) => hubs[k]).map((k) => {
     const slug = hubs[k]!;
     const text = k === "release" ? `R${slug.padStart(2, "0")}` : k === "decade" ? slug : (labels.get(`${k}/${slug}`) ?? slug);
     return (
-      <Link
-        key={k}
-        to={`/${k}/${slug}`}
-        className="rounded-[5px] border border-line px-1.5 py-px font-mono text-[9px] text-dim hover:text-signal"
-      >
+      <Link key={k} to={`/${k}/${slug}`} className={`${CHIP} text-dim hover:text-signal`}>
         {text}
       </Link>
     );
   });
-  return chips.length ? <span className="mt-0.5 flex flex-wrap gap-1">{chips}</span> : null;
+}
+
+// Hub chips, then "AI" when the match was AI-written text, then the PDF page link.
+function SourceChips({ s, labels }: { s: AskSource; labels: Map<string, string> }) {
+  const chips = hubChips(s.hubs, labels);
+  if (s.ai)
+    chips.push(
+      <span
+        key="ai"
+        title={`Matched an AI-written ${s.ai === "summary" ? "summary" : "key moments list"} of this file, not the file's own text`}
+        className={`${CHIP} text-dim`}
+      >
+        AI
+      </span>
+    );
+  if (s.kind === "pdf" && s.page > 0)
+    chips.push(
+      <a
+        key="page"
+        href={`/api/file/${encodeURIComponent(s.record_id)}#page=${s.page}`}
+        target="_blank"
+        rel="noopener"
+        aria-label={`open at p.${s.page}`}
+        className={`${CHIP} text-cyan hover:border-cyan`}
+      >
+        p.{s.page}
+      </a>
+    );
+  return chips.length ? <span className="mt-1 flex flex-wrap gap-1">{chips}</span> : null;
 }
 
 export function AskCard({ question, data, footer }: { question: string; data: { answer: string; sources: AskSource[] }; footer?: ReactNode }) {
@@ -78,32 +104,14 @@ export function AskCard({ question, data, footer }: { question: string; data: { 
                 <span className="w-5 flex-none font-mono text-[10px] text-faint">[{s.n}]</span>
                 {s.thumb && <img src={s.thumb} alt="" loading="lazy" className="h-8 w-8 flex-none rounded object-cover" />}
               </Link>
-              {/* title + hub chips stack so chips wrap below instead of squeezing the title on phones */}
+              {/* id, title (2 lines) and one wrapping chip row stack, so chips never squeeze the title on phones */}
               <div className="flex min-w-0 flex-1 flex-col">
-                <Link to={`/doc/${s.record_id}`} className="truncate text-[12px] text-ink hover:text-signal">
-                  {srcTitle(s).title}
-                  {srcTitle(s).showId && <span className="font-mono text-[10px] text-faint"> · {srcTitle(s).id}</span>}
+                <Link to={`/doc/${s.record_id}`} className="text-[12px] leading-snug text-ink hover:text-signal">
+                  {srcTitle(s).showId && <span className="block truncate font-mono text-[9.5px] text-faint">{srcTitle(s).id}</span>}
+                  <span className="line-clamp-2">{srcTitle(s).title}</span>
                 </Link>
-                <HubChips hubs={s.hubs} labels={hubLabels} />
+                <SourceChips s={s} labels={hubLabels} />
               </div>
-              {s.ai && (
-                <span
-                  title="Matched an AI-written description of this file, not the file's own text"
-                  className="flex-none rounded-[5px] border border-line px-1.5 py-px font-mono text-[9px] text-dim"
-                >
-                  {s.ai === "summary" ? "AI summary" : "AI moments"}
-                </span>
-              )}
-              {s.kind === "pdf" && s.page > 0 && (
-                <a
-                  href={`/api/file/${encodeURIComponent(s.record_id)}#page=${s.page}`}
-                  target="_blank"
-                  rel="noopener"
-                  className="flex-none font-mono text-[10px] text-cyan"
-                >
-                  open at p.{s.page}
-                </a>
-              )}
             </li>
           ))}
         </ol>

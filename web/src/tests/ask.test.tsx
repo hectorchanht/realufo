@@ -87,10 +87,22 @@ describe("AskAnswer", () => {
       data: { ...answered.data, sources: [answered.data.sources[0], { ...answered.data.sources[1], ai: "moments" }] },
     });
     renderCard();
-    const label = screen.getByText("AI moments");
+    const label = screen.getByText("AI");
     expect(label).toHaveAttribute("title", expect.stringMatching(/AI-written/));
     expect(document.getElementById("ask-src-2")).toContainElement(label);
     expect(document.getElementById("ask-src-1")!.textContent).not.toMatch(/AI /);
+  });
+
+  it("source rows show the file id above a title that is not truncated by its chips", () => {
+    useAskMock.mockReturnValue({
+      ...answered,
+      data: { ...answered.data, sources: [{ n: 1, record_id: "WARGOV-VID-9", title: "DOW-UAP-PR104, Unresolved UAP Report, Yellow Sea, 2025", page: 0, kind: "video", thumb: null, ai: "moments" }] },
+    });
+    renderCard();
+    const link = screen.getByRole("link", { name: /Unresolved UAP Report, Yellow Sea, 2025/ });
+    expect(link).toHaveTextContent("DOW-UAP-PR104 (video)");
+    expect(screen.getByText("Unresolved UAP Report, Yellow Sea, 2025").className).toContain("line-clamp-2");
+    expect(screen.getByText("AI").parentElement!.className).toContain("flex-wrap"); // AI chip rides the chip row
   });
 
   it("renders the answer as text with citation buttons and numbered sources", () => {
