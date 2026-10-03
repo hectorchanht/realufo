@@ -516,7 +516,9 @@ export function Doc() {
               // Touch lens mode covers the panel, so they'd be unreachable — VideoTransport has play/seek.
               controls={nativeControls && chrome && (finePointer || !lens)}
               playsInline
-              preload="metadata"
+              // browsers only allow autoplay when muted; the Mute chip / native controls unmute
+              autoPlay
+              muted
               onLoadedMetadata={(e) => setPic({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })}
               className="h-full w-full bg-black object-contain"
               style={{ transform: viewTransform(view, zoom.box, pic) || undefined }}

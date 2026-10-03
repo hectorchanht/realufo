@@ -500,6 +500,9 @@ describe("Doc", () => {
     const pause = vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
     renderDoc();
     const video = document.querySelector('[data-screen="doc"] video') as HTMLVideoElement;
+    expect(video.autoplay).toBe(true);
+    expect(video.muted).toBe(true); // muted, or browsers block autoplay
+    expect(screen.getByRole("button", { name: "Unmute" })).toBeInTheDocument();
     video.currentTime = 2;
 
     fireEvent.click(screen.getByRole("button", { name: "0.25×" }));

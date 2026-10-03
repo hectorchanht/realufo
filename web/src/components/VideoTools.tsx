@@ -130,6 +130,8 @@ export function VideoTransport({
     ];
     events.forEach(([k, f]) => v.addEventListener(k, f));
     onMeta();
+    onVol();
+    if (!v.paused) onPlay(); // autoplay may have started before this effect attached
     return () => {
       cancelAnimationFrame(raf);
       events.forEach(([k, f]) => v.removeEventListener(k, f));
