@@ -12,7 +12,7 @@ record's record_text row is deleted and its text_index row marked failed, so
 fulltext / summaries / tldr / cards / textindex rebuild it from the new text.
 Needs Paddle (crawler/.venv-ocr or requirements-ocr.txt); nothing else does.
 """
-import argparse, json, os, re, subprocess, sys, tempfile, time, zlib
+import argparse, json, os, re, subprocess, sys, tempfile, time
 from . import d1, fetch, r2
 from .chunking import split_pages
 from .fulltext import clean_page, keep_page
@@ -171,7 +171,7 @@ def main(argv=None):
     ap.add_argument("--dry-run", action="store_true", help="OCR + print stats; no R2/D1 writes")
     ap.add_argument("--limit", type=int, default=None, help="max records this run")
     ap.add_argument("--ids", default=None, help="comma-separated record ids")
-    ap.add_argument("--shard", default=None, help="I/N: only records with crc32(id) %% N == I")
+    ap.add_argument("--shard", default=None, help="I/N: every Nth record from I (start all N together)")
     ap.add_argument("--bench", action="store_true", help="time model/dpi variants on failing pages of --ids")
     ap.add_argument("--bench-pages", type=int, default=3, help="--bench: failing pages per file")
     ap.add_argument("--out", default="../docs/launch/ocr-bench.md", help="--bench report path")
@@ -181,8 +181,10 @@ def main(argv=None):
         bench(rows, args.bench_pages, args.out)
         sys.exit(0)
     if args.shard:
+        # Round-robin over the shared, ordered work list: balanced on every (re)start.
+        # Start all N workers together, so they all see the same list.
         i, n = map(int, args.shard.split("/"))
-        rows = [r for r in rows if zlib.crc32(r["id"].encode()) % n == i]
+        rows = rows[i::n]
     engine = paddle_engine() if rows else None
     ok = failed = 0
     with tempfile.TemporaryDirectory() as work:

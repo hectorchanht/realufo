@@ -140,3 +140,15 @@ def test_shard_splits_rows_disjointly_by_id(world):
     assert set().union(*seen) == set(ids)
     assert sum(len(s) for s in seen) == len(ids)
     assert all(seen)
+
+def test_shards_stay_balanced_even_when_ids_hash_alike(world):
+    # A restart over the leftovers of an earlier crc32 split: every id hashes to one bucket.
+    import zlib
+    ids = [f"X{k}" for k in range(200) if zlib.crc32(f"X{k}".encode()) % 3 == 0][:9]
+    sizes = []
+    for shard in ("0/3", "1/3", "2/3"):
+        world["rows"] = [{"id": i, "url": f"https://cdn/{i}.pdf"} for i in ids]
+        world["put"].clear()
+        run("--shard", shard)
+        sizes.append(len(world["put"]))
+    assert sizes == [3, 3, 3]
