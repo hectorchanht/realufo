@@ -1,6 +1,6 @@
 """Showcase Short for AARO-956955 (Navy 2021 Flyby): the object is in only 3 of 289 frames
-(268-270, ~8.94 s). Cut: whole original once -> same moment 8x slower -> frames 266-272 stepped
-with the object boxed -> zoom on 269 + "step through it frame by frame" end card. 9:16, ~24.7 s.
+(268-270, ~8.94 s). Cut: hook still (zoom on 269, object boxed; frame 0 = thumbnail) -> whole original once -> same moment 8x slower -> frames 266-272 stepped
+with the object boxed -> zoom on 269 + "step through it frame by frame" end card. 9:16, ~26.2 s.
 
     FFMPEG=/path/to/ffmpeg-with-drawtext CLIP_FONT=/path/Bold.ttf python3 showcase/AARO-956955.py
 
@@ -27,6 +27,11 @@ site = txt("site","realufo.org",1420,52)
 segs=[]
 def run(args, out):
     subprocess.run([F,"-v","error","-y",*args,*ENC,out],check=True); segs.append(out)
+# H: hook on frame 0 (often the thumbnail): zoom on frame 269 with the object boxed
+zx,zy=186,524
+ZOOM=f"crop=308:548:{zx-154}:{zy-274},scale=1080:1920:flags=lanczos"
+run(["-loop","1","-t","1.5","-i",f"{D}/f269.png",*SIL,"-vf",",".join([ZOOM,"drawbox=x=410:y=830:w=260:h=260:color=yellow@0.95:t=9",
+    txt("h1","Only 3 of 289 frames",270,78), txt("h2","show this",360,78,"yellow"), site]),"-map","0:v","-map","1:a","-t","1.5"], f"{D}/sh.mp4")
 # A: the moment at normal speed
 run(["-i",U,*SIL,"-vf",",".join([FIT,"fps=30",txt("a1","Watch closely",290,84),site]),"-map","0:v","-map","1:a","-t","9.64"], f"{D}/s0.mp4")
 # A2: the same moment 8x slower (0.75 s -> 6 s; each source frame held 8x)
@@ -43,8 +48,7 @@ for n,d in hold.items():
            txt(f"b3_{n}",f"FRAME {n} / 289",1300,66,"yellow" if n in pos else "white"), site]
     run(["-loop","1","-t",str(d),"-i",f"{D}/f{n}.png",*SIL,"-vf",",".join(vf),"-map","0:v","-map","1:a","-t",str(d)], f"{D}/s{n}.mp4")
 # C: end card, zoom on frame 269
-zx,zy=186,524
-vf=[f"crop=308:548:{zx-154}:{zy-274}","scale=1080:1920:flags=lanczos",
+vf=[ZOOM,
     txt("c1","Step through it",250,84), txt("c2","frame by frame",345,84),
     txt("c3","realufo.org/doc/AARO-956955",1380,50,"yellow"), site.replace(":y=1420",":y=1450")]
 vf[-1]=txt("c4","AARO-956955  ·  Navy 2021 Flyby",1460,44)

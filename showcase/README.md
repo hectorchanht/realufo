@@ -15,7 +15,7 @@ scripts/publish.sh --showcase AARO-956955 showcase/AARO-956955.mp4 "only 3 of 28
 
 ## Made
 
-- `AARO-956955`: the object is in only 3 of 289 frames → normal, 8x slow, frame-by-frame (posted 2026-10-03).
+- `AARO-956955`: the object is in only 3 of 289 frames → normal, 8x slow, frame-by-frame (posted 2026-10-03). Re-cut 2026-10-03 to open on a hook still (zoom on frame 269, object boxed): frame 0 is often the thumbnail; re-cut not posted.
 - Articles (story across records + narrated Short): `articles/<slug>/`, published with
   `scripts/article.py` (publish-article skill): `teardrop-twins` (PR028 vs PR029, posted
   2026-10-03), `two-stars` (PR038 vs PR104, site only, Short awaiting approval).
