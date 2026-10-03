@@ -14,6 +14,7 @@ def txt(text, y, fs, color="white"):
     """drawtext via textfile= (quotes/colons in text can't break the filtergraph); centred, outline + shadow."""
     global _n
     _n += 1
+    fs = min(fs, int(1000 / (0.62 * max(len(text), 1))))  # shrink long lines to fit the 1080 width
     p = os.path.join(TMP, f"t{_n}.txt")
     open(p, "w", encoding="utf-8").write(text)
     return (f"drawtext=fontfile={FONT}:fontcolor={color}:borderw=4:bordercolor=black:shadowcolor=black@0.6:"
