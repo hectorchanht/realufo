@@ -13,6 +13,12 @@ export const stanceOK = (x: unknown) => ["neutral","believer","skeptic","analyst
 export const thumbSql = (recordId: string) =>
   `(SELECT cdn_url FROM assets a WHERE a.record_id=${recordId} AND (a.role='thumb' OR (a.role='full' AND a.mime LIKE 'image/%')) ORDER BY a.role='thumb' DESC LIMIT 1)`;
 
+// Thread-card image for `threads t`: first uploaded post image (OP first) as
+// `thumbKey` (route maps it via uploadUrl), else the thumb of the thread's
+// source record (or its first post's) as `recThumb`.
+export const THREAD_THUMB_COLS = `(SELECT p.image_r2_key FROM posts p WHERE p.thread_id=t.id AND p.image_r2_key IS NOT NULL ORDER BY p.is_op DESC, p.created_at LIMIT 1) thumbKey,
+  ${thumbSql("COALESCE(t.source_record_id,(SELECT p.source_record_id FROM posts p WHERE p.thread_id=t.id AND p.source_record_id IS NOT NULL ORDER BY p.is_op DESC, p.created_at LIMIT 1))")} recThumb`;
+
 // Card video length (seconds) from the `full` asset; NULL when unknown.
 export const durationSql = (recordId: string) =>
   `(SELECT duration FROM assets a WHERE a.record_id=${recordId} AND a.role='full' LIMIT 1)`;

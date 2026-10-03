@@ -336,6 +336,8 @@ export interface ThreadCard {
   hot: number; // 0|1
   ago: string;
   tags?: string[] | string;
+  /** Card image: first uploaded post image, else the source record's thumb. */
+  thumb?: string | null;
 }
 
 export interface BoardThreadsResponse {

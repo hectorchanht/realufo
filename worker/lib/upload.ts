@@ -10,6 +10,12 @@ export const UPLOAD_NAME_RE = /^[0-9a-f-]{36}\.(jpg|png|gif|webp)$/;
 export const uploadUrl = (env: Env, key: string | null) =>
   key ? (env.UPLOAD_BASE || "/api/u/") + key.replace(/^uploads\//, "") : null;
 
+// Thread card row selected with THREAD_THUMB_COLS (lib/db.ts) -> `thumb` URL.
+export const withThreadThumb = (env: Env, { thumbKey, recThumb, ...t }: any) => ({
+  ...t,
+  thumb: uploadUrl(env, thumbKey) ?? recThumb ?? null,
+});
+
 // Type comes from magic bytes, never the client's Content-Type, so nothing but
 // these four raster formats (no SVG/HTML) can be stored or served.
 function sniff(b: Uint8Array): { mime: string; ext: string } | null {

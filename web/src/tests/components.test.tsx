@@ -315,6 +315,13 @@ describe("ThreadRow", () => {
     render(withRouter(<ThreadRow thread={thread} />));
     expect(screen.getByText(/Saw three lights/)).toBeInTheDocument();
   });
+
+  it("shows the thread image in the left slot, none without a thumb", () => {
+    const { container, rerender } = render(withRouter(<ThreadRow thread={{ ...thread, thumb: "/api/u/a.png" }} />));
+    expect(container.querySelector("img")?.getAttribute("src")).toBe("/api/u/a.png");
+    rerender(withRouter(<ThreadRow thread={thread} />));
+    expect(container.querySelector("img")).toBeNull();
+  });
 });
 
 describe("BoardRow", () => {

@@ -21,9 +21,11 @@ export interface VoteButtonProps {
   targetId: string;
   votes: number;
   voted?: boolean;
+  /** Inline "▲ N" pill (thread-row corner) instead of the stacked pillar. */
+  row?: boolean;
 }
 
-export function VoteButton({ targetType, targetId, votes, voted }: VoteButtonProps) {
+export function VoteButton({ targetType, targetId, votes, voted, row }: VoteButtonProps) {
   const vote = useVote();
   const { toast } = useOverlay();
   const [overlay, setOverlay] = useState<{ voted: boolean; votes: number } | null>(null);
@@ -62,7 +64,11 @@ export function VoteButton({ targetType, targetId, votes, voted }: VoteButtonPro
       aria-pressed={isVoted}
       aria-label={`vote (${displayVotes})`}
       data-vote-button
-      className="flex min-h-[44px] min-w-[46px] flex-none flex-col items-center justify-center gap-0.5 rounded-[10px] border px-2 py-0.5 active:scale-[.93]"
+      className={
+        row
+          ? "flex min-h-[32px] flex-none items-center gap-1.5 rounded-[10px] border px-2.5 active:scale-[.93]"
+          : "flex min-h-[44px] min-w-[46px] flex-none flex-col items-center justify-center gap-0.5 rounded-[10px] border px-2 py-0.5 active:scale-[.93]"
+      }
       style={{
         borderColor: isVoted ? "var(--signal)" : "var(--line2)",
         background: isVoted ? "var(--signal)" : "transparent",

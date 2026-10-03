@@ -1,9 +1,9 @@
 import type { Env } from "../env";
 import { json, error } from "../lib/json";
-import { relAgo, stanceOK, thumbSql } from "../lib/db";
+import { relAgo, stanceOK, thumbSql, THREAD_THUMB_COLS } from "../lib/db";
 import { newId, newNo } from "../lib/anon";
 import { allowWrite } from "../lib/ratelimit";
-import { readBody, putImage, uploadUrl, UPLOAD_NAME_RE } from "../lib/upload";
+import { readBody, putImage, uploadUrl, UPLOAD_NAME_RE, withThreadThumb } from "../lib/upload";
 
 export async function getThread(_req: Request, env: Env, p: Record<string, string>) {
   const thread = await env.DB.prepare(
@@ -46,14 +46,14 @@ export async function searchThreads(req: Request, env: Env) {
   if (q.length < 2) return json({ threads: [] });
   const like = "%" + q.replace(/[\\%_]/g, "\\$&") + "%";
   const t = await env.DB.prepare(
-    `SELECT t.*, b.slug boardSlug, b.accent accent FROM threads t JOIN boards b ON b.id=t.board_id
+    `SELECT t.*, b.slug boardSlug, b.accent accent, ${THREAD_THUMB_COLS} FROM threads t JOIN boards b ON b.id=t.board_id
      WHERE lower(coalesce(t.title,'')||' '||coalesce(t.op_body,'')) LIKE ?1 ESCAPE '\\'
         OR EXISTS (SELECT 1 FROM posts p WHERE p.thread_id=t.id AND lower(p.body) LIKE ?1 ESCAPE '\\')
      ORDER BY t.created_at DESC LIMIT 50`
   )
     .bind(like)
     .all<any>();
-  return json({ threads: t.results.map((x) => ({ ...x, ago: relAgo(x.created_at), tags: JSON.parse(x.tags || "[]") })) });
+  return json({ threads: t.results.map((x) => ({ ...withThreadThumb(env, x), ago: relAgo(x.created_at), tags: JSON.parse(x.tags || "[]") })) });
 }
 
 export async function createThread(req: Request, env: Env) {

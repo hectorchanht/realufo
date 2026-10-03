@@ -25,6 +25,11 @@ describe("image uploads", () => {
     expect(url).toMatch(/^\/api\/u\/[0-9a-f-]{36}\.png$/);
     expect(det.posts[0].image_kind).toBe("upload");
 
+    const board: any = await (await call("/api/boards/uap/threads")).json();
+    const card = board.threads.find((t: any) => t.id === thread.id);
+    expect(card.thumb).toBe(url);
+    expect(card).not.toHaveProperty("thumbKey");
+
     const img = await call(url);
     expect(img.status).toBe(200);
     expect(img.headers.get("content-type")).toBe("image/png");

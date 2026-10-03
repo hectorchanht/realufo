@@ -1,6 +1,7 @@
 import type { Env } from "../env";
 import { json } from "../lib/json";
-import { durationSql, oneLinerSql, relAgo, thumbSql } from "../lib/db";
+import { durationSql, oneLinerSql, relAgo, thumbSql, THREAD_THUMB_COLS } from "../lib/db";
+import { withThreadThumb } from "../lib/upload";
 
 // Feed = live activity, not static flags:
 //  - "Hot right now" records are ordered by their most recent comment or
@@ -24,7 +25,7 @@ export async function feed(_req: Request, env: Env) {
   ).all<any>();
 
   const hot = await env.DB.prepare(
-    `SELECT t.*, b.slug boardSlug, b.accent accent,
+    `SELECT t.*, b.slug boardSlug, b.accent accent, ${THREAD_THUMB_COLS},
       (SELECT max(created_at) FROM posts p WHERE p.thread_id=t.id) lastPost
     FROM threads t JOIN boards b ON b.id=t.board_id
     ORDER BY COALESCE((SELECT max(created_at) FROM posts p WHERE p.thread_id=t.id), t.created_at) DESC,
@@ -34,6 +35,6 @@ export async function feed(_req: Request, env: Env) {
 
   return json({
     featured: featured.results,
-    hot: hot.results.map((t: any) => ({ ...t, ago: relAgo(t.lastPost || t.created_at) })),
+    hot: hot.results.map((t: any) => ({ ...withThreadThumb(env, t), ago: relAgo(t.lastPost || t.created_at) })),
   });
 }
