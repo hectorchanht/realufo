@@ -142,3 +142,13 @@ def test_scrub_drops_kite_guess():
 def test_why_cap_leaves_room_for_the_punchline():
     # prompt asks for 25 words; the cap is looser so a slightly long joke isn't cut mid-punchline
     assert hl.WHY_WORDS >= 35
+
+def test_validate_drops_sentences_with_dates_not_in_the_source():
+    source = "- id: A-1\n  title: Gemini 7 Transcript, 1965\n  summary: Debrief dated December 23, 1965.\n- id: B-2\n  when/where: 3/2/10"
+    obj = {"lede": "Gemini chatter from 1965. Filmed 12 May 1965 for sure.", "picks": [
+        {"id": "A-1", "why": "Gemini 7 transcript (12 May 1965) noting a bogey. Classic."},
+        {"id": "B-2", "why": "Debrief from Dec 23, 1965 and a memo of March 2, 2010."}]}
+    out = hl.validate(obj, IDS, source)
+    assert out["lede"] == "Gemini chatter from 1965."
+    assert out["picks"][0]["why"] == "Classic."
+    assert out["picks"][1]["why"] == "Debrief from Dec 23, 1965 and a memo of March 2, 2010."
