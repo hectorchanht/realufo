@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { CASE_SLUGS, citeParts, citedSources, storyProblems, storyWords, type CaseStory } from "../lib/caseStories";
+import { CASE_STORY_TEXT } from "../lib/caseStoryText";
 
 const words = (n: number) => Array.from({ length: n }, (_, i) => `w${i}`).join(" ");
 const ok: CaseStory = {
@@ -44,5 +45,12 @@ describe("story validation", () => {
   });
   it("CASE_SLUGS is the batch", () => {
     expect(CASE_SLUGS).toEqual(["roswell", "kaikoura", "jal-1628", "tehran", "socorro", "travis-walton", "shag-harbour", "ohare-2006", "stephenville", "trans-en-provence", "manises", "falcon-lake"]);
+  });
+});
+
+describe("CASE_STORY_TEXT", () => {
+  it("every story is valid", () => {
+    expect(Object.keys(CASE_STORY_TEXT).length).toBeGreaterThan(0);
+    for (const [slug, s] of Object.entries(CASE_STORY_TEXT)) expect(storyProblems(slug, s), slug).toEqual([]);
   });
 });
