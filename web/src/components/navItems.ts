@@ -98,6 +98,8 @@ const lastUrl = new Map<NavTab, string>();
 const lastRootUrl = new Map<NavTab, string>();
 
 export function rememberTabUrl(pathname: string, search: string): void {
+  // The Shorts player is a full-screen overlay, not a place a tab should reopen into.
+  if (pathname.startsWith("/shorts/")) return;
   const tab = activeTabForPath(pathname);
   lastUrl.set(tab, pathname + search);
   // Ask's ?q= is the answer itself, not a filter — its root is the bare lists page.

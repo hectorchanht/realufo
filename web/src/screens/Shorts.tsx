@@ -28,7 +28,7 @@ export default function Shorts() {
   const shorts = inQ ? searched.data! : all.data;
   const pending = (q && !searched.isFetched) || (!inQ && !all.isFetched);
 
-  const root = useRef<HTMLDivElement>(null);
+  const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const [muted, setMuted] = useState(true);
   const [copied, setCopied] = useState("");
   const opened = useRef(false);
@@ -48,8 +48,8 @@ export default function Shorts() {
   });
 
   useEffect(() => {
-    root.current?.querySelectorAll("video").forEach((v) => (v.muted = muted));
-  }, [muted, shorts]);
+    root?.querySelectorAll("video").forEach((v) => (v.muted = muted));
+  }, [muted, root]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -57,12 +57,12 @@ export default function Shorts() {
       const step = { ArrowDown: 1, j: 1, ArrowUp: -1, k: -1 }[e.key];
       if (step) {
         e.preventDefault();
-        root.current?.scrollBy?.({ top: step * root.current.clientHeight, behavior: "smooth" });
+        root?.scrollBy?.({ top: step * root.clientHeight, behavior: "smooth" });
       } else if (e.key === "Escape") goBack(navigate, pathname);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [navigate, pathname]);
+  }, [navigate, pathname, root]);
 
   const back = (
     <button type="button" onClick={() => goBack(navigate, pathname)} aria-label="Back"
@@ -85,7 +85,7 @@ export default function Shorts() {
           </div>
         </div>
       ) : (
-        <div ref={root} data-scroll className="h-full snap-y snap-mandatory overflow-y-auto">
+        <div ref={setRoot} data-scroll className="h-full snap-y snap-mandatory overflow-y-auto">
           {shorts!.map((s, i) => {
             const title = docTitleParts(s.id, s.title, "video").title;
             return (
@@ -100,6 +100,8 @@ export default function Shorts() {
                   playsInline
                   preload={i === idx || i === idx + 1 ? "metadata" : "none"}
                   onClick={() => setMuted((m) => !m)}
+                  // autoplay may force a slide back to muted (useAutoplayInView): keep the button honest
+                  onVolumeChange={(e) => setMuted(e.currentTarget.muted)}
                   className="aspect-[9/16] h-full max-w-full object-contain"
                 />
                 <button type="button" onClick={() => setMuted((m) => !m)} aria-label={muted ? "Unmute" : "Mute"}

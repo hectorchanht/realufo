@@ -25,3 +25,13 @@ describe("back on a deep-linked page", () => {
     );
   });
 });
+
+describe("tab memory skips the Shorts player", () => {
+  it("leaving a Short then tapping Feed goes home, not back into the full-screen player", async () => {
+    const { NAV_ITEMS, rememberTabUrl, tabHref } = await import("../components/navItems");
+    const feed = NAV_ITEMS.find((i) => i.tab === "feed")!;
+    rememberTabUrl("/", "");
+    rememberTabUrl("/shorts/DOW-UAP-PR104", "?q=star");
+    expect(tabHref(feed, "archive")).toBe("/");
+  });
+});
