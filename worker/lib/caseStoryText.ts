@@ -105,27 +105,27 @@ export const CASE_STORY_TEXT: Record<string, CaseStory> = {
     ],
     sources: [
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761379/-1/-1/0/REPORT_AF_ROSWELL.PDF",
+        id: "DOD-USAF-Roswell-Report-1994",
         page: 1,
         note: "Air Force 1994 report: executive summary"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761379/-1/-1/0/REPORT_AF_ROSWELL.PDF",
+        id: "DOD-USAF-Roswell-Report-1994",
         page: 4,
         note: "Air Force report: 1947 newspaper accounts"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761379/-1/-1/0/REPORT_AF_ROSWELL.PDF",
+        id: "DOD-USAF-Roswell-Report-1994",
         page: 5,
         note: "Air Force report: revival from 1978"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761379/-1/-1/0/REPORT_AF_ROSWELL.PDF",
+        id: "DOD-USAF-Roswell-Report-1994",
         page: 16,
         note: "Air Force report: Cavitt and Newton"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761379/-1/-1/0/REPORT_AF_ROSWELL.PDF",
+        id: "DOD-USAF-Roswell-Report-1994",
         page: 19,
         note: "Air Force report: Mogul Flight 4"
       },
@@ -135,22 +135,22 @@ export const CASE_STORY_TEXT: Record<string, CaseStory> = {
         note: "AARO 2024 review: 1997 report"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761373/-1/-1/0/GENERAL_ACCOUNTING_OFFICE_S_SCHIFF.PDF",
+        id: "DOD-GAO-B-262046-Roswell-1995",
         page: 2,
         note: "GAO B-262046 letter: background"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761373/-1/-1/0/GENERAL_ACCOUNTING_OFFICE_S_SCHIFF.PDF",
+        id: "DOD-GAO-B-262046-Roswell-1995",
         page: 3,
         note: "GAO report: results in brief"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761373/-1/-1/0/GENERAL_ACCOUNTING_OFFICE_S_SCHIFF.PDF",
+        id: "DOD-GAO-B-262046-Roswell-1995",
         page: 5,
         note: "GAO report: 509th history, FBI teletype"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761373/-1/-1/0/GENERAL_ACCOUNTING_OFFICE_S_SCHIFF.PDF",
+        id: "DOD-GAO-B-262046-Roswell-1995",
         page: 15,
         note: "FBI Dallas teletype, 8 July 1947"
       }
@@ -382,52 +382,52 @@ export const CASE_STORY_TEXT: Record<string, CaseStory> = {
     ],
     sources: [
       {
-        url: "https://catalog.archives.gov/medialz/seattle/rg-237/733667/box_1/733667-001-024/733667-001-024.pdf",
+        id: "NARA-JAL1628-733667-001-024",
         page: 1,
         note: "FAA notes of crew interviews, 17 Nov"
       },
       {
-        url: "https://catalog.archives.gov/medialz/seattle/rg-237/733667/box_1/733667-001-012/733667-001-012.pdf",
+        id: "NARA-JAL1628-733667-001-012",
         page: 3,
         note: "Anchorage Center chronology of events"
       },
       {
-        url: "https://catalog.archives.gov/medialz/seattle/rg-237/733667/box_1/733667-001-012/733667-001-012.pdf",
+        id: "NARA-JAL1628-733667-001-012",
         page: 2,
         note: "Anchorage Center memo, 18 December 1986"
       },
       {
-        url: "https://catalog.archives.gov/medialz/seattle/rg-237/733667/box_1/733667-001-007/733667-001-007.pdf",
+        id: "NARA-JAL1628-733667-001-007",
         page: 6,
         note: "Terauchi statement: two objects ahead"
       },
       {
-        url: "https://catalog.archives.gov/medialz/seattle/rg-237/733667/box_1/733667-001-007/733667-001-007.pdf",
+        id: "NARA-JAL1628-733667-001-007",
         page: 10,
         note: "Terauchi statement: large object, turns"
       },
       {
-        url: "https://catalog.archives.gov/medialz/seattle/rg-237/733667/box_1/733667-001-007/733667-001-007.pdf",
+        id: "NARA-JAL1628-733667-001-007",
         page: 13,
         note: "Terauchi statement: end, 50 minutes"
       },
       {
-        url: "https://catalog.archives.gov/medialz/seattle/rg-237/733667/box_1/733667-001-008/733667-001-008.pdf",
+        id: "NARA-JAL1628-733667-001-008",
         page: 11,
         note: "FAA interview of Terauchi, 2 Jan 1987"
       },
       {
-        url: "https://catalog.archives.gov/medialz/seattle/rg-237/733667/box_1/733667-001-025/733667-001-025.pdf",
+        id: "NARA-JAL1628-733667-001-025",
         page: 2,
         note: "FAA alert report to the Administrator"
       },
       {
-        url: "https://catalog.archives.gov/medialz/seattle/rg-237/733667/box_1/733667-001-024/733667-001-024.pdf",
+        id: "NARA-JAL1628-733667-001-024",
         page: 3,
         note: "FAA news release, 5 March 1987"
       },
       {
-        url: "https://catalog.archives.gov/medialz/seattle/rg-237/733667/box_1/733667-001-023/733667-001-023.pdf",
+        id: "NARA-JAL1628-733667-001-023",
         page: 4,
         note: "Anchorage Center split-target analysis"
       }
@@ -517,42 +517,42 @@ export const CASE_STORY_TEXT: Record<string, CaseStory> = {
     ],
     sources: [
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761364/-1/-1/0/ROUTING_SLIP_UFO_IRAN.PDF",
+        id: "DOD-DIA-Tehran-Routing-Slip-1978",
         page: 4,
         note: "Attaché cable: calls and both F-4s"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761364/-1/-1/0/ROUTING_SLIP_UFO_IRAN.PDF",
+        id: "DOD-DIA-Tehran-Routing-Slip-1978",
         page: 5,
         note: "Attaché cable: third object, landing"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761364/-1/-1/0/ROUTING_SLIP_UFO_IRAN.PDF",
+        id: "DOD-DIA-Tehran-Routing-Slip-1978",
         page: 6,
         note: "Attaché cable: radiation check, sources"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761364/-1/-1/0/ROUTING_SLIP_UFO_IRAN.PDF",
+        id: "DOD-DIA-Tehran-Routing-Slip-1978",
         page: 3,
         note: "Cable header, distribution, report date"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761364/-1/-1/0/ROUTING_SLIP_UFO_IRAN.PDF",
+        id: "DOD-DIA-Tehran-Routing-Slip-1978",
         page: 2,
         note: "DIA evaluation of the report"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761364/-1/-1/0/ROUTING_SLIP_UFO_IRAN.PDF",
+        id: "DOD-DIA-Tehran-Routing-Slip-1978",
         page: 1,
         note: "DIA routing slip, 8 December 1978"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761355/-1/-1/0/NOW_YOU_SEE.PDF",
+        id: "DOD-USAF-Now-You-See-It-Tehran-1976",
         page: 1,
         note: "Shields article: introduction"
       },
       {
-        url: "https://media.defense.gov/2021/Jul/13/2002761355/-1/-1/0/NOW_YOU_SEE.PDF",
+        id: "DOD-USAF-Now-You-See-It-Tehran-1976",
         page: 3,
         note: "Shields article: test results unreported"
       }
@@ -661,35 +661,43 @@ export const CASE_STORY_TEXT: Record<string, CaseStory> = {
         note: "Zamora's statement to the FBI"
       },
       {
-        url: "https://catalog.archives.gov/id/302532129?objectPage=4",
+        id: "NARA-Blue-Book-Socorro-1964",
+        page: 4,
         note: "Blue Book record card, Socorro"
       },
       {
-        url: "https://catalog.archives.gov/id/302532129?objectPage=12",
+        id: "NARA-Blue-Book-Socorro-1964",
+        page: 12,
         note: "Air Force case summary, page 1"
       },
       {
-        url: "https://catalog.archives.gov/id/302532129?objectPage=11",
+        id: "NARA-Blue-Book-Socorro-1964",
+        page: 11,
         note: "Air Force case summary, lab results"
       },
       {
-        url: "https://catalog.archives.gov/id/302532129?objectPage=64",
+        id: "NARA-Blue-Book-Socorro-1964",
+        page: 64,
         note: "TSgt Moody's report, 26 April 1964"
       },
       {
-        url: "https://catalog.archives.gov/id/302532129?objectPage=65",
+        id: "NARA-Blue-Book-Socorro-1964",
+        page: 65,
         note: "Hynek's trip report, 28 April 1964"
       },
       {
-        url: "https://catalog.archives.gov/id/302532129?objectPage=69",
+        id: "NARA-Blue-Book-Socorro-1964",
+        page: 69,
         note: "Hynek's trip report, conclusions"
       },
       {
-        url: "https://catalog.archives.gov/id/302532129?objectPage=44",
+        id: "NARA-Blue-Book-Socorro-1964",
+        page: 44,
         note: "Hynek's March 1965 return-trip report"
       },
       {
-        url: "https://catalog.archives.gov/id/302532129?objectPage=47",
+        id: "NARA-Blue-Book-Socorro-1964",
+        page: 47,
         note: "Hynek 1965 report on hoax theory"
       }
     ],
@@ -900,39 +908,48 @@ export const CASE_STORY_TEXT: Record<string, CaseStory> = {
     ],
     sources: [
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749390.jpg",
+        id: "CANADA-NRC-UAR-N-116-125",
+        page: 10,
         note: "RCC Halifax UFO report message, 5 Oct"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749392.jpg",
+        id: "CANADA-NRC-UAR-N-116-125",
+        page: 12,
         note: "CFHQ asks for underwater search"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749391.jpg",
+        id: "CANADA-NRC-UAR-N-116-125",
+        page: 11,
         note: "Col. Turner memorandum, 6 October 1967"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749393.jpg",
+        id: "CANADA-NRC-UAR-N-116-125",
+        page: 13,
         note: "Maritime Command diving order CUROPS 438"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749394.jpg",
+        id: "CANADA-NRC-UAR-N-116-125",
+        page: 14,
         note: "CUROPS 451: search area expanded"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749397.jpg",
+        id: "CANADA-NRC-UAR-N-116-125",
+        page: 17,
         note: "CUROPS 463: two days, nil results"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749398.jpg",
+        id: "CANADA-NRC-UAR-N-116-125",
+        page: 18,
         note: "CUROPS 470: search terminated"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749401.jpg",
+        id: "CANADA-NRC-UAR-N-116-125",
+        page: 21,
         note: "Col. Turner memorandum, 25 October 1967"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749812.jpg",
+        id: "CANADA-NRC-UAR-N-215-225",
+        page: 13,
         note: "DND 1967 UFO review, p. 20"
       },
       {
@@ -1519,43 +1536,53 @@ export const CASE_STORY_TEXT: Record<string, CaseStory> = {
     ],
     sources: [
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749597.jpg",
+        id: "CANADA-NRC-UAR-N-200",
+        page: 2,
         note: "RCC Winnipeg UFO report, 23 May, p. 1"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749598.jpg",
+        id: "CANADA-NRC-UAR-N-200",
+        page: 3,
         note: "RCC Winnipeg UFO report, p. 2"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749654.jpg",
+        id: "CANADA-NRC-UAR-N-200",
+        page: 59,
         note: "Dr. Oatway medical letter, 19 Sept 1967"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749615.jpg",
+        id: "CANADA-NRC-UAR-N-200",
+        page: 20,
         note: "Bissky investigation report, p. 2"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749616.jpg",
+        id: "CANADA-NRC-UAR-N-200",
+        page: 21,
         note: "Bissky investigation report, p. 3"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749645.jpg",
+        id: "CANADA-NRC-UAR-N-200",
+        page: 50,
         note: "Bissky supplemental report, 1 Sept, p. 2"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749739.jpg",
+        id: "CANADA-NRC-UAR-N-201-214",
+        page: 24,
         note: "Hunt radiation report, p. 3"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749741.jpg",
+        id: "CANADA-NRC-UAR-N-201-214",
+        page: 26,
         note: "Hunt radiation report, conclusions"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749648.jpg",
+        id: "CANADA-NRC-UAR-N-200",
+        page: 53,
         note: "Radiation Protection Division letter, 15 Sept"
       },
       {
-        url: "https://data2.collectionscanada.gc.ca/e/e110/e002749806.jpg",
+        id: "CANADA-NRC-UAR-N-215-225",
+        page: 7,
         note: "DND 1967 UFO review, p. 14"
       }
     ],
