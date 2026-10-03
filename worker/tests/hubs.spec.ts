@@ -54,12 +54,21 @@ describe("hub API", () => {
     expect(h.records.map((r: any) => r.id)).toContain("ALIAS-1");
   });
 
-  it("release hub: title, prev/next, its files", async () => {
+  it("release hub: title, prev/next, its files, release block", async () => {
     const h: any = await (await call("/api/hubs/release/2")).json();
-    expect(h.title).toBe("Pentagon UAP Release 02 · 12 Jun 2026");
+    expect(h.title).toBe("Pentagon UFO Files Release 02 (12 Jun 2026): 8 Files");
     expect(h.prev).toBe("1");
     expect(h.next).toBeNull();
     expect(h.records.length).toBe(8);
+    expect(h.release.size).toBe("8 files, −4 on Release 01");
+    expect(h.release.info.newAgencies).toEqual(["FBI", "CIA", "IC"]);
+    expect(h.release.prev).toEqual({ no: 1, date: "2026-05-08" });
+    expect(h.release.faq[0].q).toBe("When was Release 02 published?");
+  });
+
+  it("non-release hubs have no release block", async () => {
+    const h: any = await (await call("/api/hubs/agency/fbi")).json();
+    expect(h).not.toHaveProperty("release");
   });
 
   it("below-threshold, unknown slug and unknown kind are 404s", async () => {

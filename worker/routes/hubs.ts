@@ -7,6 +7,9 @@ import {
   AGENCY_HUBS, LOCATION_HUBS, MIN_HUB_FILES, hubIntro, hubStats, hubTitle, releaseLabel,
   type HubKind, type HubStats, type HubSummary,
 } from "../lib/hubs";
+import { docTitle } from "../lib/ssr";
+import { releaseBlock } from "./releases";
+import type { ReleaseBlock } from "../lib/releases";
 
 export type CardRow = { id: string; title: string; kind: string; incident_date: string | null } & Record<string, unknown>;
 export type HighlightPick = { id: string; why: string; title: string; thumb: string | null; kind: string };
@@ -15,6 +18,7 @@ export interface Hub {
   kind: HubKind; slug: string; title: string; intro: string; stats: HubStats;
   records: CardRow[]; siblings: HubSummary[]; prev?: string | null; next?: string | null;
   highlights: Highlights | null;
+  release?: ReleaseBlock | null;
 }
 
 // AI picks (crawler ingest.highlights) re-checked against the hub's current
@@ -96,10 +100,15 @@ export async function loadHub(env: Env, kind: string, slug: string, origin: stri
     });
   const same = hubs.filter((h) => h.kind === me.kind);
   const i = same.indexOf(me);
+  const highlights = highlightsOf(hlRow, records);
+  const release =
+    me.kind === "release"
+      ? await releaseBlock(env, origin, Number(me.slug), (highlights?.picks ?? []).map((p) => ({ id: p.id, title: docTitle(p.title, p.id, p.kind) })))
+      : undefined;
   return {
-    kind: me.kind, slug: me.slug, title: hubTitle(me), intro: hubIntro(me, sel.release, stats), stats, records, highlights: highlightsOf(hlRow, records),
+    kind: me.kind, slug: me.slug, title: hubTitle(me), intro: hubIntro(me, sel.release, stats), stats, records, highlights,
     siblings: same.filter((h) => h !== me),
-    ...(me.kind === "release" ? { prev: same[i - 1]?.slug ?? null, next: same[i + 1]?.slug ?? null } : {}),
+    ...(me.kind === "release" ? { prev: same[i - 1]?.slug ?? null, next: same[i + 1]?.slug ?? null, release } : {}),
   };
 }
 

@@ -69,7 +69,9 @@ export function releaseLabel(no: number, iso: string): string {
 }
 
 export function hubTitle(h: HubSummary): string {
-  if (h.kind === "release") return `Pentagon UAP ${h.label}`; // label stays short for chips
+  // "Release 06 · 18 Sep 2026" → "Pentagon UFO Files Release 06 (18 Sep 2026): 74 Files"
+  // ("UFO" is what people search; the chip label stays short).
+  if (h.kind === "release") return `Pentagon UFO Files ${h.label.replace(" · ", " (")}): ${h.count} Files`;
   if (h.kind === "location") return `UAP files: ${h.label}`;
   return `${h.label} UAP files`;
 }
