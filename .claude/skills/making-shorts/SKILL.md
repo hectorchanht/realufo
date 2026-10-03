@@ -39,8 +39,8 @@ Length is 20–35 s. Get the hook in fast and the end card out fast.
 - Keep the voice **off** the key moment so the blink, split or pass plays clean.
 - **Sound effects, used sparingly:** `lib.sfx("pen tick on a paper checkbox", 0.6)` uses ElevenLabs sound generation and is cached. Use one effect per meaningful event (a tick per box read aloud, a whoosh on the zoom), about 6 or fewer per Short. Keep them under the voice at about 0.5–0.8 volume and in the same `adelay` mix. No background sound-effect beds and no effect on every cut.
 - **Subtitles: calm, one line per sentence.** The user tried word-by-word captions and found them hurried and distracting, so don't use them. `lib.subtitles([(t0, tts(line)[0]), …])` gives one line per sentence, ≤32 characters, at a fixed size (46). Long sentences are split at the most balanced point, preferring commas. Each line stays on screen whole until the next one starts. Word timings come from ElevenLabs speech-to-text (`lib.words`, cached). Put the line just under the headline (y≈460–470). If a beat fills that spot, move the line low (y≈1170). Skip a line that's already on screen word for word. Frame 0 stays caption-free.
-- **What else the ElevenLabs key can do:** sound effects work, and speech-to-text, audio isolation and music are allowed (account/user info is not). Speech-to-text returns word timestamps, so it can drive word-synced captions. Check the music licence terms before using generated music.
-- For fixed-length footage, measure each line with `lib.tts` first, place it at a cue and mix with `adelay`. See `showcase/AARO-956955.py`. Built from stills: `Cut.seg(..., say=line)` stretches each beat to fit.
+- **What else the ElevenLabs key can do:** sound effects work, and speech-to-text, audio isolation and music are allowed. Account/user info and forced alignment are not (401), so speech-to-text (`lib.words`) supplies the timings for `lib.subtitles`. Check the music licence terms before using generated music.
+- For fixed-length footage, measure each line with `lib.tts` first, place it at a cue (`SAY = [(t, line), …]`) and mix with `adelay`. Copy `showcase/FBI-UAP-PR003.py` or `showcase/DOW-UAP-PR116.py`: they have the cues, subtitles, ID watermark and two-step mix. `showcase/AARO-956955.py` predates subtitles and the watermark. Built from stills: `Cut.seg(..., say=line)` stretches each beat to fit.
 
 ## Always lead to realufo.org
 
@@ -74,10 +74,11 @@ The goal is to make viewers feel "what if this showed up in front of us", in a r
 
 ## Before showing the user
 
-1. Pull frame 0 out of the render and **look at it**: would you tap it?
+1. Pull frame 0 out of the render and **look at it**: would you tap it? Then pull one frame from the middle of each beat (`-ss <t> -i out.mp4 -frames:v 1`, seeking by time rather than `select`) and check the text, boxes, subtitles and the ID line.
 2. Check duration, check there's an audio stream, and check per-second loudness **in the voice band** (`highpass=f=300` first; the drone hides a missing voice in plain RMS). Every narration cue should show up, and the voice should stay quiet at the key moment. Mix the audio in its own ffmpeg step, then burn the subtitles in a second step: putting both in one graph silently dropped PR116's late lines.
 3. Commit the recipe (the mp4 is git-ignored) and send the mp4 with SendUserFile.
 4. **Never post until the user approves** ("no post until we make it good"). Posting a showcase Short uses `scripts/publish.sh --showcase` (publish skill), once per record. An already-posted record's re-cut goes to R2 under a new key (`<ID>-v2.mp4`), because the old key is edge-cached for 1 month.
+5. **Uploading a version** (when the user asks): never overwrite. Use the next `-vN` key (a GET on `https://assets.realufo.org/<key>` should return 404 first), then run `npx wrangler r2 object put "realufo/<key>" --file <mp4> --content-type video/mp4 --cache-control "public, max-age=2592000" --remote --env-file /dev/null`. Confirm a GET returns 200 with the same byte size as the local file. Record the key and what changed in that version in the `realufo-showcase-shorts` memory.
 
 ## Common misses
 
