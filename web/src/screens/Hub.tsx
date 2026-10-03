@@ -3,7 +3,8 @@
 // Worker pre-renders the same content for crawlers (worker/lib/ssr.ts hubBody).
 import { Link, useParams } from "react-router-dom";
 import { useHub } from "../api/queries";
-import type { HubHighlights, HubKind } from "../api/types";
+import type { HubHighlights, HubKind, ReleaseBlock } from "../api/types";
+import { Faq } from "../components/Faq";
 import { docTitleParts } from "../lib/docTitle";
 import { DocCard } from "../components/DocCard";
 import { useSetPageTitle } from "../lib/pageTitle";
@@ -37,18 +38,24 @@ export default function Hub({ kind }: { kind: HubKind }) {
       </div>
       <h1 className="mb-2 text-[19px] font-bold leading-[1.3] text-ink">{data.title}</h1>
       <p className="mb-4 text-[14.5px] leading-[1.65] text-dim">{data.intro}</p>
+      {data.release && <WhatsNew b={data.release} />}
       {data.highlights && <Highlights h={data.highlights} />}
-      {(data.prev || data.next) && (
-        <div className="mb-4 flex justify-between font-mono text-xs text-ink">
-          {data.prev ? <Link to={`/release/${data.prev}`}>← RELEASE {data.prev.padStart(2, "0")}</Link> : <span />}
-          {data.next ? <Link to={`/release/${data.next}`}>RELEASE {data.next.padStart(2, "0")} →</Link> : <span />}
-        </div>
+      {data.release ? (
+        <ReleaseNav b={data.release} />
+      ) : (
+        (data.prev || data.next) && (
+          <div className="mb-4 flex justify-between font-mono text-xs text-ink">
+            {data.prev ? <Link to={`/release/${data.prev}`}>← RELEASE {data.prev.padStart(2, "0")}</Link> : <span />}
+            {data.next ? <Link to={`/release/${data.next}`}>RELEASE {data.next.padStart(2, "0")} →</Link> : <span />}
+          </div>
+        )
       )}
       <div className="mb-6 grid grid-flow-row-dense grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]">
         {data.records.map((r) => (
           <DocCard key={r.id} record={r} variant="grid" />
         ))}
       </div>
+      {data.release && <Faq items={data.release.faq} />}
       {data.siblings.length > 0 && (
         <section aria-labelledby="hub-more">
           <h2 id="hub-more" className="mb-2 font-mono text-[11px] font-semibold tracking-[.5px] text-ink">
@@ -100,5 +107,50 @@ function Highlights({ h }: { h: HubHighlights }) {
       </ol>
       <div className="mt-2 font-mono text-[9.5px] text-faint">AI-written from the file summaries</div>
     </section>
+  );
+}
+
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const dayMon = (iso: string) => `${Number(iso.slice(8, 10))} ${MON[Number(iso.slice(5, 7)) - 1]}`;
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+function WhatsNew({ b }: { b: ReleaseBlock }) {
+  const fresh = b.info.newAgencies;
+  return (
+    <section aria-labelledby="hub-new" className="mb-5 rounded-xl border border-line p-3">
+      <h2 id="hub-new" className="mb-2 font-mono text-[11px] font-semibold tracking-[.5px] text-ink">
+        WHAT'S NEW IN RELEASE {pad2(b.info.no)}
+      </h2>
+      <ul className="flex flex-col gap-1 text-[13.5px] leading-[1.55] text-dim">
+        <li>{b.size}</li>
+        <li className="flex flex-wrap gap-x-2">
+          {b.info.agencies.map((g) =>
+            g.slug ? (
+              <Link key={g.label} to={`/agency/${g.slug}`} className="text-signal hover:underline">{g.label} {g.count}</Link>
+            ) : (
+              <span key={g.label}>{g.label} {g.count}</span>
+            )
+          )}
+        </li>
+        <li>{b.kinds}</li>
+        {fresh.length > 0 && <li>First release with files from {fresh.length < 2 ? fresh[0] : `${fresh.slice(0, -1).join(", ")} and ${fresh[fresh.length - 1]}`}</li>}
+      </ul>
+    </section>
+  );
+}
+
+function ReleaseNav({ b }: { b: ReleaseBlock }) {
+  return (
+    <div className="mb-4 flex flex-wrap justify-between gap-2 font-mono text-xs text-ink">
+      {b.prev ? <Link to={`/release/${b.prev.no}`}>← RELEASE {pad2(b.prev.no)} ({dayMon(b.prev.date)})</Link> : <span />}
+      <Link to="/releases" className="text-faint hover:text-signal">ALL RELEASES</Link>
+      {b.next ? (
+        <Link to={`/release/${b.next.no}`}>RELEASE {pad2(b.next.no)} ({dayMon(b.next.date)}) →</Link>
+      ) : b.upcoming ? (
+        <Link to="/releases" className="text-signal">{b.upcoming} →</Link>
+      ) : (
+        <span />
+      )}
+    </div>
   );
 }

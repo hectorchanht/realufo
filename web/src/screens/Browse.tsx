@@ -21,6 +21,9 @@ export default function Browse() {
   return (
     <div data-screen="browse" style={{ animation: "fadeup .3s ease both" }}>
       <h1 className="mb-4 text-[19px] font-bold leading-[1.3] text-ink">Browse the archive</h1>
+      <Link to="/releases" className="mb-4 inline-block font-mono text-[11px] text-signal hover:underline">
+        Release tracker: dates, schedule and next release →
+      </Link>
       {KINDS.map((k) => {
         const group = hubs.filter((h) => h.kind === k);
         if (!group.length) return null;

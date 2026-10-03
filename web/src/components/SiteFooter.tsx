@@ -77,6 +77,7 @@ export default function SiteFooter() {
             <li key={i.path}><Link className={linkCls} to={i.path}>{i.label}</Link></li>
           )),
           <li key="browse"><Link className={linkCls} to="/browse">Browse all</Link></li>,
+          <li key="releases"><Link className={linkCls} to="/releases">Release tracker</Link></li>,
           <li key="cases"><Link className={linkCls} to="/cases">Cold cases</Link></li>,
         ])}
         {GROUPS.map(([kind, title]) => {

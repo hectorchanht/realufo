@@ -8,6 +8,7 @@ import type { QueryKey } from "@tanstack/react-query";
 import { api } from "./client";
 import type {
   AddCommentResponse,
+  TrackerData,
   AskResponse,
   AskRecentResponse,
   BoardThreadsResponse,
@@ -65,6 +66,7 @@ export const qk = {
   record: (id: string) => ["record", id] as const,
   hubs: ["hubs"] as const,
   hub: (kind: string, slug: string) => ["hub", kind, slug] as const,
+  releases: ["releases"] as const,
   comments: (recordId: string) => ["comments", recordId] as const,
   boardThreads: (boardId: string) => ["boardThreads", boardId] as const,
   threadSearch: (q: string) => ["threadSearch", q] as const,
@@ -547,6 +549,10 @@ export type { Comment };
 
 export function useHubs() {
   return useQuery({ queryKey: qk.hubs, queryFn: () => api.get<{ hubs: HubSummary[] }>("/api/hubs") });
+}
+
+export function useReleases() {
+  return useQuery({ queryKey: qk.releases, queryFn: () => api.get<TrackerData>("/api/releases") });
 }
 
 export function useHub(kind: string, slug: string) {

@@ -273,7 +273,10 @@ export interface Hub {
   prev?: string | null;
   next?: string | null;
   highlights?: HubHighlights | null;
+  /** Releases only: what's new, dated prev/next, FAQ (worker/routes/releases.ts). */
+  release?: import("../../../worker/lib/releases").ReleaseBlock | null;
 }
+export type { FaqItem, NextWindow, ReleaseBlock, ReleaseInfo, TrackerData } from "../../../worker/lib/releases";
 /** Hub slugs this record's facts link to (only hubs that exist). */
 export type HubLinks = Partial<Record<HubKind, string>>;
 

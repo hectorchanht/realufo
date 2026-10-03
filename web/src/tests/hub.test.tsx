@@ -120,3 +120,39 @@ describe("hub highlights", () => {
     expect(screen.queryByText("WHAT STANDS OUT")).toBeNull();
   });
 });
+
+const release6: HubData = {
+  kind: "release", slug: "6", title: "Pentagon UFO Files Release 06 (18 Sep 2026): 74 Files",
+  intro: "74 declassified UAP files the Department of War published on 18 September 2026 (Release 06): 4 PDFs, 70 videos.",
+  stats: { files: 74, pdf: 4, video: 70, image: 0, from: "1950", to: "2025" },
+  records: [], siblings: [], prev: "5", next: null, highlights: null,
+  release: {
+    info: { no: 6, date: "2026-09-18", weekday: "Friday", files: 74, gap: 42,
+      agencies: [{ label: "Department of War", slug: "department-of-war", count: 70 }, { label: "Local law enforcement", slug: "local-law-enforcement", count: 4 }],
+      kinds: { pdf: 4, video: 70, image: 0 }, newAgencies: ["Local law enforcement"] },
+    size: "74 files, +33 on Release 05", kinds: "70 videos, 4 PDFs",
+    prev: { no: 5, date: "2026-08-07" }, next: null, upcoming: "Release 07: due any day",
+    faq: [{ q: "When was Release 06 published?", a: "On Friday, 18 September 2026." }],
+  },
+};
+
+describe("release hub blocks", () => {
+  it("renders what's new, dated nav, tracker link and FAQ", () => {
+    useHubMock.mockReturnValue({ data: release6, isLoading: false });
+    renderAt("/release/6");
+    expect(screen.getByRole("heading", { name: "WHAT'S NEW IN RELEASE 06" })).toBeInTheDocument();
+    expect(screen.getByText("74 files, +33 on Release 05")).toBeInTheDocument();
+    expect(screen.getByText("First release with files from Local law enforcement")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Department of War 70" }).getAttribute("href")).toBe("/agency/department-of-war");
+    expect(screen.getByRole("link", { name: "← RELEASE 05 (7 Aug)" }).getAttribute("href")).toBe("/release/5");
+    expect(screen.getByRole("link", { name: "Release 07: due any day →" }).getAttribute("href")).toBe("/releases");
+    expect(screen.getByText("When was Release 06 published?")).toBeInTheDocument();
+  });
+
+  it("agency hubs render no release blocks", () => {
+    useHubMock.mockReturnValue({ data: fbi, isLoading: false });
+    renderAt("/agency/fbi");
+    expect(screen.queryByText(/WHAT'S NEW/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "FAQ" })).not.toBeInTheDocument();
+  });
+});
