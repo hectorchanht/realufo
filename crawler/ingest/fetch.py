@@ -2,7 +2,7 @@ import urllib.parse, urllib.request
 
 def download(url: str, dest: str) -> int:
     from curl_cffi import requests
-    r = requests.get(url, impersonate="chrome", timeout=60)
+    r = requests.get(url, impersonate="chrome", timeout=600)  # whole transfer; some PDFs are 170+ MB
     r.raise_for_status()
     with open(dest, "wb") as f:
         f.write(r.content)

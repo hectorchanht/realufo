@@ -13,3 +13,17 @@ def test_head_ok_encodes_spaces_but_keeps_existing_escapes(monkeypatch):
     assert fetch.head_ok("https://assets.realufo.org/pdfs/a%20b.pdf") is True
     assert seen == ["https://assets.realufo.org/pdfs/wargov/D135_%20AAWSAP-May-18-%202010.pdf",
                     "https://assets.realufo.org/pdfs/a%20b.pdf"]
+
+def test_download_allows_large_files_time(monkeypatch, tmp_path):
+    # DOW-UAP-D104 is 173 MB and timed out at 60 s mid-transfer (2026-10-03 OCR backfill).
+    import sys, types
+    seen = {}
+    class R:
+        content = b"x"
+        def raise_for_status(self): pass
+    def get(url, impersonate, timeout):
+        seen["timeout"] = timeout
+        return R()
+    monkeypatch.setitem(sys.modules, "curl_cffi", types.SimpleNamespace(requests=types.SimpleNamespace(get=get)))
+    fetch.download("https://cdn/big.pdf", str(tmp_path / "f"))
+    assert seen["timeout"] >= 600
