@@ -100,7 +100,7 @@ export interface Bootstrap {
   unmappedFiles?: number;
   cases: CaseLite[];
   /** Server feature flags. `ask` shows the Archive ASK toggle. */
-  features?: { ask: boolean };
+  features?: { ask: boolean; push?: boolean };
 }
 
 // ---------------------------------------------------------------------------

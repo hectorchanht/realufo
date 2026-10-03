@@ -110,6 +110,6 @@ export async function bootstrap(req: Request, env: Env) {
     places: map.places,
     unmappedFiles: map.unmapped,
     cases: cases.results.map((c) => ({ ...c, lede: snippet(c.lede) })),
-    features: { ask: env.FEATURE_ASK === "on" },
+    features: { ask: env.FEATURE_ASK === "on", push: env.FEATURE_PUSH === "on" },
   });
 }

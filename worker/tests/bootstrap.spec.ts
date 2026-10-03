@@ -78,9 +78,9 @@ describe("ask schema + feature flag", () => {
   });
 
   it("features.ask is true only when FEATURE_ASK is 'on'", async () => {
-    expect((await boot("on")).features).toEqual({ ask: true });
-    expect((await boot("hidden")).features).toEqual({ ask: false });
-    expect((await boot("off")).features).toEqual({ ask: false });
-    expect((await boot(undefined)).features).toEqual({ ask: false });
+    expect((await boot("on")).features).toEqual({ ask: true, push: false });
+    expect((await boot("hidden")).features).toEqual({ ask: false, push: false });
+    expect((await boot("off")).features).toEqual({ ask: false, push: false });
+    expect((await boot(undefined)).features).toEqual({ ask: false, push: false });
   });
 });
