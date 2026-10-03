@@ -154,6 +154,10 @@ export interface Short {
   thumb: string | null;
   clip: string;
   showcase?: boolean;
+  /** Player-only likes; `liked` = this visitor's. `comments` = the record's comment count. */
+  likes?: number;
+  liked?: boolean;
+  comments?: number;
 }
 
 export interface Feed {

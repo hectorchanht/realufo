@@ -1,9 +1,15 @@
 import type { Env } from "../env";
-import { json } from "../lib/json";
+import { json, error } from "../lib/json";
+import { actorId } from "../lib/anon";
+import { allowWrite } from "../lib/ratelimit";
 import { thumbSql } from "../lib/db";
 import { ftsQuery, metaMatch } from "./records";
 
-export type Short = { id: string; title: string | null; thumb: string | null; clip: string; showcase: boolean };
+export type Short = {
+  id: string; title: string | null; thumb: string | null; clip: string; showcase: boolean;
+  /** Player-only likes (short_likes); `liked` = this visitor's. `comments` = the record's. */
+  likes: number; liked: boolean; comments: number;
+};
 const MAX = 200;
 
 // ponytail: per-isolate 5-min memo of the two R2 listings (each a Class A op;
@@ -43,13 +49,14 @@ export const clearShortsMemo = () => {
 // page text) or, for showcase Shorts, every word in the posted text.
 // total = every match, not just this page (0 for an offset past the end).
 // Never throws: an R2/D1 error is logged and an empty list (the feed must not fail).
-export async function queryShorts(env: Env, { q = "", limit = MAX, offset = 0 }: { q?: string; limit?: number; offset?: number } = {}): Promise<{ shorts: Short[]; total: number }> {
+// actor = the visitor's anon id hash ("" = none: liked is always false).
+export async function queryShorts(env: Env, { q = "", limit = MAX, offset = 0, actor = "" }: { q?: string; limit?: number; offset?: number; actor?: string } = {}): Promise<{ shorts: Short[]; total: number }> {
   try {
     const [sc, cv] = await listings(env);
     const showcase = [...sc.keys()], twins = [...cv.keys()];
     if (!showcase.length && !twins.length) return { shorts: [], total: 0 };
     const where = ["r.status='live'", "(r.id IN (SELECT id FROM sc) OR r.id IN (SELECT id FROM cv))"];
-    const bind: unknown[] = [JSON.stringify(showcase), JSON.stringify(twins)];
+    const bind: unknown[] = [JSON.stringify(showcase), JSON.stringify(twins), actor];
     q = q.trim();
     if (q) {
       const meta = metaMatch(q);
@@ -63,6 +70,9 @@ export async function queryShorts(env: Env, { q = "", limit = MAX, offset = 0 }:
     const { results } = await env.DB.prepare(
       `WITH sc(id) AS (SELECT value FROM json_each(?)), cv(id) AS (SELECT value FROM json_each(?))
        SELECT r.id, r.archive, r.title, ${thumbSql("r.id")} thumb, count(*) OVER () total,
+         (SELECT count(*) FROM short_likes l WHERE l.record_id=r.id) likes,
+         EXISTS (SELECT 1 FROM short_likes l WHERE l.record_id=r.id AND l.actor_id=?) liked,
+         (SELECT count(*) FROM comments c WHERE c.record_id=r.id) comments,
          r.id IN (SELECT id FROM sc) showcase,
          CASE WHEN r.id IN (SELECT id FROM sc) THEN (SELECT max(x.created_at) FROM x_posts x WHERE x.stream='showcase' AND x.ref=r.id) END posted,
          (SELECT CAST(substr(a.crop, 1, instr(a.crop, ':') - 1) AS INT) < CAST(substr(a.crop, instr(a.crop, ':') + 1) AS INT)
@@ -70,9 +80,9 @@ export async function queryShorts(env: Env, { q = "", limit = MAX, offset = 0 }:
        FROM records r WHERE ${where.join(" AND ")}
        ORDER BY showcase DESC, posted DESC, portrait DESC, r.created_at DESC, r.id DESC LIMIT ? OFFSET ?`
     ).bind(...bind, Math.min(MAX, Math.max(1, Math.floor(limit) || MAX)), Math.max(0, Math.floor(offset) || 0))
-      .all<{ id: string; archive: string; title: string | null; thumb: string | null; showcase: number; total: number }>();
-    const shorts = results.map(({ id, archive, title, thumb, showcase }) => ({
-      id, title, thumb, showcase: !!showcase,
+      .all<{ id: string; archive: string; title: string | null; thumb: string | null; showcase: number; total: number; likes: number; liked: number; comments: number }>();
+    const shorts = results.map(({ id, archive, title, thumb, showcase, likes, liked, comments }) => ({
+      id, title, thumb, showcase: !!showcase, likes, liked: !!liked, comments,
       // ?v=etag: assets.realufo.org caches a month, so a re-cut Short gets a new URL.
       clip: `https://assets.realufo.org/${showcase ? "showcase" : "clips-v"}/${archive}/${encodeURIComponent(id)}.mp4?v=${(showcase ? sc : cv).get(id)!.slice(0, 8)}`,
     }));
@@ -90,5 +100,19 @@ export const listShorts = async (env: Env, opts?: Parameters<typeof queryShorts>
 export async function shorts(req: Request, env: Env) {
   const u = new URL(req.url);
   const n = (k: string) => Number(u.searchParams.get(k)) || 0;
-  return json(await queryShorts(env, { q: u.searchParams.get("q") ?? "", limit: n("limit") || MAX, offset: n("offset") }));
+  const actor = await actorId(req, env.ANON_SALT);
+  return json(await queryShorts(env, { actor: actor === "anon:none" ? "" : actor, q: u.searchParams.get("q") ?? "", limit: n("limit") || MAX, offset: n("offset") }));
+}
+
+// POST /api/shorts/:id/like — toggle this visitor's like → { liked, likes }.
+export async function likeShort(req: Request, env: Env, p: Record<string, string>) {
+  const actor = await actorId(req, env.ANON_SALT);
+  if (actor === "anon:none") return error(400, "missing anon id");
+  if (!(await env.DB.prepare("SELECT 1 FROM records WHERE id=? AND status='live'").bind(p.id).first())) return error(404, "record not found");
+  if (!(await allowWrite(env, req, "vote"))) return error(429, "slow down — too many likes");
+  const gone = await env.DB.prepare("DELETE FROM short_likes WHERE actor_id=? AND record_id=?").bind(actor, p.id).run();
+  const liked = !gone.meta.changes;
+  if (liked) await env.DB.prepare("INSERT INTO short_likes(actor_id,record_id) VALUES(?,?)").bind(actor, p.id).run();
+  const row = await env.DB.prepare("SELECT count(*) n FROM short_likes WHERE record_id=?").bind(p.id).first<{ n: number }>();
+  return json({ liked, likes: row?.n ?? 0 });
 }

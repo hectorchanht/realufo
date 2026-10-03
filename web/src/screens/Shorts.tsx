@@ -4,21 +4,28 @@
 // Queue = the ?q= search results when they contain :id, else every Short;
 // pages load until :id turns up, and again as the viewer nears the end.
 // One swipe (snap-stop) / ▲▼ button / arrow key = one Short. Tap a video (or
-// Space) to pause/play; a bar along its bottom shows progress and seeks.
+// Space) to pause/play, double-tap to like; a bar along its bottom shows
+// progress and seeks. Right column: like · comments (the file's, in a sheet) ·
+// share. Clicking the black beside the video (desktop) closes the player.
 // Starts muted (autoplay policy); the sound button toggles all.
 // Portaled to <body> with the app behind it made inert, so Tab/screen readers
 // stay in the player.
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
-import { ArrowLeft, Check, ChevronDown, ChevronUp, Pause, Play, Share2, Volume2, VolumeX } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Heart, MessageCircle, Pause, Play, Share2, Volume2, VolumeX, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useShorts } from "../api/queries";
+import { likeShort, useComments, useShorts } from "../api/queries";
+import type { Short } from "../api/types";
+import { UploadThumb } from "../components/UploadThumb";
+import { VoteButton } from "../components/VoteButton";
+import { useOverlay } from "../overlays/OverlayProvider";
 import { goBack } from "../components/navItems";
 import { docTitleParts } from "../lib/docTitle";
 import { shareLink } from "../lib/shareLink";
 import { useAutoplayInView } from "../lib/useAutoplayInView";
 import { useSetPageTitle } from "../lib/pageTitle";
 
+const DOUBLE_TAP_MS = 250;
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
 // Progress bar along a Short's bottom edge: fills as it plays (every frame
@@ -101,6 +108,48 @@ function Seek() {
   );
 }
 
+// The file's comments over the lower part of its Short; "Add a comment" opens
+// the site Composer (the player un-inerts the app behind it while it's open).
+function CommentsSheet({ id, onClose, onCount }: { id: string; onClose: () => void; onCount: (n: number) => void }) {
+  const { data, isLoading } = useComments(id);
+  const { openComposer } = useOverlay();
+  const comments = data?.comments ?? [];
+  useEffect(() => {
+    if (data) onCount(data.comments.length);
+  }, [data, onCount]);
+  return (
+    <div className="absolute inset-0 z-30 flex flex-col justify-end bg-black/40" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div role="dialog" aria-label="Comments" className="flex max-h-[70%] flex-col rounded-t-2xl bg-bg2 text-ink animate-[fadeup_.2s_ease_both]">
+        <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
+          <span className="font-mono text-[11px] uppercase tracking-[.8px] text-dim">Comments {data ? comments.length : ""}</span>
+          <button type="button" aria-label="Close comments" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full hover:bg-surface">
+            <X size={18} aria-hidden="true" />
+          </button>
+        </div>
+        <ul className="min-h-[120px] flex-1 overflow-y-auto overscroll-contain px-4 py-2">
+          {isLoading && <li className="py-6 text-center font-mono text-[11px] text-faint">◉ loading…</li>}
+          {data && !comments.length && <li className="py-6 text-center font-mono text-[11px] text-faint">no comments yet. be the first.</li>}
+          {comments.map((c) => (
+            <li key={c.id} className="border-b border-line py-2.5 last:border-0">
+              <div className="mb-1 flex items-center gap-2 font-mono text-[9.5px] text-faint">
+                {c.handleShow && <span className="text-cyan">{c.handleShow}</span>}
+                <span className="ml-auto">{c.ago}</span>
+              </div>
+              <div className="text-[13px] leading-[1.5]" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{c.body}</div>
+              {c.image_url && <UploadThumb url={c.image_url} />}
+              <div className="mt-1.5"><VoteButton targetType="comment" targetId={c.id} votes={c.votes} /></div>
+            </li>
+          ))}
+        </ul>
+        <button type="button" onClick={() => openComposer({ mode: "comment", recordId: id })}
+          className="m-3 mb-[max(12px,env(safe-area-inset-bottom))] rounded-full border border-line2 px-4 py-2.5 text-left font-mono text-[12px] text-dim hover:border-signal">
+          Add a comment…
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const path = (id: string, q: string) => `/shorts/${encodeURIComponent(id)}${q ? `?q=${encodeURIComponent(q)}` : ""}`;
 
 export default function Shorts() {
@@ -130,14 +179,44 @@ export default function Shorts() {
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const [muted, setMuted] = useState(true);
   const [copied, setCopied] = useState("");
-  // Big ▶ / ❚❚ flashed mid-slide after a tap toggles play.
-  const [flash, setFlash] = useState<{ id: string; playing: boolean; n: number } | null>(null);
+  // Big ▶ / ❚❚ / ♥ flashed mid-slide after a tap / double-tap.
+  const [flash, setFlash] = useState<{ id: string; icon: "play" | "pause" | "like"; n: number } | null>(null);
   const toggle = (v: HTMLVideoElement) => {
     const playing = v.paused;
     if (playing) v.play().catch(() => {});
     else v.pause();
-    setFlash((f) => ({ id: v.dataset.id ?? "", playing, n: (f?.n ?? 0) + 1 }));
+    setFlash((f) => ({ id: v.dataset.id ?? "", icon: playing ? "play" : "pause", n: (f?.n ?? 0) + 1 }));
   };
+
+  // Likes: optimistic, reconciled with the server's answer (reverted on error).
+  const [likes, setLikes] = useState<Record<string, { liked: boolean; likes: number }>>({});
+  const likeOf = (s: Short) => likes[s.id] ?? { liked: !!s.liked, likes: s.likes ?? 0 };
+  const like = (s: Short, onlyOn = false) => {
+    const cur = likeOf(s);
+    if (onlyOn && cur.liked) return;
+    setLikes((m) => ({ ...m, [s.id]: { liked: !cur.liked, likes: cur.likes + (cur.liked ? -1 : 1) } }));
+    likeShort(s.id)
+      .then((r) => setLikes((m) => ({ ...m, [s.id]: r })))
+      .catch(() => setLikes((m) => ({ ...m, [s.id]: cur })));
+  };
+  // A tap waits a beat to pause: a second tap inside it is a double-tap = like.
+  const tap = useRef<{ at: number; timer?: ReturnType<typeof setTimeout> }>({ at: 0 });
+  const onTap = (v: HTMLVideoElement, s: Short) => {
+    clearTimeout(tap.current.timer);
+    if (Date.now() - tap.current.at < DOUBLE_TAP_MS) {
+      tap.current.at = 0;
+      like(s, true);
+      setFlash((f) => ({ id: s.id, icon: "like", n: (f?.n ?? 0) + 1 }));
+      return;
+    }
+    tap.current = { at: Date.now(), timer: setTimeout(() => toggle(v), DOUBLE_TAP_MS) };
+  };
+  useEffect(() => () => clearTimeout(tap.current.timer), []);
+
+  // Comments sheet (one Short at a time) + counts it has loaded since.
+  const [sheet, setSheet] = useState<string | null>(null);
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const onCount = useCallback((n: number) => sheet && setCommentCounts((m) => (m[sheet] === n ? m : { ...m, [sheet]: n })), [sheet]);
   useEffect(() => {
     if (!flash) return;
     const h = setTimeout(() => setFlash(null), 600);
@@ -151,12 +230,14 @@ export default function Shorts() {
 
   // Everything else on the page (the app under the overlay) is inert while open.
   const [layer, setLayer] = useState<HTMLDivElement | null>(null);
+  // …except while the Composer (in the app tree, above the player) is open.
+  const { composer } = useOverlay();
   useEffect(() => {
-    if (!layer) return;
+    if (!layer || composer) return;
     const others = [...document.body.children].filter((c) => c !== layer && !c.hasAttribute("inert"));
     others.forEach((c) => c.setAttribute("inert", ""));
     return () => others.forEach((c) => c.removeAttribute("inert"));
-  }, [layer]);
+  }, [layer, composer]);
 
   // Open on :id once; later :id changes come from scrolling, not navigation.
   useLayoutEffect(() => {
@@ -178,7 +259,7 @@ export default function Shorts() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement)?.closest?.("input,textarea")) return;
+      if (composer || e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement)?.closest?.("input,textarea")) return;
       const n = { ArrowDown: 1, j: 1, ArrowUp: -1, k: -1 }[e.key];
       if (n) {
         e.preventDefault();
@@ -189,7 +270,10 @@ export default function Shorts() {
           e.preventDefault();
           toggle(v);
         }
-      } else if (e.key === "Escape") goBack(navigate, pathname);
+      } else if (e.key === "Escape") {
+        if (sheet) setSheet(null);
+        else goBack(navigate, pathname);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -232,8 +316,11 @@ export default function Shorts() {
             const title = docTitleParts(s.id, s.title, "video").title;
             const MuteIcon = muted ? VolumeX : Volume2;
             const ShareIcon = copied === s.id ? Check : Share2;
+            const lk = likeOf(s);
+            const nComments = commentCounts[s.id] ?? s.comments ?? 0;
             return (
-              <section key={s.id} className="flex h-[100dvh] snap-start snap-always items-center justify-center">
+              <section key={s.id} className="flex h-[100dvh] snap-start snap-always items-center justify-center"
+                onClick={(e) => e.target === e.currentTarget && goBack(navigate, pathname)}>
                 {/* 9:16 box: full screen on a phone, a centered column on desktop. */}
                 <div className="relative aspect-[9/16] h-full max-w-full">
                   <video
@@ -245,16 +332,20 @@ export default function Shorts() {
                     loop
                     playsInline
                     preload={i === idx || i === idx + 1 ? "metadata" : "none"}
-                    onClick={(e) => toggle(e.currentTarget)}
+                    onClick={(e) => onTap(e.currentTarget, s)}
                     // autoplay may force a slide back to muted (useAutoplayInView): keep the button honest
                     onVolumeChange={(e) => setMuted(e.currentTarget.muted)}
                     className="h-full w-full object-contain"
                   />
                   {flash?.id === s.id && (
                     <div key={flash.n} aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center">
-                      <div className="grid h-16 w-16 place-items-center rounded-full bg-black/50 text-white animate-[fadeup_.6s_ease_reverse_both]">
-                        {flash.playing ? <Play size={30} fill="currentColor" /> : <Pause size={30} fill="currentColor" />}
-                      </div>
+                      {flash.icon === "like" ? (
+                        <Heart size={96} fill="currentColor" className="text-red drop-shadow-lg animate-[fadeup_.6s_ease_reverse_both]" />
+                      ) : (
+                        <div className="grid h-16 w-16 place-items-center rounded-full bg-black/50 text-white animate-[fadeup_.6s_ease_reverse_both]">
+                          {flash.icon === "play" ? <Play size={30} fill="currentColor" /> : <Pause size={30} fill="currentColor" />}
+                        </div>
+                      )}
                     </div>
                   )}
                   <button type="button" onClick={() => setMuted((m) => !m)} aria-label={muted ? "Unmute" : "Mute"} title={muted ? "Unmute" : "Mute"}
@@ -267,7 +358,20 @@ export default function Shorts() {
                       <span className="block font-mono text-[10px] uppercase tracking-[.8px] text-white/60">{s.id}</span>
                       <span className="line-clamp-2 text-[14px] font-semibold">{title}</span>
                     </Link>
-                    <div className="flex flex-none flex-col gap-3">
+                    <div className="flex flex-none flex-col items-center gap-3">
+                      <button type="button" aria-label={lk.liked ? "Unlike" : "Like"} aria-pressed={lk.liked} title="Like" onClick={() => like(s)}
+                        className="flex flex-col items-center gap-0.5">
+                        <span className={`bg-white/15 ${round}`}>
+                          <Heart size={20} aria-hidden="true" fill={lk.liked ? "currentColor" : "none"} className={lk.liked ? "text-red" : ""} />
+                        </span>
+                        <span className="font-mono text-[10px]">{lk.likes}</span>
+                      </button>
+                      <button type="button" aria-label="Comments" title="Comments" onClick={() => setSheet(s.id)} className="flex flex-col items-center gap-0.5">
+                        <span className={`bg-white/15 ${round}`}>
+                          <MessageCircle size={20} aria-hidden="true" />
+                        </span>
+                        <span className="font-mono text-[10px]">{nComments}</span>
+                      </button>
                       <button type="button" aria-label={copied === s.id ? "Link copied" : "Share"} title="Share" className={`bg-white/15 ${round}`}
                         onClick={async () => setCopied((await shareLink(title, path(s.id, ""))) === "copied" ? s.id : "")}>
                         <ShareIcon size={20} aria-hidden="true" />
@@ -275,6 +379,7 @@ export default function Shorts() {
                     </div>
                   </div>
                   <Seek />
+                  {sheet === s.id && <CommentsSheet id={s.id} onClose={() => setSheet(null)} onCount={onCount} />}
                 </div>
               </section>
             );

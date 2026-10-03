@@ -92,6 +92,25 @@ describe("listShorts", () => {
     expect(list).toHaveBeenCalledTimes(2);
   });
 
+  it("likes: toggle per visitor, counted in /api/shorts with this visitor's liked; comments counted", async () => {
+    const call = async (method: string, p: string, anon?: string) => {
+      const ctx = createExecutionContext();
+      const res = await worker.fetch(new Request("https://x" + p, { method, headers: anon ? { "X-Anon-Id": anon } : {} }), env as any, ctx);
+      await waitOnExecutionContext(ctx);
+      return { status: res.status, body: (await res.json()) as any };
+    };
+    expect((await call("POST", "/api/shorts/SH-5/like")).status).toBe(400);
+    expect((await call("POST", "/api/shorts/SH-3/like", "a")).status).toBe(404); // not live
+    expect((await call("POST", "/api/shorts/SH-5/like", "a")).body).toEqual({ liked: true, likes: 1 });
+    expect((await call("POST", "/api/shorts/SH-5/like", "b")).body).toEqual({ liked: true, likes: 2 });
+    expect((await call("POST", "/api/shorts/SH-5/like", "b")).body).toEqual({ liked: false, likes: 1 });
+    await env.DB.prepare("INSERT INTO comments(id,no,record_id,body) VALUES ('C1',1,'SH-5','hi'),('C2',2,'SH-5','yo')").run();
+    const mine = (await call("GET", "/api/shorts?q=gimbal", "a")).body.shorts[0];
+    expect(mine).toMatchObject({ id: "SH-5", likes: 1, liked: true, comments: 2 });
+    expect((await call("GET", "/api/shorts?q=gimbal", "b")).body.shorts[0].liked).toBe(false);
+    expect((await call("GET", "/api/shorts?q=gimbal")).body.shorts[0].liked).toBe(false);
+  });
+
   it("GET /api/shorts?q= serves { shorts, total }; facets carry the Shorts total; /api/feed clips still come from it", async () => {
     const get = async (p: string) => {
       const ctx = createExecutionContext();

@@ -144,6 +144,9 @@ export function useShorts(q = "", { enabled = true } = {}) {
   return { ...r, data, total: r.data?.pages[0]?.total };
 }
 
+// Toggle this visitor's like on a Short (player-only) → the new state.
+export const likeShort = (id: string) => api.post<{ liked: boolean; likes: number }>(`/api/shorts/${encodeURIComponent(id)}/like`);
+
 // `keepPrevious`: keep the old page visible until the new one lands (Archive
 // paging/filtering). `enabled`: Doc only fetches a neighbour page on demand.
 export function useRecords(params: RecordsParams = {}, { enabled = true, keepPrevious = false } = {}) {

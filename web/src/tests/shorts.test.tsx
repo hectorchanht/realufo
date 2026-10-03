@@ -9,10 +9,23 @@ const all: Short[] = [
   { id: "C-3", title: "Third", thumb: null, clip: "https://c/C-3.mp4" },
 ];
 const useShortsMock = vi.fn();
+const likeShortMock = vi.fn();
 vi.mock("../api/queries", () => ({
   useBootstrap: () => ({ data: undefined, isLoading: false }),
   useHubs: () => ({ data: { hubs: [] } }),
   useShorts: (q: string, o?: { enabled?: boolean }) => useShortsMock(q, o),
+  likeShort: (id: string) => likeShortMock(id),
+  useComments: () => ({
+    data: { comments: [{ id: "C1", no: 1, body: "that's a balloon", handle: null, handleShow: null, stance: null, votes: 2, ago: "1h", image_url: null }] },
+    isLoading: false,
+  }),
+  useVote: () => ({ mutate: vi.fn(), isPending: false }),
+  isVotedLocally: () => false,
+  // Composer (opened from the comments sheet) pulls these in.
+  useAddComment: () => ({ mutate: vi.fn(), isPending: false }),
+  useAddCaseComment: () => ({ mutate: vi.fn(), isPending: false }),
+  useCreateThread: () => ({ mutate: vi.fn(), isPending: false }),
+  useReply: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 // jsdom has no IntersectionObserver: record the callback so a test can "swipe".
 let fire: IntersectionObserverCallback = () => {};
@@ -79,7 +92,7 @@ describe("Shorts player", () => {
     expect(v.currentTime).toBe(0);
   });
 
-  it("tapping a video pauses / plays it (sound stays put) and flashes the icon", async () => {
+  it("tapping a video pauses / plays it after a beat (sound stays put)", async () => {
     renderAppAt("/shorts/A-1");
     const v = (await screen.findAllByTestId("short-video"))[0] as HTMLVideoElement;
     const pause = vi.mocked(HTMLMediaElement.prototype.pause);
@@ -88,11 +101,67 @@ describe("Shorts player", () => {
     play.mockClear();
     clockOn(v, 24, false);
     fireEvent.click(v);
-    expect(pause).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(pause).toHaveBeenCalledTimes(1));
     expect(v.muted).toBe(true);
     clockOn(v, 24, true);
+    await new Promise((r) => setTimeout(r, 300)); // past the double-tap window
     fireEvent.click(v);
-    expect(play).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(play).toHaveBeenCalledTimes(1));
+  });
+
+  it("like button toggles optimistically and settles on the server's count", async () => {
+    likeShortMock.mockResolvedValue({ liked: true, likes: 8 });
+    useShortsMock.mockImplementation(() => ({ data: [{ ...all[0], likes: 4, liked: false, comments: 1 }], isFetched: true }));
+    renderAppAt("/shorts/A-1");
+    const btn = await screen.findByRole("button", { name: "Like" });
+    expect(btn).toHaveTextContent("4");
+    fireEvent.click(btn);
+    expect(screen.getByRole("button", { name: "Unlike" })).toHaveTextContent("5");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Unlike" })).toHaveTextContent("8"));
+    expect(likeShortMock).toHaveBeenCalledWith("A-1");
+  });
+
+  it("double-tap likes (never unlikes) and doesn't pause", async () => {
+    likeShortMock.mockReset().mockResolvedValue({ liked: true, likes: 1 });
+    const pause = vi.mocked(HTMLMediaElement.prototype.pause);
+    renderAppAt("/shorts/A-1");
+    const v = (await screen.findAllByTestId("short-video"))[0] as HTMLVideoElement;
+    clockOn(v, 24, false);
+    pause.mockClear();
+    fireEvent.click(v);
+    fireEvent.click(v);
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Unlike" })).toHaveLength(1));
+    fireEvent.click(v);
+    fireEvent.click(v);
+    await new Promise((r) => setTimeout(r, 300));
+    expect(likeShortMock).toHaveBeenCalledTimes(1);
+    expect(pause).not.toHaveBeenCalled();
+  });
+
+  it("comments: the sheet lists the file's comments; Add opens the Composer over an un-inert app", async () => {
+    useShortsMock.mockImplementation(() => ({ data: [{ ...all[0], comments: 3 }], isFetched: true }));
+    const { container } = renderAppAt("/shorts/A-1");
+    const btn = await screen.findByRole("button", { name: "Comments" });
+    expect(btn).toHaveTextContent("3");
+    fireEvent.click(btn);
+    const sheet = screen.getByRole("dialog", { name: "Comments" });
+    expect(within(sheet).getByText("that's a balloon")).toBeInTheDocument();
+    expect(btn).toHaveTextContent("1"); // the loaded list wins over the stale count
+    expect(container).toHaveAttribute("inert");
+    fireEvent.click(within(sheet).getByRole("button", { name: /add a comment/i }));
+    await waitFor(() => expect(document.querySelector("[data-composer]")).toBeInTheDocument());
+    expect(container).not.toHaveAttribute("inert");
+    fireEvent.keyDown(window, { key: "Escape" }); // composer's, not the player's
+    expect(document.querySelector("[data-screen=shorts]")).toBeInTheDocument();
+  });
+
+  it("clicking beside the video closes the player; clicking the video doesn't", async () => {
+    renderAppAt("/shorts/A-1");
+    const v = (await screen.findAllByTestId("short-video"))[0];
+    fireEvent.click(v);
+    expect(document.querySelector("[data-screen=shorts]")).toBeInTheDocument();
+    fireEvent.click(v.closest("section")!);
+    await waitFor(() => expect(document.querySelector("[data-screen=shorts]")).toBeNull());
   });
 
   it("▲ / ▼ buttons step one Short", async () => {
