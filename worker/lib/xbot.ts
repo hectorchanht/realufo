@@ -10,7 +10,7 @@ type Row = { id: number; text: string; media_id: string | null; attempts: number
 const MAX_ATTEMPTS = 3;
 const log = (o: Record<string, unknown>) => console.log(JSON.stringify({ xbot: true, ...o }));
 
-const secretsOf = (env: Env): XSecrets | null =>
+export const secretsOf = (env: Env): XSecrets | null =>
   env.X_API_KEY && env.X_API_SECRET && env.X_ACCESS_TOKEN && env.X_ACCESS_SECRET
     ? { X_API_KEY: env.X_API_KEY, X_API_SECRET: env.X_API_SECRET, X_ACCESS_TOKEN: env.X_ACCESS_TOKEN, X_ACCESS_SECRET: env.X_ACCESS_SECRET }
     : null;

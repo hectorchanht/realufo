@@ -31,6 +31,7 @@
 // thumb. Guarded defensively below (`post.source_record_id ===
 // sourceRecord?.id`) rather than assumed, so an unmatched id degrades to "no
 // image" instead of a wrong thumb.
+import { Fragment } from "react";
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { RecordEmbed } from "../components/RecordEmbed";
@@ -39,6 +40,7 @@ import { QUOTE_SOURCE, backlinks } from "../lib/quoteLinks";
 import { useThread } from "../api/queries";
 import type { Post, ThreadSourceRecord } from "../api/types";
 import { VoteButton } from "../components/VoteButton";
+import { PollCard } from "../components/PollCard";
 import { LoadError } from "../components/LoadError";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { docPageTitle, docTitleParts } from "../lib/docTitle";
@@ -372,15 +374,18 @@ export function Thread() {
       {/* post list — prototype lines 262-282 (OP-first ordering from the API) */}
       <div className="flex flex-col gap-[11px]">
         {posts.map((p) => (
-          <PostRow
-            key={p.id}
-            post={p}
-            sourceRecord={sourceRecord}
-            thread={p.isOp ? thread : undefined}
-            nos={nos}
-            replies={replyMap.get(p.no) ?? []}
-            onQuote={handleQuote}
-          />
+          <Fragment key={p.id}>
+            <PostRow
+              post={p}
+              sourceRecord={sourceRecord}
+              thread={p.isOp ? thread : undefined}
+              nos={nos}
+              replies={replyMap.get(p.no) ?? []}
+              onQuote={handleQuote}
+            />
+            {/* story threads (ar_<slug>) carry the story's crowd poll right under the story */}
+            {p.isOp && id.startsWith("ar_") && <PollCard slug={id.slice(3)} />}
+          </Fragment>
         ))}
       </div>
 

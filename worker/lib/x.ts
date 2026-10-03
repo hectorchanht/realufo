@@ -57,15 +57,31 @@ async function call(s: XSecrets, method: string, path: string, body?: { json?: u
 // carries the media; xbot posts the rest as a reply chain.
 export const THREAD_SEP = "\n---\n";
 
-export async function createPost(s: XSecrets, text: string, mediaIds: string[] = [], replyTo?: string): Promise<string> {
+// poll and media are mutually exclusive at X (a poll tweet can't carry media).
+export async function createPost(
+  s: XSecrets, text: string, mediaIds: string[] = [], replyTo?: string,
+  poll?: { options: string[]; duration_minutes: number },
+): Promise<string> {
   const j = await call(s, "POST", "/2/tweets", {
     json: {
       text,
       ...(mediaIds.length ? { media: { media_ids: mediaIds } } : {}),
       ...(replyTo ? { reply: { in_reply_to_tweet_id: replyTo } } : {}),
+      ...(poll ? { poll } : {}),
     },
   });
   return String(j.data.id);
+}
+
+export type PollResult = { counts: number[]; total: number; closed: boolean };
+
+// Votes per option in position order (position is 1-based at X). null = the tweet has no poll.
+export async function getPoll(s: XSecrets, tweetId: string): Promise<PollResult | null> {
+  const j = await call(s, "GET", `/2/tweets/${tweetId}?expansions=attachments.poll_ids&poll.fields=options,voting_status`);
+  const p = j.includes?.polls?.[0];
+  if (!p?.options?.length) return null;
+  const counts = [...p.options].sort((a: any, b: any) => a.position - b.position).map((o: any) => Number(o.votes) || 0);
+  return { counts, total: counts.reduce((a: number, b: number) => a + b, 0), closed: p.voting_status === "closed" };
 }
 
 type Info = { state?: string; check_after_secs?: number; error?: { message?: string } } | undefined;

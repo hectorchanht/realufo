@@ -190,4 +190,11 @@ describe("budget", () => {
     expect(await withinBudget(E(), 0.015, NOW)).toBe(false); // 3/day
     expect(await withinBudget(E({ X_DAILY_MAX: "10", X_MONTHLY_USD_CAP: "0.05" }), 0.015, NOW)).toBe(false); // 0.045+0.015 > 0.05
   });
+  it("counts story-poll posts in the monthly $ cap", async () => {
+    await env.DB.prepare("INSERT OR IGNORE INTO articles(slug,title,body) VALUES ('budget-poll','T','B')").run();
+    await env.DB.prepare("INSERT INTO poll_social(slug,platform,status,cost_usd,created_at) VALUES ('budget-poll','x','posted',0.05,?)")
+      .bind(sqlTime(NOW)).run();
+    expect(await withinBudget(E({ X_MONTHLY_USD_CAP: "0.06" }), 0.015, NOW, true)).toBe(false); // 0.05 + 0.015 > 0.06
+    await env.DB.prepare("DELETE FROM poll_social WHERE slug='budget-poll'").run();
+  });
 });

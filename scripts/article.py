@@ -12,6 +12,8 @@ Idempotent: image keys are uuid5(slug/file), rows are upserts, the site thread i
 article.json: slug, title, hero (image), short (mp4, for --social), showcase_record (the record
 the X post hangs off), parts (the story; X thread tweets, each ≤280), evidence: [{id, t?, label,
 evidence, image?}].
+poll (optional): {q, opts} — the story's crowd question (q ≤100, 2-4 opts ≤25 chars, unique); site
+poll + an X poll reply (worker/lib/xpoll.ts, X_POLLS=on). Opts are frozen once anyone voted.
 """
 import json, os, re, subprocess, sys, tempfile, uuid
 from datetime import datetime, timezone
@@ -57,13 +59,69 @@ def doc_link(e):
     return f"{SITE}/doc/{e['id']}" + (f"?t={t:g}" if t is not None else "")
 
 
+def poll_error(p):
+    """Same rules as worker/routes/polls.ts parsePoll (X's limits). None = valid."""
+    if not isinstance(p, dict) or not isinstance(p.get("q"), str) or not isinstance(p.get("opts"), list):
+        return "poll must be {q, opts: [...]}"
+    q, opts = p["q"].strip(), [o.strip() if isinstance(o, str) else o for o in p["opts"]]
+    if not q or len(q) > 100:
+        return "poll.q must be 1-100 chars"
+    if not 2 <= len(opts) <= 4:
+        return "poll needs 2-4 opts"
+    if any(not isinstance(o, str) or not o or len(o) > 25 for o in opts):
+        return "each poll opt must be 1-25 chars"
+    if len(set(opts)) != len(opts):
+        return "poll opts must be unique"
+    return None
+
+
+def weighted_len(text):
+    """X's weighted length, as worker/lib/xcopy.ts weightedLength: a URL = 23, emoji/CJK = 2."""
+    n = 0
+    rest = re.sub(r"https?://\S+", "", text)
+    n += 23 * len(re.findall(r"https?://\S+", text))
+    for ch in rest:
+        c = ord(ch)
+        n += 1 if c <= 0x10FF or 0x2000 <= c <= 0x200D or 0x2010 <= c <= 0x201F or 0x2032 <= c <= 0x2037 else 2
+    return n
+
+
+def last_part_error(a, thread):
+    """The X thread's last tweet = last part + CTA. Over 280, xcopy fit() would cut off the link."""
+    n = weighted_len(a["parts"][-1] + cta(a, thread))
+    return f"last part + Vote/Full-story line is over by {n - 280} (X weighted); shorten it or the poll question" if n > 280 else None
+
+
+def freeze_error(stored, n, new):
+    """Once anyone voted (site or social poll), the opts can't change: a vote is an index into them.
+    stored/new = poll JSON or None. The question wording may still change."""
+    if not n:
+        return None
+    opts = lambda p: p and json.loads(p)["opts"]
+    if not stored or not new or opts(stored) != opts(new):
+        return "poll opts are frozen: votes or a social poll exist (only the question wording may change)"
+    return None
+
+
+def cta(a, thread):
+    """Last line of the social caption: the poll question as a Vote link, else the story link."""
+    url = f"{SITE}/thread/{thread}"
+    return f"\n{a['poll']['q'].strip()} Vote → {url}" if a.get("poll") else f"\nFull story: {url}"
+
+
 def main():
     if len(sys.argv) < 2:
         sys.exit(__doc__)
     slug, social = sys.argv[1], "--social" in sys.argv[2:]
     a = json.load(open(os.path.join(ROOT, "showcase/articles", slug, "article.json")))
     assert a["slug"] == slug and a["parts"] and a["evidence"], "article.json: slug/parts/evidence"
-    ids = [e["id"] for e in a["evidence"]]
+    poll = a.get("poll")
+    if poll and (err := poll_error(poll)):
+        sys.exit(f"article.json: {err}")
+    poll_json = poll and json.dumps({"q": poll["q"].strip(), "opts": [o.strip() for o in poll["opts"]]}, ensure_ascii=False)
+    if social and (err := last_part_error(a, f"ar_{slug}")):
+        sys.exit(f"article.json: {err}")
+    ids =[e["id"] for e in a["evidence"]]
     found = {r["id"] for r in d1(f"SELECT id FROM records WHERE status='live' AND id IN ({','.join(map(q, ids))})", read=True)}
     if missing := [i for i in ids if i not in found]:
         sys.exit(f"not live records: {missing}")
@@ -72,9 +130,14 @@ def main():
     hero = upload(slug, a.get("hero"))
     imgs = {e["id"]: upload(slug, e.get("image")) for e in a["evidence"]}
 
+    cur = d1(f"""SELECT a.poll, (SELECT count(*) FROM poll_votes WHERE slug={q(slug)}) + (SELECT count(*) FROM poll_social WHERE slug={q(slug)}) n
+                 FROM articles a WHERE a.slug={q(slug)}""", read=True)
+    if cur and (err := freeze_error(cur[0]["poll"], cur[0]["n"], poll_json)):
+        sys.exit(err)
+
     print("== rows → D1")
-    sql = [f"""INSERT INTO articles(slug,title,body,image_key) VALUES({q(slug)},{q(a['title'])},{q(SEP.join(a['parts']))},{q(hero)})
-               ON CONFLICT(slug) DO UPDATE SET title=excluded.title, body=excluded.body, image_key=excluded.image_key;""",
+    sql = [f"""INSERT INTO articles(slug,title,body,image_key,poll) VALUES({q(slug)},{q(a['title'])},{q(SEP.join(a['parts']))},{q(hero)},{q(poll_json)})
+               ON CONFLICT(slug) DO UPDATE SET title=excluded.title, body=excluded.body, image_key=excluded.image_key, poll=excluded.poll;""",
            f"DELETE FROM article_records WHERE slug={q(slug)};"]  # the article's own evidence list, rewritten as a whole
     sql += [f"INSERT INTO article_records(slug,record_id,pos,t,page,label,evidence,image_key) VALUES({q(slug)},{q(e['id'])},{i},{q(e.get('t'))},{q(e.get('page'))},{q(e['label'])},{q(e['evidence'])},{q(imgs[e['id']])});"
             for i, e in enumerate(a["evidence"])]
@@ -105,13 +168,15 @@ def main():
         rows.append(f"UPDATE articles SET thread_id={q(thread)} WHERE slug={q(slug)};")
     d1("\n".join(rows))
     print(f"   {SITE}/thread/{thread}")
+    if poll:
+        print(f"   poll: {poll['q'].strip()} 👇  [{' / '.join(poll['opts'])}]  (X reply once X_POLLS=on)")
 
     urls = [f"{SITE}/thread/{thread}", *[f"{SITE}/doc/{i}" for i in ids]]
     subprocess.run([sys.executable, "crawler/indexnow.py", *urls], cwd=ROOT)
 
     if social:
         short = os.path.join(ROOT, "showcase/articles", slug, a["short"])
-        text = SEP.join([*a["parts"][:-1], a["parts"][-1] + f"\nFull story: {SITE}/thread/{thread}"])
+        text = SEP.join([*a["parts"][:-1], a["parts"][-1] + cta(a, thread)])
         subprocess.run(["scripts/publish.sh", "--showcase", a["showcase_record"], short, text], cwd=ROOT, check=True)
 
 

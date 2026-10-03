@@ -13,6 +13,7 @@ import { getThread, createThread, searchThreads } from "./routes/threads";
 import { createPost } from "./routes/posts";
 import { toggleVote } from "./routes/votes";
 import { castVerdict } from "./routes/verdicts";
+import { getPoll, castPoll } from "./routes/polls";
 import { getCase } from "./routes/cases";
 import { serveWithMeta } from "./lib/meta";
 import { ask, recentAsks, setAskPublic, getSharedAsk } from "./routes/ask";
@@ -22,6 +23,7 @@ import { llms, llmsFull } from "./routes/llms";
 import { hubsIndex, getHub } from "./routes/hubs";
 import { tick } from "./lib/xbot";
 import { tick as socialTick } from "./lib/social/tick";
+import { pollTick } from "./lib/xpoll";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -40,6 +42,8 @@ on("GET", "/api/u/:name", viewUpload);
 on("GET", "/api/records/:id/comments", listComments);
 on("POST", "/api/records/:id/comments", addComment);
 on("POST", "/api/records/:id/verdict", castVerdict);
+on("GET", "/api/articles/:slug/poll", getPoll);
+on("POST", "/api/articles/:slug/poll", castPoll);
 on("GET", "/api/boards/:id/threads", boardThreads);
 on("GET", "/api/threads", searchThreads);
 on("GET", "/api/threads/:id", getThread);
@@ -56,6 +60,7 @@ async function runTick(env: Env) {
   const logErr = (who: string) => (e: unknown) => console.log(JSON.stringify({ [who]: true, crashed: String(e).slice(0, 300) }));
   await tick(env).catch(logErr("xbot"));
   await socialTick(env).catch(logErr("social"));
+  await pollTick(env).catch(logErr("xpoll"));
 }
 
 // POST /__tick (Authorization: Bearer ADMIN_TOKEN): one cron tick on demand, for

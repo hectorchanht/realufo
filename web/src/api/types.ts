@@ -282,6 +282,10 @@ export type Verdict = "explained" | "unexplained" | "more_data";
 export interface VerdictTally { explained: number; unexplained: number; more_data: number }
 export interface VerdictState { mine: Verdict | null; total: number; tally?: VerdictTally }
 
+/** Spec 9 story poll. tally only after you vote; social = native polls (X, Threads), public. */
+export interface PollSocial { platform: "x" | "threads"; counts: number[]; total: number; closed: boolean }
+export interface PollState { q: string; opts: string[]; mine: number | null; total: number; tally?: number[]; social: PollSocial[] }
+
 /** Spec 7 TL;DR: 3 factual bullets + a deadpan one-liner; cardUrl = share PNG. */
 export interface Tldr { bullets: string[]; oneLiner: string; cardUrl: string | null }
 
