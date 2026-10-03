@@ -5,6 +5,7 @@
 // esc(): thread bodies and handles are anonymous user input.
 
 import { parseAiMoments, parseKeyMoments, type KeyMoment } from "../../web/src/lib/keyMoments";
+import { citeParts, type StoryView } from "./caseStories";
 import { caseStoryUrl, RELEASES_TITLE } from "./shared";
 import { agencyList, longDate, pad2, shortDate, type FaqItem, type ReleaseBlock, type TrackerData } from "./releases";
 import type { TopicBlock } from "./topics";
@@ -280,6 +281,7 @@ export type DocData = {
   fullText?: { pages: { n: number; text: string }[]; truncated: boolean; total_pages: number; aiSummary?: string | null } | null;
   hubs?: Partial<Record<"release" | "agency" | "location" | "decade", string>>;
   topics?: { slug: string; label: string }[];
+  citedIn?: { slug: string; title: string }[];
   tldr?: { bullets: string[]; oneLiner: string; cardUrl: string | null } | null;
   articles?: { title: string; thread_id: string | null; evidence: { id: string; label: string }[] }[];
 };
@@ -385,6 +387,7 @@ export function docBody(d: DocData): string {
       .map(([k, v]) => `<dt>${k}</dt><dd>${esc(String(v))}</dd>`)
       .join("")}</dl>`,
     d.topics?.length ? `<p>Topics: ${d.topics.map((t) => a({ href: hubHref("topic", t.slug), text: t.label })).join(" · ")}</p>` : "",
+    d.citedIn?.length ? `<p>Cited in: ${d.citedIn.map((c) => a({ href: `/case/${encodeURIComponent(c.slug)}`, text: c.title })).join(" · ")}</p>` : "",
     paras(moments.prose),
     momentsSection(d, moments),
     `<p>${[{ href: `/api/file/${encodeURIComponent(r.id)}`, text: "Open original file" }, ...sourceLinks(r).map((l) => ({ href: l.href, text: `${l.label} page` }))].map(a).join(" · ")}</p>`,
@@ -421,17 +424,45 @@ export function threadBody(t: ThreadData): string {
 export const boardBody = (b: { name: string; desc: string | null; threads: { id: string; title: string }[] }) =>
   tabBody(b.name, b.desc || "", section("Threads", b.threads.map((t) => ({ href: threadHref(t.id), text: t.title }))));
 
+const citeHtml = (text: string, max: number) =>
+  citeParts(text, max).map((p) => (typeof p === "string" ? esc(p) : `<sup><a href="#src-${p.n}">[${p.n}]</a></sup>`)).join("");
+
+function storyHtml(v: StoryView): string {
+  const max = v.sources.length;
+  const secs = v.sections
+    .map((s) =>
+      [
+        `<h2>${esc(s.heading)}</h2>`,
+        ...s.paras.map((p) => `<p>${citeHtml(p, max)}</p>`),
+        s.quote ? `<blockquote><p>${esc(s.quote.text)}</p><cite>— ${esc(s.quote.who)} <a href="#src-${s.quote.src}">[${s.quote.src}]</a></cite></blockquote>` : "",
+      ].join("")
+    )
+    .join("");
+  const timeline = v.timeline.length
+    ? `<section><h2>Timeline</h2><ul>${v.timeline.map((t) => `<li><b>${esc(t.date)}</b> ${esc(t.event)}${t.src ? ` <a href="#src-${t.src}">[${t.src}]</a>` : ""}</li>`).join("")}</ul></section>`
+    : "";
+  const sources = `<section><h2>Evidence &amp; sources</h2><ol>${v.sources
+    .map((s) => {
+      const link = s.href ? `<a href="${esc(s.href)}"${s.external ? ' target="_blank" rel="noopener"' : ""}>${esc(s.label)}</a>` : esc(s.label);
+      return `<li id="src-${s.n}">${link}: ${esc(s.note)}</li>`;
+    })
+    .join("")}</ol></section>`;
+  return `${secs}${timeline}${sources}<p><small>Last fact-checked: ${esc(v.updated)}. Every claim cites its source.</small></p>`;
+}
+
 export function caseBody(c: {
   slug: string; name: string; lede: string | null; pull: string | null; pull_cite: string | null;
   coord?: string | null; archive_label?: string | null;
   thread: { id: string; title: string } | null; others?: { slug: string; name: string }[];
+  story?: StoryView | null;
 }): string {
   const facts = [c.coord?.replace(/^◉\s*/, ""), c.archive_label && `Source: ${c.archive_label}`].filter(Boolean).map((f) => `<p>${esc(f!)}</p>`).join("");
   const quote = c.pull ? `<blockquote>${paras(c.pull)}${c.pull_cite ? `<cite>${esc(c.pull_cite)}</cite>` : ""}</blockquote>` : "";
-  const story = `<p>${a({ href: caseStoryUrl(c.slug), text: `Full story, timeline and sources: ${c.name}` })}</p>`;
+  // The fact-checked story replaces the link to the old subdomain copy.
+  const story = c.story ? storyHtml(c.story) : `<p>${a({ href: caseStoryUrl(c.slug), text: `Full story, timeline and sources: ${c.name}` })}</p>`;
   const discussion = c.thread ? section("Discussion", [{ href: threadHref(c.thread.id), text: c.thread.title }]) : "";
   const more = section("More cold cases", (c.others ?? []).map((o) => ({ href: `/case/${encodeURIComponent(o.slug)}`, text: o.name })));
-  return tabBody(c.name, c.lede || "", facts, quote, story, discussion, more);
+  return tabBody(c.story?.title ?? c.name, c.lede || "", facts, quote, story, discussion, more);
 }
 
 // Shared Ask answer page (Spec 8 §2.4). [n] links to source n's file; an [n]

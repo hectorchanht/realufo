@@ -465,7 +465,7 @@ describe("pre-rendered body", () => {
 
   it("case renders lede and its discussion thread", async () => {
     const html = await get("/case/kaikoura");
-    expect(html).toContain("<h1>The Kaikoura Lights</h1>");
+    expect(html).toContain("<h1>Kaikoura 1978: what the RNZAF and DSIR files concluded</h1>"); // story title now leads
     expect(html).toContain('<a href="/thread/t5">');
   });
 
@@ -732,5 +732,53 @@ describe("topic pages (crawler HTML)", () => {
     expect(browse.indexOf("<h2>Topics</h2>")).toBeLessThan(browse.indexOf("<h2>Releases</h2>"));
     const agency = await get("/agency/fbi");
     expect(agency).not.toContain('"about"');
+  });
+});
+
+describe("case story pages (crawler HTML)", () => {
+  const fakeAssets = {
+    fetch: async () => new Response('<html><head><!--META--></head><body><div id="root"></div></body></html>', { headers: { "content-type": "text/html" } }),
+  };
+  const get = async (path: string) => {
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(new Request("https://casepages.test" + path, { headers: { accept: "text/html" } }), { ...env, ASSETS: fakeAssets } as any, ctx);
+    await waitOnExecutionContext(ctx);
+    return res.text();
+  };
+
+  it("socorro: story title h1, sections, citations, timeline, numbered sources, Article JSON-LD", async () => {
+    const { CASE_STORY_TEXT } = await import("../lib/caseStoryText");
+    const S = CASE_STORY_TEXT.socorro;
+    const html = await get("/case/socorro");
+    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    expect(html).toContain(`<h1>${esc(S.title)}</h1>`);
+    expect(html).toContain(`<h2>${esc(S.sections[0].heading)}</h2>`);
+    expect(html).toMatch(/<sup><a href="#src-\d+">\[\d+\]<\/a><\/sup>/);
+    expect(html).toContain("<h2>Timeline</h2>");
+    expect(html).toContain("<h2>Evidence &amp; sources</h2>");
+    expect(html).toContain('<li id="src-1">');
+    expect(html).toContain('"@type":"Article"');
+    expect(html).toContain(`"dateModified":"${S.updated}"`);
+    expect(html).toContain('"citation":[');
+    expect(html).not.toContain("release.realufo.org/stories/socorro");
+    expect(html).toContain("Last fact-checked:");
+  });
+
+  it("a case without a story renders as before", async () => {
+    await env.DB.prepare("INSERT INTO cases(slug,name,lede) VALUES ('test-case','Test Case','A lede.')").run();
+    const html = await get("/case/test-case");
+    expect(html).toContain("<h1>Test Case</h1>");
+    expect(html).not.toContain("Evidence &amp; sources");
+    expect(html).not.toContain('"dateModified"');
+  });
+
+  it("doc pages show Cited in", async () => {
+    const { CASE_STORY_TEXT } = await import("../lib/caseStoryText");
+    const S = CASE_STORY_TEXT.socorro;
+    const id = S.sources.find((s) => s.id)!.id!;
+    await env.DB.prepare("INSERT OR IGNORE INTO records(id,archive,agency,title,summary,kind,status) VALUES (?,?,?,?,?,?,?)")
+      .bind(id, "nara", "NARA", `${id}, Socorro source`, "x", "pdf", "live").run();
+    const html = await get(`/doc/${encodeURIComponent(id)}`);
+    expect(html).toContain('Cited in: <a href="/case/socorro">');
   });
 });

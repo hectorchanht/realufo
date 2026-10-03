@@ -1,4 +1,5 @@
 import type { Env } from "../env";
+import { storyView } from "../routes/cases";
 import type { MetaInput } from "./meta";
 import { thumbSql } from "./db";
 import { uploadUrl } from "./upload";
@@ -263,19 +264,27 @@ const boardPage: Loader = async (env, g) => {
   };
 };
 
-const casePage: Loader = async (env, g) => {
-  const [x, thread, others] = await Promise.all([
+const casePage: Loader = async (env, g, url) => {
+  const [x, thread, others, story] = await Promise.all([
     env.DB.prepare("SELECT slug,name,lede,pull,pull_cite,coord,archive_label FROM cases WHERE slug=?")
       .bind(g.slug)
       .first<{ slug: string; name: string; lede: string | null; pull: string | null; pull_cite: string | null; coord: string | null; archive_label: string | null }>(),
     env.DB.prepare("SELECT id,title FROM threads WHERE case_slug=? LIMIT 1").bind(g.slug).first<{ id: string; title: string }>(),
     env.DB.prepare("SELECT slug,name FROM cases WHERE slug<>? ORDER BY name").bind(g.slug).all<{ slug: string; name: string }>(),
+    storyView(env, g.slug),
   ]);
   if (!x) return null;
   const description = (x.lede || "").slice(0, 200);
+  const title = story?.title ?? x.name;
   return {
-    meta: { title: x.name, description, jsonLd: { "@type": "Article", headline: x.name, description } },
-    body: caseBody({ ...x, thread, others: others.results }),
+    meta: {
+      title, description,
+      jsonLd: {
+        "@type": "Article", headline: title, description, about: x.name,
+        ...(story ? { dateModified: story.updated, citation: story.sources.flatMap((s) => (s.href ? [s.external ? s.href : `${url.origin}${s.href}`] : [])) } : {}),
+      },
+    },
+    body: caseBody({ ...x, thread, others: others.results, story }),
   };
 };
 
