@@ -43,7 +43,7 @@ afterEach(() => {
 describe("AppShell", () => {
   it("phone bar: four icon tabs + More; only the active tab shows its label", async () => {
     renderAppAt("/archive?type=shorts");
-    await screen.findByPlaceholderText(/search (the archive|[0-9,]+ records)/i);
+    await screen.findByPlaceholderText(/search .*shorts/i);
     const bar = within(document.querySelector("[data-bottomtab]") as HTMLElement);
     const shorts = bar.getByRole("link", { name: "Shorts" });
     expect(shorts).toHaveAttribute("aria-current", "page");

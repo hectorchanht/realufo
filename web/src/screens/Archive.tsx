@@ -268,13 +268,6 @@ export function Archive() {
   const { data: boot } = useBootstrap();
   const totalRecords = boot?.stats?.records;
   const totalSources = boot?.stats?.archives;
-  // AppBar title — prototype's `titles.archive` (RealUFO.dc.html:566), with
-  // REAL counts (no fake fillups).
-  useSetPageTitle(
-    "THE ARCHIVE",
-    totalRecords != null ? `${totalRecords.toLocaleString()} records · ${totalSources ?? 0} sources` : "Declassified records",
-  );
-
   const [searchParams, setSearchParams] = useSearchParams();
 
   const filter = recordsFilter(searchParams);
@@ -371,9 +364,16 @@ export function Archive() {
   const flags = facets?.flags;
   const kindCount = (k: string) => facets?.kinds?.find((x) => x.name === k)?.count;
 
-  // "shorts" swaps the records grid for the Shorts grid: only q applies there,
-  // so every other filter control is disabled and its pill hidden.
+  // "shorts" (the Shorts tab) swaps the page for the Shorts grid: only q
+  // applies there, so every filter row and pill is hidden.
   const showShorts = type === "shorts";
+  // AppBar title — prototype's `titles.archive` (RealUFO.dc.html:566), with
+  // REAL counts (no fake fillups).
+  useSetPageTitle(
+    ...((showShorts
+      ? ["SHORTS", facets?.shorts != null ? `${facets.shorts.toLocaleString()} clips` : "Declassified UAP clips"]
+      : ["THE ARCHIVE", totalRecords != null ? `${totalRecords.toLocaleString()} records · ${totalSources ?? 0} sources` : "Declassified records"]) as [string, string]),
+  );
   // One removable pill per active filter, in the order the controls appear.
   type Pill = { label: string; remove: Record<string, string | null> };
   const pills = ([
@@ -386,7 +386,7 @@ export function Archive() {
     type && { label: TYPE_LABELS[type] ?? type, remove: { type: null } },
     redacted && { label: redacted === "1" ? "Redacted" : "Unredacted", remove: { redacted: null } },
     ...HAS_FLAGS.filter(([k]) => has.includes(k)).map(([k, label]) => ({ label, remove: { has: hasParam(has.filter((h) => h !== k)) } })),
-  ] as (Pill | "" | undefined)[]).filter((p): p is Pill => !!p && (!showShorts || "q" in p.remove || "type" in p.remove));
+  ] as (Pill | "" | undefined)[]).filter((p): p is Pill => !!p);
 
   const { data, isLoading, isError, error, refetch, isPlaceholderData } = useRecords(
     {
@@ -400,6 +400,13 @@ export function Archive() {
   // text) as a strip above the files; tap → the player, queue = this search.
   // The Shorts type chip shows them all (still narrowed by q) as a grid.
   const { data: shorts = [], total: shortsTotal, hasNextPage: moreShorts, fetchNextPage, isFetchingNextPage, isLoading: shortsLoading } = useShorts(q, { enabled: !!q || showShorts });
+  const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!sentinel || isFetchingNextPage || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => e.isIntersecting && void fetchNextPage(), { rootMargin: "800px 0px" });
+    io.observe(sentinel);
+    return () => io.disconnect();
+  }, [sentinel, isFetchingNextPage, fetchNextPage]);
   const records = data?.records ?? [];
   const count = data?.count ?? 0;
   const totalPages = Math.ceil(count / RECORDS_PAGE_SIZE);
@@ -421,7 +428,9 @@ export function Archive() {
           onChange={(e) => setInputValue(e.target.value)}
           enterKeyHint="search"
           placeholder={
-            totalRecords != null
+            showShorts
+              ? `search ${facets?.shorts != null ? `${facets.shorts.toLocaleString()} ` : ""}shorts — titles, places, words…`
+              : totalRecords != null
               ? `search ${totalRecords.toLocaleString()} records — titles, places, words inside the files…`
               : "search the archive — titles, places, words inside the files…"
           }
@@ -429,7 +438,8 @@ export function Archive() {
         />
       </form>
 
-      <fieldset disabled={showShorts} className="m-0 min-w-0 border-0 p-0 disabled:opacity-40">
+      {!showShorts && (
+        <>
         {/* archive chip row — lines 174-178 */}
         <div data-scroll className="mb-1.5 flex gap-[7px] overflow-x-auto pb-2.5">
           <ArchiveChip selected={archive === ""} style={archiveChipStyle(archive === "", true)} onClick={() => setParam("archive", null)}>
@@ -494,91 +504,90 @@ export function Archive() {
           />
           <FacetSelect label="Sort" all="Featured first" value={filter.sort ?? ""} options={SORTS} onChange={(v) => setParam("sort", v)} />
         </div>
-      </fieldset>
 
-      {/* type chips */}
-      <div className="mb-1.5 px-0.5 py-1">
-        <div data-scroll className="flex gap-1.5 overflow-x-auto">
-          {["", ...Object.keys(TYPE_LABELS)].map((k) => {
-            const n = k === "shorts" ? facets?.shorts : k ? kindCount(k) : totalRecords;
+        {/* type chips */}
+        <div className="mb-1.5 px-0.5 py-1">
+          <div data-scroll className="flex gap-1.5 overflow-x-auto">
+            {["", ...Object.keys(TYPE_LABELS)].map((k) => {
+              const n = k === "shorts" ? facets?.shorts : k ? kindCount(k) : totalRecords;
+              return (
+                <TypeChip key={k} selected={type === k} style={typeChipStyle(type === k)} onClick={() => setParam("type", k || null)}>
+                  {TYPE_LABELS[k] ?? "All"} {n != null && <span className="opacity-60">{abbreviateCount(n)}</span>}
+                </TypeChip>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* redaction (exclusive pair) + has-flags (combine) */}
+        <div data-scroll className="mb-3 flex items-center gap-1.5 overflow-x-auto pb-1.5">
+          {(
+            [
+              ["1", "Redacted", flags?.redacted],
+              ["0", "Unredacted", flags?.unredacted],
+            ] as const
+          ).map(([v, label, n]) => (
+            <TypeChip key={v} selected={redacted === v} style={typeChipStyle(redacted === v)} onClick={() => setParam("redacted", redacted === v ? null : v)}>
+              {label} {n != null && <span className="opacity-60">{abbreviateCount(n)}</span>}
+            </TypeChip>
+          ))}
+          <span aria-hidden="true" className="mx-0.5 h-4 w-px flex-none bg-line2" />
+          {HAS_FLAGS.map(([k, label]) => {
+            const on = has.includes(k);
             return (
-              <TypeChip key={k} selected={type === k} style={typeChipStyle(type === k)} onClick={() => setParam("type", k || null)}>
-                {TYPE_LABELS[k] ?? "All"} {n != null && <span className="opacity-60">{abbreviateCount(n)}</span>}
+              <TypeChip
+                key={k}
+                selected={on}
+                style={typeChipStyle(on)}
+                onClick={() => setParam("has", hasParam(on ? has.filter((h) => h !== k) : [...has, k]))}
+              >
+                {label} {flags && <span className="opacity-60">{abbreviateCount(flags[k])}</span>}
               </TypeChip>
             );
           })}
         </div>
-      </div>
 
-      {/* redaction (exclusive pair) + has-flags (combine) */}
-      <fieldset disabled={showShorts} data-scroll className="m-0 mb-3 flex min-w-0 items-center gap-1.5 overflow-x-auto border-0 p-0 pb-1.5 disabled:opacity-40">
-        {(
-          [
-            ["1", "Redacted", flags?.redacted],
-            ["0", "Unredacted", flags?.unredacted],
-          ] as const
-        ).map(([v, label, n]) => (
-          <TypeChip key={v} selected={redacted === v} style={typeChipStyle(redacted === v)} onClick={() => setParam("redacted", redacted === v ? null : v)}>
-            {label} {n != null && <span className="opacity-60">{abbreviateCount(n)}</span>}
-          </TypeChip>
-        ))}
-        <span aria-hidden="true" className="mx-0.5 h-4 w-px flex-none bg-line2" />
-        {HAS_FLAGS.map(([k, label]) => {
-          const on = has.includes(k);
-          return (
-            <TypeChip
-              key={k}
-              selected={on}
-              style={typeChipStyle(on)}
-              onClick={() => setParam("has", hasParam(on ? has.filter((h) => h !== k) : [...has, k]))}
-            >
-              {label} {flags && <span className="opacity-60">{abbreviateCount(flags[k])}</span>}
-            </TypeChip>
-          );
-        })}
-      </fieldset>
-
-      {pills.length > 0 && (
-        <ul aria-label="Active filters" className="mx-0.5 mb-2.5 flex flex-wrap items-center gap-1.5">
-          {pills.map((p) => (
-            <li key={p.label}>
+        {pills.length > 0 && (
+          <ul aria-label="Active filters" className="mx-0.5 mb-2.5 flex flex-wrap items-center gap-1.5">
+            {pills.map((p) => (
+              <li key={p.label}>
+                <button
+                  type="button"
+                  aria-label={`Remove ${p.label}`}
+                  onClick={() => setParams(p.remove)}
+                  className="rounded-full border border-signal px-2 py-[3px] font-mono text-[10px] text-signal hover:bg-signal hover:text-bg"
+                >
+                  {p.label} ✕
+                </button>
+              </li>
+            ))}
+            <li>
               <button
                 type="button"
-                aria-label={`Remove ${p.label}`}
-                onClick={() => setParams(p.remove)}
-                className="rounded-full border border-signal px-2 py-[3px] font-mono text-[10px] text-signal hover:bg-signal hover:text-bg"
+                onClick={() => setParams(Object.fromEntries(FILTER_KEYS.map((k) => [k, null])))}
+                className="px-1 font-mono text-[10.5px] text-dim hover:text-signal"
               >
-                {p.label} ✕
+                ✕ clear all
               </button>
             </li>
-          ))}
-          <li>
-            <button
-              type="button"
-              onClick={() => setParams(Object.fromEntries(FILTER_KEYS.map((k) => [k, null])))}
-              className="px-1 font-mono text-[10.5px] text-dim hover:text-signal"
-            >
-              ✕ clear all
-            </button>
-          </li>
-        </ul>
+          </ul>
+        )}
+        </>
       )}
 
       {showShorts && shortsLoading ? (
         <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>
       ) : showShorts ? (
         <>
-          <div className="mx-0.5 mb-3 font-mono text-[10px] uppercase tracking-[.8px] text-faint">
-            <b className="text-signal">{(shortsTotal ?? shorts.length).toLocaleString()}</b> shorts · tap one to play
-          </div>
-          <ShortsRow grid shorts={shorts} href={(s) => shortHref(s, q)} />
-          {moreShorts && (
-            <div className="mt-4 text-center">
-              <button type="button" className="rounded-lg px-3 py-[7px] text-[11px] active:scale-[.96]" style={typeChipStyle(false)} disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>
-                {isFetchingNextPage ? "loading…" : "more shorts"}
-              </button>
+          {q && (
+            <div className="mx-0.5 mb-3 font-mono text-[10px] uppercase tracking-[.8px] text-faint">
+              <b className="text-signal">{(shortsTotal ?? shorts.length).toLocaleString()}</b> shorts match
             </div>
           )}
+          <ShortsRow grid shorts={shorts} href={(s) => shortHref(s, q)} />
+          {/* nearing the bottom loads the next page */}
+          {moreShorts && <div ref={setSentinel} aria-hidden="true" className="h-px" />}
+          {isFetchingNextPage && <div className="mt-4 text-center font-mono text-[11px] text-faint">◉ loading…</div>}
         </>
       ) : isLoading ? (
         <div className="font-mono text-[11px] text-faint">◉ loading signal…</div>

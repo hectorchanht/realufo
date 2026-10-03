@@ -13,7 +13,7 @@
 // contract and DocCard.tsx's header note on why it needs useBootstrap mocked
 // here too.
 import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
-import { cleanup, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { act, cleanup, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import type { Bootstrap, RecordFacets, RecordsListResponse } from "../api/types";
 import { renderAppAt } from "./util";
 
@@ -353,7 +353,7 @@ describe("Archive Shorts strip", () => {
     expect(await screen.findByRole("heading", { name: /shorts \(75\)/i })).toBeInTheDocument();
   });
 
-  it("Shorts type chip swaps the records grid for every Short, with more on demand", async () => {
+  it("Shorts tab: only search + a captioned grid; filters hidden; the next page loads near the bottom", async () => {
     useRecordsMock.mockImplementation(records);
     const fetchNextPage = vi.fn();
     useShortsMock.mockImplementation((() => ({
@@ -362,20 +362,27 @@ describe("Archive Shorts strip", () => {
       hasNextPage: true,
       fetchNextPage,
     })) as any);
+    let seen: IntersectionObserverCallback = () => {};
+    vi.stubGlobal("IntersectionObserver", class {
+      constructor(cb: IntersectionObserverCallback) { seen = cb; }
+      observe() {}
+      disconnect() {}
+    });
     renderAppAt("/archive?type=shorts&archive=nara&redacted=1&q=star");
-    expect(await screen.findByRole("link", { name: /two stars/i })).toHaveAttribute("href", "/shorts/DOW-UAP-PR104?q=star");
-    expect(screen.getByRole("button", { name: /^shorts 12/i })).toHaveAttribute("aria-pressed", "true");
+    const card = await screen.findByRole("link", { name: /two stars/i });
+    expect(card).toHaveAttribute("href", "/shorts/DOW-UAP-PR104?q=star");
+    expect(card).toHaveTextContent("DOW-UAP-PR104");
+    expect(screen.getByPlaceholderText(/search 12 shorts/i)).toHaveValue("star");
     expect(screen.getByText("75")).toBeInTheDocument();
     expect(useShortsMock).toHaveBeenCalledWith("star", { enabled: true });
-    // Only q applies to Shorts: the other filters are disabled, their pills hidden.
-    expect(screen.getByRole("button", { name: /^redacted/i })).toBeDisabled();
-    expect(screen.getByRole("combobox", { name: /agency/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /^docs/i })).toBeEnabled();
-    expect(screen.queryByRole("button", { name: /remove redacted/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /remove “star”/i })).toBeInTheDocument();
+    // Only q applies to Shorts: every filter row and pill is gone.
+    for (const name of [/^redacted/i, /^docs/i, /^shorts 12/i, /remove/i]) expect(screen.queryByRole("button", { name })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: /agency/i })).toBeNull();
     expect(screen.queryByText(/no records match/i)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /more shorts/i }));
+    await waitFor(() => expect(document.title).toMatch(/SHORTS/i));
+    act(() => seen([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
     expect(fetchNextPage).toHaveBeenCalled();
+    vi.unstubAllGlobals();
   });
 
   it("no strip without a search", async () => {
