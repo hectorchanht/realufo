@@ -86,6 +86,10 @@ def bsky(env):
 def meta(env):
     short = getpass.getpass("Short-lived USER token from Graph API Explorer (pages_show_list, pages_manage_posts, "
                             "pages_read_engagement, instagram_basic, instagram_content_publish, business_management): ")
+    app = _http(f"{GRAPH}/app?" + urlencode({"access_token": short}))
+    if app["id"] != env["META_APP_ID"]:
+        sys.exit(f"token was made for app {app['id']} ({app.get('name')}), not META_APP_ID {env['META_APP_ID']}: "
+                 "in Graph API Explorer pick that app under 'Meta App', then Generate Access Token")
     long_user = _http(f"{GRAPH}/oauth/access_token?" + urlencode({"grant_type": "fb_exchange_token", "client_id": env["META_APP_ID"],
                       "client_secret": env["META_APP_SECRET"], "fb_exchange_token": short}))["access_token"]
     pages = _http(f"{GRAPH}/me/accounts?" + urlencode({"access_token": long_user}))["data"]
