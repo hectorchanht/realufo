@@ -2,7 +2,8 @@ import type { Env } from "../env";
 import { json, error } from "../lib/json";
 import { relAgo, stanceOK } from "../lib/db";
 import { newId, newNo, postActor } from "../lib/anon";
-import { autoFollow } from "../lib/follows";
+import { autoFollow, later } from "../lib/follows";
+import { pushActivity } from "../lib/push";
 import { allowWrite } from "../lib/ratelimit";
 import { readBody, putImage, uploadUrl } from "../lib/upload";
 
@@ -26,7 +27,7 @@ async function list(env: Env, t: Target) {
   return json({ comments: r.results.map((c) => view(env, c)) });
 }
 
-async function create(req: Request, env: Env, t: Target) {
+async function create(req: Request, env: Env, t: Target, ctx?: ExecutionContext) {
   const { b, image } = await readBody(req);
   const body = typeof b.body === "string" ? b.body.trim() : "";
   if (!body) return error(400, "empty body");
@@ -48,10 +49,11 @@ async function create(req: Request, env: Env, t: Target) {
     .run();
   const actor = await postActor(req, env);
   await autoFollow(env, actor, t.kind, t.id);
+  await later(ctx, pushActivity(env, t.kind, t.id, actor, body));
   return json({ comment: view(env, { id, no, body, handle, stance, votes: 0, image_r2_key, created_at }) }, { status: 201 });
 }
 
 export const listComments = (_req: Request, env: Env, p: Record<string, string>) => list(env, recordT(p.id));
-export const addComment = (req: Request, env: Env, p: Record<string, string>) => create(req, env, recordT(p.id));
+export const addComment = (req: Request, env: Env, p: Record<string, string>, ctx?: ExecutionContext) => create(req, env, recordT(p.id), ctx);
 export const listCaseComments = (_req: Request, env: Env, p: Record<string, string>) => list(env, caseT(p.slug));
-export const addCaseComment = (req: Request, env: Env, p: Record<string, string>) => create(req, env, caseT(p.slug));
+export const addCaseComment = (req: Request, env: Env, p: Record<string, string>, ctx?: ExecutionContext) => create(req, env, caseT(p.slug), ctx);
