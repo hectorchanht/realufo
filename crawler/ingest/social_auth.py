@@ -124,11 +124,18 @@ def yt(env):
     _secret("YT_CLIENT_SECRET", env["YT_CLIENT_SECRET"])
     _secret("YT_REFRESH_TOKEN", t["refresh_token"])
 
+NEEDS = {"meta": ["META_APP_ID", "META_APP_SECRET"], "threads": ["THREADS_APP_ID", "THREADS_APP_SECRET"],
+         "tiktok": ["TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET"], "yt": ["YT_CLIENT_ID", "YT_CLIENT_SECRET"]}
+
 def main(argv=None):
     cmds = {"bsky": bsky, "meta": meta, "threads": threads, "tiktok": tiktok, "yt": yt}
     argv = sys.argv[1:] if argv is None else argv
     if len(argv) != 1 or argv[0] not in cmds:
         sys.exit(f"usage: python -m ingest.social_auth {{{'|'.join(cmds)}}}")
+    # App keys come from ../.env; check them before asking for any token or OAuth round-trip.
+    missing = [k for k in NEEDS.get(argv[0], []) if not os.environ.get(k)]
+    if missing:
+        sys.exit(f"missing {', '.join(missing)} in ../.env")
     try:
         cmds[argv[0]](os.environ)
     except KeyError as e:
