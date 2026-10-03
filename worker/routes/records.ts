@@ -30,7 +30,7 @@ export function ftsQuery(q: string): string | null {
 // summary/date, in any field and order ("uap pr104" finds DOW-UAP-PR104).
 // Words are letters/digits only, so they carry no LIKE wildcards.
 const META_HAY = "lower(r.id||' '||r.title||' '||r.agency||' '||coalesce(r.location,'')||' '||coalesce(r.summary,'')||' '||coalesce(r.incident_date,''))";
-function metaMatch(q: string): { sql: string; bind: string[] } {
+export function metaMatch(q: string): { sql: string; bind: string[] } {
   const words = (q.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).slice(0, 8);
   return words.length ? { sql: words.map(() => `${META_HAY} LIKE ?`).join(" AND "), bind: words.map((w) => `%${w}%`) } : { sql: "0", bind: [] };
 }

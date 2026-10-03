@@ -2,7 +2,7 @@ import type { Env } from "../env";
 import { json } from "../lib/json";
 import { cropSql, durationSql, oneLinerSql, relAgo, thumbSql, THREAD_THUMB_COLS } from "../lib/db";
 import { withThreadThumb } from "../lib/upload";
-import { clipIds } from "../lib/xpick";
+import { listShorts } from "./shorts";
 
 // Feed = live activity, not static flags:
 //  - "Hot right now" records are ordered by their most recent comment or
@@ -38,7 +38,7 @@ export async function feed(_req: Request, env: Env) {
   const now = Date.now();
   return json({
     featured: featured.results,
-    clips: await feedClips(env),
+    clips: await listShorts(env, { limit: 20 }),
     hot: hot.results
       .map((t: any) => withThreadThumb(env, t))
       .map((t: any) => ({ t, score: trendScore(t, now) }))
@@ -46,34 +46,6 @@ export async function feed(_req: Request, env: Env) {
       .slice(0, 4)
       .map(({ t }) => ({ ...t, ago: relAgo(t.lastPost || t.created_at) })),
   });
-}
-
-// "Short clips" row: every operator showcase Short (R2 showcase/, newest post first) leads,
-// then the newest live videos that have a 9:16 twin in R2 (clips-v/ has no D1 row; the
-// object's existence is the flag, same as the X bot's clips/). Among those, portrait
-// videos (assets.crop w < h: phone clips padded to 16:9) lead — their twin is the whole picture.
-// Never fails the feed: an R2/D1 error just hides the row.
-export async function feedClips(env: Env) {
-  try {
-    const [showcase, ids] = await Promise.all([clipIds(env, "showcase/"), clipIds(env, "clips-v/")]);
-    if (!showcase.length && !ids.length) return [];
-    const { results } = await env.DB.prepare(
-      `SELECT r.id, r.archive, r.title, ${thumbSql("r.id")} thumb, r.id IN (SELECT value FROM json_each(?1)) showcase FROM records r
-       WHERE r.status='live' AND (r.id IN (SELECT value FROM json_each(?1)) OR r.id IN (SELECT value FROM json_each(?2)))
-       ORDER BY (SELECT max(x.created_at) FROM x_posts x WHERE x.stream='showcase' AND x.ref=r.id AND r.id IN (SELECT value FROM json_each(?1))) DESC,
-                showcase DESC,
-                (SELECT CAST(substr(a.crop, 1, instr(a.crop, ':') - 1) AS INT) < CAST(substr(a.crop, instr(a.crop, ':') + 1) AS INT)
-                 FROM assets a WHERE a.record_id=r.id AND a.role='full') DESC,
-                r.created_at DESC, r.id DESC LIMIT ?3`
-    ).bind(JSON.stringify(showcase), JSON.stringify(ids), 12 + showcase.length)
-      .all<{ id: string; archive: string; title: string | null; thumb: string | null; showcase: number }>();
-    return results.map(({ archive, showcase, ...r }) => ({
-      ...r,
-      clip: `https://assets.realufo.org/${showcase ? "showcase" : "clips-v"}/${archive}/${encodeURIComponent(r.id)}.mp4`,
-    }));
-  } catch {
-    return [];
-  }
 }
 
 // Hacker-News-style gravity: engagement over (age + 12)^1.5, age = hours since
