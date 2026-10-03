@@ -10,6 +10,7 @@
 // covers desktop.
 import { Link, useLocation } from "react-router-dom";
 import { Saucer } from "./Saucer";
+import { MoreMenu } from "./MoreMenu";
 import { retapTab, tabHref, useNavItems, type NavTab } from "./navItems";
 import { ThemeToggle } from "./ThemeToggle";
 import { usePageTitle, DEFAULT_PAGE_TITLE } from "../lib/pageTitle";
@@ -21,8 +22,8 @@ export interface TopNavProps {
 }
 
 export function TopNav({ activeTab }: TopNavProps) {
-  // No Feed item: the brand logo already links to "/" and the bar needs the room.
-  const navItems = useNavItems().filter((i) => i.tab !== "feed");
+  // Icon tabs; only the active one spells out its label (title = hover tooltip).
+  const { tabs, more } = useNavItems();
   const { title, sub } = usePageTitle();
   const here = useLocation();
   const { pathname } = here;
@@ -43,17 +44,19 @@ export function TopNav({ activeTab }: TopNavProps) {
       </a>
 
       <div className="flex flex-none items-center gap-1">
-        {navItems.map((item) => {
+        {tabs.map((item) => {
           const active = activeTab === item.tab;
           const href = tabHref(item, activeTab);
+          const Icon = item.icon;
           return (
             <Link
               key={item.tab}
               to={href}
               onClick={active ? () => retapTab(href, here) : undefined}
               aria-current={active ? "page" : undefined}
+              title={active ? undefined : item.label}
               className={
-                "flex min-h-[44px] flex-none items-center gap-[9px] rounded-[11px] px-3.5 py-2 font-mono text-[13px] font-medium" +
+                "flex min-h-[44px] min-w-[44px] flex-none items-center justify-center gap-2 rounded-[11px] px-3 font-mono text-[13px] font-medium" +
                 (active ? "" : " hover:bg-surface")
               }
               style={{
@@ -61,11 +64,12 @@ export function TopNav({ activeTab }: TopNavProps) {
                 background: active ? "var(--signal-dim)" : undefined,
               }}
             >
-              <span className="text-center text-[15px]">{item.glyph}</span>
-              <span>{item.label}</span>
+              <Icon size={18} aria-hidden="true" />
+              <span className={active ? "" : "sr-only"}>{item.label}</span>
             </Link>
           );
         })}
+        <MoreMenu items={more} activeTab={activeTab} />
       </div>
 
       {/* Contextual page title/sub — the "bottom bar" description, folded in. */}

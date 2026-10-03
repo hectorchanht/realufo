@@ -4,6 +4,7 @@
 // why). Each tab has a 44px min-height tap target per the task requirement.
 import type { Ref } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { MoreMenu } from "./MoreMenu";
 import { retapTab, tabHref, useNavItems, type NavTab } from "./navItems";
 
 export interface BottomTabProps {
@@ -17,8 +18,8 @@ export interface BottomTabProps {
 // Overlays the bottom of the shell (absolute) rather than sitting in flow, so
 // sliding it out never resizes the scroll container — see AppShell.
 export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
-  // Five fit a phone: Shorts takes Map's slot (Map stays in the footer).
-  const navItems = useNavItems().filter((i) => i.tab !== "map");
+  // Four icon tabs + More; only the active one shows its label.
+  const { tabs, more } = useNavItems();
   const here = useLocation();
   return (
     <div
@@ -34,25 +35,25 @@ export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
         className="relative z-30 flex flex-none justify-around border-t border-line px-2 pb-1 pt-2 backdrop-blur-[22px] backdrop-saturate-[1.6]"
         style={{ background: "color-mix(in srgb, var(--bg) 78%, transparent)" }}
       >
-        {navItems.map((item) => {
+        {tabs.map((item) => {
           const active = activeTab === item.tab;
           const href = tabHref(item, activeTab);
+          const Icon = item.icon;
           return (
             <Link
               key={item.tab}
               to={href}
               onClick={active ? () => retapTab(href, here) : undefined}
               aria-current={active ? "page" : undefined}
-              className="flex min-h-[44px] flex-1 flex-col items-center gap-1 px-0.5 py-[5px] active:scale-90"
+              className="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-1 px-0.5 py-[5px] active:scale-90"
               style={{ color: active ? "var(--signal)" : "var(--dim)" }}
             >
-              <span className="text-[19px] leading-none">{item.glyph}</span>
-              <span className="font-mono text-[8.5px] font-medium tracking-[.3px]">
-                {item.label}
-              </span>
+              <Icon size={22} aria-hidden="true" />
+              <span className={active ? "font-mono text-[9px] font-medium tracking-[.3px]" : "sr-only"}>{item.label}</span>
             </Link>
           );
         })}
+        <MoreMenu sheet items={more} activeTab={activeTab} />
       </div>
     </div>
   );

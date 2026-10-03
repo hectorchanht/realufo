@@ -37,7 +37,7 @@ const headCls = "mb-2 font-semibold tracking-[.5px] text-ink";
 
 export default function SiteFooter() {
   const hubs = useHubs().data?.hubs ?? [];
-  const nav = useNavItems();
+  const { tabs, more } = useNavItems();
   const page = useFooterLinks();
   const col = (title: string, items: ReactNode[]) => (
     <div key={title}>
@@ -74,11 +74,9 @@ export default function SiteFooter() {
             )))
           : null}
         {col("Explore", [
-          ...nav.map((i) => (
+          ...[...tabs, ...more].map((i) => (
             <li key={i.path}><Link className={linkCls} to={i.path}>{i.label}</Link></li>
           )),
-          <li key="browse"><Link className={linkCls} to="/browse">Browse all</Link></li>,
-          <li key="cases"><Link className={linkCls} to="/cases">Cold cases</Link></li>,
         ])}
         {GROUPS.map(([kind, title]) => {
           const group = hubs.filter((h) => h.kind === kind);

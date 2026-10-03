@@ -133,7 +133,7 @@ describe("Archive", () => {
   it("browse, Ask and the original release archive live in the footer, not the page", async () => {
     renderAppAt("/archive");
     const footer = await screen.findByRole("navigation", { name: "Site" });
-    expect(within(footer).getByRole("link", { name: "Browse all" })).toHaveAttribute("href", "/browse");
+    expect(within(footer).getByRole("link", { name: "Browse" })).toHaveAttribute("href", "/browse");
     expect(within(footer).getByRole("link", { name: /original archive/i })).toHaveAttribute("href", "https://release.realufo.org/");
     expect(screen.queryByRole("link", { name: /browse by release · agency · location · decade/i })).toBeNull();
   });

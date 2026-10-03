@@ -85,8 +85,8 @@ describe("askThread", () => {
 
 describe("Ask tab re-tap", () => {
   it("tapping Ask while on an answer goes back to the lists; switching back from another tab keeps the answer", async () => {
-    const { NAV_ITEMS, rememberTabUrl, tabHref } = await import("../components/navItems");
-    const ask = NAV_ITEMS.find((i) => i.tab === "ask")!;
+    const { MORE_ITEMS, rememberTabUrl, tabHref } = await import("../components/navItems");
+    const ask = MORE_ITEMS.find((i) => i.tab === "ask")!;
     rememberTabUrl("/ask", "?q=roswell");
     expect(tabHref(ask, "ask")).toBe("/ask");
     expect(tabHref(ask, "feed")).toBe("/ask?q=roswell");

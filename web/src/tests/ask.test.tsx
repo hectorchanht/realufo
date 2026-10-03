@@ -377,7 +377,8 @@ describe("Ask screen", () => {
 
   it("Ask tab and footer link show only while the feature is on", async () => {
     renderAppAt("/archive");
-    expect((await screen.findAllByRole("link", { name: /^◉\s*Ask$/ })).length).toBeGreaterThan(0);
+    fireEvent.click(await screen.findByRole("button", { name: "More" }));
+    expect(within(screen.getByRole("navigation", { name: "More" })).getByRole("link", { name: "Ask" }).getAttribute("href")).toMatch(/^\/ask/);
     expect(within(screen.getByRole("navigation", { name: "Site" })).getByRole("link", { name: "Ask" })).toHaveAttribute("href", "/ask");
   });
 
@@ -385,7 +386,8 @@ describe("Ask screen", () => {
     askFeature = false;
     const { unmount } = renderAppAt("/archive?ask=los%20alamos%201949");
     expect(await screen.findByPlaceholderText(/search .*records|search the archive/)).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /^◉\s*Ask$/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "More" }));
+    expect(within(screen.getByRole("navigation", { name: "More" })).queryByRole("link", { name: "Ask" })).toBeNull();
     expect(within(screen.getByRole("navigation", { name: "Site" })).queryByRole("link", { name: "Ask" })).toBeNull();
     unmount();
     renderAppAt("/ask");

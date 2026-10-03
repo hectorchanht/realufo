@@ -41,26 +41,48 @@ afterEach(() => {
 });
 
 describe("AppShell", () => {
-  it("phone bar: Shorts takes Map's slot; desktop keeps Map and adds Shorts", async () => {
+  it("phone bar: four icon tabs + More; only the active tab shows its label", async () => {
     renderAppAt("/archive?type=shorts");
     await screen.findByPlaceholderText(/search (the archive|[0-9,]+ records)/i);
     const bar = within(document.querySelector("[data-bottomtab]") as HTMLElement);
-    expect(bar.getByRole("link", { name: /Shorts/i })).toHaveAttribute("aria-current", "page");
-    expect(bar.getByRole("link", { name: /Shorts/i })).toHaveAttribute("href", "/archive?type=shorts");
-    expect(bar.getByRole("link", { name: /Archive/i })).not.toHaveAttribute("aria-current");
-    expect(bar.queryByText("Map")).toBeNull();
+    const shorts = bar.getByRole("link", { name: "Shorts" });
+    expect(shorts).toHaveAttribute("aria-current", "page");
+    expect(shorts).toHaveAttribute("href", "/archive?type=shorts");
+    expect(within(shorts).getByText("Shorts")).not.toHaveClass("sr-only");
+    expect(within(bar.getByRole("link", { name: "Archive" })).getByText("Archive")).toHaveClass("sr-only");
+    expect(bar.getAllByRole("link").map((a) => a.textContent)).toEqual(["Home", "Archive", "Shorts", "Boards"]);
   });
 
-  it("desktop top nav has both Shorts and Map", async () => {
+  it("More opens a sheet with the other places, closes on Escape, and lights on a More page", async () => {
+    renderAppAt("/archive");
+    await screen.findByPlaceholderText(/search (the archive|[0-9,]+ records)/i);
+    const more = screen.getByRole("button", { name: "More" });
+    fireEvent.click(more);
+    expect(more).toHaveAttribute("aria-expanded", "true");
+    const sheet = within(screen.getByRole("navigation", { name: "More" }));
+    expect(sheet.getByRole("link", { name: "Map" })).toHaveAttribute("href", "/map");
+    expect(sheet.getByRole("link", { name: "Cold cases" })).toHaveAttribute("href", "/cases");
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("navigation", { name: "More" })).toBeNull();
+
+    fireEvent.click(more);
+    fireEvent.click(within(screen.getByRole("navigation", { name: "More" })).getByRole("link", { name: "Map" }));
+    await waitFor(() => expect(screen.queryByRole("navigation", { name: "More" })).toBeNull());
+    await waitFor(() => expect(within(screen.getByRole("button", { name: "More" })).getByText("More")).not.toHaveClass("sr-only"));
+  });
+
+  it("desktop top nav: Home tab, icon tabs with tooltips, More dropdown", async () => {
     stubDesktopMatchMedia();
     renderAppAt("/archive");
     await waitFor(() => expect(document.querySelector("[data-topnav]")).toBeTruthy());
     const topnav = within(document.querySelector("[data-topnav]") as HTMLElement);
-    expect(topnav.getByRole("link", { name: /Shorts/i })).toBeInTheDocument();
-    expect(topnav.getByRole("link", { name: /Map/i })).toBeInTheDocument();
+    expect(topnav.getByRole("link", { name: "Home" })).toHaveAttribute("title", "Home");
+    expect(topnav.getByRole("link", { name: "Archive" })).not.toHaveAttribute("title");
+    fireEvent.click(topnav.getByRole("button", { name: "More" }));
+    expect(topnav.getByRole("link", { name: "Releases" })).toHaveAttribute("href", "/releases");
   });
 
-  it("shows nav labels Feed/Archive/Shorts/Boards and marks Feed active at /", async () => {
+  it("shows nav labels Home/Archive/Shorts/Boards and marks Home active at /", async () => {
     renderAppAt("/");
 
     // Real Feed screen (Task 17) rendered through the router Outlet — its
@@ -75,12 +97,12 @@ describe("AppShell", () => {
     // labels, so this holds regardless of layout. Scoping avoids ambiguity
     // with the Outlet's own "Feed" placeholder text living elsewhere in the DOM.
     const nav = within(getNavContainer());
-    expect(nav.getByText("Feed")).toBeInTheDocument();
+    expect(nav.getByText("Home")).toBeInTheDocument();
     expect(nav.getByText("Archive")).toBeInTheDocument();
     expect(nav.getByText("Boards")).toBeInTheDocument();
     expect(nav.getByText("Shorts")).toBeInTheDocument();
 
-    const feedLink = nav.getByRole("link", { name: /Feed/i });
+    const feedLink = nav.getByRole("link", { name: /Home/i });
     expect(feedLink).toHaveAttribute("aria-current", "page");
   });
 
@@ -121,12 +143,11 @@ describe("AppShell", () => {
     await waitFor(() => expect(within(topnav).getByText("THE ARCHIVE")).toBeInTheDocument());
   });
 
-  it("desktop: no Feed item (logo links home), and no nav title on pages with their own h1", async () => {
+  it("desktop: no nav title on pages with their own h1", async () => {
     stubDesktopMatchMedia();
     renderAppAt("/browse");
     await screen.findByRole("heading", { level: 1, name: "Browse the archive" });
     const topnav = within(document.querySelector("[data-topnav]") as HTMLElement);
-    expect(topnav.queryByRole("link", { name: /Feed/i })).toBeNull();
     expect(topnav.queryByText("BROWSE")).toBeNull();
   });
 
@@ -187,7 +208,7 @@ describe("AppShell", () => {
     });
 
     const nav = () => within(getNavContainer());
-    fireEvent.click(nav().getByText("Feed"));
+    fireEvent.click(nav().getByText("Home"));
     await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
     expect(main.scrollTop).not.toBe(700); // feed keeps its own position
     expect(nav().getByText("Archive").closest("a")).toHaveAttribute("href", "/archive?type=video");
@@ -213,7 +234,7 @@ describe("AppShell", () => {
     fireEvent.click(nav().getByText("Archive"));
     expect(main.scrollTop).toBe(0);
 
-    fireEvent.click(nav().getByText("Feed"));
+    fireEvent.click(nav().getByText("Home"));
     await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
     fireEvent.click(nav().getByText("Archive"));
     await waitFor(() => expect(document.querySelector("[data-screen='archive']")).toBeInTheDocument());

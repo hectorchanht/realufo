@@ -13,51 +13,57 @@
 // detail screen's actually-loaded data).
 
 import type { NavigateFunction } from "react-router-dom";
+import { Archive, Clapperboard, Compass, Ellipsis, FileSearch, House, ListChecks, MapPinned, MessagesSquare, Sparkles, type LucideIcon } from "lucide-react";
 import { useBootstrap } from "../api/queries";
 import { forgetScroll, scrollKey } from "../lib/useScrollMemory";
 
-export type NavTab = "feed" | "archive" | "shorts" | "ask" | "boards" | "map";
+export type NavTab = "feed" | "archive" | "shorts" | "boards" | "ask" | "map" | "cases" | "browse" | "releases";
 
 export interface NavItem {
   tab: NavTab;
-  glyph: string;
+  icon: LucideIcon;
   label: string;
   path: string;
 }
 
+// Four tabs (icon-only but the active one, on both TopNav and BottomTab)…
 export const NAV_ITEMS: NavItem[] = [
-  { tab: "feed", glyph: "◎", label: "Feed", path: "/" },
-  { tab: "archive", glyph: "▦", label: "Archive", path: "/archive" },
+  { tab: "feed", icon: House, label: "Home", path: "/" },
+  { tab: "archive", icon: Archive, label: "Archive", path: "/archive" },
   // The Archive's Shorts grid (its "Shorts" type chip), as a tab of its own.
-  { tab: "shorts", glyph: "▷", label: "Shorts", path: "/archive?type=shorts" },
-  { tab: "ask", glyph: "◉", label: "Ask", path: "/ask" },
-  { tab: "boards", glyph: "◈", label: "Boards", path: "/boards" },
-  { tab: "map", glyph: "◐", label: "Map", path: "/map" },
+  { tab: "shorts", icon: Clapperboard, label: "Shorts", path: "/archive?type=shorts" },
+  { tab: "boards", icon: MessagesSquare, label: "Boards", path: "/boards" },
 ];
 
-// The Ask tab only shows while the server's ask flag is on.
-export function useNavItems(): NavItem[] {
+// …and the rest behind a fifth "More" tab (MoreMenu: sheet on phones, dropdown on desktop).
+export const MORE_ICON = Ellipsis;
+export const MORE_ITEMS: NavItem[] = [
+  { tab: "ask", icon: Sparkles, label: "Ask", path: "/ask" },
+  { tab: "map", icon: MapPinned, label: "Map", path: "/map" },
+  { tab: "cases", icon: FileSearch, label: "Cold cases", path: "/cases" },
+  { tab: "browse", icon: Compass, label: "Browse", path: "/browse" },
+  { tab: "releases", icon: ListChecks, label: "Releases", path: "/releases" },
+];
+
+// Ask only shows while the server's ask flag is on.
+export function useNavItems(): { tabs: NavItem[]; more: NavItem[] } {
   const askOn = !!useBootstrap().data?.features?.ask;
-  return askOn ? NAV_ITEMS : NAV_ITEMS.filter((i) => i.tab !== "ask");
+  return { tabs: NAV_ITEMS, more: askOn ? MORE_ITEMS : MORE_ITEMS.filter((i) => i.tab !== "ask") };
 }
 
-/**
- * Route -> active nav tab. Mirrors the prototype's `curTab` logic exactly:
- * doc screens highlight Archive, thread/board screens highlight Boards, case
- * screens highlight Feed (cold cases are reached from the feed, not a tab of
- * their own), everything else maps 1:1 to its own tab.
- */
+export const isMoreTab = (tab: NavTab) => MORE_ITEMS.some((i) => i.tab === tab);
+
 /**
  * Whether AppBar's back chevron should show for a path. Ported from the
  * prototype's `canBack = hist.length>0` combined with the fact that
  * switching top-level tabs resets its navigation history — net effect: back
- * is absent on the tab-root destinations (`/`, `/archive`, `/ask`, `/boards`,
- * `/map`) and present on every detail screen (`/doc/:id`, `/thread/:id`,
+ * is absent on the tab-root destinations (the four tabs and every More page)
+ * and present on every detail screen (`/doc/:id`, `/thread/:id`,
  * `/board/:slug`, `/case/:slug`). Any path that isn't one of the nav roots is
  * a detail screen.
  */
 export function canBackForPath(pathname: string): boolean {
-  return !NAV_ITEMS.some((item) => item.path === pathname);
+  return ![...NAV_ITEMS, ...MORE_ITEMS].some((item) => item.path === pathname);
 }
 
 /** Where "back" goes when this page was the first one opened in the tab. */
@@ -77,17 +83,24 @@ export function goBack(navigate: NavigateFunction, pathname: string): void {
   else navigate(parentPath(pathname), { replace: true });
 }
 
+/**
+ * Route -> active nav tab (from the prototype's `curTab`): doc screens
+ * highlight Archive, thread/board screens Boards, a case its Cold cases list,
+ * a hub Browse; the Shorts chip / player highlight Shorts. A More page lights
+ * the More tab (isMoreTab).
+ */
 export function activeTabForPath(pathname: string, search = ""): NavTab {
   if (pathname.startsWith("/shorts/")) return "shorts";
   if (pathname === "/archive" && new URLSearchParams(search).get("type") === "shorts") return "shorts";
   if (pathname.startsWith("/doc")) return "archive";
   if (pathname.startsWith("/archive")) return "archive";
-  // Hubs (/browse, /release/6, /agency/fbi…) are ways into the archive.
-  if (/^\/(browse|release|agency|location|decade)(\/|$)/.test(pathname)) return "archive";
+  // Hubs (/release/6, /agency/fbi…) belong with their index, Browse.
+  if (/^\/(browse|release|topic|agency|location|decade)(\/|$)/.test(pathname)) return "browse";
+  if (pathname === "/releases") return "releases";
   if (pathname.startsWith("/ask")) return "ask";
   if (pathname.startsWith("/board/") || pathname.startsWith("/thread")) return "boards";
   if (pathname === "/boards" || pathname.startsWith("/boards/")) return "boards";
-  if (pathname.startsWith("/case")) return "feed";
+  if (pathname === "/cases" || pathname.startsWith("/case/")) return "cases";
   if (pathname.startsWith("/map")) return "map";
   return "feed"; // "/" and any unmatched path
 }

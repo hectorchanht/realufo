@@ -85,10 +85,11 @@ describe("Browse", () => {
 });
 
 describe("nav tab for hub routes", () => {
-  it("highlights Archive on /browse and every hub kind", () => {
-    for (const p of ["/browse", "/release/6", "/agency/fbi", "/location/iraq", "/decade/1950s"]) {
-      expect(activeTabForPath(p)).toBe("archive");
+  it("highlights Browse (under More) on /browse and every hub kind", () => {
+    for (const p of ["/browse", "/release/6", "/topic/orbs", "/agency/fbi", "/location/iraq", "/decade/1950s"]) {
+      expect(activeTabForPath(p)).toBe("browse");
     }
+    expect(activeTabForPath("/releases")).toBe("releases");
     expect(activeTabForPath("/releases-notes")).toBe("feed");
   });
 });
