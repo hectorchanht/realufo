@@ -1,7 +1,7 @@
 """Showcase Short for AARO-956955 (Navy 2021 Flyby): the object is in only 3 of 289 frames
 (268-270, ~8.94 s). Cut: tease (frame 0 = thumbnail: empty sky, its path boxed, no spoiler) -> 6.0-9.64 s at normal
 speed, box on -> same moment 8x slower -> frames 266-272 stepped with the object boxed -> lesson on the zoomed object ->
-"step through it frame by frame" end card -> back to the tease (loop). ElevenLabs narration + ambient bed. 9:16, ~28.1 s.
+"step through it frame by frame" end card -> back to the tease (loop). ElevenLabs narration + calm subtitles (lib.subtitles) + ambient bed. 9:16, ~28.1 s.
 
     FFMPEG=/path/to/ffmpeg-with-drawtext CLIP_FONT=/path/Bold.ttf python3 showcase/AARO-956955.py
 
@@ -24,7 +24,7 @@ FIT = "crop=616:1080:652:0,scale=1095:1920,crop=1080:1920:7:0"
 ENC = ["-r","30","-c:v","libx264","-profile:v","high","-pix_fmt","yuv420p","-preset","veryfast","-crf","20",
        "-c:a","aac","-b:a","128k","-ar","44100","-ac","2","-shortest","-movflags","+faststart"]
 SIL = ["-f","lavfi","-i","anullsrc=channel_layout=stereo:sample_rate=44100"]
-site = txt("site","realufo.org",1420,52)
+site = txt("site","realufo.org  ·  AARO-956955",1420,52)  # the ID as a watermark: searchable on the site
 segs=[]
 def run(args, out):
     subprocess.run([F,"-v","error","-y",*args,*ENC,out],check=True); segs.append(out)
@@ -77,5 +77,14 @@ for i, (t, line) in enumerate(SAY, 1):
     ins += ["-i", lib.tts(line)[0]]; fc += f"[{i}:a]aformat=channel_layouts=stereo,adelay={int(t*1000)}:all=1[n{i}];"
 fc += "[0:a]" + "".join(f"[n{i}]" for i in range(1, len(SAY)+1)) + f"amix=inputs={len(SAY)+1}:normalize=0:duration=first[a]"
 VO=f"{D}/vo.mp4"
-subprocess.run([F,"-v","error","-y",*ins,"-filter_complex",fc,"-map","0:v","-map","[a]","-c:v","copy","-c:a","aac","-b:a","128k","-movflags","+faststart",VO],check=True)
+# subtitles, one line per sentence, under the headline (y 470); lines 1-2 are already on screen word for word,
+# the Congress line sits low (y 1170) because the lesson text fills the top of that beat
+CAP = (lib.subtitles([(t, lib.tts(line)[0]) for t, line in SAY[2:] if not line.startswith("The Navy")], y=470)
+       + lib.subtitles([(t, lib.tts(line)[0]) for t, line in SAY if line.startswith("The Navy")], y=1170))
+# two steps: mix the narration on its own, then burn the subtitles (one graph dropped PR116's late lines)
+MIXED=f"{D}/mix.wav"
+subprocess.run([F,"-v","error","-y",*ins,"-filter_complex",fc,"-map","[a]",MIXED],check=True)
+subprocess.run([F,"-v","error","-y","-i",CAT,"-i",MIXED,"-vf",",".join(CAP),"-map","0:v","-map","1:a",
+                "-c:v","libx264","-profile:v","high","-pix_fmt","yuv420p","-preset","veryfast","-crf","20",
+                "-c:a","aac","-b:a","128k",VO],check=True)
 c = lib.Cut(); c.segs = [VO]; c.save(OUT, bed=True)  # + the synthesized ambient bed, as the article Shorts
