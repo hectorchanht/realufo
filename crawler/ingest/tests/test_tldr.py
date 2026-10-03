@@ -119,3 +119,39 @@ def test_row_sql_upserts_and_clears_card():
     sql = tldr.row_sql("AARO-x's.pdf", GOOD, "h1")
     assert sql.startswith("INSERT INTO record_tldr(record_id,lang,bullets,one_liner,input_hash) VALUES('AARO-x''s.pdf','en',")
     assert "card_url=NULL" in sql and "ON CONFLICT(record_id,lang)" in sql
+
+def liner(o):
+    return {**GOOD, "one_liner": o}
+
+# F2: object guesses, leaked labels, links and markup
+def test_check_rejects_object_guess_unless_in_source():
+    t = liner("The Navy's best guess: a weather balloon.")
+    assert tldr.check(t, tldr.build_input(ROW))
+    src = tldr.build_input({**ROW, "summary": ROW["summary"] + " AARO resolved it as a weather balloon."})
+    assert tldr.check(t, src) is None
+    assert "guess" in tldr.check(liner("Probably just a drone."), tldr.build_input(ROW))
+
+def test_clean_strips_leaked_label():
+    assert tldr._clean("Joke: Paperwork wins.") == "Paperwork wins."
+
+def test_check_rejects_links_and_markup_unless_in_source():
+    assert "links" in tldr.check(liner("Visit aaro.mil for more"), tldr.build_input(ROW))
+    assert "markup" in tldr.check(liner("<b>x</b>"), tldr.build_input(ROW))
+    src = tldr.build_input({**ROW, "summary": ROW["summary"] + " Report it at aaro.mil."})
+    assert tldr.check(liner("Visit aaro.mil for more"), src) is None
+
+# F3: number guard both ways
+def test_check_numbers_from_length_moments_and_dates():
+    src = tldr.build_input({**ROW, "duration": 125})  # Length: 2:05
+    for b in ("A 2-minute video of an object", "It runs 125 seconds"):
+        assert tldr.check({**GOOD, "bullets": [b, *GOOD["bullets"][1:]]}, src) is None, b
+    assert tldr.check({**GOOD, "bullets": ["Object enters frame 35 seconds in", *GOOD["bullets"][1:]]},
+                      tldr.build_input(ROW)) is None
+    src = tldr.build_input({**ROW, "incident_date": "05/01/2022"})
+    assert tldr.check({**GOOD, "bullets": ["Filmed May 1, 2022 off San Diego", *GOOD["bullets"][1:]]}, src) is None
+
+def test_check_rejects_big_spelled_numbers_not_in_source():
+    src = tldr.build_input({**ROW, "incident_date": "1965"})  # ROW's 11/14/04 holds a 14
+    assert "fourteen" in tldr.check(liner("Fourteen jets, one form."), src)
+    assert "dozen" in tldr.check(liner("A dozen pages, all redacted."), src)
+    assert tldr.check(liner("Fourteen jets, one form."), tldr.build_input(ROW)) is None
