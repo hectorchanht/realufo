@@ -23,3 +23,6 @@ __pycache__/
 
 # seed_asks review file (not committed)
 crawler/seed_asks.json
+
+# showcase Short renders (posted copies live in R2)
+showcase/*.mp4
