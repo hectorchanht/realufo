@@ -17,7 +17,7 @@
     // X_HIGHLIGHT_MIN_VOTES "" = community highlights off (votes are forgeable; opt in deliberately)
     "FEATURE_X": "on", "X_PICK_HOURS": "15,18,21", "X_DAILY_MAX": "4", "X_MONTHLY_USD_CAP": "25", "X_HIGHLIGHT_MIN_VOTES": "", "X_SINCE": "2026-10-02",
     // Social fan-out (Spec 5): mirrors x_posts to other platforms. off | dry | on per platform.
-    "FEATURE_SOCIAL_FB": "on", "FEATURE_SOCIAL_IG": "dry", "FEATURE_SOCIAL_THREADS": "dry",
+    "FEATURE_SOCIAL_FB": "on", "FEATURE_SOCIAL_IG": "on", "FEATURE_SOCIAL_THREADS": "dry",
     "FEATURE_SOCIAL_BSKY": "on", "FEATURE_SOCIAL_YT": "dry", "FEATURE_SOCIAL_TIKTOK": "dry",
     "SOCIAL_SINCE": "2026-10-02", "YT_DAILY_MAX": "5", "TIKTOK_PRIVACY": "SELF_ONLY" },
   "d1_databases": [{ "binding": "DB", "database_name": "realufo-db", "database_id": "a8836cc9-9f49-42bd-ad99-4162b410bcd9", "migrations_dir": "db/migrations" }],
