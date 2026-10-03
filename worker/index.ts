@@ -99,7 +99,8 @@ async function sameSecret(a: string, b: string) {
 const RENAMED: Record<string, string> = { "DOW-UAP": "DOW-UAP-PR057a" };
 const RENAMED_PATH = /^\/(doc|shorts)\/([^/]+)(\/text)?$/;
 
-const MOVED_OVERVIEWS: Record<string, string> = { "aaro-overview": "aaro", "nara-overview": "nara", "nasa-overview": "nasa" };
+// nara-overview stays on release.realufo.org: it describes NARA UFO holdings this archive doesn't have.
+const MOVED_OVERVIEWS: Record<string, string> = { "aaro-overview": "aaro", "nasa-overview": "nasa" };
 const LEGACY_PATH = /^\/(aaro|about|argentina|brazil|canada|chile|foia|geipan|glossary|italy|nara|nasa|peru|search|spain|stories|timeline|uk|whatsnew)(\/|$)/;
 
 export default {

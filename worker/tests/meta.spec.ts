@@ -218,6 +218,7 @@ describe("serveWithMeta (via worker.fetch)", () => {
     const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
     for (const [from, to] of [
       ["https://realufo.org/stories/uk-overview/", "https://release.realufo.org/stories/uk-overview/"],
+      ["https://realufo.org/stories/nara-overview/", "https://release.realufo.org/stories/nara-overview/"],
       ["https://realufo.org/aaro", "https://release.realufo.org/aaro/"],
       ["https://realufo.org/search/?q=x", "https://release.realufo.org/search/?q=x"],
     ]) {
@@ -233,7 +234,6 @@ describe("serveWithMeta (via worker.fetch)", () => {
     const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
     for (const [from, to] of [
       ["https://realufo.org/stories/aaro-overview/", "https://realufo.org/agency/aaro"],
-      ["https://realufo.org/stories/nara-overview", "https://realufo.org/agency/nara"],
       ["https://realufo.org/stories/nasa-overview/", "https://realufo.org/agency/nasa"],
       ["https://realufo.org/stories/gimbal/", "https://realufo.org/case/gimbal"],
     ]) {
