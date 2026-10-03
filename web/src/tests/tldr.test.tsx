@@ -21,8 +21,23 @@ describe("TldrCard", () => {
 
   it("shows the one-liner and three bullets", () => {
     render(<TldrCard tldr={T} title="t" onBoring={() => {}} />);
-    expect(screen.getByText("“Even the redactions look nervous.”")).toBeTruthy();
+    // one-liner in ink for contrast; only the curly quotes carry the signal colour
+    const p = screen.getByText("Even the redactions look nervous.");
+    expect(p).toHaveTextContent(/^“Even the redactions look nervous\.”$/);
+    expect(p).toHaveClass("text-ink");
+    expect(screen.getByText("“")).toHaveStyle({ color: "var(--signal)" });
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
+    expect(screen.getByText("懶人包").getAttribute("lang")).toBe("zh-Hant");
+  });
+
+  it("share refused (not cancelled) falls back to copying the link", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    (navigator as any).share = vi.fn().mockRejectedValue(Object.assign(new Error("x"), { name: "NotAllowedError" }));
+    (navigator as any).clipboard = { writeText };
+    render(<TldrCard tldr={T} title="t" onBoring={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: /share/i }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith("Link copied"));
+    expect(writeText).toHaveBeenCalledWith(location.href);
   });
 
   it("shares with the Web Share API when present", async () => {

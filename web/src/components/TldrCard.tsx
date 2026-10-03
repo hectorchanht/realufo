@@ -10,9 +10,13 @@ export function TldrCard({ tldr, title, onBoring }: { tldr?: Tldr | null; title:
   const share = async () => {
     const url = location.href;
     if (navigator.share) {
-      // A cancelled share sheet rejects with AbortError: nothing to report.
-      await navigator.share({ title, text: tldr.oneLiner, url }).catch(() => {});
-      return;
+      try {
+        return await navigator.share({ title, text: tldr.oneLiner, url });
+      } catch (e) {
+        // A cancelled share sheet rejects with AbortError: nothing to report.
+        // Anything else (NotAllowedError, no share target) falls back to copying.
+        if ((e as Error)?.name === "AbortError") return;
+      }
     }
     try {
       await navigator.clipboard.writeText(url);
@@ -25,11 +29,15 @@ export function TldrCard({ tldr, title, onBoring }: { tldr?: Tldr | null; title:
   return (
     <section aria-label="TL;DR" className="mb-3 rounded-xl border border-line p-3">
       <div className="mb-2 flex items-baseline justify-between gap-2 font-mono text-[11px] font-semibold tracking-[.4px]">
-        <span className="text-faint">TL;DR · 懶人包</span>
-        <span className="text-[9.5px] font-normal text-faint">AI-written · facts from the file</span>
+        <span className="text-faint">
+          TL;DR · <span lang="zh-Hant">懶人包</span>
+        </span>
+        <span className="text-[10.5px] font-normal text-dim">AI-written · facts from the file</span>
       </div>
-      <p className="mb-2.5 text-[17px] font-bold leading-[1.35]" style={{ color: "var(--signal)" }}>
-        “{tldr.oneLiner}”
+      <p className="mb-2.5 text-[17px] font-bold leading-[1.35] text-ink">
+        <span style={{ color: "var(--signal)" }}>“</span>
+        {tldr.oneLiner}
+        <span style={{ color: "var(--signal)" }}>”</span>
       </p>
       <ul className="mb-3 list-disc space-y-1 pl-4 text-[13.5px] leading-[1.5] text-dim">
         {tldr.bullets.map((b, i) => (

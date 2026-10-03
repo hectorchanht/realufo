@@ -16,12 +16,14 @@ describe("VerdictBar", () => {
   it("teases the meter before anybody voted", () => {
     render(<VerdictBar recordId="r1" state={{ mine: null, total: 0 }} />);
     expect(screen.getByText("WTF-METER")).toBeTruthy();
-    expect(screen.getByText("? ? ? Judge it to reveal the crowd")).toBeTruthy();
+    const tease = screen.getByText(/Judge it to reveal the crowd/);
+    expect(tease).toHaveTextContent(/^\? \? \? Judge it to reveal the crowd$/);
+    expect(screen.getByText("? ? ?").getAttribute("aria-hidden")).toBe("true");
   });
 
   it("hides the split before voting (count shown) and casts on tap", () => {
     render(<VerdictBar recordId="r1" state={{ mine: null, total: 7 }} />);
-    expect(screen.getByText("? ? ? Judge it to reveal the crowd · 7 verdicts")).toBeTruthy();
+    expect(screen.getByText(/Judge it to reveal the crowd/)).toHaveTextContent(/^\? \? \? Judge it to reveal the crowd · 7 verdicts$/);
     expect(screen.queryByRole("img")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "NEED MORE DATA" }));
     expect(mutate).toHaveBeenCalledWith("more_data", expect.any(Object));
@@ -41,7 +43,7 @@ describe("VerdictBar", () => {
     render(
       <VerdictBar recordId="r1" state={{ mine: "explained", total: 24, tally: { explained: 5, unexplained: 17, more_data: 2 } }} />
     );
-    expect(screen.getByText("71% UNEXPLAINED")).toBeTruthy();
+    expect(screen.getByText("71% UNEXPLAINED").closest("[aria-live]")?.getAttribute("aria-live")).toBe("polite");
     expect(screen.getByText("24 verdicts")).toBeTruthy();
   });
 
