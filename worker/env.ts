@@ -6,6 +6,7 @@ export interface Env {
   RATE_MAX?: string;
   RATE_WINDOW_SEC?: string;
   UPLOAD_BASE?: string; // public URL prefix for uploads/<name>; default same-origin /api/u/
+  FILE_CDN_FALLBACK?: string; // local dev only (.dev.vars): R2 miss in /api/file redirects to the CDN copy
   AI: Ai;
   VECTORIZE: Vectorize;
   FEATURE_ASK?: string; // off | hidden | on

@@ -24,6 +24,8 @@ export async function viewFile(req: Request, env: Env, p: Record<string, string>
   const obj = range
     ? await env.MEDIA.get(key, { range: req.headers, onlyIf: req.headers })
     : await env.MEDIA.get(key);
+  // Local dev has an empty R2 bucket; fall back to the prod CDN file.
+  if (!obj && env.FILE_CDN_FALLBACK) return Response.redirect(asset.cdn_url, 302);
   if (!obj) return error(404, "file not found");
 
   const headers = new Headers();
