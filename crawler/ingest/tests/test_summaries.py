@@ -115,3 +115,14 @@ def test_row_sql_stores_summary_and_sections_and_requeues_ask():
 
 def test_select_picks_long_files_without_sections():
     assert "ai_sections IS NULL" in summaries.SELECT and "record_ocr" in summaries.SELECT
+
+def test_a_transient_model_error_is_retried_not_fatal(monkeypatch):
+    monkeypatch.setattr(summaries.time, "sleep", lambda s: None)
+    calls, base = [], _fake_chat([])
+    def flaky(system, user, **k):
+        calls.append(1)
+        if len(calls) == 2:
+            raise RuntimeError("429 Too Many Requests")
+        return base(system, user, **k)
+    summary, secs = summaries.summarize("T", [(n, LONG) for n in range(1, 13)], chat=flaky)
+    assert len(secs) == 3 and summary

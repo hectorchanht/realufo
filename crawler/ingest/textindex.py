@@ -75,7 +75,9 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=None, help="max records this run")
     ap.add_argument("--kind", default=None, help="only these kinds, e.g. video,image (skip slow PDFs)")
     args = ap.parse_args(argv)
-    if not args.dry_run:
+    # Only full runs clean up failed records: retry_failed deletes ALL their vectors, and a
+    # --limit/--kind run would re-embed just a subset, leaving the rest missing from Ask.
+    if not args.dry_run and not (args.limit or args.kind):
         retry_failed()
     rows = d1._d1_json(" ".join(SELECT.split()))
     if args.kind:

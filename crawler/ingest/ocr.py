@@ -65,6 +65,8 @@ def marker_sql(rid: str, pages: list[dict], engine: str) -> str:
     if ocr_pages:  # text changed: rebuild record_text (summary, TL;DR) and the Ask vectors
         sql += [f"DELETE FROM record_text WHERE record_id={q};",
                 f"UPDATE text_index SET status='failed' WHERE record_id={q};"]
+    else:  # same text, but a capped record_text summary only saw ~30k chars: redo it over every page
+        sql.append(f"UPDATE record_text SET ai_summary=NULL, ai_sections=NULL WHERE record_id={q} AND truncated=1;")
     return "\n".join(sql) + "\n" + fts_sql(rid, pages)
 
 FTS_CAP = 90000  # ponytail: D1 statement limit ~100 KB; real pages are far smaller

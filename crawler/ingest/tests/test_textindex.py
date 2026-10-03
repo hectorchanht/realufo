@@ -107,3 +107,12 @@ def test_pdf_pages_with_ocr_id_reads_percent_encoded_r2_json(monkeypatch, tmp_pa
     monkeypatch.setattr(textindex.fetch, "download", download)
     assert textindex.pdf_pages("https://cdn/x.pdf", str(tmp_path), "O'Hare 1.pdf") == ["one", ""]
     assert seen == ["https://assets.realufo.org/text/O%27Hare%201.pdf.json"]
+
+def test_partial_runs_leave_other_failed_records_vectors_alone(world):
+    # summaries marks many records failed; a --limit/--kind pilot must not strip all of them from Ask
+    world["failed"] = [{"record_id": "F1", "chunks": 3}]
+    world["rows"] = [_row("P1")]
+    assert run("--limit", "1") == 0
+    assert world["deleted"] == [] and not any("status='failed'" in s for s in world["executed"])
+    assert run("--kind", "pdf") == 0
+    assert world["deleted"] == []

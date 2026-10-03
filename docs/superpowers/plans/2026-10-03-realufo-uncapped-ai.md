@@ -790,6 +790,9 @@ git commit -m "feat(doc): IN THIS FILE outline under the AI summary, rows open t
 
 ### Task 7: Rollout (ops)
 
+> **HARD GATE (final review, 2026-10-03):** commits 401b63b+ make `summaries`, `textindex`, `loadRecord` and `llms-full` read `record_text.ai_sections`. **No push and no deploy until migration 0037 is applied on remote D1** — a push without it breaks the daily GHA summaries/textindex; a Worker deploy without it blanks every doc page's AI summary + full text. (`pnpm run deploy` applies pending migrations first, so a deploy is safe only via that script.) 0037 sits behind another chat's `0035_push.sql`: coordinate before applying.
+> **Also required:** Spec 1 plan Task 9 (daily GHA `ingest.ocr` step before `fulltext`), so new PDFs get R2 text + full-page FTS before they are summarised.
+
 Do after Spec 1's backfill and its post-backfill chain (`docs/superpowers/plans/2026-10-03-realufo-paddleocr-reocr.md` Task 8), or at least after the backfill has finished.
 
 - [ ] **Step 1: Migration to remote D1**

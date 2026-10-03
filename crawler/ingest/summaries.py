@@ -9,7 +9,7 @@ section summary (map), and the list of those is reduced -- in layers when it is 
 long -- to one paragraph. Section summaries are stored in ai_sections (Ask chunks + the doc
 outline). Any failed call leaves the row untouched, so the next run retries the whole file.
 """
-import argparse, json, re, sys, tempfile
+import argparse, json, re, sys, tempfile, time
 from concurrent.futures import ThreadPoolExecutor
 from . import cfapi, d1
 from .textindex import flush, pdf_pages, reindex_sql
@@ -87,19 +87,31 @@ def _short(raw, words: int) -> str:
 def _lines(secs: list[dict]) -> list[str]:
     return [f"[{page_label(s['from'], s['to'])}] {s['text']}" for s in secs]
 
+RETRIES = 3
+
+def _ask(chat, *a, **k):
+    """One model call, retried with backoff: a 235-call file must not die on one 429."""
+    for i in range(RETRIES):
+        try:
+            return chat(*a, **k)
+        except Exception:
+            if i == RETRIES - 1:
+                raise
+            time.sleep(2 ** (i + 1))
+
 def summarize(title: str, pages: list[tuple[int, str]], chat=cfapi.chat) -> tuple[str, list[dict] | None]:
     max_words = 120 if max((n for n, _ in pages), default=0) <= 30 else 200
     secs = sections(pages, SECTION)
     if not secs:
         raise ValueError("no text")
     if len(secs) == 1:
-        out = clean_summary(chat(system(max_words), f"Title: {title}\n\nDocument text:\n<<<\n{secs[0]['text']}\n>>>\n/no_think"),
+        out = clean_summary(_ask(chat, system(max_words), f"Title: {title}\n\nDocument text:\n<<<\n{secs[0]['text']}\n>>>\n/no_think"),
                             max_words + 10)
         if not out:
             raise ValueError("empty or too-short reply")
         return out, None
     mapped = [{"from": s["from"], "to": s["to"],
-               "text": _short(chat(SECTION_SYSTEM, f"Title: {title}\n{page_label(s['from'], s['to'])}:\n<<<\n{s['text']}\n>>>\n/no_think",
+               "text": _short(_ask(chat, SECTION_SYSTEM, f"Title: {title}\n{page_label(s['from'], s['to'])}:\n<<<\n{s['text']}\n>>>\n/no_think",
                                    max_tokens=120), SECTION_WORDS)} for s in secs]
     level = mapped
     while len("\n".join(_lines(level))) > SECTION:  # layered reduce for very long files
@@ -112,9 +124,9 @@ def summarize(title: str, pages: list[tuple[int, str]], chat=cfapi.chat) -> tupl
             size += len(line) + 1
         groups.append(cur)
         level = [{"from": g[0]["from"], "to": g[-1]["to"],
-                  "text": _short(chat(GROUP_SYSTEM, f"Title: {title}\n<<<\n" + "\n".join(_lines(g)) + "\n>>>\n/no_think",
+                  "text": _short(_ask(chat, GROUP_SYSTEM, f"Title: {title}\n<<<\n" + "\n".join(_lines(g)) + "\n>>>\n/no_think",
                                       max_tokens=120), SECTION_WORDS)} for g in groups]
-    out = clean_summary(chat(system(max_words), f"Title: {title}\n\nSection summaries of the whole document:\n<<<\n"
+    out = clean_summary(_ask(chat, system(max_words), f"Title: {title}\n\nSection summaries of the whole document:\n<<<\n"
                              + "\n".join(_lines(level)) + "\n>>>\n/no_think", max_tokens=500), max_words + 10)
     if not out:
         raise ValueError("empty or too-short reply")

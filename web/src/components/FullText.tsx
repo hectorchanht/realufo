@@ -145,6 +145,7 @@ export default function FullText({
                           turned.current = s.from;
                           setCur(s.from);
                           onPageChange?.(s.from);
+                          section.current?.scrollIntoView?.({ block: "start" }); // the tapped row may sit far below
                         }}
                         className="w-full px-3 py-2 text-left text-[12.5px] leading-[1.5] text-dim hover:bg-surface"
                       >

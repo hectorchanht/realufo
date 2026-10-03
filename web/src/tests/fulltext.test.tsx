@@ -100,4 +100,14 @@ describe("FullText paginated view", () => {
     render(<FullText id="X" data={{ ...data, aiSections: [{ from: 1, to: 2, text: "All." }] }} load={never} onOpenOriginal={() => {}} />);
     expect(screen.queryByText("IN THIS FILE")).toBeNull();
   });
+
+  it("an outline tap brings the text block into view (the outline may have been scrolled far down)", () => {
+    const into = vi.fn();
+    Element.prototype.scrollIntoView = into;
+    const withSecs = { ...data, aiSections: [{ from: 1, to: 1, text: "Cover memo." }, { from: 2, to: 2, text: "Witness statement." }] };
+    render(<FullText id="X" data={withSecs} load={never} onOpenOriginal={() => {}} />);
+    into.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: /p\. 2 · Witness statement\./ }));
+    expect(into).toHaveBeenCalledTimes(1);
+  });
 });

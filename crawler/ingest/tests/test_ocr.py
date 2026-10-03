@@ -39,10 +39,10 @@ def _db():
     db = sqlite3.connect(":memory:")
     db.executescript("""
       CREATE TABLE record_ocr(record_id TEXT PRIMARY KEY, pages INT, ocr_pages INT, chars INT, engine TEXT, done_at TEXT);
-      CREATE TABLE record_text(record_id TEXT PRIMARY KEY, pages TEXT);
+      CREATE TABLE record_text(record_id TEXT PRIMARY KEY, pages TEXT, truncated INT DEFAULT 0, ai_summary TEXT, ai_sections TEXT);
       CREATE TABLE text_index(record_id TEXT PRIMARY KEY, status TEXT);
       CREATE TABLE record_fts(record_id TEXT, page INT, body TEXT);
-      INSERT INTO record_text VALUES ('O''Hare 1.pdf','[]');
+      INSERT INTO record_text(record_id, pages) VALUES ('O''Hare 1.pdf','[]');
       INSERT INTO text_index VALUES ('O''Hare 1.pdf','indexed');""")
     return db
 
@@ -181,3 +181,15 @@ def test_fts_only_rewrites_search_rows_from_r2_without_marker_or_requeue(world, 
     assert "INSERT INTO record_fts" in sql and "'page three'" in sql
     assert "record_ocr" not in sql and "record_text" not in sql and "text_index" not in sql
     assert world["put"] == []
+
+def test_born_digital_capped_file_gets_its_summary_redone_from_the_full_text():
+    # summarised from capped record_text before OCR ran (e.g. OCR failed that day): no requeue, but
+    # the summary must be rebuilt over every page, or it stops at the 30k cap forever
+    db = _fts_db()
+    db.execute("UPDATE record_text SET truncated=1, ai_summary='capped', ai_sections='[]'")
+    db.executescript(ocr.marker_sql("O'Hare 1.pdf", [{"n": 1, "text": "abc", "src": "pdf"}], "eng"))
+    assert db.execute("SELECT pages, ai_summary, ai_sections FROM record_text").fetchone() == ("[]", None, None)
+    db = _fts_db()
+    db.execute("UPDATE record_text SET truncated=0, ai_summary='whole'")
+    db.executescript(ocr.marker_sql("O'Hare 1.pdf", [{"n": 1, "text": "abc", "src": "pdf"}], "eng"))
+    assert db.execute("SELECT ai_summary FROM record_text").fetchone() == ("whole",)
