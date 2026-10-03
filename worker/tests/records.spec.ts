@@ -27,6 +27,40 @@ describe("records", () => {
     expect(d.related.some((g: any) => g.key === "location")).toBe(true);
     expect(d.related.some((g: any) => g.key === "media" || g.key === "topic")).toBe(false);
   });
+  it("malformed pages/bullets JSON from the crawler → 200 with fullText/tldr null, not a 500", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO records (id,archive,agency,title,kind,redacted,featured,created_at) VALUES ('BAD-JSON-1','nara','X','bad json','pdf',0,0,'2001-01-05')"
+      ),
+      env.DB.prepare("INSERT INTO record_text(record_id,pages,truncated,total_pages) VALUES('BAD-JSON-1','[{\"n\":1,',0,1)"),
+      env.DB.prepare("INSERT INTO record_tldr (record_id,lang,bullets,one_liner,input_hash) VALUES ('BAD-JSON-1','en','[\"a\",','x','h')"),
+    ]);
+    const res = await get("/api/records/BAD-JSON-1");
+    expect(res.status).toBe(200);
+    const d: any = await res.json();
+    expect(d.fullText).toBeNull();
+    expect(d.tldr).toBeNull();
+  });
+  it("newer-table queries failing (code before migration) → 200 with empty defaults", async () => {
+    const newer = /FROM (assets|record_text|record_tldr|articles)\b/;
+    const DB = new Proxy(env.DB, {
+      get(t, k) {
+        if (k !== "prepare") return Reflect.get(t, k).bind?.(t) ?? Reflect.get(t, k);
+        return (sql: string) => {
+          if (!newer.test(sql)) return t.prepare(sql);
+          const fail = () => Promise.reject(new Error("D1_ERROR: no such table"));
+          return { bind: () => ({ all: fail, first: fail }) };
+        };
+      },
+    });
+    const res = await worker.fetch(new Request("https://x/api/records/CIA-UAP-017"), { ...env, DB } as any, {} as any);
+    expect(res.status).toBe(200);
+    const d: any = await res.json();
+    expect(d.record.id).toBe("CIA-UAP-017");
+    expect(d).toMatchObject({ assets: [], fullText: null, tldr: null, articles: [] });
+    // Base record query stays strict: missing record is still a 404.
+    expect((await worker.fetch(new Request("https://x/api/records/NOPE"), { ...env, DB } as any, {} as any)).status).toBe(404);
+  });
   it("loadRecord parses stored full text; null without a row", async () => {
     await env.DB.prepare("INSERT INTO record_text(record_id,pages,truncated,total_pages) VALUES('FBI-UAP-D003',?,1,12)")
       .bind(JSON.stringify([{ n: 2, text: "Page two text" }]))
