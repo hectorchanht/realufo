@@ -1,13 +1,13 @@
 """Showcase Short for AARO-956955 (Navy 2021 Flyby): the object is in only 3 of 289 frames
 (268-270, ~8.94 s). Cut: hook still (zoom on 269, object boxed; frame 0 = thumbnail) -> whole original once -> same moment 8x slower -> frames 266-272 stepped
-with the object boxed -> zoom on 269 + "step through it frame by frame" end card. 9:16, ~26.2 s.
+with the object boxed -> zoom on 269 + "step through it frame by frame" end card. ElevenLabs narration (lib.tts) + ambient bed. 9:16, ~27.3 s.
 
     FFMPEG=/path/to/ffmpeg-with-drawtext CLIP_FONT=/path/Bold.ttf python3 showcase/AARO-956955.py
 
 Writes showcase/AARO-956955.mp4; post it with
     scripts/publish.sh --showcase AARO-956955 showcase/AARO-956955.mp4 "TEXT"
 """
-import os, subprocess, tempfile
+import os, subprocess, sys, tempfile
 F = os.environ.get("FFMPEG", "ffmpeg"); FONT = os.environ.get("CLIP_FONT", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
 HERE = os.path.dirname(os.path.abspath(__file__)); D = tempfile.mkdtemp(prefix="showcase-")
 U = "https://assets.realufo.org/videos/aaro/DOD_108981629.mp4"
@@ -52,7 +52,21 @@ vf=[ZOOM,
     txt("c1","Step through it",250,84), txt("c2","frame by frame",345,84),
     txt("c3","realufo.org/doc/AARO-956955",1380,50,"yellow"), site.replace(":y=1420",":y=1450")]
 vf[-1]=txt("c4","AARO-956955  ·  Navy 2021 Flyby",1460,44)
-run(["-loop","1","-t","3.2","-i",f"{D}/f269.png",*SIL,"-vf",",".join(vf),"-map","0:v","-map","1:a","-t","3.2"], f"{D}/s9.mp4")
+run(["-loop","1","-t","4.2","-i",f"{D}/f269.png",*SIL,"-vf",",".join(vf),"-map","0:v","-map","1:a","-t","4.2"], f"{D}/s9.mp4")
 open(f"{D}/list.txt","w").write("".join(f"file '{s}'\n" for s in segs))
-subprocess.run([F,"-v","error","-y","-f","concat","-safe","0","-i",f"{D}/list.txt","-c","copy","-movflags","+faststart",OUT],check=True)
-print("done", os.path.getsize(OUT)//1024, "KB")
+CAT=f"{D}/cat.mp4"
+subprocess.run([F,"-v","error","-y","-f","concat","-safe","0","-i",f"{D}/list.txt","-c","copy","-movflags","+faststart",CAT],check=True)
+# ElevenLabs narration at fixed cues (s); all quiet before the pass at ~10.4 s so the blink plays clean
+sys.path.insert(0, HERE); import lib
+SAY = [(0.2, "Only three of these two hundred eighty-nine frames show this object."),
+       (3.9, "A Navy pilot filmed it in 2021. Naval Intelligence showed it to Congress in 2022."),
+       (11.4, "Did you catch it? Eight times slower."),
+       (17.3, "Frame by frame. Three frames, then gone."),
+       (23.3, "Step through any video, frame by frame, on real U F O dot org.")]
+ins, fc = ["-i", CAT], ""
+for i, (t, line) in enumerate(SAY, 1):
+    ins += ["-i", lib.tts(line)[0]]; fc += f"[{i}:a]aformat=channel_layouts=stereo,adelay={int(t*1000)}:all=1[n{i}];"
+fc += "[0:a]" + "".join(f"[n{i}]" for i in range(1, len(SAY)+1)) + f"amix=inputs={len(SAY)+1}:normalize=0:duration=first[a]"
+VO=f"{D}/vo.mp4"
+subprocess.run([F,"-v","error","-y",*ins,"-filter_complex",fc,"-map","0:v","-map","[a]","-c:v","copy","-c:a","aac","-b:a","128k","-movflags","+faststart",VO],check=True)
+c = lib.Cut(); c.segs = [VO]; c.save(OUT, bed=True)  # + the synthesized ambient bed, as the article Shorts
