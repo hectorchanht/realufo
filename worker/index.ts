@@ -110,7 +110,7 @@ export default {
     // Stories folded into case pages (spec 2026-10-03-realufo-case-stories-design):
     // straight to /case, no apex → subdomain → apex chain.
     const moved = /^\/stories\/([a-z0-9-]+)\/?$/.exec(url.pathname)?.[1];
-    if (moved && CASE_STORY_TEXT[moved]) return Response.redirect(`${url.origin}/case/${moved}`, 301);
+    if (moved && Object.hasOwn(CASE_STORY_TEXT, moved)) return Response.redirect(`${url.origin}/case/${moved}`, 301);
     if (LEGACY_PATH.test(url.pathname)) {
       const p = url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`;
       return Response.redirect(`https://release.realufo.org${p}${url.search}`, 301);

@@ -8,8 +8,9 @@ import { docHref, docTitle } from "../lib/ssr";
 // Sources resolved for rendering: realufo records → doc link + title (plain text if
 // gone); outside → url (PDFs deep-linked to the cited page) + host label.
 export async function storyView(env: Env, slug: string): Promise<StoryView | null> {
+  // Own keys only: "constructor" etc. must not resolve to Object.prototype members.
+  if (!Object.hasOwn(CASE_STORY_TEXT, slug)) return null;
   const s = CASE_STORY_TEXT[slug];
-  if (!s) return null;
   const ids = s.sources.flatMap((x) => (x.id ? [x.id] : []));
   const { results } = await env.DB.prepare("SELECT id,title,kind FROM records WHERE status='live' AND id IN (SELECT value FROM json_each(?))")
     .bind(JSON.stringify(ids))

@@ -57,3 +57,15 @@ describe("CASE_STORY_TEXT", () => {
     expect(Object.keys(CASE_STORY_TEXT).sort()).toEqual([...CASE_SLUGS].sort());
   });
 });
+
+describe("story content regressions (final review)", () => {
+  it("falcon-lake: the 20 May encounter is not dated from Oatway's 21 May letter", () => {
+    const e = CASE_STORY_TEXT["falcon-lake"].timeline.find((t) => t.date === "1967-05-20")!;
+    expect(e.src).toBe(2);
+    expect(e.event).not.toMatch(/Misericordia/);
+  });
+  it("shag-harbour: the diving-team timeline entry cites the dive order", () => {
+    const e = CASE_STORY_TEXT["shag-harbour"].timeline.find((t) => /div/i.test(t.event))!;
+    expect(e.src).toBe(4);
+  });
+});

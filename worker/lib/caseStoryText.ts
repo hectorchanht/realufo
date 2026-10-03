@@ -883,9 +883,9 @@ export const CASE_STORY_TEXT: Record<string, CaseStory> = {
         src: 2
       },
       {
-        date: "1967-10-06",
-        event: "Col. Turner's memo records the diving team on scene with Coast Guard Cutter 101.",
-        src: 3
+        date: "1967-10-05",
+        event: "Maritime Command orders a diving team to meet Coast Guard Cutter 101 at Clark's Harbour.",
+        src: 4
       },
       {
         date: "1967-10-08",
@@ -1488,8 +1488,8 @@ export const CASE_STORY_TEXT: Record<string, CaseStory> = {
     timeline: [
       {
         date: "1967-05-20",
-        event: "Michalak reports an encounter with two objects near Falcon Lake and is treated for burns at Misericordia Hospital.",
-        src: 3
+        event: "Michalak reports an encounter with two objects near Falcon Lake; the RCC Winnipeg report records his burns.",
+        src: 2
       },
       {
         date: "1967-05-23",

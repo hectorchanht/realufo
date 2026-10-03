@@ -53,6 +53,13 @@ describe("case story view", () => {
     expect(other.headers.get("location")).toBe("https://release.realufo.org/stories/tic-tac/");
   });
 
+  it("inherited object keys are not stories (no bogus redirect, no story view)", async () => {
+    const res = await call("/stories/constructor");
+    expect(res.headers.get("location")).toBe("https://release.realufo.org/stories/constructor/");
+    expect(await storyView(env as any, "constructor")).toBeNull();
+    expect(await storyView(env as any, "toString")).toBeNull();
+  });
+
   it("sitemap case entries carry lastmod from the story", async () => {
     const xml = await (await call("/sitemap.xml")).text();
     expect(xml).toContain(`<loc>https://cases.test/case/socorro</loc><lastmod>${S.updated}</lastmod>`);
