@@ -3,6 +3,7 @@ the DVIDS page for videos, the war.gov file for war.gov PDFs/images.
 
     python source-links.py            # print planned changes
     python source-links.py --apply    # + write them to remote D1
+    python source-links.py --apply x.csv   # also read these war.gov CSVs (war.gov 403s at times)
 
 Idempotent; rerun after an ingest. Rows with no known source keep their URL.
 """
@@ -48,9 +49,10 @@ def source_for(row, dvids, links):
     return None
 
 
-def main(apply):
+def main(apply, extra_csvs):
     with tempfile.TemporaryDirectory() as work:
-        links = wargov_links(wargov.refresh_csvs(work, CSV_PATHS) or CSV_PATHS)
+        # committed CSVs first so fresher ones override
+        links = wargov_links(CSV_PATHS + extra_csvs + wargov.refresh_csvs(work, []))
     dvids = dvids_by_dod()
     rows = d1._d1_json("SELECT r.id, r.archive, r.kind, r.source_url, a.cdn_url FROM records r "
                        "JOIN assets a ON a.record_id=r.id AND a.role='full'")
@@ -69,4 +71,4 @@ def main(apply):
 
 
 if __name__ == "__main__":
-    main("--apply" in sys.argv[1:])
+    main("--apply" in sys.argv[1:], [a for a in sys.argv[1:] if a.endswith(".csv")])
