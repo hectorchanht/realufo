@@ -127,6 +127,7 @@ export async function listRecords(req: Request, env: Env) {
   )
     .bind(...(fts ? [fts] : []), ...joinBind, ...bind, ...orderBind, limit, offset)
     .all<Record<string, unknown>>();
+  // text_match is SQLite's own json_object() output, so JSON.parse can't fail here.
   const records = fts
     ? rows.results.map(({ text_match, ...x }) => ({ ...x, match: text_match ? JSON.parse(String(text_match)) : null }))
     : rows.results;
@@ -247,6 +248,23 @@ export async function recordFacets(_req: Request, env: Env) {
   });
 }
 
+// Optional doc parts (newer tables, crawler JSON): a failure drops that part to its
+// empty default instead of 500ing the whole doc (incident 2026-10-02).
+function soft<T, E>(p: Promise<T>, what: string, id: string, empty: E): Promise<T | E> {
+  return p.catch((e) => {
+    console.error(`${what} failed`, id, e);
+    return empty;
+  });
+}
+function parseOr<T>(s: string, what: string, id: string): T | null {
+  try {
+    return JSON.parse(s) as T;
+  } catch (e) {
+    console.error(`${what} JSON malformed`, id, e);
+    return null;
+  }
+}
+
 // The doc detail object, shared by GET /api/records/:id and the Worker's
 // pre-render of /doc/:id (lib/pages.ts). Null when the record doesn't exist.
 export async function loadRecord(env: Env, id: string, origin: string) {
@@ -256,7 +274,7 @@ export async function loadRecord(env: Env, id: string, origin: string) {
   if (!record) return null;
   const releaseP = releaseOf(env, record);
   const [assets, promoted, series, release, related, text, hubList, topicMap, tldrRow, articleRows] = await Promise.all([
-    env.DB.prepare("SELECT role,cdn_url,mime,width,height,duration,crop FROM assets WHERE record_id=?").bind(id).all(),
+    soft(env.DB.prepare("SELECT role,cdn_url,mime,width,height,duration,crop FROM assets WHERE record_id=?").bind(id).all(), "assets", id, { results: [] as Record<string, unknown>[] }),
     env.DB.prepare(
       `SELECT t.id,t.no,t.title,t.stance,t.votes,t.source_record_id,b.slug boardSlug,b.accent accent
                     FROM threads t JOIN boards b ON b.id=t.board_id WHERE t.source_record_id=?`
@@ -266,9 +284,12 @@ export async function loadRecord(env: Env, id: string, origin: string) {
     seriesNav(env, id),
     releaseP,
     releaseP.then((rel) => relatedOf(env, record, rel)),
-    env.DB.prepare("SELECT pages,truncated,total_pages,ai_summary FROM record_text WHERE record_id=?")
-      .bind(id)
-      .first<{ pages: string; truncated: number; total_pages: number; ai_summary: string | null }>(),
+    soft(
+      env.DB.prepare("SELECT pages,truncated,total_pages,ai_summary FROM record_text WHERE record_id=?")
+        .bind(id)
+        .first<{ pages: string; truncated: number; total_pages: number; ai_summary: string | null }>(),
+      "record_text", id, null
+    ),
     // Hub links are optional garnish: a failing facet query must not break the doc.
     listHubsCached(env, origin).catch((e) => {
       console.error("hub list failed", e);
@@ -279,30 +300,33 @@ export async function loadRecord(env: Env, id: string, origin: string) {
       console.error("topic members failed", e);
       return {} as Record<string, string[]>;
     }),
-    env.DB.prepare("SELECT bullets,one_liner,card_url FROM record_tldr WHERE record_id=? AND lang='en'")
-      .bind(id)
-      .first<{ bullets: string; one_liner: string; card_url: string | null }>(),
+    soft(
+      env.DB.prepare("SELECT bullets,one_liner,card_url FROM record_tldr WHERE record_id=? AND lang='en'")
+        .bind(id)
+        .first<{ bullets: string; one_liner: string; card_url: string | null }>(),
+      "record_tldr", id, null
+    ),
     // Articles this record is evidence in (migration 0025), each with all its evidence rows.
-    env.DB.prepare(
-      `SELECT a.slug, a.title, a.image_key, a.thread_id, e.record_id, e.t, e.page, e.label, e.image_key e_image
-         FROM articles a JOIN article_records e ON e.slug=a.slug
-        WHERE a.slug IN (SELECT slug FROM article_records WHERE record_id=?) ORDER BY a.created_at DESC, e.pos`
-    )
-      .bind(id)
-      .all<ArticleRow>(),
+    soft(
+      env.DB.prepare(
+        `SELECT a.slug, a.title, a.image_key, a.thread_id, e.record_id, e.t, e.page, e.label, e.image_key e_image
+           FROM articles a JOIN article_records e ON e.slug=a.slug
+          WHERE a.slug IN (SELECT slug FROM article_records WHERE record_id=?) ORDER BY a.created_at DESC, e.pos`
+      )
+        .bind(id)
+        .all<ArticleRow>(),
+      "articles", id, { results: [] as ArticleRow[] }
+    ),
   ]);
   // Quality-filtered PDF text (crawler ingest.fulltext); null until extracted.
   // aiSummary from crawler ingest.summaries; null until generated.
-  const fullText = text
-    ? {
-        pages: JSON.parse(text.pages) as { n: number; text: string }[], truncated: !!text.truncated,
-        total_pages: text.total_pages, aiSummary: text.ai_summary ?? null,
-      }
+  const pages = text && parseOr<{ n: number; text: string }[]>(text.pages, "record_text.pages", id);
+  const fullText = text && pages
+    ? { pages, truncated: !!text.truncated, total_pages: text.total_pages, aiSummary: text.ai_summary ?? null }
     : null;
   // Funny-but-true TL;DR (crawler ingest.tldr); null until generated.
-  const tldr = tldrRow
-    ? { bullets: JSON.parse(tldrRow.bullets) as string[], oneLiner: tldrRow.one_liner, cardUrl: tldrRow.card_url }
-    : null;
+  const bullets = tldrRow && parseOr<string[]>(tldrRow.bullets, "record_tldr.bullets", id);
+  const tldr = tldrRow && bullets ? { bullets, oneLiner: tldrRow.one_liner, cardUrl: tldrRow.card_url } : null;
   const live = new Set(hubList.map((h) => `${h.kind}/${h.slug}`));
   return {
     record, assets: assets.results, promotedThreads: promoted.results, series, release, related, fullText, tldr,
