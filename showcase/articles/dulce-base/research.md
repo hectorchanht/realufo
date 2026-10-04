@@ -2,6 +2,14 @@
 
 Status 2026-10-03: research in progress, story not written. Archive searched over 317 PaddleOCR'd files plus pdftotext for the rest; re-check the remaining files once the OCR backfill finishes.
 
+## Due diligence complete (2026-10-04 00:35 UTC)
+
+- OCR backfill complete: 361/361 live PDFs have `record_ocr`; no `ingest.ocr` running. Pentagon Papers removed (49 volumes).
+- D017 OCR'd 00:10 UTC: p.70 (17th District OSI, Kirtland AFB, 18 May 1949, "UNKNOWN (Aerial Phenomena)") and p.71 ("In none of the reported incidents…") match the scan crops. No Dulce/Bennewitz/Manzano/Archuleta/underground/mutilation anywhere in its 116 pages.
+- Last two files (59214434SP167181963, DOW-UAP-D087) OCR'd 00:34 UTC: no Dulce/Bennewitz/Manzano/Archuleta/underground base/mutilation/Doty/Kirtland.
+- Quotes re-checked against pages: COMETA p.74/75, CIA-UAP-003 pp.91-92, D017 p.70/71, FBI 62-HQ-83894 sec.10 p.9/p.18, AARO HRR vol.1 p.9.
+- How-to searches verified live: "Dulce" → 0; "Bennewicz" → COMETA p.74; "glider Kirtland" → CIA-UAP-003 p.92.
+
 ## Re-search over full-page OCR search (2026-10-04, 356/361 PDFs OCR'd; D017 pending)
 
 - Still 0 hits: Dulce, Bennewitz, Manzano, Archuleta, Aquarius, Gasbuggy, Jicarilla, Cseh. "mutilation" only in the 2024 NDAA (records law).
