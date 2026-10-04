@@ -65,12 +65,11 @@ const TAB = {
     type: "website" as const,
   },
   map: { title: "Sighting Map", description: "Map of where the declassified UAP files come from: every place named in Pentagon, AARO, FBI, CIA and NASA records, with file counts.", type: "website" as const },
-  // AI answers can be wrong: never indexed.
+  // Bare /ask (question box + shared answers) is indexable; /ask?q= is not (lib/meta.ts).
   ask: {
     title: "Ask the Archive",
     description: "Ask a question and get an AI answer drawn from the declassified UAP files, with sources.",
     type: "website" as const,
-    robots: "noindex",
   },
 };
 

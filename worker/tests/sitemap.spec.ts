@@ -38,6 +38,11 @@ describe("sitemap", () => {
     expect(xml).toMatch(/<pubDate>\w{3}, \d\d \w{3} \d{4}/);
   });
 
+  it("lists the bare /ask landing (its ?q= answers stay out)", async () => {
+    const xml = await (await worker.fetch(new Request("https://realufo.org/sitemap.xml"), env as any, {} as any)).text();
+    expect(xml).toContain("<loc>https://realufo.org/ask</loc>");
+  });
+
   it("/rss, /feed and /feed.xml serve the same feed", async () => {
     for (const path of ["/rss", "/feed", "/feed.xml"]) {
       const res = await worker.fetch(new Request(`https://realufo.org${path}`), env as any, {} as any);

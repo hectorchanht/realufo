@@ -268,13 +268,16 @@ describe("serveWithMeta (via worker.fetch)", () => {
     expect(html).toContain('property="og:image" content="https://x/og.png"');
   });
 
-  it("/ask gets its own meta with robots noindex; other tabs don't", async () => {
+  it("/ask?q= (live AI answer) is noindex; bare /ask and other tabs are indexable", async () => {
     const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
     const get = async (path: string) => (await worker.fetch(new Request("https://x" + path), fakeEnv, createExecutionContext())).text();
+    const bare = await get("/ask"); // first: fills the per-path page memo the ?q= request then reuses
+    expect(bare).toContain("<title>Ask the Archive · RealUFO</title>");
+    expect(bare).not.toContain('name="robots"');
     const html = await get("/ask?q=roswell");
-    expect(html).toContain("<title>Ask the Archive · RealUFO</title>");
     expect(html).toContain('<meta name="robots" content="noindex">');
     expect(html).toContain('rel="canonical" href="https://x/ask"');
+    expect(await get("/ask")).not.toContain('name="robots"');
     expect(await get("/archive")).not.toContain('name="robots"');
   });
 
@@ -650,8 +653,9 @@ describe("shared Ask answer pages", () => {
     }
   });
 
-  it("the /ask tab itself stays noindex", async () => {
-    expect((await get("/ask")).html).toContain('<meta name="robots" content="noindex">');
+  it("the bare /ask tab is indexable; its ?q= answers are not", async () => {
+    expect((await get("/ask")).html).not.toContain('name="robots"');
+    expect((await get("/ask?q=gimbal")).html).toContain('<meta name="robots" content="noindex">');
   });
 });
 

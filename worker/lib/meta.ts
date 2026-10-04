@@ -149,7 +149,10 @@ export async function serveWithMeta(req: Request, env: Env): Promise<Response> {
       const canonical = url.origin + (page.canonicalPath ?? url.pathname);
       const image = page.meta.image || shareCard(url);
       const jsonLd = page.meta.jsonLd && { "@context": "https://schema.org", ...page.meta.jsonLd, url: canonical, image };
-      return htmlResponse(injectBody(injectMeta(html, { ...page.meta, image, url: canonical, jsonLd }), page.body, page.footer));
+      // /ask?q= shows a live AI answer nobody reviewed (AI answers can be wrong): never indexed.
+      // Decided here, not in the loader: the page memo is keyed by path, query ignored.
+      const robots = url.pathname === "/ask" && url.searchParams.has("q") ? "noindex" : page.meta.robots;
+      return htmlResponse(injectBody(injectMeta(html, { ...page.meta, robots, image, url: canonical, jsonLd }), page.body, page.footer));
     }
     const res = await env.ASSETS.fetch(req);
     if (url.pathname !== "/index.html" && res.headers.get("content-type")?.startsWith("text/html")) return notFound(await res.text(), url);

@@ -1,7 +1,7 @@
 // Ask the Archive (Spec 3) on its own tab. `?q=` is the submitted question;
 // typing never asks (each answer costs money) — only Enter / the ASK button
 // do. With no question: this browser's questions + the shared list. The
-// worker serves /ask with robots noindex; shared answers get their own indexed /ask/:id page.
+// worker serves /ask?q= with robots noindex (bare /ask is indexed); shared answers get their own indexed /ask/:id page.
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
