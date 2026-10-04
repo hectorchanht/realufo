@@ -1,5 +1,6 @@
 // Frame zoom + pan for the Doc media panel. Ctrl/⌘+wheel (also what a
-// trackpad pinch sends) or a two-finger pinch zooms around the pointer; a
+// trackpad pinch sends) or a two-finger pinch zooms around the pointer;
+// zoomBy (toolbar chips) zooms around the centre; a
 // drag pans while zoomed; Shift+wheel goes to `onShiftWheel` (lens
 // magnification). Native listeners so the wheel can be non-passive.
 import { useEffect, useEffectEvent, useRef, useState } from "react";
@@ -129,5 +130,13 @@ export function useZoomPan(
     };
   }, [panel]);
 
-  return { box, gestured };
+  /** Zoom by `f` around the panel centre (toolbar +/− chips). */
+  function zoomBy(f: number) {
+    const el = panel;
+    if (!el || !pic) return;
+    const r = el.getBoundingClientRect();
+    setView((v) => zoomAt(v, { w: r.width, h: r.height }, pic, f, r.width / 2, r.height / 2));
+  }
+
+  return { box, gestured, zoomBy };
 }

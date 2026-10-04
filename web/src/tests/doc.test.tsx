@@ -683,6 +683,17 @@ describe("Doc", () => {
     expect(document.querySelector("[data-zoom-lens]")).toBeInTheDocument();
     fireEvent.keyDown(window, { key: "=" });
     expect(screen.getByRole("button", { name: /lens magnification 5×/i })).toBeInTheDocument();
+
+    // frame zoom chips: + / − step 1.5× around the centre, clamped 1–8×
+    expect(screen.getByRole("button", { name: "Zoom out" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    expect(img().style.transform).toContain("scale(1.5)");
+    expect(screen.getByRole("button", { name: "Reset zoom" })).toHaveTextContent("1.5×");
+    for (let i = 0; i < 6; i++) fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    expect(screen.getByRole("button", { name: "Zoom in" })).toBeDisabled();
+    expect(img().style.transform).toContain("scale(8)");
+    fireEvent.click(screen.getByRole("button", { name: "Zoom out" }));
+    expect(screen.getByRole("button", { name: "Zoom in" })).not.toBeDisabled();
   });
 
   it("video opened from a ?t= link waits at its moment: no autoplay, not muted", () => {

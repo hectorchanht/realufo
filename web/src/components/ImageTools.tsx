@@ -7,9 +7,9 @@
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode, RefObject } from "react";
-import { Contrast, DropletOff, Droplet, Flame, FlipHorizontal2, Focus, Keyboard, Rainbow, RotateCcw, RotateCw, Shrink, SlidersHorizontal, Sun, SunMoon, WandSparkles, X, ZoomIn } from "lucide-react";
+import { Contrast, DropletOff, Droplet, Flame, FlipHorizontal2, Focus, Keyboard, Rainbow, RotateCcw, RotateCw, Search, Shrink, SlidersHorizontal, Sun, SunMoon, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { DEFAULT_VIEW, pointToUV } from "../lib/mediaView";
+import { DEFAULT_VIEW, MAX_ZOOM, pointToUV } from "../lib/mediaView";
 import type { MediaView } from "../lib/mediaView";
 
 export type Palette = "none" | "ironbow" | "rainbow";
@@ -203,6 +203,7 @@ export function MediaToolbar({
   onMag,
   view,
   onView,
+  onZoom,
   keysHelp,
   panelSlot,
 }: {
@@ -214,6 +215,8 @@ export function MediaToolbar({
   onMag: (m: number) => void;
   view: MediaView;
   onView: (v: MediaView) => void;
+  /** Frame zoom by a factor around the panel centre. */
+  onZoom: (f: number) => void;
   /** Keyboard/mouse shortcuts, shown as a hover tooltip. */
   keysHelp?: string;
   /** Top row of the Adjust panel, for controls another component portals in (video speed/loop). */
@@ -251,7 +254,7 @@ export function MediaToolbar({
           <SlidersHorizontal {...ico} />
         </button>
         <button type="button" aria-label="Lens" aria-pressed={lens} onClick={() => onLens(!lens)} title="Lens (L)" className={`${chip} ${lens ? on : off}`}>
-          <ZoomIn {...ico} />
+          <Search {...ico} />
         </button>
         {lens && (
           <button
@@ -264,6 +267,12 @@ export function MediaToolbar({
             {mag}×
           </button>
         )}
+        <button type="button" aria-label="Zoom out" title="Zoom out" disabled={view.z <= 1} onClick={() => onZoom(1 / 1.5)} className={`${chip} ${off} disabled:opacity-40`}>
+          <ZoomOut {...ico} />
+        </button>
+        <button type="button" aria-label="Zoom in" title="Zoom in" disabled={view.z >= MAX_ZOOM} onClick={() => onZoom(1.5)} className={`${chip} ${off} disabled:opacity-40`}>
+          <ZoomIn {...ico} />
+        </button>
         <button
           type="button"
           aria-label="Rotate 90°"

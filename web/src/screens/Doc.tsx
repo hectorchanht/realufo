@@ -691,6 +691,7 @@ export function Doc() {
           onMag={setMag}
           view={view}
           onView={setView}
+          onZoom={zoom.zoomBy}
           panelSlot={media === "video" ? setSpeedSlot : undefined}
           // desktop only: shortcuts need a keyboard
           keysHelp={
