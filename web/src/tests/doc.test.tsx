@@ -597,10 +597,12 @@ describe("Doc", () => {
     expect(layer.style.pointerEvents).toBe("none");
     expect(screen.getByRole("button", { name: /open IMG/i })).toBeInTheDocument();
 
-    // shortcut list: hidden until hover/click; click pins it, Esc closes
-    const keysBtn = screen.getByRole("button", { name: "Keyboard shortcuts" });
+    // help: hidden until hover/click; click pins it, Esc closes. With a mouse each row shows its keys.
+    const keysBtn = screen.getByRole("button", { name: "How to use the media tools" });
     const tip = document.getElementById(keysBtn.getAttribute("aria-controls")!)!;
-    expect(tip).toHaveTextContent("R rotate");
+    const row = (name: string) => [...tip.querySelectorAll("li")].find((li) => li.querySelector("b")?.textContent === name);
+    expect(row("Turn")?.querySelector("kbd")).toHaveTextContent("R");
+    expect(row("Zoom in or out")).toHaveTextContent("Ctrl/⌘ + scroll");
     expect(tip.className).toContain("hidden");
     fireEvent.click(keysBtn);
     expect(keysBtn).toHaveAttribute("aria-expanded", "true");
@@ -1107,6 +1109,43 @@ describe("Doc", () => {
     fireEvent.click(screen.getByRole("button", { name: "Motion" }));
     expect(video().getAttribute("src")).toBe("https://cdn.example/clip.mp4");
     expect(document.querySelector("canvas[data-motion]")).toBeNull();
+  });
+
+  it("help panel lists every tool for this kind of file, with phone gestures on touch screens", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    const { unmount } = renderDoc();
+    const help = () => document.getElementById(screen.getByRole("button", { name: "How to use the media tools" }).getAttribute("aria-controls")!)!;
+    const groups = () => [...help().querySelectorAll("h3")].map((h) => h.textContent);
+    const names = () => [...help().querySelectorAll("li b")].map((b) => b.textContent);
+    expect(groups()).toEqual(["Look closer", "Change the look", "Measure and spot", "Share and save", "Move between files"]);
+    expect(names()).toEqual(expect.arrayContaining(["Turn", "Ruler", "See the original", "Save picture", "Night"]));
+    expect(names()).not.toContain("Motion"); // video only
+    expect(names()).not.toContain("Save frame");
+    // test env = touch screen: gestures instead of keys
+    const zoom = [...help().querySelectorAll("li")].find((li) => li.querySelector("b")?.textContent === "Zoom in or out")!;
+    expect(zoom).toHaveTextContent("Pinch");
+    expect(help().querySelector("kbd")).toBeNull();
+    unmount();
+
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "video" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/clip.mp4", mime: "video/mp4", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    expect(groups()).toContain("Play the video");
+    expect(names()).toEqual(expect.arrayContaining(["Motion", "Save frame", "Play or pause", "Step one frame"]));
+    expect(names()).not.toContain("Save picture");
   });
 
   it("no image tools on non-image records", () => {

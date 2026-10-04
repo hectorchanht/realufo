@@ -4,10 +4,10 @@
 // flip, frame zoom, and a zoom lens (LensLayer, shared with VideoTools).
 // CSS + SVG filters and a background-image lens for images, so no canvas
 // (and no CORS dependency on the CDN).
-import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { PointerEvent as ReactPointerEvent, ReactNode, RefObject } from "react";
-import { Activity, Contrast, DropletOff, Moon, MoonStar, Eye, Droplet, Flame, FlipHorizontal2, Focus, ImageDown, Keyboard, Link, LoaderCircle, Rainbow, RotateCcw, RotateCw, Ruler, Search, Shrink, SlidersHorizontal, Sun, SunMoon, TriangleAlert, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Activity, Contrast, DropletOff, Moon, MoonStar, Eye, Droplet, Flame, FlipHorizontal2, Focus, ImageDown, Link, LoaderCircle, Rainbow, RotateCcw, RotateCw, Ruler, Search, Shrink, SlidersHorizontal, Sun, SunMoon, TriangleAlert, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { DEFAULT_VIEW, MAX_ZOOM, centreOn, pointToUV } from "../lib/mediaView";
 import type { MediaView } from "../lib/mediaView";
@@ -189,53 +189,6 @@ export const ico = { size: 14, strokeWidth: 1.75, "aria-hidden": true } as const
 export const on = "border-signal text-signal";
 export const off = "border-line2 text-dim";
 
-/** Keyboard chip: hover shows the shortcut list; click pins it open (outside click / Esc closes). */
-function ShortcutsTip({ help }: { help: string }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLSpanElement>(null);
-  const id = useId();
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: PointerEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("pointerdown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-  return (
-    <span ref={ref} className="group relative">
-      <button
-        type="button"
-        aria-label="Keyboard shortcuts"
-        aria-expanded={open}
-        aria-controls={id}
-        onClick={() => setOpen(!open)}
-        className={`${chip} ${open ? on : off}`}
-      >
-        <Keyboard {...ico} />
-      </button>
-      {/* pt (not mt) keeps the gap inside the hover area, so the pointer can travel into the list */}
-      <div id={id} role="tooltip" className={`absolute left-0 top-full z-30 pt-1.5 ${open ? "block" : "hidden group-hover:block group-focus-within:block"}`}>
-        <ul className="w-max max-w-[300px] rounded-lg border border-line2 bg-bg2 px-3 py-2 font-mono text-[10px] leading-[1.75] text-dim shadow-[0_6px_24px_rgba(0,0,0,.45)]">
-          {help
-            .split(/\n| · /)
-            .filter(Boolean)
-            .map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-        </ul>
-      </div>
-    </span>
-  );
-}
-
 const ADJUST_OPEN_KEY = "ru:adjust-open";
 
 export function MediaToolbar({
@@ -256,7 +209,7 @@ export function MediaToolbar({
   onMotion,
   compare,
   onCompare,
-  keysHelp,
+  help,
   panelSlot,
 }: {
   adjust: ImageAdjust;
@@ -281,8 +234,8 @@ export function MediaToolbar({
   /** Hold-to-compare: true while the unfiltered picture shows. */
   compare: boolean;
   onCompare: (on: boolean) => void;
-  /** Keyboard/mouse shortcuts, shown as a hover tooltip. */
-  keysHelp?: string;
+  /** The "how to use" chip (MediaHelp), last in the row. */
+  help?: ReactNode;
   /** Top row of the Adjust panel, for controls another component portals in (video speed/loop). */
   panelSlot?: (el: HTMLDivElement | null) => void;
 }) {
@@ -317,7 +270,8 @@ export function MediaToolbar({
   const nextMag = LENS_MAGS[(LENS_MAGS.indexOf(mag) + 1) % LENS_MAGS.length];
   return (
     <div className="mb-3.5">
-      <div className="flex flex-wrap items-center gap-2">
+      {/* relative: MediaHelp's panel spans this row */}
+      <div className="relative flex flex-wrap items-center gap-2">
         <button
           type="button"
           aria-label="Adjust"
@@ -407,7 +361,7 @@ export function MediaToolbar({
             {saving === "busy" ? <LoaderCircle {...ico} className="animate-spin" /> : saving === "failed" ? <TriangleAlert {...ico} /> : <ImageDown {...ico} />}
           </button>
         )}
-        {keysHelp && <ShortcutsTip help={keysHelp} />}
+        {help}
         {changed && (
           // press and hold (pointer, or Space/Enter on the focused chip): see the file as it is, no filters
           <button

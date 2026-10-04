@@ -37,6 +37,7 @@ import { DocCard } from "../components/DocCard";
 import { LoadError } from "../components/LoadError";
 import { goBack } from "../components/navItems";
 import { MediaRuler } from "../components/MediaRuler";
+import { MediaHelp } from "../components/MediaHelp";
 import { MotionLayer } from "../components/MotionLayer";
 import { LENS_MAGS, MediaFilters, MediaToolbar, Minimap, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams, grabImage } from "../components/ImageTools";
 import type { ImageAdjust } from "../components/ImageTools";
@@ -784,12 +785,7 @@ export function Doc() {
           motion={motion}
           onMotion={media === "video" ? toggleMotion : undefined}
           panelSlot={media === "video" ? setSpeedSlot : undefined}
-          // desktop only: shortcuts need a keyboard
-          keysHelp={
-            isDesktop && finePointer
-              ? `${media === "video" ? "Space play · , . frame · [ ] speed\nA loop A–B · M mute · C save frame\n" : ""}L lens · - = lens zoom (or Shift+wheel)\nDouble-click, Ctrl/⌘+wheel or pinch zoom, drag to pan\n0 reset · I invert · R rotate · F flip\nhold \\ original (no filters)`
-              : undefined
-          }
+          help={<MediaHelp media={media} touch={!finePointer} />}
         />
       )}
       {media === "video" && (keyMoments.moments.length > 0 || aiMoments.length > 0) && (
