@@ -1,0 +1,136 @@
+# Re-OCR of redacted text-layer pages (2026-10-03)
+
+Text layers of redacted PDFs drop lines beside the bars (DOW-UAP-D091 p.2).  now OCRs a clean-layer page
+with solid black boxes and keeps OCR only when it reads more real words (8c88d24, 3555378).
+
+Survey: 251 barred text-layer pages in 94 files. Dry eval (no writes): OCR reads more real words on
+**124 pages in 58 files**; the other 127 keep their layer.
+
+Apply:  drops their  markers, then  + rebuild chain.
+
+| Record | Page | Layer words | OCR words |
+|---|---|---|---|
+| AARO-AARO_Mission_Brief_2025 | 5 | 117 | 1091 |
+| 65-hs1-834228961-62-hq-83894-serial-130 | 9 | 222 | 349 |
+| DOW-UAP-D102 | 21 | 47 | 170 |
+| 65-hs1-834228961-62-hq-83894-section-2 | 146 | 257 | 350 |
+| 65-hs1-834228961-62-hq-83894-serial-130 | 2 | 390 | 481 |
+| 65-hs1-834228961-62-hq-83894-serial-130 | 1 | 406 | 474 |
+| AARO-AARO_Satellite_Flaring_Paper_508_FINAL_04222025 | 16 | 289 | 355 |
+| AARO-SASC_AARO_Open_Hearing_Case_Slides_19Nov2024 | 3 | 179 | 243 |
+| 65-hs1-834228961-62-hq-83894-section-4 | 84 | 431 | 493 |
+| 65-hs1-834228961-62-hq-83894-section-8 | 60 | 230 | 286 |
+| AARO-AARO_Satellite_Flaring_Paper_508_FINAL_04222025 | 12 | 110 | 166 |
+| AARO-ORNL-Synopsis_Analysis_of_a_Metallic_Specimen | 5 | 225 | 276 |
+| DOD-GAO-B-262046-Roswell-1995 | 19 | 164 | 215 |
+| FBI-UAP-D007 | 1 | 55 | 99 |
+| AARO-ORNL_ANALYSIS_OF_AN_ALUMINUM_SPECIMEN | 3 | 360 | 403 |
+| 65-hs1-834228961-62-hq-83894-serial-403 | 3 | 218 | 257 |
+| FBI-UAP-D028 | 1 | 183 | 221 |
+| FBI-UAP-D009 | 1 | 270 | 302 |
+| 65-hs1-834228961-62-hq-83894-section-8 | 61 | 138 | 170 |
+| AARO-SASC_AARO_Open_Hearing_Case_Slides_19Nov2024 | 4 | 99 | 130 |
+| AARO-ORNL_ANALYSIS_OF_AN_ALUMINUM_SPECIMEN | 6 | 125 | 156 |
+| FBI-UAP-D010 | 1 | 311 | 341 |
+| DOD-GAO-B-262046-Roswell-1995 | 21 | 111 | 139 |
+| DOW-UAP-D141 | 16 | 272 | 300 |
+| 65-hs1-834228961-62-hq-83894-serial-130 | 4 | 146 | 172 |
+| AARO-ORNL_ANALYSIS_OF_AN_ALUMINUM_SPECIMEN | 8 | 142 | 167 |
+| 65-hs1-834228961-62-hq-83894-section-5 | 149 | 133 | 157 |
+| AARO-AARO_Mission_Brief_2025 | 11 | 197 | 220 |
+| FBI-UAP-D008 | 1 | 100 | 123 |
+| DOD-GAO-B-262046-Roswell-1995 | 16 | 92 | 113 |
+| AARO-23-F-0010 | 18 | 178 | 198 |
+| 65-hs1-834228961-62-hq-83894-section-4 | 179 | 190 | 210 |
+| AARO-AARO_Al_Taqaddam_Case_Resolution_Final.pdf | 1 | 272 | 291 |
+| DOE-UAP-D005 | 1 | 113 | 132 |
+| AARO-SASC_AARO_Open_Hearing_Case_Slides_19Nov2024 | 5 | 173 | 190 |
+| 65-hs1-834228961-62-hq-83894-section-4 | 86 | 555 | 571 |
+| CIA-UAP-007 | 1 | 343 | 359 |
+| FBI-UAP-D024 | 1 | 274 | 290 |
+| AARO-AARO_Satellite_Flaring_Paper_508_FINAL_04222025 | 11 | 111 | 126 |
+| AARO-ORNL_ANALYSIS_OF_AN_ALUMINUM_SPECIMEN | 9 | 393 | 408 |
+| AARO-AARO_Satellite_Flaring_Paper_508_FINAL_04222025 | 4 | 195 | 209 |
+| AARO-ORNL_ANALYSIS_OF_AN_ALUMINUM_SPECIMEN | 4 | 445 | 459 |
+| AARO-AARO_Satellite_Flaring_Paper_508_FINAL_04222025 | 6 | 160 | 173 |
+| FBI-UAP-D004 | 1 | 93 | 106 |
+| AARO-ORNL-Synopsis_Analysis_of_a_Metallic_Specimen | 6 | 392 | 404 |
+| DOE-UAP-D003 | 1 | 78 | 90 |
+| AARO-AARO_Satellite_Flaring_Paper_508_FINAL_04222025 | 5 | 430 | 442 |
+| 65-hs1-834228961-62-hq-83894-section-2 | 161 | 487 | 499 |
+| CIA-UAP-003 | 30 | 361 | 373 |
+| FBI-UAP-D005 | 1 | 98 | 109 |
+| DOW-UAP-D136 | 40 | 250 | 260 |
+| CIA-UAP-003 | 10 | 310 | 320 |
+| DOD-GAO-B-262046-Roswell-1995 | 18 | 93 | 102 |
+| FBI-UAP-D026 | 1 | 165 | 174 |
+| CIA-UAP-003 | 67 | 147 | 156 |
+| DOW-UAP-D090 | 2 | 130 | 139 |
+| DOW-UAP-D132 | 1 | 23 | 32 |
+| AARO-AARO_Mission_Brief_2025 | 8 | 97 | 105 |
+| AARO-AARO_Mission_Brief_2025 | 12 | 221 | 229 |
+| DOW-UAP-D117 | 1 | 23 | 31 |
+| DOE-UAP-D005 | 3 | 531 | 539 |
+| DOW-UAP-D113 | 1 | 104 | 111 |
+| FBI-UAP-D002 | 1 | 120 | 127 |
+| AARO-ORNL_ANALYSIS_OF_AN_ALUMINUM_SPECIMEN | 2 | 283 | 290 |
+| AARO-ORNL_ANALYSIS_OF_AN_ALUMINUM_SPECIMEN | 10 | 147 | 154 |
+| AARO-ORNL-Synopsis_Analysis_of_a_Metallic_Specimen | 2 | 404 | 410 |
+| DOW-UAP-D121 | 1 | 22 | 28 |
+| CIA-UAP-003 | 132 | 137 | 143 |
+| CIA-UAP-003 | 293 | 204 | 210 |
+| serial-3-redacted | 1 | 261 | 267 |
+| AARO-ORNL_ANALYSIS_OF_AN_ALUMINUM_SPECIMEN | 5 | 201 | 207 |
+| AARO-ORNL-Synopsis_Analysis_of_a_Metallic_Specimen | 3 | 424 | 429 |
+| DOW-UAP-D130 | 1 | 28 | 33 |
+| AARO-AARO_Mission_Brief_2025 | 6 | 191 | 196 |
+| DOW-UAP-D133 | 1 | 28 | 33 |
+| CIA-UAP-003 | 74 | 360 | 365 |
+| DOW-UAP-D131 | 1 | 24 | 29 |
+| 65-hs1-834228961-62-hq-83894-section-9 | 125 | 460 | 464 |
+| AARO-ORNL-Synopsis_Analysis_of_a_Metallic_Specimen | 10 | 520 | 524 |
+| DOW-UAP-D138 | 1 | 26 | 30 |
+| DOW-UAP-D089 | 1 | 361 | 365 |
+| AARO-SASC_AARO_Open_Hearing_Case_Slides_19Nov2024 | 6 | 202 | 206 |
+| AARO-AARO_Mission_Brief_2025 | 9 | 125 | 129 |
+| AARO-AARO_Mission_Brief_2025 | 10 | 170 | 174 |
+| 65-hs1-834228961-62-hq-83894-section-8 | 49 | 301 | 305 |
+| CIA-UAP-003 | 214 | 417 | 421 |
+| FBI-UAP-D004 | 3 | 125 | 129 |
+| AARO-ORNL_ANALYSIS_OF_AN_ALUMINUM_SPECIMEN | 7 | 184 | 188 |
+| AARO-25-F-3452_2 | 1 | 50 | 53 |
+| AARO-25-F-3452_2 | 27 | 106 | 109 |
+| AARO-AARO_Mission_Brief_2025 | 2 | 98 | 101 |
+| FBI-UAP-D024 | 3 | 195 | 198 |
+| CIA-UAP-015 | 30 | 57 | 60 |
+| CIA-UAP-003 | 23 | 281 | 284 |
+| CIA-UAP-003 | 70 | 163 | 166 |
+| CIA-UAP-003 | 76 | 123 | 126 |
+| CIA-UAP-003 | 321 | 212 | 215 |
+| CIA-UAP-003 | 353 | 143 | 146 |
+| AARO-ORNL-Synopsis_Analysis_of_a_Metallic_Specimen | 8 | 162 | 164 |
+| AARO-ORNL-Synopsis_Analysis_of_a_Metallic_Specimen | 9 | 624 | 626 |
+| DOW-UAP-D150 | 1 | 24 | 26 |
+| DOW-UAP-D149 | 1 | 23 | 25 |
+| DOW-UAP-D003 | 7 | 67 | 69 |
+| CIA-UAP-003 | 61 | 106 | 108 |
+| CIA-UAP-003 | 83 | 179 | 181 |
+| CIA-UAP-003 | 355 | 258 | 260 |
+| DOW-UAP-D115 | 1 | 114 | 116 |
+| DOW-UAP-D007 | 6 | 60 | 62 |
+| DOW-UAP-D132 | 16 | 312 | 314 |
+| DOW-UAP-D080 | 5 | 71 | 72 |
+| AARO-ORNL-Synopsis_Analysis_of_a_Metallic_Specimen | 4 | 436 | 437 |
+| DOW-UAP-D126 | 1 | 24 | 25 |
+| DOW-UAP-D052 | 2 | 59 | 60 |
+| AARO-AARO_Mission_Brief_2025 | 4 | 104 | 105 |
+| DOW-UAP-D120 | 1 | 24 | 25 |
+| AARO-25-F-3452_1 | 1 | 66 | 67 |
+| DOW-UAP-D054 | 7 | 42 | 43 |
+| DOW-UAP-D107 | 8 | 133 | 134 |
+| CIA-UAP-003 | 75 | 395 | 396 |
+| CIA-UAP-003 | 150 | 107 | 108 |
+| CIA-UAP-003 | 173 | 287 | 288 |
+| CIA-UAP-003 | 301 | 235 | 236 |
+| DOW-UAP-D143 | 1 | 20 | 21 |
+| DOW-UAP-D143 | 20 | 54 | 55 |
