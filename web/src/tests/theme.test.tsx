@@ -4,12 +4,14 @@ import { ThemeProvider } from "../theme/ThemeProvider";
 import { useTheme } from "../theme/useTheme";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { AppearanceSwitcher } from "../components/AppearanceSwitcher";
+import { TextSizer } from "../components/TextSizer";
 
 afterEach(() => {
   localStorage.clear();
   delete document.documentElement.dataset.theme;
   delete document.documentElement.dataset.accent;
   delete document.documentElement.dataset.scanlines;
+  document.documentElement.style.fontSize = "";
 });
 
 function Probe() {
@@ -81,5 +83,47 @@ describe("AppearanceSwitcher", () => {
     expect(scan).toHaveAttribute("aria-pressed", "true");
     act(() => scan.click());
     expect(scan).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
+describe("text sizer", () => {
+  it("steps html font-size up from 100%, stops at 200%, persists", () => {
+    render(
+      <ThemeProvider>
+        <TextSizer />
+      </ThemeProvider>,
+    );
+    const html = document.documentElement;
+    expect(html.style.fontSize).toBe("100%");
+    const up = screen.getByRole("button", { name: "Larger text" });
+    act(() => up.click());
+    expect(html.style.fontSize).toBe("110%");
+    for (let n = 0; n < 9; n++) act(() => up.click());
+    expect(html.style.fontSize).toBe("200%");
+    expect(up).toBeDisabled();
+    expect(JSON.parse(localStorage.getItem("ufo_theme")!).textScale).toBe(200);
+  });
+
+  it("restores a stored size and steps down to 80%", () => {
+    localStorage.setItem("ufo_theme", JSON.stringify({ theme: "dark", accent: "phosphor", scanlines: true, textScale: 90 }));
+    render(
+      <ThemeProvider>
+        <TextSizer />
+      </ThemeProvider>,
+    );
+    const down = screen.getByRole("button", { name: "Smaller text" });
+    act(() => down.click());
+    expect(document.documentElement.style.fontSize).toBe("80%");
+    expect(down).toBeDisabled();
+  });
+
+  it("ignores a bogus stored size", () => {
+    localStorage.setItem("ufo_theme", JSON.stringify({ theme: "dark", accent: "phosphor", scanlines: true, textScale: 999 }));
+    render(
+      <ThemeProvider>
+        <TextSizer />
+      </ThemeProvider>,
+    );
+    expect(document.documentElement.style.fontSize).toBe("100%");
   });
 });

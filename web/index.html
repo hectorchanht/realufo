@@ -26,6 +26,13 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@realufo_org" />
     <!--/META-->
+    <!-- Text sizer (TextSizer.tsx): apply the stored size before first paint. List = TEXT_SCALES minus 100 (src/theme/useTheme.ts). -->
+    <script>
+      try {
+        var ts = JSON.parse(localStorage.getItem("ufo_theme") || "{}").textScale;
+        if ([80, 90, 110, 120, 130, 140, 150, 175, 200].indexOf(ts) >= 0) document.documentElement.style.fontSize = ts + "%";
+      } catch (e) {}
+    </script>
     <!-- Early fetch (docs/superpowers/specs/2026-10-04-realufo-early-fetch-design.md): start this
          route's first API calls now, while the bundle downloads; api.get (src/api/client.ts)
          adopts each once. Paths must equal the hooks' requests: src/tests/earlyFetch.test.ts. -->

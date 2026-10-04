@@ -40,6 +40,7 @@ import { OverlayHost } from "../overlays/OverlayProvider";
 import { TopNav } from "./TopNav";
 import { AppBar } from "./AppBar";
 import { BottomTab } from "./BottomTab";
+import { TextSizer } from "./TextSizer";
 import { activeTabForPath, canBackForPath, goBack, rememberTabUrl } from "./navItems";
 
 export function AppShell() {
@@ -143,6 +144,8 @@ export function AppShell() {
             </main>
 
             {!isDesktop && <BottomTab ref={bnavRef} activeTab={activeTab} hidden={navHidden} />}
+            {/* lift: clear Thread's sticky reply bar (py 10px x2 + button py 11px x2 + up to 2 text-xs lines when big text wraps it) */}
+            <TextSizer lift={pathname.startsWith("/thread/") ? "calc(42px + 2rem)" : "0px"} />
           </div>
 
           {/* Overlays (Composer/MediaViewer/Toast) mount INSIDE the

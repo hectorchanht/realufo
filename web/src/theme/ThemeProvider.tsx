@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ThemeContext, type Accent, type ThemeMode } from "./useTheme";
+import { TEXT_SCALES, ThemeContext, type Accent, type TextScale, type ThemeMode } from "./useTheme";
 
 const STORAGE_KEY = "ufo_theme";
 
@@ -7,6 +7,7 @@ interface StoredTheme {
   theme: ThemeMode;
   accent: Accent;
   scanlines: boolean;
+  textScale: TextScale;
 }
 
 function readStoredTheme(): StoredTheme | null {
@@ -24,7 +25,8 @@ function readStoredTheme(): StoredTheme | null {
         ? parsed.accent
         : "phosphor";
     const scanlines = typeof parsed.scanlines === "boolean" ? parsed.scanlines : true;
-    return { theme: parsed.theme, accent, scanlines };
+    const textScale = TEXT_SCALES.find((t) => t === parsed.textScale) ?? 100;
+    return { theme: parsed.theme, accent, scanlines, textScale };
   } catch {
     return null;
   }
@@ -42,7 +44,7 @@ function getPreferredTheme(): ThemeMode {
 function initialState(): StoredTheme {
   const stored = readStoredTheme();
   if (stored) return stored;
-  return { theme: getPreferredTheme(), accent: "phosphor", scanlines: true };
+  return { theme: getPreferredTheme(), accent: "phosphor", scanlines: true, textScale: 100 };
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -58,6 +60,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.dataset.accent = state.accent;
     }
     root.dataset.scanlines = String(state.scanlines);
+    // Every CSS font-size is rem (postcss.config.js pxToRem), so this scales all text.
+    // index.html applies the stored value before first paint.
+    root.style.fontSize = `${state.textScale}%`;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
@@ -71,9 +76,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       theme: state.theme,
       accent: state.accent,
       scanlines: state.scanlines,
+      textScale: state.textScale,
       setTheme: (theme: ThemeMode) => setState((s) => ({ ...s, theme })),
       setAccent: (accent: Accent) => setState((s) => ({ ...s, accent })),
       setScanlines: (scanlines: boolean) => setState((s) => ({ ...s, scanlines })),
+      setTextScale: (textScale: TextScale) => setState((s) => ({ ...s, textScale })),
     }),
     [state],
   );
