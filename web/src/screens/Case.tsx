@@ -20,6 +20,7 @@ import { promoteCommentOpts } from "../lib/promoteComment";
 import type { Stance } from "../api/types";
 import { Skeleton } from "../components/Skeleton";
 import { dataInk } from "../lib/dataInk";
+import { plural } from "../lib/plural";
 
 const DEFAULT_CASE_BOARD = "cases";
 
@@ -166,7 +167,7 @@ export function Case() {
         <div className="font-pixel text-[9px] uppercase text-faint" style={{ letterSpacing: "1px" }}>
           ◆ Discussion
         </div>
-        <span className="font-mono text-[10px] text-signal">{comments.length} {comments.length === 1 ? "comment" : "comments"}</span>
+        <span className="font-mono text-[10px] text-signal">{plural(comments.length, "comment")}</span>
       </div>
 
       <button

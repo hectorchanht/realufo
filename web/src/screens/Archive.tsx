@@ -610,7 +610,7 @@ export function Archive() {
 
           {/* result count — line 187 */}
           <div className="mx-0.5 mb-3 font-mono text-[10px] uppercase tracking-[.8px] text-faint">
-            <b className="text-signal">{count.toLocaleString()}</b> records
+            <b className="text-signal">{count.toLocaleString()}</b> {count === 1 ? "record" : "records"}
             {totalPages > 1 && ` · page ${page} / ${totalPages}`} · {finePointer ? "open a file, ← → to flip through" : "swipe a file to flip through"}
           </div>
 

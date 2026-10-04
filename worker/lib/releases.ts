@@ -34,7 +34,7 @@ const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
 const addDays = (d: string, n: number) => iso(ms(d) + n * DAY);
 const daysBetween = (a: string, b: string) => Math.round((ms(b) - ms(a)) / DAY);
 const weekdayOf = (d: string) => WEEKDAYS[new Date(ms(d)).getUTCDay()];
-const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+export const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
 const listJoin = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}`);
 
 export const pad2 = (n: number) => String(n).padStart(2, "0");

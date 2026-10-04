@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FullText as FullTextData } from "../api/types";
 import { chip, off, on } from "./ImageTools";
 import { formatPage } from "../../../worker/lib/ocrMarkdown";
+import { plural } from "../lib/plural";
 
 type Page = { n: number; text: string; src?: string; conf?: number };
 
@@ -124,7 +125,7 @@ export default function FullText({
         <span className={`text-[10px] ${showSummary ? "text-amber" : "text-faint"}`}>
           {showSummary
             ? "AI-generated from OCR text · may contain errors"
-            : `${all ? pages.length : `${pages.length} of ${data.total_pages}`} pages · OCR, may contain errors`}
+            : `${all ? plural(pages.length, "page") : `${pages.length} of ${plural(data.total_pages, "page")}`} · OCR, may contain errors`}
         </span>
       </div>
       {showSummary ? (

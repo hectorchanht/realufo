@@ -11,6 +11,7 @@
 import { Link } from "react-router-dom";
 import type { Board } from "../api/types";
 import { dataInk } from "../lib/dataInk";
+import { plural } from "../lib/plural";
 
 export interface BoardRowProps {
   board: Board;
@@ -44,7 +45,7 @@ export function BoardRow({ board }: BoardRowProps) {
         </div>
         <div className="mt-[3px] text-[12px] leading-[1.4] text-dim">{board.desc}</div>
         <div className="mt-[7px] flex gap-[14px] font-mono text-[9.5px] text-faint">
-          <span>{(board.thread_count ?? 0).toLocaleString()} threads</span>
+          <span>{plural(board.thread_count ?? 0, "thread")}</span>
         </div>
       </div>
       <span aria-hidden="true" className="flex-none text-[18px] text-faint">

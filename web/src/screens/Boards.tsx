@@ -118,7 +118,7 @@ export function Boards() {
         ) : found?.threads.length ? (
           <div className="flex flex-col gap-[10px]">
             <div className="font-mono text-[10px] text-faint">
-              {found.threads.length === 50 ? "50+" : found.threads.length} threads match
+              {found.threads.length === 50 ? "50+ threads match" : found.threads.length === 1 ? "1 thread matches" : `${found.threads.length} threads match`}
             </div>
             {found.threads.map((t) => (
               <ThreadRow key={t.id} thread={t} />

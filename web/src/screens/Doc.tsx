@@ -60,6 +60,7 @@ import { useZoomPan } from "../lib/useZoomPan";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
 import { Skeleton } from "../components/Skeleton";
 import { dataInk } from "../lib/dataInk";
+import { plural } from "../lib/plural";
 
 // prototype line 522: `if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4)`.
 const SWIPE_MIN_DX = 55;
@@ -866,7 +867,7 @@ export function Doc() {
       <div className="mb-3 flex items-baseline justify-between">
         <div className="font-pixel text-[9px] tracking-[1px] text-faint">◆ Discussion</div>
         {!(commentsError && !commentsData) && (
-          <span className="font-mono text-[10px] text-signal">{comments.length} {comments.length === 1 ? "comment" : "comments"}</span>
+          <span className="font-mono text-[10px] text-signal">{plural(comments.length, "comment")}</span>
         )}
       </div>
 

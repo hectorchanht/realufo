@@ -3,6 +3,7 @@ import type { Env } from "../env";
 import { ASK_LLM_MODEL, answerText } from "./ask";
 import { ARCHIVE_NAME, type Candidate } from "./xpick";
 import { THREAD_SEP } from "./x";
+import { plural } from "./releases";
 
 // Post text (Spec 4 §4.5). Voice: extremely online — one random meme format + reply
 // hook per post. AI writes, code guarantees: no stray URLs (billing), facts anchored
@@ -123,7 +124,7 @@ export function template(c: Candidate, rand: () => number = Math.random): string
     return `📼 ${title}\n📍 ${meta}\n${foot}`;
   }
   if (c.stream === "showcase") return c.text;
-  return `🔥 top thread on RealUFO this week (${c.thread.votes} votes): "${fit(stripLinks(c.thread.title), 160)}" thoughts? 👇 #UAP`;
+  return `🔥 top thread on RealUFO this week (${plural(c.thread.votes, "vote")}): "${fit(stripLinks(c.thread.title), 160)}" thoughts? 👇 #UAP`;
 }
 
 // trusted = template built from official record metadata, so skip the banned-claims

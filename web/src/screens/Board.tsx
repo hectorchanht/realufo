@@ -37,6 +37,7 @@ import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { Skeleton } from "../components/Skeleton";
 import { dataInk } from "../lib/dataInk";
+import { plural } from "../lib/plural";
 
 function stripSlashes(s: string): string {
   return s.replace(/^\/+|\/+$/g, "");
@@ -96,7 +97,7 @@ export function Board() {
           <div>
             <div className="text-[17px] font-bold text-ink">{board.name}</div>
             <div className="mt-[3px] font-mono text-[10px] text-faint">
-              {(board.thread_count ?? 0).toLocaleString()} threads · {board.desc}
+              {plural(board.thread_count ?? 0, "thread")} · {board.desc}
             </div>
           </div>
         </div>
