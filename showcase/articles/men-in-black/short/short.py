@@ -22,9 +22,9 @@ from PIL import Image
 
 P = lambda f: os.path.join(IMG if f.endswith(".jpg") else HERE, f)
 OUT = P("short.mp4")
-S5 = ("FBI file 62-HQ-83894, Section 5", "May 1950  ·  New Orleans  ·  Army CID, FBI")
-S9 = ("FBI file 62-HQ-83894, Section 9", "Dec 1958 - Jan 1959  ·  FBI HQ  ·  \"Bender Affair\"")
-S10 = ("FBI file 62-HQ-83894, Section 10", "Oct 1969  ·  Ajax, Ontario  ·  J. Edgar Hoover")
+S5 = ("FBI file 62-HQ-83894, Section 5", "MEN IN BLACK  ·  May 1950  ·  New Orleans  ·  Army, FBI")
+S9 = ("FBI file 62-HQ-83894, Section 9", "MEN IN BLACK  ·  1958-59  ·  FBI  ·  \"Bender Affair\"")
+S10 = ("FBI file 62-HQ-83894, Section 10", "MEN IN BLACK  ·  Oct 1969  ·  Ontario  ·  Hoover")
 
 def top(a, b, c=None):
     return [txt(a, 215, 66), txt(b, 300, 58, "yellow")] + ([txt(c, 375, 42)] if c else [])

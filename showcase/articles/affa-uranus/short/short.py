@@ -20,7 +20,7 @@ from PIL import Image
 P = lambda f: os.path.join(IMG if f.endswith(".jpg") else HERE, f)
 OUT = P("short.mp4")
 FBI = "FBI file 62-HQ-83894, Section 8"  # the record's title on the site (search finds it)
-WHEN = "Jul-Aug 1954  ·  South Berwick, Maine  ·  Navy officer, FBI"
+WHEN = "AFFA  ·  Frances Swan  ·  1954, Maine  ·  Navy, FBI"  # story keyword first (user: keywords in the watermark)
 SUB_Y = 1210
 
 def top(a, b, c=None):
@@ -69,7 +69,7 @@ page(P("nofurther.jpg"), top("August came and went.", "\"no further action\"", "
      "August came and went. No further action.")
 page(P("aaro-telepathy.jpg"), top("Pentagon, 2024:", "Smith \"believed\" it", "Files prove belief, not aliens · p.26"), 3.2,
      "The Pentagon: he believed it. Belief isn't proof.",
-     src="AARO Historical Record Report p.26", ctx="AARO  ·  2024  ·  on Wilbert Smith")
+     src="AARO Historical Record Report p.26", ctx="AFFA  ·  Wilbert Smith  ·  AARO 2024")
 app(top("Read it yourself:", "search \"Frances Swan\"", "on realufo.org · FBI file p.14"), 3,
     "Read the F B I file yourself. Search Frances Swan.")
 # loop: back on the frame-0 image
