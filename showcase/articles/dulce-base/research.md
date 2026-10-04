@@ -25,6 +25,8 @@ Status 2026-10-03: research in progress, story not written. Archive searched ove
 | CIA-UAP-003 (CIA U-2 history) | pp.91-92 | 14 Apr 1956 U-2 glides to Kirtland; "inside a hanger"; "man from Mars" | cia-hangar, cia-mars |
 | DOW-UAP-D017 | p.70, p.71 | Kirtland 17th District OSI, 18 May 1949, "UNKNOWN (Aerial Phenomena)"; "In none of the reported incidents…" | d017-osi, d017-none |
 | 65-hs1-834228961-62-hq-83894-section-10 (FBI UFO file) | p.9, p.18 | 1966 AFSCA journal: "undersea and underground bases"; kept for the "Communist Party (CP) line" | fbi-underground, fbi-cp |
+| DOW-UAP-D092 (Committee to Review Project Bluebook, 1966-67) | p.74, p.75 | 1953 Scientific Advisory Panel: "EVIDENCE PRESENTED" item 6, "Outline of Investigation of U.F.O.'s Proposed by Kirtland Air Force Base (Project POUNCE)"; p.74 "aura of mystery" recommendation | d092-pounce |
+| DOW-UAP-D143 (AAWSAP DIRD, Laser Lightcraft Nanosatellites, 2010) | p.54 | "Figure 20. DARPA's High Energy Liquid Laser Area Defense System (courtesy of P. Saunders, AFRL/RDS, Kirtland AFB, NM)" | d143-kirtland-laser |
 | AARO-AARO_Historical_Record_Report_Vol_1_2024.pdf | p.6, p.9 | "persistent narrative"; "circular reporting" (never names Dulce) | hrr-persistent, hrr-circular |
 
 Not from the documents (background, from online sources): 1979 date, Bennewitz placing the base under Archuleta Mesa near Dulce. Site search can't find COMETA ("Bennewicz") or the CIA page ("man from Mars") yet: the search index still uses the old capped text, so the story links pages directly (?p=N).
