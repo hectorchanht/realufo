@@ -4,6 +4,7 @@ from .models import R2_BASE
 _AGENCY = {
     "CIA": "CIA", "FBI": "FBI", "NASA": "NASA", "AARO": "AARO", "NARA": "NARA",
     "Department of War": "DoW", "Department of Defense": "DoD", "Navy": "Navy",
+    "Department of State": "DoS", "Central Intelligence Agency": "CIA",
 }
 # Leading record code, e.g. "DOW-UAP-PR118, ...". A part may end in one lowercase
 # letter ("PR057a"); the code ends where no letter/digit follows ("\b" fails here:

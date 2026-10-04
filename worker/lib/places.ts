@@ -26,7 +26,7 @@ export const PLACES: Place[] = [
   p("Colorado Springs, Colorado", 38.83, -104.82, ["Colorado Springs, Colorado", "Colorado Springs, Colorado, U.S."]),
   p("Washington, D.C.", 38.9, -77.04),
   p("Tremonton, Utah", 41.71, -112.17),
-  p("Montana", 47, -109.5, ["Montana, Utah"]),
+  p("Montana", 47, -109.5, ["Montana; Utah"]),
   p("New Mexico", 34.5, -106),
   p("Cape Kennedy, Florida", 28.4, -80.6),
   p("Virginia", 37.5, -78.8),
@@ -56,7 +56,7 @@ export const PLACES: Place[] = [
   p("Turkmenistan", 39, 59.5),
   p("Azerbaijan", 40.4, 49.9, ["Azerbaijan", "Baku, Azerbaijan"]),
   p("Georgia", 42.3, 43.4), // the country — the one record is a Tbilisi cable
-  p("Ladakh, India", 34.2, 77.6, ["Ladakh, Nepal | Sikkim, India | Bhutam"]),
+  p("Ladakh, India", 34.2, 77.6, ["Ladakh, India; Nepal; Sikkim, India; Bhutan"]),
   // Europe
   p("Europe", 46.5, 2.5),
   p("EUCOM", 54, 25),
