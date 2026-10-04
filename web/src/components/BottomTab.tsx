@@ -5,6 +5,7 @@
 import type { Ref } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { MoreMenu } from "./MoreMenu";
+import { TextSizeBadge, biteMask } from "./TextSizer";
 import { retapTab, tabHref, useNavItems, type NavTab } from "./navItems";
 
 export interface BottomTabProps {
@@ -17,6 +18,9 @@ export interface BottomTabProps {
 
 // Overlays the bottom of the shell (absolute) rather than sitting in flow, so
 // sliding it out never resizes the scroll container — see AppShell.
+const BITE_RIGHT = 22; // bite / badge centre, px in from the bar's right edge, on its top border
+const BAR_BITE = biteMask(`calc(100% - ${BITE_RIGHT}px)`, "0px");
+
 export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
   // Four icon tabs + More; only the active one shows its label.
   const { tabs, more } = useNavItems();
@@ -33,7 +37,7 @@ export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
       <div
         data-bottomtab
         className="relative z-30 flex flex-none justify-around border-t border-line px-2 pb-1 pt-2 backdrop-blur-[22px] backdrop-saturate-[1.6]"
-        style={{ background: "color-mix(in srgb, var(--bg) 78%, transparent)" }}
+        style={{ background: "color-mix(in srgb, var(--bg) 78%, transparent)", ...BAR_BITE }}
       >
         {tabs.map((item) => {
           const active = activeTab === item.tab;
@@ -55,6 +59,8 @@ export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
         })}
         <MoreMenu sheet items={more} activeTab={activeTab} />
       </div>
+      {/* Text size "Aa" sits in an Apple-logo bite out of the bar's top-right corner. */}
+      <TextSizeBadge up style={{ left: `calc(100% - ${BITE_RIGHT}px)`, top: 0 }} />
     </div>
   );
 }

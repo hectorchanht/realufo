@@ -4,8 +4,7 @@ import { ThemeProvider } from "../theme/ThemeProvider";
 import { useTheme } from "../theme/useTheme";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { AppearanceSwitcher } from "../components/AppearanceSwitcher";
-import { TextSizer } from "../components/TextSizer";
-import { MoreMenu } from "../components/MoreMenu";
+import { TextSizeBadge, TextSizer } from "../components/TextSizer";
 import { MemoryRouter } from "react-router-dom";
 
 afterEach(() => {
@@ -130,12 +129,12 @@ describe("text sizer", () => {
   });
 });
 
-describe("More menu text size badge", () => {
-  it("the Aa badge in the bitten More icon opens the sizer", () => {
+describe("text size badge", () => {
+  it("the Aa badge opens the sizer", () => {
     render(
       <MemoryRouter>
         <ThemeProvider>
-          <MoreMenu sheet items={[]} activeTab="feed" />
+          <TextSizeBadge up style={{ left: 0, top: 0 }} />
         </ThemeProvider>
       </MemoryRouter>,
     );
