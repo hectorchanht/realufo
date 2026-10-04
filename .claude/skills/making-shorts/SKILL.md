@@ -11,7 +11,7 @@ Goal: the best piece of social media about this file. Viewers stop scrolling, en
 
 | Beat | Time | What's in it |
 |---|---|---|
-| **Frame 0 = thumbnail = tease** | 0–2.5 s | The question, not the answer: show **where** to look (a big yellow box or "?" on the spot, plus a bold challenge headline), never the payoff. AARO-956955 shows an empty sky with "Something flies through this box in 1/10 of a second". No fade-in, black frame or title card. |
+| **Frame 0 = thumbnail = tease** | 0–2.5 s | The question, not the answer: show **where** to look (a "?" or mark beside the spot, a zoom-in, plus a bold challenge headline; nothing drawn over the object itself), never the payoff. AARO-956955 shows an empty sky with "Something flies through this box in 1/10 of a second". No fade-in, black frame or title card. |
 | **First payoff** | by ~5 s | The event itself (the pass, the split, the blink) inside the first ~5 s, with the tease box still on. Start the clip close to the moment. |
 | **Show** | middle | The footage doing the work: slow-mo, then frame-step, then zoom. Something new every 2–3 s. |
 | **Reveal + lesson** | | The answer, plus **one takeaway that makes the viewer smarter**: the physics, how the camera fools you, what the document actually says. |
@@ -46,6 +46,16 @@ Length is 20–35 s. Get the hook in fast and the end card out fast.
 
 Every Short exists to send people to the site. Show `realufo.org  ·  <ID>` on screen in every beat (`site`, y 1420). **The watermark carries the context too, story keyword first** (e.g. `lib.stamp(ID, "AFFA  ·  Frances Swan  ·  1954, Maine  ·  Navy, FBI")`; pick a keyword the site search lands on): `site = lib.stamp(ID, "Nov 11, 1979  ·  Manises, Spain  ·  airliner crew")` puts a small line above the ID with **when** (year + month at least, the day/time of day if the file has it), **where** (the key place), and **who** (the witnesses or the unit, e.g. "F/A-18 pilots", "FBI agent"). Viewers dropping in mid-loop or seeing a repost then still know what they're looking at. Take every part from the record (date fields, fullText, pages), never guess; leave out a part the file doesn't give. The record ID works as a watermark: it's searchable on the site and credits the clip when it's reposted or screenshotted, so it's there from frame 0. A beat whose layout fills that spot must show the ID somewhere else (e.g. a document line). End on `realufo.org/doc/<ID>` plus what they can do there ("step through it", "zoom in yourself", "flip the palette"). Every post caption ends with the doc link too.
 
+## Site in the Short (show realufo.org doing the work)
+
+A link isn't enough: the Short shows the site's own tools so viewers know what they get there.
+
+- **Page captures:** open the page in the in-app browser at the mobile preset (375x812, screenshots come out 750x1624), mark the quote, scroll it to the centre, screenshot, copy the saved file into `showcase/.src/` (git-ignored). Full Text: `/doc/<ID>?p=N`. Media tools by URL: `?t=38&pal=ironbow`, `inv=1`, `bw=1`, `lens=1&mag=3`.
+- **Quote marks on the dark page:** amber text + ~10% tint + 2px underline, never a solid fill under light text (it kills contrast): `Object.assign(m.style,{background:'rgba(255,182,72,0.10)',color:'#ffb648',boxShadow:'inset 0 -2px 0 #ffb648',borderRadius:'2px'})`.
+- **Cards big enough to read:** crop the capture to the marked lines (about 670x550) and scale to ~1000 wide, not the whole page.
+- **Live player:** a canvas player often screenshots black; composite the real footage into the player rect (`overlay`) with the site palette and tick the page's time/`F` counter with drawtext (`F = t*30`). See `showcase/CONGRESS-CHRG-119hhrg61718.py` `balloon_player`.
+- Outside footage (not a record, e.g. the Hellfire clip) still leads to records: the transcript page, an AARO look-alike's doc page.
+
 ## Enhance (real detail only)
 
 - **Frame stack:** when the sensor tracks the target, take the mean of 5–9 frames around the moment (`tmix=frames=9,select='eq(n\,8)'`). Noise drops and the target stays sharp. See `showcase/DOW-UAP-PR116.py`.
@@ -68,7 +78,10 @@ The goal is to make viewers feel "what if this showed up in front of us", in a r
 ## Craft
 
 - On-screen text sits in the safe zone (y 200–1470). Use `lib.txt`: it's centred, outlined and shrinks to fit. No emoji in drawtext.
-- Use yellow for the thing to look at (boxes, frame counters, the sound bite) and white for everything else.
+- **Colours = the site's dark tokens** (natural, easy on the eyes, still eye-catching): amber `0xffb648` for the thing to look at (frame counters, the sound bite, marks), ink `0xe7ecf4` for everything else, signal green `0x4df0a6` for site/tool labels. Not pure `yellow`/`white`.
+- **Never draw a box over the object** (it hides the very thing): a borderless lens inset (circle mask, thin ring, ~2.7x, placed away from the action, like the site's ZoomLens), zoom cuts wide -> mid -> tight, or a "?"/label beside it.
+- **Use the whole 9:16 frame:** a blurred, darkened full-screen copy of the shot behind the video (`split`, `scale=-2:1920,crop=1080:1920,boxblur`, `eq=brightness=-0.3`) instead of black bars.
+- **Still images (JPEG/PNG) in a concat:** end each segment's filters with `format=yuv420p`, or JPEG's full range rides along `concat -c copy` and later blacks turn grey (#101010).
 - Each text card has ≤6 words per line and two lines max.
 - Use the stored black-bar crop. 1080x1920, 30 fps.
 
@@ -87,7 +100,10 @@ The goal is to make viewers feel "what if this showed up in front of us", in a r
 | Pure mystery: nothing learnt | Add the lesson beat: why it looks like that, or how to check it. |
 | Narrating over the money shot | Move lines before and after it. |
 | Frame 0 gives away the answer (zoomed object) | Nothing left to wait for. Tease instead: box the spot, add a "?" and a challenge, and save the close-up for the reveal. |
-| Weak frame 0 (dark, cluttered, no text) | Bold 2-line challenge headline, yellow box, high contrast. |
+| Weak frame 0 (dark, cluttered, no text) | Bold 2-line challenge headline, zoom on the spot, "?" beside it, high contrast. |
+| Box drawn over the object | It hides the thing. Lens inset / zoom / mark beside it. |
+| One-sided story ("nothing survives a Hellfire") | Check the frames (brightness at contact), the official word, archive look-alikes; pose the strongest real clue as the question. |
+| Tiny page capture | Crop to the marked lines, scale up. |
 | Event buried 10 s in | Start the clip about 3 s before the moment. |
 | Big claims, no source | Cut the claim, or cite the page. |
 | One long held shot | Change something every 2–3 s: speed, zoom, frame step or text. |
