@@ -1,12 +1,12 @@
 # Re-OCR of redacted text-layer pages (2026-10-03)
 
-Text layers of redacted PDFs drop lines beside the bars (DOW-UAP-D091 p.2).  now OCRs a clean-layer page
+Text layers of redacted PDFs drop lines beside the bars (DOW-UAP-D091 p.2). `ingest.ocr` now OCRs a clean-layer page
 with solid black boxes and keeps OCR only when it reads more real words (8c88d24, 3555378).
 
 Survey: 251 barred text-layer pages in 94 files. Dry eval (no writes): OCR reads more real words on
 **124 pages in 58 files**; the other 127 keep their layer.
 
-Apply:  drops their  markers, then  + rebuild chain.
+Apply: `docs/launch/ocr-redaction-reocr.sql` drops their `record_ocr` markers, then `ingest.ocr --ids` + the rebuild chain (skill ocr-full-text).
 
 | Record | Page | Layer words | OCR words |
 |---|---|---|---|
