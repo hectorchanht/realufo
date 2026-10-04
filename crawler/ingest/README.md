@@ -24,3 +24,15 @@ Runs after thumbs. Embeds each live record (card + PDF page text) into the
 `realufo-chunks` Vectorize index; progress in D1 `text_index`.
 Locally: `cd crawler && python3 -m ingest.textindex --dry-run --limit 2`
 (reads CLOUDFLARE_* from the environment; the repo-root `.env` holds them).
+
+## Re-OCR (`ingest.ocr`)
+Runs before fulltext. For each live PDF without a `record_ocr` row: pages whose
+pdftotext layer reads as text keep it, the rest are OCR'd with PaddleOCR PP-OCRv5
+(mobile det + English rec @200 dpi); all pages go to R2 `text/<id>.json` and one
+`record_fts` search row per page, then D1 `record_ocr` (+ requeue of record_text /
+text_index when anything was OCR'd). fulltext, summaries and textindex read that R2
+file for records with a marker. `--fts-only` rewrites the search rows from R2.
+Paddle needs Python <=3.12 — locally use the venv (see the `ocr-full-text` skill):
+`cd crawler && uv venv --python 3.12 .venv-ocr && uv pip install --python .venv-ocr/bin/python -r ingest/requirements.txt -r ingest/requirements-ocr.txt`
+Re-OCR a record: delete its `record_ocr` row, rerun, and purge `text/<id>.json`
+from the assets.realufo.org cache (1-month Cache Rule).

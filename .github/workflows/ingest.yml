@@ -89,6 +89,28 @@ jobs:
             # manual dry run: segment plan only -- ffmpeg smoke test, no model calls
             python -m ingest.moments --plan-only --limit 1 | tee -a ingest-summary.txt
           fi
+      # Re-OCR scanned pages of new PDFs with PaddleOCR (ingest.ocr, spec 2026-10-03-realufo-paddleocr-reocr):
+      # all pages -> R2 text/<id>.json + per-page search rows, before fulltext/summaries read them
+      - uses: actions/cache@v4
+        if: ${{ !cancelled() }}
+        with:
+          path: ~/.paddlex
+          key: paddlex-${{ hashFiles('crawler/ingest/requirements-ocr.txt') }}
+      - name: ocr
+        if: ${{ !cancelled() }}
+        working-directory: crawler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          LIVE: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run == 'false' }}
+        run: |
+          set -o pipefail
+          pip install -q -r ingest/requirements-ocr.txt
+          if [ "$LIVE" = "true" ]; then
+            python -m ingest.ocr | tee -a ingest-summary.txt
+          else
+            python -m ingest.ocr --dry-run --limit 1 | tee -a ingest-summary.txt
+          fi
       # Doc-page full text: live PDFs without a record_text row (spec 2026-10-02-realufo-doc-fulltext)
       - name: fulltext
         if: ${{ !cancelled() }}
