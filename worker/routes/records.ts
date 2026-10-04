@@ -65,11 +65,13 @@ const META_SEPS = ["-", "_", ".", ",", ":", ";", "/", "(", ")", "''", '"', "“"
 
 // Metadata match: every word of q is a substring of id/title/agency/location/
 // summary/date, in any field and order ("uap pr104" finds DOW-UAP-PR104).
-// Words are letters/digits only, so they carry no LIKE wildcards.
+// Words are letters/digits only, so they carry no LIKE wildcards; each is cut to
+// fit D1's 50-byte LIKE pattern cap (a longer word's prefix still narrows).
 const META_HAY = "lower(r.id||' '||r.title||' '||r.agency||' '||coalesce(r.location,'')||' '||coalesce(r.summary,'')||' '||coalesce(r.incident_date,''))";
+const fitLike = (w: string) => (new TextEncoder().encode(w).length <= 48 ? w : [...w].slice(0, 12).join(""));
 export function metaMatch(q: string): { sql: string; bind: string[] } {
   const words = (q.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).slice(0, 8);
-  return words.length ? { sql: words.map(() => `${META_HAY} LIKE ?`).join(" AND "), bind: words.map((w) => `%${w}%`) } : { sql: "0", bind: [] };
+  return words.length ? { sql: words.map(() => `${META_HAY} LIKE ?`).join(" AND "), bind: words.map((w) => `%${fitLike(w)}%`) } : { sql: "0", bind: [] };
 }
 
 export async function listRecords(req: Request, env: Env) {
@@ -124,7 +126,6 @@ export async function listRecords(req: Request, env: Env) {
   const sort = u.searchParams.get("sort");
   let order = "r.featured DESC, r.created_at DESC";
   const orderBind: unknown[] = [];
-  // Searching with no explicit sort: title/summary hits before text-only hits.
   let join = "";
   const joinBind: unknown[] = [];
   const tiers = q && !sort ? searchTiers(q) : null;
@@ -133,12 +134,14 @@ export async function listRecords(req: Request, env: Env) {
     // metadata before text within a tier, then the best page's bm25.
     const hay = `(' '||${META_SEPS.reduce((h, c) => `replace(${h}, '${c}', ' ')`, `replace(${META_HAY}, char(10), ' ')`)}||' ')`;
     const metaTier = `CASE WHEN instr(${hay}, ?) THEN 0 WHEN ${tiers.metaWords.map(() => `instr(${hay}, ?)`).join(" AND ")} THEN 1 WHEN ${meta.sql} THEN 2 ELSE 3 END`;
-    // vb: a page holds q exactly as typed, case and all ("AFFA" over OCR's "Bender Affa ir").
-    join = `LEFT JOIN (SELECT record_id, min(rank) bm, max(instr(body, ?)) > 0 vb FROM record_fts WHERE record_fts MATCH ? GROUP BY record_id) h ON h.record_id = r.id`;
-    joinBind.push(q, fts);
+    // vb: an every-word page holds q as typed or in capitals, so "affa" and "AFFA"
+    // both find the "AFFA" page over OCR's "Bender Affa ir".
+    join = `LEFT JOIN (SELECT record_id, min(rank) bm FROM record_fts WHERE record_fts MATCH ? GROUP BY record_id) h ON h.record_id = r.id
+      LEFT JOIN (SELECT record_id, max(instr(body, ?) OR instr(body, ?)) vb FROM record_fts WHERE record_fts MATCH ? GROUP BY record_id) v ON v.record_id = r.id`;
+    joinBind.push(fts, q, q.toUpperCase(), tiers.exact);
     const textTier = `CASE WHEN r.id IN (SELECT record_id FROM record_fts WHERE record_fts MATCH ?) THEN 0
       WHEN r.id IN (SELECT record_id FROM record_fts WHERE record_fts MATCH ?) THEN 1 WHEN h.bm IS NOT NULL THEN 2 ELSE 3 END`;
-    order = `min(${metaTier}, ${textTier}), ${metaTier}, h.vb DESC, h.bm IS NULL, h.bm, ${order}`;
+    order = `min(${metaTier}, ${textTier}), ${metaTier}, v.vb DESC, h.bm IS NULL, h.bm, ${order}`;
     const metaBind = [tiers.metaPhrase, ...tiers.metaWords, ...meta.bind];
     orderBind.push(...metaBind, tiers.phrase, tiers.exact, ...metaBind);
   } else if (q && !sort) {

@@ -70,11 +70,15 @@ describe("record_fts (search inside documents)", () => {
     expect(j.records[0].match.page).toBe(15);
   });
 
-  it("within a tier, a page holding q as typed beats an OCR split ('Bender Affa ir')", async () => {
+  it("within a tier, a page holding q as typed or in caps beats an OCR split ('Bender Affa ir')", async () => {
     await putText("FBI-UAP-D002", [{ n: 82, text: "the Bender Affa ir" }]); // short page: better bm25
     await putText("FBI-UAP-D009", [{ n: 15, text: 'Re stated that "AFFA" is the Manager or the Commander of the ship M-4 from the planet Uranus' }]);
-    const ids = ((await (await get("/api/records?q=AFFA")).json()) as any).records.map((x: any) => x.id);
-    expect(ids.indexOf("FBI-UAP-D009")).toBeLessThan(ids.indexOf("FBI-UAP-D002"));
+    // a prefix-only "AFFAIRS" page must not count as holding "AFFA"
+    await putText("FBI-UAP-D010", [{ n: 1, text: "Affa ir" }, { n: 2, text: "PUBLIC AFFAIRS" }]);
+    for (const q of ["AFFA", "affa"]) {
+      const ids = ((await (await get("/api/records?q=" + q)).json()) as any).records.map((x: any) => x.id);
+      expect(ids[0], q).toBe("FBI-UAP-D009");
+    }
   });
 
   it("an exact phrase beats the same words scattered, which beat metadata substrings", async () => {
@@ -106,7 +110,7 @@ describe("record_fts (search inside documents)", () => {
   });
 
   it("hostile search syntax never errors", async () => {
-    for (const q of ['"tic', "a*b", "-x OR", "NEAR(", "^^^", '""', "men in black suit", "one two three four five six seven eight nine"]) {
+    for (const q of ['"tic', "a*b", "-x OR", "NEAR(", "^^^", '""', "men in black suit", "one two three four five six seven eight nine", "x".repeat(60), "é".repeat(30)]) {
       const res = await get("/api/records?q=" + encodeURIComponent(q));
       expect(res.status, q).toBe(200);
     }
