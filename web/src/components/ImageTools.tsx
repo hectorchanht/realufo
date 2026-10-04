@@ -7,7 +7,7 @@
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { PointerEvent as ReactPointerEvent, ReactNode, RefObject } from "react";
-import { Contrast, DropletOff, Eye, Droplet, Flame, FlipHorizontal2, Focus, ImageDown, Keyboard, Link, LoaderCircle, Rainbow, RotateCcw, RotateCw, Search, Shrink, SlidersHorizontal, Sun, SunMoon, TriangleAlert, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Contrast, DropletOff, Moon, MoonStar, Eye, Droplet, Flame, FlipHorizontal2, Focus, ImageDown, Keyboard, Link, LoaderCircle, Rainbow, RotateCcw, RotateCw, Search, Shrink, SlidersHorizontal, Sun, SunMoon, TriangleAlert, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { DEFAULT_VIEW, MAX_ZOOM, centreOn, pointToUV } from "../lib/mediaView";
 import type { MediaView } from "../lib/mediaView";
@@ -18,6 +18,7 @@ export interface ImageAdjust {
   brightness: number; // percent, 100 = unchanged
   contrast: number;
   saturate: number;
+  gamma: number; // "Shadows", percent: > 100 lifts dark areas (SVG gamma curve, see gammaExponent)
   invert: boolean;
   gray: boolean;
   palette: Palette; // false colour by luminance (SVG filter, see MediaFilters)
@@ -28,6 +29,7 @@ export const DEFAULT_ADJUST: ImageAdjust = {
   brightness: 100,
   contrast: 100,
   saturate: 100,
+  gamma: 100,
   invert: false,
   gray: false,
   palette: "none",
@@ -36,7 +38,7 @@ export const DEFAULT_ADJUST: ImageAdjust = {
 
 // URL form of an adjustment (Doc keeps it in the query so it carries to the
 // next file and survives a share): only non-defaults are written.
-const ADJUST_PARAMS = ["br", "ct", "sat", "inv", "bw", "pal", "sharp"];
+const ADJUST_PARAMS = ["br", "ct", "sat", "gam", "inv", "bw", "pal", "sharp"];
 /** Every media-tool query param (adjust + lens), for carrying them onto other links. */
 export const TOOL_PARAMS = [...ADJUST_PARAMS, "lens", "mag"];
 
@@ -52,6 +54,7 @@ export function adjustFromParams(sp: URLSearchParams): ImageAdjust {
     brightness: pct("br"),
     contrast: pct("ct"),
     saturate: pct("sat"),
+    gamma: pct("gam"),
     invert: sp.get("inv") === "1",
     gray: sp.get("bw") === "1",
     palette: pal === "ironbow" || pal === "rainbow" ? pal : "none",
@@ -65,6 +68,7 @@ export function adjustToParams(sp: URLSearchParams, a: ImageAdjust) {
   if (a.brightness !== 100) sp.set("br", String(a.brightness));
   if (a.contrast !== 100) sp.set("ct", String(a.contrast));
   if (a.saturate !== 100) sp.set("sat", String(a.saturate));
+  if (a.gamma !== 100) sp.set("gam", String(a.gamma));
   if (a.invert) sp.set("inv", "1");
   if (a.gray) sp.set("bw", "1");
   if (a.palette !== "none") sp.set("pal", a.palette);
@@ -76,19 +80,24 @@ const PRESETS: { label: string; Icon: LucideIcon; adj: Partial<ImageAdjust> }[] 
   { label: "Enhance", Icon: WandSparkles, adj: { brightness: 110, contrast: 140, saturate: 120 } },
   { label: "Invert IR", Icon: SunMoon, adj: { invert: true } },
   { label: "B&W", Icon: DropletOff, adj: { contrast: 120, gray: true } },
+  { label: "Night", Icon: MoonStar, adj: { gamma: 170, contrast: 110 } }, // dark footage: lift the shadows
 ];
-const TONE = { brightness: 100, contrast: 100, saturate: 100, invert: false, gray: false };
+const TONE = { brightness: 100, contrast: 100, saturate: 100, gamma: 100, invert: false, gray: false };
 
 const PALETTES: { key: Exclude<Palette, "none">; label: string; Icon: LucideIcon }[] = [
   { key: "ironbow", label: "Ironbow", Icon: Flame },
   { key: "rainbow", label: "Rainbow", Icon: Rainbow },
 ];
 
-const SLIDERS: { key: "brightness" | "contrast" | "saturate"; label: string; Icon: LucideIcon }[] = [
+const SLIDERS: { key: "brightness" | "contrast" | "saturate" | "gamma"; label: string; Icon: LucideIcon }[] = [
   { key: "brightness", label: "Brightness", Icon: Sun },
   { key: "contrast", label: "Contrast", Icon: Contrast },
   { key: "saturate", label: "Saturation", Icon: Droplet },
+  { key: "gamma", label: "Shadows", Icon: Moon },
 ];
+
+/** Shadows % → gamma exponent: 100 → 1, 200 → ~0.37 (lifted), 0 → ~2.7 (crushed). */
+export const gammaExponent = (g: number) => +Math.pow(2, (100 - g) / 70).toFixed(3);
 
 export const LENS_MAGS = [2, 3, 5, 8];
 
@@ -98,6 +107,7 @@ export function adjustFilter(a: ImageAdjust): string {
   if (a.brightness !== 100) f.push(`brightness(${a.brightness / 100})`);
   if (a.contrast !== 100) f.push(`contrast(${a.contrast / 100})`);
   if (a.saturate !== 100) f.push(`saturate(${a.saturate / 100})`);
+  if (a.gamma !== 100) f.push("url(#ru-gamma)"); // exponent lives in MediaFilters
   if (a.gray) f.push("grayscale(1)");
   if (a.invert) f.push("invert(1)");
   if (a.sharpen) f.push("url(#ru-sharpen)");
@@ -120,9 +130,17 @@ function Ramp({ id, r, g, b }: { id: string; r: string; g: string; b: string }) 
 }
 
 /** SVG filter defs that adjustFilter's url(#ru-*) refers to. Render once per page. */
-export function MediaFilters() {
+export function MediaFilters({ gamma = 100 }: { gamma?: number }) {
+  const e = gammaExponent(gamma);
   return (
     <svg aria-hidden="true" width="0" height="0" className="absolute">
+      <filter id="ru-gamma" colorInterpolationFilters="sRGB">
+        <feComponentTransfer>
+          <feFuncR type="gamma" exponent={e} />
+          <feFuncG type="gamma" exponent={e} />
+          <feFuncB type="gamma" exponent={e} />
+        </feComponentTransfer>
+      </filter>
       <filter id="ru-sharpen" colorInterpolationFilters="sRGB">
         <feConvolveMatrix order="3" kernelMatrix="0 -1 0 -1 5 -1 0 -1 0" preserveAlpha="true" />
       </filter>
@@ -441,7 +459,7 @@ export function MediaToolbar({
               <Focus {...ico} />
             </button>
           </div>
-          <div className="grid gap-x-5 gap-y-2 min-[600px]:grid-cols-3">
+          <div className="grid gap-x-5 gap-y-2 min-[600px]:grid-cols-2">
             {SLIDERS.map((s) => (
               <label key={s.key} title={s.label} className="flex items-center gap-2.5 font-mono text-[9.5px] tracking-[.4px] text-faint">
                 <s.Icon {...ico} className="flex-none" />

@@ -535,7 +535,7 @@ export function Doc() {
     <div data-screen="doc" className="pb-5" style={{ animation: "fadeup .28s ease both" }}>
       {isDesktop && titleBlock}
       {/* media panel — prototype lines 348-357 */}
-      <MediaFilters />
+      <MediaFilters gamma={adjust.gamma} />
       <div
         ref={setPanel}
         onPointerDown={handlePointerDown}

@@ -1025,6 +1025,28 @@ describe("Doc", () => {
     vi.unstubAllGlobals();
   });
 
+  it("Shadows slider lifts dark areas with a gamma curve (in the URL as gam=); Night preset sets it", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc("/doc/rec1?gam=170");
+    const img = () => document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
+    const exp = () => Number(document.querySelector("#ru-gamma feFuncR")!.getAttribute("exponent"));
+    expect(img().style.filter).toContain("#ru-gamma");
+    expect(exp()).toBeLessThan(1); // > 100 lifts the shadows
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i }));
+    fireEvent.change(screen.getByLabelText("Shadows"), { target: { value: "100" } });
+    expect(img().style.filter).not.toContain("#ru-gamma");
+    fireEvent.click(screen.getByRole("button", { name: "Night" }));
+    expect(img().style.filter).toContain("#ru-gamma");
+    expect(screen.getByLabelText("Shadows")).not.toHaveValue("100");
+  });
+
   it("no image tools on non-image records", () => {
     renderDoc();
     expect(screen.queryByRole("button", { name: /adjust/i })).toBeNull();
