@@ -1087,6 +1087,28 @@ describe("Doc", () => {
     expect(document.querySelector("[data-ruler]")).toBeNull();
   });
 
+  it("Motion (video): swaps the <video> to the same-origin copy (readable pixels) and lays the motion map over it", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "video" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/clip.mp4", mime: "video/mp4", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    const video = () => document.querySelector('[data-screen="doc"] video') as HTMLVideoElement;
+    expect(video().getAttribute("src")).toBe("https://cdn.example/clip.mp4");
+    expect(document.querySelector("canvas[data-motion]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Motion" }));
+    expect(video().getAttribute("src")).toBe("/api/file/rec1");
+    expect(document.querySelector("canvas[data-motion]")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Motion" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Motion" }));
+    expect(video().getAttribute("src")).toBe("https://cdn.example/clip.mp4");
+    expect(document.querySelector("canvas[data-motion]")).toBeNull();
+  });
+
   it("no image tools on non-image records", () => {
     renderDoc();
     expect(screen.queryByRole("button", { name: /adjust/i })).toBeNull();

@@ -7,7 +7,7 @@
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { PointerEvent as ReactPointerEvent, ReactNode, RefObject } from "react";
-import { Contrast, DropletOff, Moon, MoonStar, Eye, Droplet, Flame, FlipHorizontal2, Focus, ImageDown, Keyboard, Link, LoaderCircle, Rainbow, RotateCcw, RotateCw, Ruler, Search, Shrink, SlidersHorizontal, Sun, SunMoon, TriangleAlert, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Activity, Contrast, DropletOff, Moon, MoonStar, Eye, Droplet, Flame, FlipHorizontal2, Focus, ImageDown, Keyboard, Link, LoaderCircle, Rainbow, RotateCcw, RotateCw, Ruler, Search, Shrink, SlidersHorizontal, Sun, SunMoon, TriangleAlert, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { DEFAULT_VIEW, MAX_ZOOM, centreOn, pointToUV } from "../lib/mediaView";
 import type { MediaView } from "../lib/mediaView";
@@ -252,6 +252,8 @@ export function MediaToolbar({
   onSave,
   ruler,
   onRuler,
+  motion,
+  onMotion,
   compare,
   onCompare,
   keysHelp,
@@ -273,6 +275,9 @@ export function MediaToolbar({
   onSave?: () => Promise<void>;
   ruler: boolean;
   onRuler: (on: boolean) => void;
+  /** Video motion highlight (absent for images). */
+  motion?: boolean;
+  onMotion?: (on: boolean) => void;
   /** Hold-to-compare: true while the unfiltered picture shows. */
   compare: boolean;
   onCompare: (on: boolean) => void;
@@ -373,6 +378,18 @@ export function MediaToolbar({
         <button type="button" aria-label="Ruler" aria-pressed={ruler} title="Ruler: drag a line (pixels, % of width, angle)" onClick={() => onRuler(!ruler)} className={`${chip} ${ruler ? on : off}`}>
           <Ruler {...ico} />
         </button>
+        {onMotion && (
+          <button
+            type="button"
+            aria-label="Motion"
+            aria-pressed={!!motion}
+            title="Motion: what moved lights up, still areas go dark"
+            onClick={() => onMotion(!motion)}
+            className={`${chip} ${motion ? on : off}`}
+          >
+            <Activity {...ico} />
+          </button>
+        )}
         {onLink && (
           <button type="button" aria-label="Copy link to this view" title="Copy link to this view" onClick={onLink} className={`${chip} ${off}`}>
             <Link {...ico} />

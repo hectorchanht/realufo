@@ -37,6 +37,7 @@ import { DocCard } from "../components/DocCard";
 import { LoadError } from "../components/LoadError";
 import { goBack } from "../components/navItems";
 import { MediaRuler } from "../components/MediaRuler";
+import { MotionLayer } from "../components/MotionLayer";
 import { LENS_MAGS, MediaFilters, MediaToolbar, Minimap, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams, grabImage } from "../components/ImageTools";
 import type { ImageAdjust } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
@@ -209,6 +210,17 @@ export function Doc() {
   const [view, setView] = useState(DEFAULT_VIEW); // frame zoom / pan / rotate / flip
   const [compare, setCompare] = useState(false); // held: panel shows the file unfiltered
   const [ruler, setRuler] = useState(false);
+  // Motion reads the video's pixels, which the CDN only allows realufo.org to do, so while
+  // it's on the <video> plays the same-origin /api/file copy; the swap keeps time, rate and play state.
+  const [motion, setMotion] = useState(false);
+  const [swapped, setSwapped] = useState(false); // no autoplay on a swapped source: it restores play state itself
+  const swapRestore = useRef<{ t: number; play: boolean; rate: number } | null>(null);
+  function toggleMotion(on: boolean) {
+    const v = videoRef.current;
+    swapRestore.current = v ? { t: v.currentTime, play: !v.paused, rate: v.playbackRate } : null;
+    setSwapped(true);
+    setMotion(on);
+  }
   const [pic, setPic] = useState<{ w: number; h: number } | null>(null); // natural media size
   const [panel, setPanel] = useState<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -218,6 +230,8 @@ export function Doc() {
     setView(DEFAULT_VIEW);
     setPic(null);
     setRuler(false);
+    setMotion(false);
+    setSwapped(false);
   }, [id]);
   const panelMedia = recordMedia(detail, isDesktop).media;
   // A transformed <video> would zoom/rotate its native controls too, so they
@@ -585,7 +599,7 @@ export function Doc() {
           <div className="h-full w-full" style={{ filter: shownFilter || undefined }}>
             <video
               ref={videoRef}
-              src={fullUrl}
+              src={motion ? `/api/file/${id}` : fullUrl}
               poster={thumbUrl ?? undefined}
               // native controls (big play button) fade with the panel chrome; tap brings them back.
               // Touch lens mode covers the panel, so they'd be unreachable — VideoTransport has play/seek.
@@ -593,9 +607,19 @@ export function Doc() {
               playsInline
               // browsers only allow autoplay when muted; the Mute chip / native controls unmute.
               // A ?t= link waits at its moment instead, with sound, for the visitor to press play.
-              autoPlay={startAt === undefined}
+              autoPlay={startAt === undefined && !swapped}
               muted={startAt === undefined}
-              onLoadedMetadata={(e) => setPic(crop ?? { w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })}
+              onLoadedMetadata={(e) => {
+                const v = e.currentTarget;
+                setPic(crop ?? { w: v.videoWidth, h: v.videoHeight });
+                const r = swapRestore.current; // Motion swapped the source: carry on where it was
+                if (r) {
+                  swapRestore.current = null;
+                  v.currentTime = r.t;
+                  v.playbackRate = r.rate;
+                  if (r.play) v.play().catch(() => {});
+                }
+              }}
               // bars are centred (crawler/ingest/clips.bars), so cover on the crop-shaped panel cuts exactly them
               className={`h-full w-full bg-black ${crop ? "object-cover" : "object-contain"}`}
               style={{ transform: viewTransform(view, zoom.box, pic) || undefined }}
@@ -661,6 +685,7 @@ export function Doc() {
             </span>
           </button>
         )}
+        {media === "video" && motion && <MotionLayer videoRef={videoRef} crop={crop} style={{ transform: viewTransform(view, zoom.box, pic) || undefined }} />}
         {ruler && (media === "image" || media === "video") && <MediaRuler view={view} pic={pic} />}
         {(media === "image" || media === "video") && (
           <Minimap src={media === "image" ? fullUrl : thumbUrl || undefined} view={view} box={zoom.box} pic={pic} onView={setView} />
@@ -756,6 +781,8 @@ export function Doc() {
           onCompare={setCompare}
           ruler={ruler}
           onRuler={setRuler}
+          motion={motion}
+          onMotion={media === "video" ? toggleMotion : undefined}
           panelSlot={media === "video" ? setSpeedSlot : undefined}
           // desktop only: shortcuts need a keyboard
           keysHelp={
