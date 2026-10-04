@@ -213,7 +213,8 @@ def test_route_pages_keeps_the_layer_when_ocr_of_a_barred_page_reads_less():
     assert pages == [{"n": 1, "text": CLEAN, "src": "pdf"}]
 
 def test_redaction_bars_counts_solid_boxes_not_text(tmp_path):
-    import cv2, numpy as np
+    cv2 = pytest.importorskip("cv2")  # OCR-only dep (Paddle venv / CI ocr step), like ocr.py's lazy import
+    import numpy as np
     page = np.full((550, 425), 255, np.uint8)
     cv2.putText(page, "Plain text line here", (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 0, 1)
     png = str(tmp_path / "p.png")
