@@ -27,8 +27,10 @@ import { recordText } from "./routes/text";
 import { hubsIndex, getHub } from "./routes/hubs";
 import { releasesApi } from "./routes/releases";
 import { tgWebhook } from "./routes/tg";
-import { sweepStuck } from "./lib/gate";
-import { tick } from "./lib/xbot";
+import { jobRoute } from "./routes/job";
+import { gateOn, queue, sweepStuck } from "./lib/gate";
+import { stage, tick } from "./lib/xbot";
+import { nextCandidate } from "./lib/xpick";
 import { tick as socialTick } from "./lib/social/tick";
 import { pollTick } from "./lib/xpoll";
 import { pushNewFiles, pushDaily } from "./lib/push";
@@ -90,7 +92,8 @@ async function runTick(env: Env) {
 // POST /__tick (Authorization: Bearer ADMIN_TOKEN): one cron tick on demand, for
 // scripts/publish.sh. ?force=ID sets X_FORCE_PICK for this call only; ?showcase=ID&text=…
 // sets X_FORCE_SHOWCASE/X_SHOWCASE_TEXT. Same work and
-// budgets as the cron. Unset ADMIN_TOKEN = endpoint off (404).
+// budgets as the cron. Unset ADMIN_TOKEN = endpoint off (404). With FEATURE_GATE=on,
+// force/showcase only queue a Telegram preview and answer { ok, job }.
 async function manualTick(req: Request, env: Env) {
   const token = env.ADMIN_TOKEN;
   const auth = req.headers.get("authorization") ?? "";
@@ -99,8 +102,18 @@ async function manualTick(req: Request, env: Env) {
   const over: Partial<Env> = {};
   if (q.get("force")) over.X_FORCE_PICK = q.get("force")!;
   if (q.get("showcase")) Object.assign(over, { X_FORCE_SHOWCASE: q.get("showcase")!, X_SHOWCASE_TEXT: q.get("text") ?? "" });
-  // operator post = the user's OK for that item: run X for this call even while the bot is paused
-  if (over.X_FORCE_PICK || over.X_FORCE_SHOWCASE) over.FEATURE_X = "on";
+  if (over.X_FORCE_PICK || over.X_FORCE_SHOWCASE) {
+    if (gateOn(env)) {
+      // gate: an operator post becomes a Telegram preview; the owner's ✅ posts it. job null = nothing queued
+      // (a preview already waits, record not live or already posted, or over budget)
+      const e = { ...env, ...over }, now = new Date();
+      const c = await nextCandidate(e, now);
+      const d = c && (await stage(e, c, now));
+      const j = c && d ? await queue(e, c, d) : null;
+      return json({ ok: true, job: j?.id ?? null });
+    }
+    over.FEATURE_X = "on"; // gate off: operator post = the user's OK for that item, even while the bot is paused
+  }
   await runTick({ ...env, ...over });
   return json({ ok: true });
 }
@@ -147,6 +160,7 @@ export default {
     }
     if (url.pathname === "/__tick") return manualTick(req, env);
     if (url.pathname === "/__tg") return tgWebhook(req, env);
+    if (url.pathname === "/__job") return jobRoute(req, env);
     if (url.pathname === "/sitemap.xml") return sitemap(req, env);
     if (/^\/(rss(\.xml)?|feed(\.xml)?)$/.test(url.pathname)) return rss(req, env);
     if (url.pathname === "/llms.txt") return llms(req, env);

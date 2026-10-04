@@ -13,6 +13,8 @@
 # How: calls POST https://realufo.org/__tick (one cron tick on demand, ?force=ID for the
 # X pick) every 30 s until done. No deploys, no cron changes. Needs ADMIN_TOKEN in the
 # repo-root .env, matching the Worker secret of the same name (one-time setup below).
+# With FEATURE_GATE=on the post waits for the owner's ✅ in Telegram; after the tap the cron
+# finishes the fan-out even if this script times out. ❌ on Telegram ends the script (exit 0).
 set -euo pipefail
 
 ID=${1:?usage: scripts/publish.sh RECORD_ID | --showcase RECORD_ID FILE.mp4 "TEXT" | --drain}
@@ -25,7 +27,7 @@ if [ "$ID" = "--showcase" ]; then
 fi
 ROOT=$(git rev-parse --show-toplevel)
 SITE=${PUBLISH_SITE:-https://realufo.org}
-TIMEOUT_MIN=${PUBLISH_TIMEOUT_MIN:-15}
+TIMEOUT_MIN=${PUBLISH_TIMEOUT_MIN:-60} # the Telegram tap can take a while
 DRAIN=; [ "$ID" = "--drain" ] && DRAIN=1
 # The repo-root .env holds a narrow CLOUDFLARE_API_TOKEN that can't read D1; --env-file
 # /dev/null makes wrangler use the OAuth login instead.
@@ -44,10 +46,21 @@ ADMIN_TOKEN is not set. One-time setup (run yourself; the value is never printed
 EOF
   exit 1
 fi
+JOB=
 tick() { # $1 = query string ("" for a plain tick)
-  local code
-  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 300 -X POST -H "Authorization: Bearer $TOKEN" "$SITE/__tick${1:+?$1}")
-  [ "$code" = 200 ] || { echo "!! /__tick returned $code (deployed code lacks /__tick, or ADMIN_TOKEN differs from the Worker secret)"; exit 1; }
+  local code out job
+  out=$(mktemp)
+  code=$(curl -s -o "$out" -w '%{http_code}' --max-time 300 -X POST -H "Authorization: Bearer $TOKEN" "$SITE/__tick${1:+?$1}")
+  [ "$code" = 200 ] || { echo "!! /__tick returned $code (deployed code lacks /__tick, or ADMIN_TOKEN differs from the Worker secret)"; rm -f "$out"; exit 1; }
+  # gate on: force/showcase answer {"ok":true,"job":N|null}; gate off (or a plain tick): {"ok":true}
+  job=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print("none" if "job" not in d else d["job"] or "null")' "$out" 2>/dev/null) || job=none
+  rm -f "$out"
+  case "$job" in
+    none) ;;
+    null) echo "!! no job created: a preview for $ID already waits on Telegram, the record is not live or already posted, or the X budget is used up"; exit 1 ;;
+    *) JOB=$job; QS= # queued once: later polls are plain ticks (re-sending force would re-queue after a ❌)
+       echo "== waiting for your ✅ on Telegram (job $JOB); this script keeps polling" ;;
+  esac
 }
 
 cfg="$ROOT/wrangler.jsonc"
@@ -67,6 +80,10 @@ if r["status"] != "live": sys.exit(f"record is {r['status']}, not live")
 if r["posted"]: sys.exit("already published on this stream (to re-post one platform, soft-delete its row and use --drain)")
 print(f"ok: {r['id']} ({r['kind']})")
 PY
+  # before the showcase upload: it would overwrite the video the waiting preview shows
+  open=$(q "SELECT id FROM bot_jobs WHERE ref='${ID//\'/}' AND stream IN ('manual','showcase') AND status NOT IN ('posted','skipped','failed') AND deleted_at IS NULL ORDER BY id DESC LIMIT 1")
+  jid=$(python3 -c 'import json,sys; r=json.loads(sys.argv[1]); print(r[0]["id"] if r else "")' "$open")
+  [ -z "$jid" ] || { echo "!! a preview is already waiting on Telegram: job $jid (tap it or /skip $jid)"; exit 1; }
   echo "X posts today: $(q "SELECT count(*) n FROM x_posts WHERE status!='failed' AND date(created_at)=date('now')") (X_DAILY_MAX caps it)"
   if [ "$STREAM" = showcase ]; then
     arch=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[0]["archive"])' "$rec")
@@ -88,6 +105,12 @@ while :; do
     echo "missing=$left busy=$busy"
     [[ "$left" == *'"n": 0'* && "$busy" == *'"n": 0'* ]] && break
   else
+    if [ -n "$JOB" ]; then
+      j=$(q "SELECT id,status,error FROM bot_jobs WHERE ref='${ID//\'/}' AND stream IN ('manual','showcase') AND deleted_at IS NULL ORDER BY id DESC LIMIT 1")
+      read -r js jerr < <(python3 -c 'import json,sys; r=json.loads(sys.argv[1]); r=r[0] if r else {}; print(r.get("status", ""), r.get("error") or "")' "$j")
+      [ "$js" = skipped ] && { echo "== skipped on Telegram (job $JOB); nothing posted"; exit 0; }
+      [ "$js" = failed ] && { echo "!! job $JOB failed: $jerr"; exit 1; }
+    fi
     x=$(q "SELECT status FROM x_posts WHERE stream='$STREAM' AND ref='${ID//\'/}'")
     s=$(q "SELECT s.status FROM social_posts s JOIN x_posts p ON p.id=s.x_post_id WHERE p.stream='$STREAM' AND p.ref='${ID//\'/}' AND s.deleted_at IS NULL")
     done_=$(python3 - "$x" "$s" "$enabled" <<'PY'
@@ -101,7 +124,7 @@ PY
 )
     [ "$done_" = 1 ] && break
   fi
-  [ "$(date +%s)" -ge "$deadline" ] && { echo "timed out (YouTube's daily cap or slow uploads finish on later cron ticks)"; break; }
+  [ "$(date +%s)" -ge "$deadline" ] && { echo "timed out (YouTube's daily cap or slow uploads finish on later cron ticks${JOB:+; if job $JOB still waits, the cron posts it after your ✅})"; break; }
   sleep 30
 done
 

@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """Publish an article (publish-article skill): showcase/articles/<slug>/article.json.
 
-  python3 scripts/article.py SLUG            images → R2, rows → D1 (articles, article_records),
-                                              site thread (OP = story, one reply per evidence)
-  python3 scripts/article.py SLUG --social   …then post the Short + story as an X thread and
-                                              mirror it to every enabled platform (publish.sh)
+  python3 scripts/article.py SLUG            images → R2, rows (articles, article_records, site
+                                              thread: OP = story, one reply per evidence) → a job
+  python3 scripts/article.py SLUG --social   …plus the Short (→ R2) as an X thread, mirrored to
+                                              every enabled platform
+
+Nothing is written to D1 or posted until the owner taps ✅ on the Telegram preview (POST /__job);
+the Worker then writes the rows, pings IndexNow and (with --social) posts the Short.
 
 Idempotent: image keys are uuid5(slug/file), rows are upserts, the site thread is made once
-(articles.thread_id), and publish.sh posts a showcase once per record.
+(articles.thread_id), and a showcase is posted once per record.
 
 Layout: <slug>/article.json, research.md, images/ (hero + evidence crops, uploaded), short/ (short.py,
 app-*.png, short.mp4). article.json: slug, title, hero ("images/hero.jpg"), short ("short/short.mp4", for --social), showcase_record (the record
@@ -16,7 +19,7 @@ evidence, image?}].
 poll (optional): {q, opts} — the story's crowd question (q ≤100, 2-4 opts ≤25 chars, unique); site
 poll + an X poll reply (worker/lib/xpoll.ts, X_POLLS=on). Opts are frozen once anyone voted.
 """
-import json, os, re, subprocess, sys, tempfile, uuid
+import json, os, re, subprocess, sys, tempfile, urllib.error, urllib.request, uuid
 from datetime import datetime, timezone
 
 ROOT = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True).stdout.strip()
@@ -136,6 +139,20 @@ def main():
     found = {r["id"] for r in d1(f"SELECT id FROM records WHERE status='live' AND id IN ({','.join(map(q, ids))})", read=True)}
     if missing := [i for i in ids if i not in found]:
         sys.exit(f"not live records: {missing}")
+    token = next((l.split("=", 1)[1].strip() for l in open(os.path.join(ROOT, ".env")) if l.startswith("ADMIN_TOKEN=")), "")
+    if not token:
+        sys.exit("ADMIN_TOKEN is not in .env (scripts/publish.sh prints the one-time setup)")
+    rec = a.get("showcase_record") if social else None
+    # before any upload: an R2 object that is posted, or shown by a waiting preview, is never overwritten
+    if waiting := d1(f"""SELECT id FROM bot_jobs WHERE deleted_at IS NULL AND status NOT IN ('posted','skipped','failed')
+                         AND ((stream='article' AND ref={q(slug)}) OR (stream='showcase' AND ref={q(rec)}))""", read=True):
+        sys.exit(f"a preview is already waiting on Telegram: job {waiting[0]['id']} (tap it or /skip {waiting[0]['id']})")
+    if social:
+        if d1(f"SELECT 1 FROM x_posts WHERE stream='showcase' AND ref={q(rec)}", read=True):
+            sys.exit(f"showcase already posted for {rec}; refusing to overwrite its R2 video")
+        live = d1(f"SELECT archive FROM records WHERE id={q(rec)} AND status='live'", read=True)
+        if not live:
+            sys.exit(f"showcase_record {rec} is not live")
 
     print(f"== images → R2 ({slug})")
     hero = upload(slug, a.get("hero"))
@@ -146,20 +163,22 @@ def main():
     if cur and (err := freeze_error(cur[0]["poll"], cur[0]["n"], poll_json)):
         sys.exit(err)
 
-    print("== rows → D1")
+    print("== rows (written on ✅)")
     sql = [f"""INSERT INTO articles(slug,title,body,image_key,poll) VALUES({q(slug)},{q(a['title'])},{q(SEP.join(a['parts']))},{q(hero)},{q(poll_json)})
                ON CONFLICT(slug) DO UPDATE SET title=excluded.title, body=excluded.body, image_key=excluded.image_key, poll=excluded.poll;""",
            f"DELETE FROM article_records WHERE slug={q(slug)};"]  # the article's own evidence list, rewritten as a whole
     sql += [f"INSERT INTO article_records(slug,record_id,pos,t,page,label,evidence,image_key) VALUES({q(slug)},{q(e['id'])},{i},{q(e.get('t'))},{q(e.get('page'))},{q(e['label'])},{q(e['evidence'])},{q(imgs[e['id']])});"
             for i, e in enumerate(a["evidence"])]
-    d1("\n".join(sql))
+    story_sql = sql
 
     # Site thread, Reddit-style: OP = the story (thread numbering dropped) + hero; one reply per piece of
     # evidence, its doc link (with ?t=) embeds the record at that moment. Made once, text refreshed on re-runs.
     thread = f"ar_{slug}"
     op = "\n\n".join(re.sub(r"^\d+/\s*", "", p) for p in a["parts"])
     replies = [(f"{thread}_{i}", f"{e['label']}\n\n{e['evidence']}\n\n{doc_link(e)}", imgs[e["id"]]) for i, e in enumerate(a["evidence"], 1)]
-    if d1(f"SELECT thread_id FROM articles WHERE slug={q(slug)}", read=True)[0]["thread_id"]:
+    # no articles row yet (the story insert waits for ✅ too) = new thread; its UPDATE articles runs after the story insert in the same batch
+    made = d1(f"SELECT thread_id FROM articles WHERE slug={q(slug)}", read=True)
+    if made and made[0]["thread_id"]:
         print("== site thread (refresh text)")
         rows = [f"UPDATE threads SET title={q(a['title'][:120])}, op_body={q(op)}, board_id={q(a['board'])} WHERE id={q(thread)};",
                 f"UPDATE posts SET body={q(op)} WHERE id={q(thread + '_op')};"]
@@ -177,18 +196,30 @@ def main():
                     VALUES({q(pid)},{no + i},{q(thread)},{q(b)},'RealUFO','analyst',0,{q(img)},{q(img and 'upload')},0,{q(now)});"""
                  for i, (pid, b, img) in enumerate(replies, 1)]
         rows.append(f"UPDATE articles SET thread_id={q(thread)} WHERE slug={q(slug)};")
-    d1("\n".join(rows))
+    thread_sql = rows
     print(f"   {SITE}/thread/{thread}")
     if poll:
         print(f"   poll: {poll['q'].strip()} 👇  [{' / '.join(poll['opts'])}]  (X reply once X_POLLS=on)")
 
     urls = [f"{SITE}/thread/{thread}", *[f"{SITE}/doc/{i}" for i in ids]]
-    subprocess.run([sys.executable, "crawler/indexnow.py", *urls], cwd=ROOT)
-
+    # one statement per item (DB.batch); story before thread: the thread's UPDATE articles needs the story row
+    payload = {"sql": [s.strip().rstrip(";") for s in [*story_sql, *thread_sql]], "urls": urls}
+    media = {"key": hero, "mime": "image/jpeg", "size": 0} if hero else None
+    caption = f"{a['title']}\n\n{op}" + (f"\n\npoll: {poll['q']} [{' / '.join(poll['opts'])}]" if poll else "")
     if social:
-        short = os.path.join(ROOT, "showcase/articles", slug, a["short"])
-        text = SEP.join([*a["parts"][:-1], a["parts"][-1] + cta(a, thread)])
-        subprocess.run(["scripts/publish.sh", "--showcase", a["showcase_record"], short, text], cwd=ROOT, check=True)
+        key = f"showcase/{live[0]['archive']}/{rec}.mp4"
+        print(f"== Short → R2 ({key})")
+        subprocess.run([*WR, "r2", "object", "put", f"realufo/{key}", "--file", os.path.join(ROOT, "showcase/articles", slug, a["short"]),
+                        "--content-type", "video/mp4", "--cache-control", "public, max-age=2592000", *WR_OPTS], cwd=ROOT, check=True, capture_output=True)
+        payload["showcase"] = {"record": rec, "text": SEP.join([*a["parts"][:-1], a["parts"][-1] + cta(a, thread)])}
+        media = {"key": key, "mime": "video/mp4", "size": 0}
+    # explicit user-agent: Cloudflare blocks the default Python-urllib one
+    req = urllib.request.Request(f"{SITE}/__job", method="POST", data=json.dumps({"kind": "article", "ref": slug, "caption": caption, "media": media, "payload": payload}).encode(),
+                                 headers={"authorization": f"Bearer {token}", "content-type": "application/json", "user-agent": "realufo-article/1"})
+    try:
+        print("== waiting for your ✅ on Telegram: job", json.load(urllib.request.urlopen(req))["job"])
+    except urllib.error.HTTPError as e:
+        sys.exit(f"/__job {e.code}: {e.read().decode()[:300]}")
 
 
 if __name__ == "__main__":
