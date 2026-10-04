@@ -11,10 +11,10 @@ SILENT = ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100
 _n = 0
 
 def written(text):
-    """Spoken spellings back to screen form: "F B I" -> "FBI", "real U F O dot org" -> "realufo.org"
+    """Spoken spellings back to screen form: "F B I" -> "FBI", "real U F O dot org" -> "RealUFO.org"
     (narration spells letters out so the voice reads them; captions often reuse the narration line)."""
     text = re.sub(r"\b[A-Z](?: [A-Z](?=s?\b))+", lambda m: m.group(0).replace(" ", ""), text)
-    return re.sub(r"\breal UFO dot org\b", "realufo.org", text, flags=re.I)
+    return re.sub(r"\breal UFO dot org\b", "RealUFO.org", text, flags=re.I)
 
 def txt(text, y, fs, color="white"):
     """drawtext via textfile= (quotes/colons in text can't break the filtergraph); centred, outline + shadow."""
