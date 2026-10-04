@@ -20,11 +20,21 @@ Design has a purpose; each style is there for a use, and its layout follows that
 | **DJ deck** | Studying footage: hands stay on the wheel to scrub frame by frame while the other hand mixes effects and faders, everything visible at once on a wide screen. | Faders · square pads (effects, tools) · deck with the click wheel and the magnifier knob. |
 | **Walkman** | One-thumb use on a phone: one compact body, what is on shows in the cassette window, every tool is one big key, the wheel sits under the thumb. | Walkman body: cassette window, faders, the Wakeman keyboard (white keys = effects, black keys = tools), the click wheel and the magnifier knob. |
 
-Beauty is a common feeling: flat site tokens, calm spacing, one accent colour for "on", no decoration that doesn't help someone use the tool.
+Beauty is a common feeling: see Design language below.
 
 - **Picker**: a `Palette` button in the console header opens a small menu: three rows, icon + name, the current one ticked. Picking switches at once (console stays open).
 - Arrange mode, pad order and presets are shared by all three styles (one order for effects, one for tools).
 - Default for a first visit is Simple, so new visitors meet the plainest one; the help panel mentions the other two.
+
+## Design language: minimal, Bauhaus, a real object
+
+Every style is designed like a physical instrument (think Braun / Dieter Rams, which the Walkman and iPod came from): less, but better.
+- **Form follows function.** Round = turn (click wheel, magnifier knob). Square = press (keys, pads, chips). Long = slide (faders, seek bar). Triangle only for play.
+- **Size follows use.** The most-used control is the biggest and closest to the thumb: the click wheel (video) / zoom (image) first, effects next, rarely used tools smallest.
+- **Strict grid.** One 8px grid, aligned edges, one corner radius per shape family (squares 8px, the body 16px, round = full circle). No stray sizes.
+- **Colour.** Black, white and the site's greys for the body; one accent (site `--signal`) means "on"; amber only for "failed, try again". No gradients, glows or textures.
+- **State is physical.** On = lit and sunk 2px (inset shadow-free: a darker face + thinner bottom edge); off = raised (thicker bottom edge). Momentary controls (Original) sink only while held.
+- **Ornament earns its place or goes.** The cassette reels stay because they show playback state at a glance; nothing is there only to decorate.
 
 ## Layout
 
@@ -64,7 +74,7 @@ Three sections, side by side ≥ 900px, stacked on phones (the click wheel first
 **Mirror (flip)** loses its button; the `F` key and `?flip=1` share links keep working. It leaves the help panel.
 
 ### Walkman style: Walkman body, Wakeman keys
-The console is drawn as a retro **Walkman** with a **Rick Wakeman** keyboard rig inside. Flat surfaces, site colour tokens only (no gradients/glow), works in both themes.
+The console is drawn as a retro **Walkman** with a **Rick Wakeman** keyboard rig inside, reduced to its essential forms per the design language (flat, site tokens, both themes).
 - **Body**: a rounded chassis panel with a coloured stripe along the top edge (site accent) and the preset buttons P1–P4 styled as the Walkman's chunky hardware buttons.
 - **Cassette window** (top of the console): a small display that shows what is going on: timecode (video) or zoom (image), the active preset name, and the speed. Two cassette reels sit either side and turn while the video plays (CSS rotation; still under `prefers-reduced-motion`, still for images).
 - **Keyboard** (replaces the pad grid): one keyboard row, the Wakeman part.
