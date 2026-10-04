@@ -6,8 +6,10 @@
     python -m ingest.ocr --fts-only               # rewrite search rows of OCR'd files from R2
     python -m ingest.ocr --shard 0/8              # one of 8 parallel workers (Paddle uses one core)
 
-Pages whose pdftotext layer already reads as text keep it (src "pdf"); the rest
-are rendered with pdftoppm and OCR'd (src "ocr"). All pages, uncapped, go to R2
+Pages whose pdftotext layer already reads as text keep it (src "pdf"), unless the
+page has redaction bars: those text layers drop whole lines beside the bars
+(DOW-UAP-D091 p.2), so they are OCR'd like the rest (src "ocr", rendered with
+pdftoppm), which reads exactly what is visible. All pages, uncapped, go to R2
 text/<id>.json, then D1 gets a record_ocr marker. When any page was OCR'd, the
 record's record_text row is deleted and its text_index row marked failed, so
 fulltext / summaries / tldr / cards / textindex rebuild it from the new text.
@@ -40,12 +42,22 @@ def lines_from_boxes(items) -> str:
             lines.append([yc, h, [(x1, text)]])
     return "\n".join(" ".join(t for _, t in sorted(words)) for _, _, words in lines)
 
-def route_pages(texts: list[str], page_count: int, ocr_page) -> list[dict]:
-    """Pages 1..page_count: clean text layer kept, else ocr_page(n) -> (text, conf)."""
+BAR_DPI = 50  # enough to see a redaction bar; text at this size never fills a solid box
+
+def redaction_bars(png: str) -> int:
+    """Solid black boxes on a page render: dark blobs >= 0.2% of the page that fill >= 90% of their bbox."""
+    import cv2  # lazy: Paddle's venv has it
+    g = cv2.imread(png, cv2.IMREAD_GRAYSCALE)
+    _, _, stats, _ = cv2.connectedComponentsWithStats((g < 60).astype("uint8"))
+    big = g.shape[0] * g.shape[1] * 0.002
+    return sum(1 for _, _, w, h, a in stats[1:] if a >= big and a >= 0.9 * w * h)
+
+def route_pages(texts: list[str], page_count: int, ocr_page, redacted=lambda n: False) -> list[dict]:
+    """Pages 1..page_count: clean text layer kept unless redacted(n), else ocr_page(n) -> (text, conf)."""
     out = []
     for n in range(1, page_count + 1):
         text = clean_page(texts[n - 1]) if n <= len(texts) else ""
-        if keep_page(text):
+        if keep_page(text) and not redacted(n):
             out.append({"n": n, "text": text, "src": "pdf"})
             continue
         try:
@@ -144,7 +156,8 @@ def ocr_record(row: dict, engine, work: str, dpi: int = DPI) -> list[dict]:
     fetch.download(row["url"], pdf)
     try:
         return route_pages(pdftotext_pages(pdf), page_count(pdf),
-                           lambda n: engine(render(pdf, n, dpi, work)))
+                           lambda n: engine(render(pdf, n, dpi, work)),
+                           lambda n: redaction_bars(render(pdf, n, BAR_DPI, work)) > 0)
     finally:
         os.remove(pdf)
 

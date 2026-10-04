@@ -73,6 +73,7 @@ def world(monkeypatch):
     monkeypatch.setattr(ocr, "page_count", lambda pdf: w["pages"].get(open(pdf, "rb").read().decode(), 1))
     monkeypatch.setattr(ocr, "pdftotext_pages", lambda pdf: w["pdftotext"].get(open(pdf, "rb").read().decode(), [CLEAN]))
     monkeypatch.setattr(ocr, "render", lambda pdf, n, dpi, work: f"page{n}.png")
+    monkeypatch.setattr(ocr, "redaction_bars", lambda png: 0)
     monkeypatch.setattr(ocr, "paddle_engine", lambda *a: (lambda png: (f"OCR {png}", 0.9)))
     def put(key, path, ctype):
         if key in w["fail_put"]:
@@ -199,3 +200,19 @@ def test_fts_rows_fit_d1_statement_bytes_not_just_chars():
     sql = ocr.fts_sql("X", [{"n": 1, "text": "é'" * 40000}])
     insert = [l for l in sql.splitlines() if l.startswith("INSERT")][0]
     assert len(insert.encode()) <= ocr.FTS_MAX_BYTES + 200
+
+def test_route_pages_ocrs_a_clean_text_layer_with_redaction_bars():
+    # DOW-UAP-D091 p.2: the text layer reads fine but drops whole lines beside the bars
+    pages = ocr.route_pages([CLEAN, CLEAN], 2, lambda n: ("visible text", 0.9), redacted=lambda n: n == 2)
+    assert [p["src"] for p in pages] == ["pdf", "ocr"]
+
+def test_redaction_bars_counts_solid_boxes_not_text(tmp_path):
+    import cv2, numpy as np
+    page = np.full((550, 425), 255, np.uint8)
+    cv2.putText(page, "Plain text line here", (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 0, 1)
+    png = str(tmp_path / "p.png")
+    cv2.imwrite(png, page)
+    assert ocr.redaction_bars(png) == 0
+    page[200:215, 40:300] = 0  # one redaction bar
+    cv2.imwrite(png, page)
+    assert ocr.redaction_bars(png) == 1
