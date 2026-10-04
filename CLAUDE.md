@@ -51,7 +51,7 @@ D1 gotcha: LIKE/GLOB patterns >50 bytes fail ("pattern too complex") → use `in
 
 **Other dirs**: `scripts/` (publish.sh, article.py, polls.py, export_dataset.py → HF dataset), `showcase/` (hand-made Shorts recipes), `docs/superpowers/specs|plans` (spec → plan → implement; dated filenames), `realufo-handoff/` (original prototype + `data.js` seed used by tests).
 
-**Skills** (`.claude/skills/`): `ocr-full-text`, `publish`, `publish-article`, `making-shorts`, `story-polls` — use them for those tasks.
+**Skills** (`.claude/skills/`): `ocr-full-text`, `publish`, `publish-article`, `making-shorts`, `story-polls`, `key-moments` — use them for those tasks.
 
 ## How we work here
 
