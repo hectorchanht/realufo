@@ -67,12 +67,9 @@ const SWIPE_MIN_DX = 55;
 const SWIPE_DOMINANCE = 1.4;
 const CHROME_IDLE_MS = 2500;
 
-// Default board a promoted comment / file-thread lands in — the prototype's
-// `defBoard=(D.boards[0]&&D.boards[0].id)||'uap'` (RealUFO.dc.html:628);
-// Composer.tsx itself already falls back to 'uap' when no boardId is given,
-// so hard-coding it here (rather than resolving D.boards[0] via bootstrap)
-// matches that same effective default without an extra bootstrap lookup.
-const DEFAULT_BOARD = "uap";
+// Board a promoted comment / file thread lands in: footage (videos, images)
+// on /vids/, documents on /gov/ (every archive is an official US release).
+const fileBoard = (kind: string) => (kind === "video" || kind === "image" ? "vids" : "gov");
 
 const RELATED_HEAD: Record<RelatedGroup["key"], string> = {
   media: "Related media",
@@ -471,7 +468,7 @@ export function Doc() {
 
   // The "⤴ to a board" promote flow (prototype lines 631-632's `onPromote`).
   function handlePromote(c: Comment) {
-    openComposer(promoteCommentOpts(c, { title: docPageTitle(record!.id, record!.title, record!.kind), boardId: DEFAULT_BOARD, recordId: id }));
+    openComposer(promoteCommentOpts(c, { title: docPageTitle(record!.id, record!.title, record!.kind), boardId: fileBoard(record!.kind), recordId: id }));
   }
 
   // "◈ Start a board thread about this file" (prototype line 630's
@@ -483,7 +480,7 @@ export function Doc() {
       sourceRecordId: id,
       presetTitle: title,
       refLabel: title,
-      boardId: DEFAULT_BOARD,
+      boardId: fileBoard(record!.kind),
     });
   }
 

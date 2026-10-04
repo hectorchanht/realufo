@@ -428,9 +428,17 @@ describe("Doc", () => {
     const [opts] = mockOpenComposer.mock.calls[0];
     expect(opts.mode).toBe("newThread");
     expect(opts.sourceRecordId).toBe("rec1");
-    expect(opts.boardId).toBe("uap");
+    expect(opts.boardId).toBe("gov"); // a PDF is a government document
     expect(opts.presetBody).toBeUndefined();
     expect(opts.refLabel).toBeTruthy();
+  });
+
+  it("file threads from a video or image land on the footage board", () => {
+    useRecordMock.mockReturnValue({ data: { ...mockDetail, record: { ...mockDetail.record, kind: "video" } }, isLoading: false });
+    renderDoc();
+    fireEvent.click(screen.getByRole("button", { name: /Start a board thread about this file/i }));
+    fireEvent.click(screen.getByRole("button", { name: /to a board/i }));
+    expect(mockOpenComposer.mock.calls.map(([o]) => o.boardId)).toEqual(["vids", "vids"]);
   });
 
   it("renders a promotedThreads entry as a link to /thread/:id", () => {
