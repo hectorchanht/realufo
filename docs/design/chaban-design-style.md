@@ -1,8 +1,8 @@
-# 茶盤 Chaban — the RealUFO design style
+# 茶盤 ちゃばん — the RealUFO design style
 
 > A tea tray holds a few tools. Each has its place, each is shaped for its use, and you use them calmly. That is how RealUFO's interface should feel.
 
-**Chaban** (茶盤, "tea tray") is the design style for realufo.org's interface. It joins four ideas: **form follows function** (Bauhaus, Max Bill), **design like a real object** (Braun, Walkman, iPod), **間 ma and the calm of tea culture and zen**, and **warmth for the person using it**.
+**茶盤** (ちゃばん, "tea tray") is the design style for realufo.org's interface. It joins four ideas: **form follows function** (Bauhaus, Max Bill), **design like a real object** (Braun, Walkman, iPod), **間 ma and the calm of tea culture and zen**, and **warmth for the person using it**.
 
 ## 繁中總結
 

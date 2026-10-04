@@ -1,6 +1,6 @@
 # Media DJ console — design
 
-Date: 2026-10-04 · Status: approved direction, spec under review · Design style: [茶盤 Chaban](../../design/chaban-design-style.md)
+Date: 2026-10-04 · Status: approved direction, spec under review · Design style: [茶盤 ちゃばん](../../design/chaban-design-style.md)
 
 ## Goal
 
