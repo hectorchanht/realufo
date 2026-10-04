@@ -22,7 +22,7 @@
     "FEATURE_SOCIAL_BSKY": "on", "FEATURE_SOCIAL_YT": "on", "FEATURE_SOCIAL_TIKTOK": "on",
     "SOCIAL_SINCE": "2026-10-02", "YT_DAILY_MAX": "5", "TIKTOK_PRIVACY": "SELF_ONLY",
     // Web push (spec 2026-10-03-realufo-pwa-push-design): off | on. VAPID_PRIVATE_KEY is a secret.
-    "FEATURE_PUSH": "off", "VAPID_PUBLIC_KEY": "", "VAPID_SUBJECT": "mailto:hello@realufo.org" },
+    "FEATURE_PUSH": "off", "VAPID_PUBLIC_KEY": "BPy0ZG9mMzsBrEfpRAGd692XyYpKLXIDxUA72G9417AylXXJ-aSbJ9g7xBkEvONuIsI8RFKUXhzumGgqS1eTns4", "VAPID_SUBJECT": "mailto:hello@realufo.org" },
   "d1_databases": [{ "binding": "DB", "database_name": "realufo-db", "database_id": "a8836cc9-9f49-42bd-ad99-4162b410bcd9", "migrations_dir": "db/migrations" }],
   // No `remote: true`: it breaks the vitest workers pool. Vectorize has no local
   // simulator, so /api/ask returns 503 under `wrangler dev`.
