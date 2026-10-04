@@ -156,34 +156,50 @@ TEASE = [T("A Hellfire missile", 215, 78), T("is about to hit this", 300, 78, AM
 still(560, MID, TEASE, 2.5, stack=7)
 # A: real speed, wide + lens; impact ~4.7 s in (f595)
 lens_clip(530, 644, [T("Watch the crosshair", 215, 80), T("real speed", 1258, 50, AMB), CREDIT, site], 3.8)
-# ---- the measurements (frame-tracked source pixels; see docstring) ----
-FPS, W_PX, FOV_DEG = 30, 640, 0.2636           # clip fps; FOV of this crop: Zaine M. (Metabunk) estimate
-RANGE = 3.1 * 1852                             # HUD slant range at contact, NM -> m (last digit cut off)
-MPP = math.radians(FOV_DEG) / W_PX * RANGE     # metres per pixel at the orb (~4.1 cm)
-PRE = [(578, 168, 100), (580, 182, 112), (582, 201, 126), (584, 222, 137), (586, 238, 148), (588, 257, 158),
-       (590, 278, 167), (592, 288, 171)]       # missile before contact
-POST = [(596, 340, 187), (598, 361, 190), (600, 380, 196), (602, 399, 205), (604, 415, 215), (606, 427, 220),
-        (608, 444, 241), (610, 454, 249), (612, 469, 252)]   # the piece leaving on the far side
+# ---- the measurements (double-checked 2026-10-04; asserts below fail the build if they drift) ----
+FPS, W_PX, H_PX = 30, 640, 328
+R_LO, R_HI = 3.10 * 1852, 3.19 * 1852          # HUD slant range at contact "3.1x" NM (last digit cropped)
+# scale (m per px at the orb): Zaine M. FOV estimate for this crop (0.2636 deg across) = best; Mick West's
+# background fit (0.1 deg vertical) = low; Raytheon MTS-B spec IR ultra-narrow 0.31 deg across (no e-zoom) = high
+MPP = math.radians(0.2636) / W_PX * R_LO
+MPP_LO, MPP_HI = math.radians(0.1) / H_PX * R_LO, math.radians(0.31) / W_PX * R_HI
+# missile blob centroids, auto-tracked frame by frame (brightness-weighted, see docstring)
+PRE = [(578, 170, 102), (579, 178, 109), (580, 186, 115), (581, 195, 121), (582, 204, 128), (583, 213, 133),
+       (584, 222, 139), (585, 231, 144), (586, 239, 149), (587, 249, 155), (588, 258, 159), (589, 268, 164),
+       (590, 278, 167), (591, 288, 171), (592, 299, 175)]
+POST = [(597, 354, 189), (598, 361, 191), (599, 372, 194), (600, 382, 197), (601, 392, 201), (602, 401, 205),
+        (603, 410, 210), (604, 418, 215), (605, 426, 221), (606, 433, 227), (607, 439, 233), (608, 445, 240),
+        (609, 451, 246), (610, 457, 254), (611, 463, 262), (612, 469, 270)]
 def rate(pts):
-    (f0, x0, y0), (f1, x1, y1) = pts[0], pts[-1]
-    return math.hypot(x1 - x0, y1 - y0) / (f1 - f0), math.degrees(math.atan2(y1 - y0, x1 - x0))
+    """Least-squares px/frame and heading (deg below horizontal) of a track."""
+    n = len(pts); ks, xs, ys = zip(*pts); mk, mx, my = sum(ks) / n, sum(xs) / n, sum(ys) / n
+    sxx = sum((k - mk) ** 2 for k in ks)
+    bx = sum((k - mk) * (x - mx) for k, x in zip(ks, xs)) / sxx; by = sum((k - mk) * (y - my) for k, y in zip(ks, ys)) / sxx
+    return math.hypot(bx, by), math.degrees(math.atan2(by, bx))
 (PX_PRE, ANG_PRE), (PX_POST, ANG_POST) = rate(PRE), rate(POST)
-V_SCREEN = PX_PRE * FPS * MPP                  # ~12 m/s across the screen
-V_LO, V_HI = 250, 426                          # Hellfire: up to Mach 1.3 (~426 m/s at 12,000 ft); 250 = slowed, coasting
-LOS_LO, LOS_HI = (math.degrees(math.asin(V_SCREEN / v)) for v in (V_HI, V_LO))
-ORB_M = 16.5 * MPP                             # orb bright core 16-17 px (glare makes this an upper bound)
-MASS = 48                                      # kg: Lockheed AGM-114R card 47.4, Wikipedia 49
+V_SCR = PX_PRE * FPS * MPP                              # ~13 m/s across the screen
+V_SCR_LO, V_SCR_HI = PX_PRE * FPS * MPP_LO, PX_PRE * FPS * MPP_HI
+V_LO, V_HI = 250, 445                                  # Hellfire: published max Mach 1.3 = 1,600 km/h; 250 = slowed
+LOS_LO, LOS_HI = math.degrees(math.asin(V_SCR_LO / V_HI)), math.degrees(math.asin(V_SCR_HI / V_LO))
+ORB_PX = 16.5                                          # orb bright core 16-17 px (glare: upper bound)
+ORB_LO, ORB, ORB_HI = ORB_PX * MPP_LO, ORB_PX * MPP, ORB_PX * MPP_HI
+MASS = 48                                              # kg: Lockheed AGM-114R card 47.4, Wikipedia 45-49
 P_LO, P_HI = MASS * V_LO, MASS * V_HI
-VOL = 4 / 3 * math.pi * (ORB_M / 2) ** 3
-BOUNCE_LO, BOUNCE_HI = 2 * P_LO / 5, 2 * P_HI / 5   # mass to reverse the missile and change speed < 5 m/s
-RHO_LO, RHO_HI = BOUNCE_LO / VOL, BOUNCE_HI / VOL
-assert 0.040 < MPP < 0.043 and 11 < V_SCREEN < 13.5 and abs(ANG_PRE - ANG_POST) < 6 and RHO_LO > 22_590  # osmium
-k = lambda x: f"{round(x, -2):,.0f}"  # big numbers to the nearest 100
+KE_LO, KE_HI = MASS * V_LO ** 2 / 2, MASS * V_HI ** 2 / 2
+CAR = 1500                                             # kg, a family car
+car_kmh = lambda ke: round(math.sqrt(2 * ke / CAR) * 3.6, -1)  # same kinetic energy as that car at ... km/h
+M_LO, M_HI = 2 * P_LO / 5, 2 * P_HI / 5                # mass to send the missile back and change speed < 5 m/s
+vol = lambda d: 4 / 3 * math.pi * (d / 2) ** 3
+RHO_WORST, RHO_BEST = M_LO / vol(ORB_HI), M_LO / vol(ORB)
+LEAD, OSMIUM = 11_340, 22_590
+assert 0.029 < MPP_LO < MPP < MPP_HI < 0.051 and abs(ANG_PRE - ANG_POST) < 7 and 0.85 < PX_POST / PX_PRE < 0.95
+assert RHO_WORST > LEAD and RHO_BEST > OSMIUM and 1 < LOS_LO < LOS_HI < 4
+k = lambda x: f"{round(x, -2):,.0f}"
 
-def dots(pts, f0, slow, frm_scale, frm_x0, frm_y0, after=0.4, always=False):
-    """Cyan 10 px trail dots (amber vanishes on Ironbow) at measured positions, shown once the missile has moved on."""
+def dots(pts, f0, slow, frm_scale, frm_x0, frm_y0, after=0.4, always=False, every=2):
+    """Cyan 10 px trail dots (amber vanishes on Ironbow) at the tracked positions, shown once the missile has moved on."""
     out = []
-    for f, x, y in pts:
+    for f, x, y in pts[::every]:
         X, Y = (x - frm_x0) * frm_scale, (y - frm_y0) * frm_scale + 470
         en = "" if always else f":enable='gte(t,{(f - f0) * slow / FPS + after:.2f})'"
         out.append(f"drawbox=x={X - 5:.0f}:y={Y - 5:.0f}:w=10:h=10:color={CYAN}@0.95:t=fill{en}")
@@ -193,29 +209,32 @@ def seq(lines, y, fs, color=AMB):
     """Lines that replace each other at one spot: [(t0, t1, text), ...]."""
     return [T(text, y, fs, color) + f":enable='gte(t,{t0})*lt(t,{t1})'" for t0, t1, text in lines]
 
+def at(t0, text, y, fs, color=INK):
+    return T(text, y, fs, color) + f":enable='gte(t,{t0})'"
+
 MIDP = frame("crop=320:230:140:60", (607, 412), pal=IRONBOW)   # mid zoom (x3.375 from 140,60), site Ironbow palette
-SRCLINE = T(f"FOV {FOV_DEG:.2f}°: Metabunk (Zaine M.) estimate  ·  range: on-screen HUD", 1262, 26)
 # X: freeze on contact: the open question (frame check: brightness flat, near-white pixels 204 -> 70)
 still(596, TIGHT, [T("No flash at contact", 215, 80), T("Did it even explode?", 300, 80, AMB),
                    T("frame 596: no brightness spike around the orb", 1256, 32), CREDIT, site], 3.5)
 # C: what Congress heard, on realufo.org's Full Text view (p.46 marked; Knapp is p.32)
 site_card("hellfire-site-p46.jpg", 656, [T("Congress heard it", 215, 66), T("\"bounced right off\"", 300, 76, AMB),
           T("Knapp p.32  ·  witnesses p.46  ·  realufo.org full text", 1290, 30)], 4.1)
-# M1: measure it: 6x slower up to contact, trail dots, the scale built step by step
-run(["-i", SRC], ["trim=start_frame=576:end_frame=597,setpts=(PTS-STARTPTS)*6,fps=30,tpad=stop_mode=clone:stop_duration=3",
+# M1: measure it: 6x slower up to contact, trail dots, the scale built step by step, each with an everyday size
+run(["-i", SRC], ["trim=start_frame=576:end_frame=597,setpts=(PTS-STARTPTS)*6,fps=30,tpad=stop_mode=clone:stop_duration=4",
      MIDP, *dots(PRE, 576, 6, 3.375, 140, 60), T("Measure it", 215, 84),
-     *seq([(0.3, 1.8, "30 frames per second"), (1.8, 3.3, f"range {RANGE/1000:.2f} km  (HUD: 3.1 NM)"),
-           (3.3, 4.6, f"view {FOV_DEG:.2f}° across 640 px"), (4.6, 9, f"1 pixel = {MPP*100:.1f} cm")], 300, 52),
-     SRCLINE, CREDIT, site], 6.4)
-# M2: after contact: same line, ~90% of the screen speed -> it went through
-run(["-i", SRC], ["trim=start_frame=596:end_frame=614,setpts=(PTS-STARTPTS)*3,fps=30,tpad=stop_mode=clone:stop_duration=3",
-     MIDP, *dots(PRE, 576, 0, 3.375, 140, 60, always=True), *dots(POST, 596, 3, 3.375, 140, 60), T("After contact", 215, 84),
-     *seq([(0.2, 1.6, f"before: {PX_PRE:.1f} px/frame  ({ANG_PRE:.0f}°)"),
-           (1.6, 2.6, f"after: {PX_POST:.1f} px/frame  ({ANG_POST:.0f}°)"), (2.6, 9, "Through, not off.")], 300, 54),
-     T("screen motion, camera locked on the orb", 1262, 26), CREDIT, site], 4.3)
-# M3: why it looks slow: a line-of-sight diagram (the missile path is ~2° off our view)
+     *seq([(0.3, 1.8, "30 frames per second"), (1.8, 4.2, f"{R_LO/1000:.1f} km away  ≈  55 football fields"),
+           (4.2, 5.8, "view: 0.26° across 640 pixels"), (5.8, 9, f"1 pixel ≈ {MPP*100:.0f} cm  ≈  a golf ball")], 300, 50),
+     T("range: on-screen HUD 3.1 NM  ·  view: Metabunk est., Raytheon spec ≤ 0.31°", 1262, 26),
+     T(f"scale {MPP_LO*100:.0f}–{MPP_HI*100:.0f} cm per pixel, best {MPP*100:.1f}", 1296, 26), CREDIT, site], 7.9)
+# M2: after contact: same direction, ~90% of the screen speed -> it went through
+run(["-i", SRC], ["trim=start_frame=596:end_frame=614,setpts=(PTS-STARTPTS)*3,fps=30,tpad=stop_mode=clone:stop_duration=4",
+     MIDP, *dots(PRE, 576, 0, 3.375, 140, 60, always=True), *dots(POST, 597, 3, 3.375, 140, 60), T("After contact", 215, 84),
+     *seq([(0.2, 1.8, f"before: {PX_PRE:.1f} px per frame"),
+           (1.8, 3.2, f"after: {PX_POST:.1f}, turned {abs(ANG_POST - ANG_PRE):.0f}°"), (3.2, 9, "Through, not off.")], 300, 54),
+     T("least-squares fit, 31 tracked frames", 1262, 28), CREDIT, site], 5.3)
+# M3: why it looks slow: a line-of-sight diagram (the missile path is a thumb's width off our view)
 DIAG = os.path.join(D, "diag.png")
-cx, cy, ox, oy = 150, 1240, 880, 760
+cx, cy, ox, oy = 150, 1240, 880, 905
 L = math.hypot(ox - cx, oy - cy); ux, uy = (cx - ox) / L, (cy - oy) / L          # from orb back to camera
 a = math.radians(2.3); mx, my = ux * math.cos(a) - uy * math.sin(a), ux * math.sin(a) + uy * math.cos(a)
 sx, sy, ex, ey = ox + mx * 760, oy + my * 760, ox - mx * 150, oy - my * 150   # missile path, through the orb and on
@@ -228,25 +247,30 @@ dot = f"lt(hypot(X-{ox}\\,Y-{oy})\\,14)"
 ch = lambda bg, l1, l2: f"if({dot}\\,231\\,if({on2}\\,{l2}\\,if({on1}\\,{l1}\\,{bg})))"
 subprocess.run([F, "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=0x07080c:s=1080x1920", "-vf",
                 f"format=rgb24,geq=r='{ch(7, 231, 255)}':g='{ch(8, 236, 182)}':b='{ch(12, 244, 72)}'", "-frames:v", "1", DIAG], check=True)
-run(["-loop", "1", "-t", "6.6", "-i", DIAG], [
+run(["-loop", "1", "-t", "10.7", "-i", DIAG], [
     T("Why it looks so slow", 215, 74), T("It flies almost along our view", 300, 56, AMB),
     f"drawtext=fontfile={FONT}:text='MQ-9 camera':fontcolor={INK}:fontsize=34:borderw=3:bordercolor=black:x=110:y=1265",
-    f"drawtext=fontfile={FONT}:text='orb':fontcolor={INK}:fontsize=34:borderw=3:bordercolor=black:x=905:y=775",
-    f"drawtext=fontfile={FONT}:text='line of sight  ·  missile path (2° apart)':fontcolor={INK}:fontsize=30:borderw=3:bordercolor=black:x=330:y=1180",
-    *seq([(0.3, 9, f"Hellfire: up to Mach 1.3  =  {V_LO}–{V_HI} m/s")], 470, 42, INK),
-    *seq([(2.0, 9, f"on screen: {PX_PRE:.0f} px × {MPP*100:.1f} cm × 30  =  {V_SCREEN:.0f} m/s")], 530, 42, INK),
-    *seq([(3.8, 9, f"angle to our view: {LOS_LO:.1f}–{LOS_HI:.1f}°")], 600, 54),
-    T("speed: AGM-114 published max  ·  depth is invisible on screen", 1300, 26), site], 6.6)
-# M4: momentum: what a "bounce" would demand of a 70 cm orb
-still(650, TIGHT, ["eq=brightness=-0.42", T("Momentum check", 215, 80), T("p = m × v", 300, 64, AMB),
-    *seq([(0.3, 11, f"{MASS} kg × {V_LO}–{V_HI} m/s = {k(P_LO)}–{k(P_HI)} kg·m/s")], 520, 42, INK),
-    *seq([(2.4, 11, f"orb: ~{ORB_M*100:.0f} cm, drifts ~1 m/s after")], 610, 42, INK),
-    *seq([(4.0, 11, "to bounce it and barely budge (< 5 m/s):")], 720, 42, INK),
-    *seq([(4.9, 11, f"orb ≥ {BOUNCE_LO/1000:.1f}–{BOUNCE_HI/1000:.1f} tonnes")], 800, 60),
-    *seq([(6.0, 11, f"= {k(RHO_LO)}–{k(RHO_HI)} kg/m³")], 900, 50),
-    *seq([(6.8, 11, "densest metal, osmium: 22,590 kg/m³")], 985, 40, INK),
-    *seq([(8.6, 11, "Thin and light? It just tears.")], 1120, 60),
-    T("mass: Lockheed AGM-114R card / Wikipedia  ·  our arithmetic", 1300, 26), site], 10.4)
+    f"drawtext=fontfile={FONT}:text='orb':fontcolor={INK}:fontsize=34:borderw=3:bordercolor=black:x=905:y=920",
+    f"drawtext=fontfile={FONT}:text='line of sight  ·  missile path (2° apart)':fontcolor={INK}:fontsize=30:borderw=3:bordercolor=black:x=380:y=1200",
+    at(0.3, f"on screen: {V_SCR:.0f} m/s", 450, 50), at(0.3, f"≈ {V_SCR*3.6:.0f} km/h, a city car", 510, 40),
+    at(3.4, f"real Hellfire: up to {round(V_HI*3.6, -2):,.0f} km/h", 590, 50), at(3.4, "faster than an airliner", 650, 40),
+    at(6.6, f"→ only {LOS_LO:.0f}–{LOS_HI:.0f}° off our view", 730, 56, AMB), at(7.6, "≈ your thumb at arm's length", 800, 40),
+    T(f"speed: AGM-114 published max Mach 1.3, or {V_LO} m/s if slowed", 1296, 26),
+    T(f"the range covers scale {MPP_LO*100:.0f}–{MPP_HI*100:.0f} cm per pixel", 1328, 26), site], 10.7)
+# M4: weigh it: energy, then what a "bounce" would demand of a tyre-sized orb (worst case shown)
+still(650, TIGHT, ["eq=brightness=-0.45", T("Now weigh it", 215, 80), T("energy  ·  momentum  ·  density", 300, 50, AMB),
+    at(0.3, f"missile: {MASS} kg at {V_LO}–{V_HI} m/s", 530, 44),
+    at(1.8, f"energy {KE_LO/1e6:.1f}–{KE_HI/1e6:.1f} MJ", 600, 50, AMB),
+    at(1.8, f"= a car crash at {car_kmh(KE_LO):.0f}–{car_kmh(KE_HI):.0f} km/h", 662, 44, AMB),
+    at(4.4, "before the warhead even counts", 722, 34),
+    at(6.5, "to bounce it back and barely move:", 800, 42),
+    at(8.0, f"orb ≥ {M_LO/1000:.1f}–{M_HI/1000:.1f} t  =  {M_LO/CAR:.0f}–{M_HI/CAR:.0f} cars", 868, 56, AMB),
+    at(9.6, f"in a ball {ORB_LO*100:.0f}–{ORB_HI*100:.0f} cm wide, a car tyre", 940, 40),
+    at(11.0, f"≥ {RHO_WORST/LEAD:.1f}× as dense as lead", 1010, 48), at(11.0, "best guess: beyond osmium", 1068, 36),
+    at(13.4, "Thin and light? It just tears.", 1150, 58, AMB),
+    T(f"momentum {k(P_LO)}–{k(P_HI)} kg·m/s  ·  mass 45–49 kg (Lockheed, Wikipedia)", 1262, 26),
+    T("worst case shown  ·  barely move = under 5 m/s", 1296, 26),
+    site], 15.9)
 # R1: the same tools on AARO's own look-alike: the site's player, Ironbow palette, frame counter running
 balloon_player([T("Same tools, AARO's 2024 orb:", 215, 60), T("Middle East, Ironbow palette", 300, 50, AMB)], 2.6)
 # R2: AARO's verdict on that page + the Pentagon on this clip
@@ -265,12 +289,12 @@ subprocess.run([F, "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", lst,
 SAY = [(0.2, "A drone fires a Hellfire missile at this orb. Watch the crosshair."),
        (6.4, "Look closely. No flash at contact. Did it even explode?"),
        (9.9, "Congress heard it bounced right off, and that nothing we have could do that."),
-       (14.0, "Measure it. Thirty frames a second, five point seven kilometres away. One pixel is four centimetres."),
-       (20.4, "After contact: same line, ninety percent speed. It went through, not off."),
-       (24.7, "A Hellfire flies hundreds of metres a second. On screen, twelve. It's flying almost along our line of sight."),
-       (31.3, "Momentum check. To bounce this missile and barely budge, a seventy centimetre orb needs tonnes. Denser than any metal. A thin, light target just tears."),
-       (41.7, "In 2024, the Pentagon's U F O office called a look-alike orb a foil balloon."),
-       (46.4, "Read the hearing, page thirty two, on real U F O dot org.")]
+       (14.0, "Measure it. Thirty frames a second, five point seven kilometres away. That's fifty five football fields. One pixel is about a golf ball."),
+       (21.9, "After contact: same direction, ninety percent of the speed. It went through, not off."),
+       (27.2, "On screen it crawls at city-car speed. Real Hellfires fly faster than an airliner. So it's coming in almost straight along our view, a thumb's width off. Depth hides the hit."),
+       (37.9, "Now weigh it. This missile hits with the energy of a car crash at two hundred kilometres an hour, before any explosive. To bounce that and barely move, a tyre-sized orb would weigh as much as five cars. Denser than lead. A thin, light target just tears."),
+       (53.8, "In 2024, the Pentagon's U F O office called a look-alike orb a foil balloon."),
+       (58.5, "Read the hearing, page thirty two, on real U F O dot org.")]
 FX = [(4.35, sfx("fast missile whoosh flyby, short, no explosion", 1.2), 0.3)]  # the one effect: the pass
 ins, fc = ["-i", CAT], ""
 for i, (t, line) in enumerate(SAY, 1):
@@ -283,7 +307,7 @@ MIXED = os.path.join(D, "mix.wav")
 subprocess.run([F, "-v", "error", "-y", *ins, "-filter_complex", fc, "-map", "[a]", MIXED], check=True)
 # subtitles under the headline (y 392); skipped where the screen already carries it (X, C, the M3/M4 cards, end card)
 CAP = subtitles([(t, tts(line)[0]) for t, line in SAY
-                 if not line.startswith(("Look closely", "Congress", "A Hellfire flies", "Momentum", "Read the"))], y=392)
+                 if not line.startswith(("Look closely", "Congress", "Measure it", "On screen", "Now weigh", "Read the"))], y=392)
 VO = os.path.join(D, "vo.mp4")
 subprocess.run([F, "-v", "error", "-y", "-i", CAT, "-i", MIXED, "-vf", ",".join(CAP), "-map", "0:v", "-map", "1:a",
                 "-c:v", "libx264", "-profile:v", "high", "-pix_fmt", "yuv420p", "-preset", "veryfast", "-crf", "20",
