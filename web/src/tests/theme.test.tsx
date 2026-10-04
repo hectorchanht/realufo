@@ -105,8 +105,8 @@ describe("text sizer", () => {
     expect(JSON.parse(localStorage.getItem("ufo_theme")!).textScale).toBe(300);
   });
 
-  it("restores a stored size and steps down to 80%", () => {
-    localStorage.setItem("ufo_theme", JSON.stringify({ theme: "dark", accent: "phosphor", scanlines: true, textScale: 90 }));
+  it("restores a stored size and steps down to 50%", () => {
+    localStorage.setItem("ufo_theme", JSON.stringify({ theme: "dark", accent: "phosphor", scanlines: true, textScale: 60 }));
     render(
       <ThemeProvider>
         <TextSizer />
@@ -114,7 +114,7 @@ describe("text sizer", () => {
     );
     const down = screen.getByRole("button", { name: "Smaller text" });
     act(() => down.click());
-    expect(document.documentElement.style.fontSize).toBe("80%");
+    expect(document.documentElement.style.fontSize).toBe("50%");
     expect(down).toBeDisabled();
   });
 

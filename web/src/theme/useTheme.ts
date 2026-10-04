@@ -3,7 +3,7 @@ import { createContext, useContext } from "react";
 export type ThemeMode = "dark" | "light";
 export type Accent = "phosphor" | "cyan" | "amber" | "violet";
 /** Site-wide text size, % of the browser default (html font-size). */
-export const TEXT_SCALES = [80, 90, 100, 110, 120, 130, 140, 150, 175, 200, 225, 250, 275, 300] as const;
+export const TEXT_SCALES = [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 175, 200, 225, 250, 275, 300] as const;
 export type TextScale = (typeof TEXT_SCALES)[number];
 
 export interface ThemeContextValue {
