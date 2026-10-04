@@ -198,9 +198,9 @@ async function pickDue(env: Env, now: Date): Promise<boolean> {
 
 export async function nextCandidate(env: Env, now: Date): Promise<Candidate | null> {
   const h = now.getUTCHours();
+  // operator call: only the item the user approved, never a fallback to the bot's own picks
+  if (env.X_FORCE_SHOWCASE || env.X_FORCE_PICK) return (await showcaseCandidate(env)) ?? (await forcedCandidate(env));
   return (
-    (await showcaseCandidate(env)) ??
-    (await forcedCandidate(env)) ??
     (await releaseCandidate(env, now)) ??
     ((await pickDue(env, now)) ? await pickCandidate(env) : null) ??
     (h >= 20 && !(await postedToday(env, "highlight", now)) ? await highlightCandidate(env, now) : null)

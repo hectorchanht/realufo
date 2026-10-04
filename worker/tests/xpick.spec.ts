@@ -98,6 +98,14 @@ describe("forced pick (X_FORCE_PICK)", () => {
     await posted("pick", "XT-F1", early);
     expect(await nextCandidate(E({ X_FORCE_PICK: "XT-F1" }), early)).toBeNull(); // already posted
   });
+
+  it("never falls through to the bot's own picks once the forced record is posted", async () => {
+    await rec("XT-F2", "video"); await clip("XT-F2");
+    await rec("XT-F3", "video"); await clip("XT-F3"); // unapproved, and the pick slot is open
+    await posted("pick", "XT-F2", T("2026-10-09T15:00:00")); // yesterday: today's slot is still open
+    expect(await nextCandidate(E({ X_FORCE_PICK: "XT-F2" }), NOW)).toBeNull();
+    expect(await nextCandidate(E({ X_FORCE_SHOWCASE: "XT-F2", X_SHOWCASE_TEXT: "t" }), NOW)).toBeNull();
+  });
 });
 
 describe("daily pick", () => {
