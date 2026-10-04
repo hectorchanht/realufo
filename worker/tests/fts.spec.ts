@@ -60,6 +60,25 @@ describe("record_fts (search inside documents)", () => {
     expect(j.records.map((x: any) => x.id)).toContain("FBI-UAP-D002");
   });
 
+  it("an exact word beats a prefix-only hit, and the excerpt is the exact page", async () => {
+    await putText("FBI-UAP-D002", [{ n: 1, text: "Office of Public Affairs memo" }]);
+    await putText("FBI-UAP-D009", [{ n: 2, text: "Public Affairs liaison" }, { n: 15, text: '"AFFA" is the Commander of the ship' }]);
+    const j: any = await (await get("/api/records?q=AFFA")).json();
+    const ids = j.records.map((x: any) => x.id);
+    expect(ids[0]).toBe("FBI-UAP-D009");
+    expect(ids).toContain("FBI-UAP-D002"); // prefix still matches
+    expect(j.records[0].match.page).toBe(15);
+  });
+
+  it("an exact phrase beats the same words scattered, which beat metadata substrings", async () => {
+    await putText("FBI-UAP-D002", [{ n: 1, text: "the men wore black hats in town" }]);
+    await putText("FBI-UAP-D009", [{ n: 4, text: "men in black" }, { n: 82, text: "two men in black suits came" }]);
+    const j: any = await (await get("/api/records?q=men%20in%20black")).json();
+    const ids = j.records.map((x: any) => x.id);
+    expect(ids.slice(0, 2)).toEqual(["FBI-UAP-D009", "FBI-UAP-D002"]);
+    expect([4, 82]).toContain(j.records[0].match.page);
+  });
+
   it("files matching on title/summary come before text-only matches", async () => {
     await putText("FBI-UAP-D002", [{ n: 1, text: "flight from harare airport" }]);
     const j: any = await (await get("/api/records?q=harare")).json();

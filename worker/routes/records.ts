@@ -40,6 +40,25 @@ export function ftsQuery(q: string): string | null {
   return words.map((w) => `"${w}"`).join(" ") + (words[words.length - 1].length >= 3 ? "*" : "");
 }
 
+/** Search ranking tiers, best first: the words as one phrase, every word whole
+ * (FTS5 queries for record_fts), and the same two as GLOBs over the metadata,
+ * so "AFFA" ranks a whole-word hit above "Affairs" and "men in black" ranks the
+ * phrase above pages that merely hold all three words. */
+export function searchTiers(q: string) {
+  // One-letter words stay in the phrase ("men in a black suit"); ftsQuery drops them.
+  const all = (q.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).slice(0, 8);
+  const words = all.filter((w) => w.length > 1);
+  if (!words.length) return null;
+  // Words are letters/digits only, so they carry no GLOB or FTS syntax.
+  const B = "[^a-z0-9]";
+  return {
+    phrase: `"${all.join(" ")}"`,
+    exact: words.map((w) => `"${w}"`).join(" "),
+    metaPhrase: `*${B}${all.join(B)}${B}*`,
+    metaWords: words.map((w) => `*${B}${w}${B}*`),
+  };
+}
+
 // Metadata match: every word of q is a substring of id/title/agency/location/
 // summary/date, in any field and order ("uap pr104" finds DOW-UAP-PR104).
 // Words are letters/digits only, so they carry no LIKE wildcards.
@@ -102,12 +121,26 @@ export async function listRecords(req: Request, env: Env) {
   let order = "r.featured DESC, r.created_at DESC";
   const orderBind: unknown[] = [];
   // Searching with no explicit sort: title/summary hits before text-only hits.
-  if (q && !sort) {
+  let join = "";
+  const joinBind: unknown[] = [];
+  const tiers = q && !sort ? searchTiers(q) : null;
+  if (tiers && fts) {
+    // Best tier of either side (0 phrase, 1 all words whole, 2 prefix/substring),
+    // metadata before text within a tier, then the best page's bm25.
+    const hay = `(' '||${META_HAY}||' ')`;
+    const metaTier = `CASE WHEN ${hay} GLOB ? THEN 0 WHEN ${tiers.metaWords.map(() => `${hay} GLOB ?`).join(" AND ")} THEN 1 WHEN ${meta.sql} THEN 2 ELSE 3 END`;
+    join = `LEFT JOIN (SELECT record_id, min(rank) bm FROM record_fts WHERE record_fts MATCH ? GROUP BY record_id) h ON h.record_id = r.id`;
+    joinBind.push(fts);
+    const textTier = `CASE WHEN r.id IN (SELECT record_id FROM record_fts WHERE record_fts MATCH ?) THEN 0
+      WHEN r.id IN (SELECT record_id FROM record_fts WHERE record_fts MATCH ?) THEN 1 WHEN h.bm IS NOT NULL THEN 2 ELSE 3 END`;
+    order = `min(${metaTier}, ${textTier}), ${metaTier}, h.bm IS NULL, h.bm, ${order}`;
+    const metaBind = [tiers.metaPhrase, ...tiers.metaWords, ...meta.bind];
+    orderBind.push(...metaBind, tiers.phrase, tiers.exact, ...metaBind);
+  } else if (q && !sort) {
+    // Searching with no explicit sort: title/summary hits before text-only hits.
     order = `CASE WHEN ${meta.sql} THEN 0 ELSE 1 END, ${order}`;
     orderBind.push(...meta.bind);
   }
-  let join = "";
-  const joinBind: unknown[] = [];
   if (sort === "new") order = "r.created_at DESC";
   else if (sort === "az") order = "lower(r.title), r.id";
   else if (sort === "release") {
@@ -126,17 +159,18 @@ export async function listRecords(req: Request, env: Env) {
   const limit = Math.max(1, Math.min(100, Number(u.searchParams.get("limit")) || 40));
   const offset = Math.max(0, Number(u.searchParams.get("offset")) || 0);
   const total = await env.DB.prepare(`SELECT count(*) c FROM records r ${w}`).bind(...bind).first<{ c: number }>();
-  // The best-matching page of each file, as {page, text} with a short excerpt.
-  const matchCol = fts
-    ? `, (SELECT json_object('page', page, 'text', snippet(record_fts, 2, '', '', '…', 14)) FROM record_fts
-          WHERE record_fts MATCH ? AND record_id = r.id ORDER BY rank LIMIT 1) text_match`
-    : "";
+  // The best-matching page of each file, as {page, text} with a short excerpt:
+  // a phrase page, else an every-word page, else the best prefix page.
+  const pageOf = `(SELECT json_object('page', page, 'text', snippet(record_fts, 2, '', '', '…', 14)) FROM record_fts
+          WHERE record_fts MATCH ? AND record_id = r.id ORDER BY rank LIMIT 1)`;
+  const ftsTiers = fts ? [...(tiers ? [tiers.phrase, tiers.exact] : []), fts] : [];
+  const matchCol = fts ? `, coalesce(${ftsTiers.map(() => pageOf).join(", ")}, NULL) text_match` : "";
   const rows = await env.DB.prepare(
     `
     SELECT ${CARD_COLS}${matchCol}
     FROM records r ${join} ${w} ORDER BY ${order} LIMIT ? OFFSET ?`
   )
-    .bind(...(fts ? [fts] : []), ...joinBind, ...bind, ...orderBind, limit, offset)
+    .bind(...ftsTiers, ...joinBind, ...bind, ...orderBind, limit, offset)
     .all<Record<string, unknown>>();
   // text_match is SQLite's own json_object() output, so JSON.parse can't fail here.
   const records = fts
