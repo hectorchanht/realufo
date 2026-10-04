@@ -24,6 +24,8 @@ const hub = (kind: HubKind) => async () => {
 export const routes: RouteObject[] = [
   {
     element: <AppShell />,
+    // Crash in the shell itself: our reload screen, not react-router's developer page.
+    errorElement: <RouteError />,
     children: [
       {
         // Pathless: errors (e.g. a stale lazy chunk) render inside the shell, nav intact.

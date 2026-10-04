@@ -17,6 +17,10 @@ import App from './App.tsx'
 import { startOutbox } from './lib/outbox'
 import { sendRaw } from './api/client'
 import { carryOverFollows } from './lib/identity'
+import { guardTranslatedDom } from './lib/translateGuard'
+
+// Before the first render: browser translate must not crash React (lib/translateGuard.ts).
+guardTranslatedDom()
 
 const queryClient = makeQueryClient()
 
