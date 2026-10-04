@@ -95,3 +95,25 @@ Open (separate perf project, not a quick fix): LCP is text, held back by **eleme
 - serve the pre-rendered body as the first paint and hydrate onto it;
 - warm the doc memo for top pages;
 - preload the 2–3 critical woff2 files.
+
+## Early fetch — before/after (deploy 75c3c7b0, commits 4bb3bf1 + d1df80d)
+
+Spec `docs/superpowers/specs/2026-10-04-realufo-early-fetch-design.md`. Each landing page's first API calls now start from `index.html` while the JS downloads; `api.get` adopts each result once.
+
+**Live request timing** (fresh load, 1440×900, wifi; `performance.getEntriesByType("resource")`). This is the direct measure of the change:
+
+| Page | API calls start, before → after | Doc data ready, before → after |
+|---|---|---|
+| `/doc/FBI-UAP-D007` | ~1,118 ms → 167 ms | ~1,569 ms → 619 ms (≈0.95 s sooner) |
+| `/archive` | after JS → 87 ms | — |
+| `/` | feed early already; bootstrap + hubs after JS → all at 70 ms | — |
+
+Every early path was requested exactly once (`window.__early` empty after render, no duplicate requests). A visit with no stored anon id renders normally.
+
+**Lighthouse 12 mobile (simulated slow 4G).** Too noisy to resolve this change. Repeat runs of the same build: `/` 64–86 (LCP 3.9–7.8 s), `/doc/DOW-UAP-PR067` 65–73 (LCP 4.9–5.2 s). Single before → after runs: `/` 86 → 68, `/archive` 71 → 69, `/doc` 71 → 71, all within that spread. Lighthouse's simulation also doesn't model requests that overlap the JS download. Real-visitor Core Web Vitals (Cloudflare Web Analytics) are the better scorecard going forward.
+
+Deferred (review minors, not fixed):
+- first-time visitors' early `/api/bootstrap` has no anon id, so presence counts them as one actor for ≤5 min (`onlineNow` isn't shown anywhere);
+- `/archive?q=…` skips the facets early fetch;
+- a malformed `%` in a doc URL skips all early fetches on that load;
+- the 10 s expiry counts from script start.
