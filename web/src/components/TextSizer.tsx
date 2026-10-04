@@ -44,8 +44,8 @@ export function TextSizer({ className = "", iconSize = 17 }: { className?: strin
 }
 
 /** The "Aa" badge, centred on `style`'s left/top (the bite centre); pops the sizer
- *  above itself (`up`, phone tab bar) or below. */
-export function TextSizeBadge({ style, up = false }: { style: CSSProperties; up?: boolean }) {
+ *  above itself (`up`, phone tab bar / desktop floater) or below. */
+export function TextSizeBadge({ style, up = false, size = BADGE }: { style: CSSProperties; up?: boolean; size?: number }) {
   const btn = useRef<HTMLButtonElement>(null);
   const pop = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState<DOMRect | null>(null);
@@ -62,8 +62,8 @@ export function TextSizeBadge({ style, up = false }: { style: CSSProperties; up?
         title="Text size"
         aria-expanded={!!open}
         onClick={() => setOpen(open ? null : btn.current!.getBoundingClientRect())}
-        className="absolute z-[31] grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full font-mono font-bold leading-none active:scale-90 before:absolute before:-inset-[8px] before:content-['']"
-        style={{ ...style, width: BADGE, height: BADGE, fontSize: "9px", background: "var(--signal)", color: "var(--bg)" }}
+        className="absolute z-[31] grid -translate-x-1/2 shadow-lg -translate-y-1/2 place-items-center rounded-full font-mono font-bold leading-none active:scale-90 before:absolute before:-inset-[8px] before:content-['']"
+        style={{ ...style, width: size, height: size, fontSize: size / 2, background: "var(--signal)", color: "var(--bg)" }}
       >
         Aa
       </button>
