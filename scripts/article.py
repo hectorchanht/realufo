@@ -111,12 +111,21 @@ def cta(a, thread):
     return f"\n{a['poll']['q'].strip()} Vote → {url}" if a.get("poll") else f"\nFull story: {url}"
 
 
+# Site boards (D1 `boards`). Every article names its own: gov = official
+# documents, vids = footage/photos, skeptic = debunks, cases = classic
+# incidents, intl = non-US, uap = general. No default, so nothing lands on
+# /uap/ by accident.
+BOARDS = ("uap", "gov", "vids", "skeptic", "intl", "cases", "meta")
+
+
 def main():
     if len(sys.argv) < 2:
         sys.exit(__doc__)
     slug, social = sys.argv[1], "--social" in sys.argv[2:]
     a = json.load(open(os.path.join(ROOT, "showcase/articles", slug, "article.json")))
     assert a["slug"] == slug and a["parts"] and a["evidence"], "article.json: slug/parts/evidence"
+    if a.get("board") not in BOARDS:
+        sys.exit(f"article.json: \"board\" must be one of {', '.join(BOARDS)}")
     poll = a.get("poll")
     if poll and (err := poll_error(poll)):
         sys.exit(f"article.json: {err}")
@@ -152,7 +161,7 @@ def main():
     replies = [(f"{thread}_{i}", f"{e['label']}\n\n{e['evidence']}\n\n{doc_link(e)}", imgs[e["id"]]) for i, e in enumerate(a["evidence"], 1)]
     if d1(f"SELECT thread_id FROM articles WHERE slug={q(slug)}", read=True)[0]["thread_id"]:
         print("== site thread (refresh text)")
-        rows = [f"UPDATE threads SET title={q(a['title'][:120])}, op_body={q(op)} WHERE id={q(thread)};",
+        rows = [f"UPDATE threads SET title={q(a['title'][:120])}, op_body={q(op)}, board_id={q(a['board'])} WHERE id={q(thread)};",
                 f"UPDATE posts SET body={q(op)} WHERE id={q(thread + '_op')};"]
         rows += [f"UPDATE posts SET body={q(b)} WHERE id={q(pid)};" for pid, b, _ in replies]
     else:
@@ -161,7 +170,7 @@ def main():
         no = int(datetime.now().timestamp()) % 9000 + 24419000
         src = a.get("showcase_record") or ids[0]
         rows = [f"""INSERT INTO threads(id,no,board_id,title,stance,op_body,op_handle,op_id,tags,votes,reply_count,img_count,source_record_id,hot,created_at)
-                    VALUES({q(thread)},{no},'uap',{q(a['title'][:120])},'analyst',{q(op)},'RealUFO',{q(thread + '_op')},'[]',0,{len(ids)},{len([k for k in [hero, *imgs.values()] if k])},{q(src)},0,{q(now)});""",
+                    VALUES({q(thread)},{no},{q(a['board'])},{q(a['title'][:120])},'analyst',{q(op)},'RealUFO',{q(thread + '_op')},'[]',0,{len(ids)},{len([k for k in [hero, *imgs.values()] if k])},{q(src)},0,{q(now)});""",
                 f"""INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,source_record_id,image_r2_key,image_kind,is_op,created_at)
                     VALUES({q(thread + '_op')},{no},{q(thread)},{q(op)},'RealUFO','analyst',0,{q(src)},{q(hero)},{q(hero and 'upload')},1,{q(now)});"""]
         rows += [f"""INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,image_r2_key,image_kind,is_op,created_at)
