@@ -2,6 +2,7 @@ import { docTitle } from "./ssr";
 import type { Env } from "../env";
 import { wargovReleases } from "../routes/records";
 import { THREAD_SEP } from "./x";
+import { NO_JOB, getSetting } from "./jobs";
 
 // What the bot posts next (Spec 4 §4.2–4.4) and whether it can afford it.
 
@@ -21,7 +22,7 @@ export type Candidate =
 // No dots: X auto-links bare domains like war.gov and bills them as URLs.
 export const ARCHIVE_NAME: Record<string, string> = { wargov: "Dept. of War", aaro: "AARO", nara: "National Archives", nasa: "NASA", congress: "U.S. Congress" };
 
-const CDN = "https://assets.realufo.org/";
+export const CDN = "https://assets.realufo.org/";
 export const SITE = "https://realufo.org";
 const IMAGE_MAX = 5 * 1024 * 1024; // X image limit
 const SETTLE_MS = 2 * 3600_000; // ingest may still be adding files to a release
@@ -63,8 +64,12 @@ export async function mediaFor(env: Env, rec: { id: string; archive: string; kin
 const postedToday = async (env: Env, stream: string, now: Date) =>
   !!(await env.DB.prepare("SELECT 1 FROM x_posts WHERE stream=? AND status!='failed' AND date(created_at)=date(?) LIMIT 1")
     .bind(stream, sqlTime(now)).first());
+// x_posts row or any live job (open, posted, skipped; a failed job can be offered again): the bot never re-offers it.
 const isPosted = async (env: Env, stream: string, ref: string) =>
-  !!(await env.DB.prepare("SELECT 1 FROM x_posts WHERE stream=? AND ref=?").bind(stream, ref).first());
+  !!(await env.DB.prepare(
+    `SELECT 1 FROM x_posts WHERE stream=?1 AND ref=?2
+     UNION ALL SELECT 1 FROM bot_jobs j WHERE j.ref=?2 AND j.deleted_at IS NULL AND j.status != 'failed' LIMIT 1`
+  ).bind(stream, ref).first());
 
 type GroupRow = { id: string; archive: string; kind: string; title: string | null; created_at: string };
 
@@ -114,8 +119,11 @@ const PICK_COLS = `r.id, r.archive, r.kind, r.title, r.agency, r.incident_date, 
   (SELECT bullets FROM record_tldr x WHERE x.record_id=r.id AND x.lang='en') tldr_bullets,
   (SELECT one_liner FROM record_tldr x WHERE x.record_id=r.id AND x.lang='en') tldr_joke`;
 // placeholder-titled records (no published title/metadata) make weak posts: skip
+const NO_X_PICK = `NOT EXISTS (SELECT 1 FROM x_posts p WHERE p.stream='pick' AND p.ref=r.id)`;
 const UNPOSTED = `r.status='live' AND coalesce(r.title,'') NOT LIKE '%original title not published%'
-  AND NOT EXISTS (SELECT 1 FROM x_posts p WHERE p.stream='pick' AND p.ref=r.id)`;
+  AND ${NO_X_PICK} AND ${NO_JOB("r.id")}`;
+// Operator-forced picks ignore earlier jobs (the owner asked for this record again).
+const UNPOSTED_FORCED = `r.status='live' AND coalesce(r.title,'') NOT LIKE '%original title not published%' AND ${NO_X_PICK}`;
 
 // Record ids that have an MP4 under `prefix` (clips/ = X landscape, clips-v/ = 9:16 twins).
 export async function clipIds(env: Env, prefix = "clips/"): Promise<string[]> {
@@ -161,7 +169,7 @@ async function showcaseCandidate(env: Env): Promise<Candidate | null> {
 async function forcedCandidate(env: Env): Promise<Candidate | null> {
   const ids = (env.X_FORCE_PICK ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   if (!ids.length) return null;
-  const r = await env.DB.prepare(`SELECT ${PICK_COLS} FROM records r WHERE r.id IN (SELECT value FROM json_each(?)) AND ${UNPOSTED} LIMIT 1`)
+  const r = await env.DB.prepare(`SELECT ${PICK_COLS} FROM records r WHERE r.id IN (SELECT value FROM json_each(?)) AND ${UNPOSTED_FORCED} LIMIT 1`)
     .bind(JSON.stringify(ids)).first<PickRecord>();
   return r ? { stream: "pick", ref: r.id, record: r, link: `${SITE}/doc/${encodeURIComponent(r.id)}`, media: await mediaFor(env, r), manual: true } : null;
 }
@@ -176,6 +184,7 @@ async function highlightCandidate(env: Env, now: Date): Promise<Candidate | null
      LEFT JOIN records r ON r.id=t.source_record_id
      WHERE t.votes>=? AND t.created_at>=datetime(?,'-7 days')
        AND NOT EXISTS (SELECT 1 FROM x_posts p WHERE p.stream='highlight' AND p.ref=t.id)
+       AND ${NO_JOB("t.id")}
      ORDER BY t.votes DESC LIMIT 1`
   ).bind(min, sqlTime(now))
     .first<{ id: string; title: string | null; op_body: string | null; votes: number; source_record_id: string | null; archive: string | null; kind: string | null }>();
@@ -202,7 +211,7 @@ export async function nextCandidate(env: Env, now: Date): Promise<Candidate | nu
   if (env.X_FORCE_SHOWCASE || env.X_FORCE_PICK) return (await showcaseCandidate(env)) ?? (await forcedCandidate(env));
   return (
     (await releaseCandidate(env, now)) ??
-    ((await pickDue(env, now)) ? await pickCandidate(env) : null) ??
+    ((await pickDue(env, now)) && (await getSetting(env, "paused_picks")) !== "1" ? await pickCandidate(env) : null) ??
     (h >= 20 && !(await postedToday(env, "highlight", now)) ? await highlightCandidate(env, now) : null)
   );
 }

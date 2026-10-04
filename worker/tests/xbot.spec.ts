@@ -4,7 +4,10 @@ import { seedTestDB } from "./helpers";
 import { tick } from "../lib/xbot";
 import { sqlTime } from "../lib/xpick";
 
-beforeAll(() => seedTestDB(env.DB));
+beforeAll(async () => {
+  await seedTestDB(env.DB);
+  await env.DB.prepare("UPDATE bot_settings SET value='0' WHERE key='paused_picks'").run(); // migration 0038 seeds picks paused
+});
 
 const NOW = new Date("2026-10-10T15:00:00Z"); // pick slot
 const SECRETS = { X_API_KEY: "k", X_API_SECRET: "s", X_ACCESS_TOKEN: "t", X_ACCESS_SECRET: "ts" };

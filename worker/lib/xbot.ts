@@ -1,7 +1,8 @@
 import type { Env } from "../env";
 import { createPost, uploadMedia, mediaStatus, XError, THREAD_SEP, type XSecrets, type Source } from "./x";
-import { nextCandidate, withinBudget, costOf, isManual, sqlTime, type Media } from "./xpick";
+import { nextCandidate, withinBudget, costOf, isManual, sqlTime, type Candidate, type Media } from "./xpick";
 import { draft, isClean } from "./xcopy";
+import { gateOn, queue } from "./gate";
 
 // One cron tick (Spec 4 §3, §6). Row goes in BEFORE X is called: UNIQUE(stream, ref)
 // makes a second attempt at the same candidate a no-op.
@@ -90,6 +91,50 @@ async function upload(env: Env, s: XSecrets, rowId: number, media: Media, sleep?
   }
 }
 
+// A post ready to write to x_posts (the gate keeps it in bot_jobs.payload.x until the owner taps ✅).
+export type Draft = { stream: Candidate["stream"]; ref: string; text: string; ai: boolean; media: Media; cost: number };
+
+// Safety + budget + copy for a candidate. null = don't post it (logged).
+export async function stage(env: Env, c: Candidate, now: Date): Promise<Draft | null> {
+  if (c.stream === "highlight" && !isClean(c.thread.title)) {
+    // never put a "proof of aliens" thread title on the official account; failed row = don't pick again
+    await env.DB.prepare("INSERT INTO x_posts(stream,ref,text,ai,cost_usd,status,error,created_at) VALUES ('highlight',?,?,0,0,'failed','unsafe title',?) ON CONFLICT DO NOTHING")
+      .bind(c.ref, c.thread.title, sqlTime(now)).run();
+    log({ unsafe: c.ref });
+    return null;
+  }
+  const cost = costOf(c);
+  if (!(await withinBudget(env, cost, now, isManual(c)))) {
+    log({ budget: c.stream, ref: c.ref });
+    return null;
+  }
+  const { text, ai } = await draft(env, c);
+  return { stream: c.stream, ref: c.ref, text, ai, media: c.media, cost };
+}
+
+// Write the x_posts row and post it (the pre-gate path, unchanged). Returns the row id (null = duplicate).
+export async function publishDraft(env: Env, d: Draft, now = new Date(), sleep?: (ms: number) => Promise<void>): Promise<number | null> {
+  const mode = env.FEATURE_X ?? "off";
+  if (mode !== "dry" && mode !== "on") throw new Error("FEATURE_X is off");
+  const s = secretsOf(env);
+  if (mode === "on" && !s) throw new Error("missing X secrets");
+  const media = d.media ? `${d.media.mime.startsWith("video/") ? "clip" : "thumb"}:${d.media.key}` : null;
+  const ins = await env.DB.prepare(
+    `INSERT INTO x_posts(stream,ref,text,ai,media,cost_usd,status,created_at) VALUES (?,?,?,?,?,?,?,?)
+     ON CONFLICT(stream, ref) DO NOTHING RETURNING id`
+  ).bind(d.stream, d.ref, d.text, d.ai ? 1 : 0, media, d.cost, mode === "dry" ? "draft" : "pending", sqlTime(now)).first<{ id: number }>();
+  if (!ins) { log({ duplicate: d.stream, ref: d.ref }); return null; }
+  log({ stream: d.stream, ref: d.ref, mode, ai: d.ai, media, cost: d.cost });
+  if (mode === "dry" || !s) return ins.id;
+  const up = await upload(env, s, ins.id, d.media, sleep);
+  if (up.processing) {
+    await env.DB.prepare("UPDATE x_posts SET status='processing' WHERE id=?").bind(ins.id).run();
+    return ins.id;
+  }
+  await post(env, s, { id: ins.id, text: d.text, media_id: null, attempts: 0, created_at: sqlTime(now) }, up.ids);
+  return ins.id;
+}
+
 export async function tick(env: Env, now = new Date(), sleep?: (ms: number) => Promise<void>) {
   const mode = env.FEATURE_X ?? "off";
   if (mode !== "dry" && mode !== "on") return;
@@ -99,29 +144,11 @@ export async function tick(env: Env, now = new Date(), sleep?: (ms: number) => P
 
   const c = await nextCandidate(env, now);
   if (!c) return log({ idle: true });
-  if (c.stream === "highlight" && !isClean(c.thread.title)) {
-    // never put a "proof of aliens" thread title on the official account; failed row = don't pick again
-    await env.DB.prepare("INSERT INTO x_posts(stream,ref,text,ai,cost_usd,status,error,created_at) VALUES ('highlight',?,?,0,0,'failed','unsafe title',?) ON CONFLICT DO NOTHING")
-      .bind(c.ref, c.thread.title, sqlTime(now)).run();
-    return log({ unsafe: c.ref });
+  const d = await stage(env, c, now);
+  if (!d) return;
+  if (gateOn(env)) {
+    const j = await queue(env, c, d);
+    return log(j ? { queued: j.id, stream: j.stream, ref: j.ref } : { waiting: c.stream, ref: c.ref });
   }
-  const cost = costOf(c);
-  if (!(await withinBudget(env, cost, now, isManual(c)))) return log({ budget: c.stream, ref: c.ref });
-
-  const { text, ai } = await draft(env, c);
-  const media = c.media ? `${c.media.mime.startsWith("video/") ? "clip" : "thumb"}:${c.media.key}` : null;
-  const ins = await env.DB.prepare(
-    `INSERT INTO x_posts(stream,ref,text,ai,media,cost_usd,status,created_at) VALUES (?,?,?,?,?,?,?,?)
-     ON CONFLICT(stream, ref) DO NOTHING RETURNING id`
-  ).bind(c.stream, c.ref, text, ai ? 1 : 0, media, cost, mode === "dry" ? "draft" : "pending", sqlTime(now)).first<{ id: number }>();
-  if (!ins) return log({ duplicate: c.stream, ref: c.ref });
-  log({ stream: c.stream, ref: c.ref, mode, ai, media, cost });
-  if (mode === "dry" || !s) return;
-
-  const up = await upload(env, s, ins.id, c.media, sleep);
-  if (up.processing) {
-    await env.DB.prepare("UPDATE x_posts SET status='processing' WHERE id=?").bind(ins.id).run();
-    return;
-  }
-  await post(env, s, { id: ins.id, text, media_id: null, attempts: 0, created_at: sqlTime(now) }, up.ids);
+  await publishDraft(env, d, now, sleep);
 }

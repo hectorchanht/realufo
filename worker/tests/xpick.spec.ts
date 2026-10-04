@@ -3,7 +3,10 @@ import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import { seedTestDB } from "./helpers";
 import { nextCandidate, withinBudget, costOf, mediaFor, sqlTime } from "../lib/xpick";
 
-beforeAll(() => seedTestDB(env.DB));
+beforeAll(async () => {
+  await seedTestDB(env.DB);
+  await env.DB.prepare("UPDATE bot_settings SET value='0' WHERE key='paused_picks'").run(); // migration 0038 seeds picks paused
+});
 
 const T = (iso: string) => new Date(iso + "Z");
 const NOW = T("2026-10-10T15:00:00"); // pick slot open, highlight slot closed
