@@ -988,7 +988,10 @@ describe("Doc", () => {
     vi.stubGlobal(
       "ResizeObserver",
       class {
-        constructor(private cb: (e: { contentRect: { width: number; height: number } }[]) => void) {}
+        cb: (e: { contentRect: { width: number; height: number } }[]) => void;
+        constructor(cb: (e: { contentRect: { width: number; height: number } }[]) => void) {
+          this.cb = cb;
+        }
         observe() {
           this.cb([{ contentRect: { width: 400, height: 300 } }]);
         }
