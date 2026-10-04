@@ -24,7 +24,7 @@ Seek bar · play/pause · ‹ › frame step · timecode · mute · full screen.
 ### Console (opens under the strip)
 Three sections, side by side ≥ 900px, stacked on phones (the click wheel first on phones, it is the most used):
 1. **Faders** — brightness, contrast, colour, shadows as vertical sliders (`<input type=range>` with `writing-mode: vertical-lr`, native and accessible). Double-click / double-tap a fader = back to 100.
-2. **Pads** — 4-column grid of square pads (44px), lit when on.
+2. **Pads** — drawn as the keyboard (see Look and feel); lit/pressed when on.
    - Effect pads: Enhance, Invert, B&W, Night, Ironbow, Rainbow, Sharpen, **Original** (momentary: shows the unfiltered file while held; dashed border).
    - Tool pads: Ruler, Motion (video), Turn, Save picture / Save frame, Post frame (video), Download video (video).
 3. **Deck**
@@ -45,8 +45,20 @@ Three sections, side by side ≥ 900px, stacked on phones (the click wheel first
 
 **Mirror (flip)** loses its button; the `F` key and `?flip=1` share links keep working. It leaves the help panel.
 
+### Look and feel: Walkman body, Wakeman keys
+The console is drawn as a retro **Walkman** with a **Rick Wakeman** keyboard rig inside. Flat surfaces, site colour tokens only (no gradients/glow), works in both themes.
+- **Body**: a rounded chassis panel with a coloured stripe along the top edge (site accent) and the preset buttons P1–P4 styled as the Walkman's chunky hardware buttons.
+- **Cassette window** (top of the console): a small display that shows what is going on: timecode (video) or zoom (image), the active preset name, and the speed. Two cassette reels sit either side and turn while the video plays (CSS rotation; still under `prefers-reduced-motion`, still for images).
+- **Keyboard** (replaces the pad grid): one keyboard row, the Wakeman part.
+  - White keys = effects: Enhance, Invert, B&W, Night, Ironbow, Rainbow, Sharpen, Original (Original is held, like holding a note).
+  - Black keys = tools, sitting between the white keys: Ruler, Motion (video), Turn, Save, Post frame (video), Download (video).
+  - A key that is on stays pressed down (inset, accent colour); icons on the keys, names in `title` / `aria-label`.
+  - Phone (375px): 8 white keys ≈ 42px wide × 64px tall, black keys ≈ 30 × 40px: both above the 36px / WCAG 24px targets.
+- **Faders**: synth-style vertical sliders (Minimoog feel) beside the keyboard on desktop, above it on phones.
+- **Click wheel** (iPod) sits on the right of the body like the Walkman's control dial; first under the cassette window on phones.
+
 ### Arrange mode
-A pencil button in the console header turns on arrange mode: pads get a dashed outline and can be dragged to a new place within their grid (pointer events, mouse and touch; no new dependency). Buttons: done · reset order · reset presets. Pads are not draggable outside arrange mode (on phones, hold = Original pad and drag = pan).
+A pencil button in the console header turns on arrange mode: keys get a dashed outline and can be dragged to a new place within their row (white keys among white keys, black among black) (pointer events, mouse and touch; no new dependency). Buttons: done · reset order · reset presets. Pads are not draggable outside arrange mode (on phones, hold = Original pad and drag = pan).
 
 ## Presets
 
@@ -78,7 +90,7 @@ No cross-device sync (out of scope; could later ride on the anonymous ID).
 - `web/src/lib/mediaPresets.ts` — Preset type, defaults, load/save, `matches()`; pure, unit tested.
 - `web/src/lib/padOrder.ts` — load/save/move/reset of pad order; pure, unit tested.
 - `web/src/lib/useVideoTransport.ts` — the video state now inside `VideoTransport` (play, rate, loop, A–B, mute, full screen, capture, post, download) lifted into a hook, so the playback row and the console both drive one state. Replaces the `speedSlot` portal.
-- `web/src/components/console/` — `MediaConsole.tsx` (strip + console), `Fader.tsx`, `PadGrid.tsx` (incl. arrange mode), `ClickWheel.tsx`, `Knob.tsx`.
+- `web/src/components/console/` — `MediaConsole.tsx` (strip + console), `Fader.tsx`, `Keyboard.tsx` (white/black keys, incl. arrange mode), `CassetteWindow.tsx`, `ClickWheel.tsx`, `Knob.tsx`.
 - `ImageTools.tsx` keeps filters, lens, minimap, `renderPng`; `MediaToolbar` is replaced by `MediaConsole`.
 - `VideoTools.tsx` keeps `VideoTransport` as the playback row only (built on the hook), `VideoLens`, `KeyMoments`.
 - `MediaHelp.tsx` regrouped to match the console (strip, presets, faders, pads, deck); flip row removed.
