@@ -88,7 +88,7 @@ describe("AppearanceSwitcher", () => {
 });
 
 describe("text sizer", () => {
-  it("steps html font-size up from 100%, stops at 200%, persists", () => {
+  it("steps html font-size up from 100%, stops at 300%, persists", () => {
     render(
       <ThemeProvider>
         <TextSizer />
@@ -99,10 +99,10 @@ describe("text sizer", () => {
     const up = screen.getByRole("button", { name: "Larger text" });
     act(() => up.click());
     expect(html.style.fontSize).toBe("110%");
-    for (let n = 0; n < 9; n++) act(() => up.click());
-    expect(html.style.fontSize).toBe("200%");
+    for (let n = 0; n < 13; n++) act(() => up.click());
+    expect(html.style.fontSize).toBe("300%");
     expect(up).toBeDisabled();
-    expect(JSON.parse(localStorage.getItem("ufo_theme")!).textScale).toBe(200);
+    expect(JSON.parse(localStorage.getItem("ufo_theme")!).textScale).toBe(300);
   });
 
   it("restores a stored size and steps down to 80%", () => {
