@@ -52,4 +52,11 @@ export interface Env {
   VAPID_PUBLIC_KEY?: string; // base64url uncompressed P-256 point (scripts/vapid-keys.mjs)
   VAPID_PRIVATE_KEY?: string; // secret: base64url private scalar `d`
   VAPID_SUBJECT?: string; // mailto: contact push services may use
+  // Telegram admin center (spec 2026-10-04-realufo-telegram-gate-design)
+  FEATURE_GATE?: string; // "on" = every post path waits for the owner's tap on Telegram
+  FEATURE_SOCIAL_TG?: string; // off | dry | on: Telegram channel as a fan-out platform
+  TELEGRAM_CHANNEL?: string; // channel chat id, e.g. "-1004320401355" (or "@username" once public)
+  TELEGRAM_BOT_TOKEN?: string; // secrets
+  TELEGRAM_WEBHOOK_SECRET?: string;
+  TELEGRAM_OWNER_ID?: string;
 }

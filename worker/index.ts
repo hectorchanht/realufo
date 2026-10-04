@@ -1,6 +1,7 @@
 import type { Env } from "./env";
 import { CASE_STORY_TEXT } from "./lib/caseStoryText";
 import { on, dispatch } from "./router";
+import { sameSecret } from "./lib/secret";
 import { error, json } from "./lib/json";
 import { health } from "./routes/health";
 import { bootstrap } from "./routes/bootstrap";
@@ -99,13 +100,6 @@ async function manualTick(req: Request, env: Env) {
   if (over.X_FORCE_PICK || over.X_FORCE_SHOWCASE) over.FEATURE_X = "on";
   await runTick({ ...env, ...over });
   return json({ ok: true });
-}
-
-// Constant-time compare (hash both, then compare digests).
-async function sameSecret(a: string, b: string) {
-  const h = async (s: string) => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
-  const [x, y] = [await h(a), await h(b)];
-  return x.length === y.length && x.every((v, i) => v === y[i]);
 }
 
 // Record ids fixed after they went live (old → new); their old URLs keep working.
