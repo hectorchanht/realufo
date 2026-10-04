@@ -34,6 +34,7 @@ import { useBootstrap } from "../api/queries";
 import { docTitleParts } from "../lib/docTitle";
 import { parseCrop, smallThumb } from "../lib/recordMedia";
 import type { FeedRecordCard, ListRecordCard, RecordCard } from "../api/types";
+import { dataInk } from "../lib/dataInk";
 
 export type DocCardVariant = "feed" | "grid";
 
@@ -147,7 +148,7 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
           >
             <span
               className="rounded-[7px] border-2 px-2.5 py-1 font-mono text-[13px] font-bold"
-              style={{ color: accentColor, borderColor: accentColor }}
+              style={{ color: dataInk(accentColor), borderColor: dataInk(accentColor) }}
             >
               {typeGlyph(record.kind)}
             </span>
@@ -162,7 +163,7 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
         )}
         <span
           className="absolute left-2 top-2 rounded-[5px] px-1.5 py-1 font-mono text-[8.5px] font-bold"
-          style={{ background: "rgba(0,0,0,.72)", color: accentColor }}
+          style={{ background: "rgba(0,0,0,.85)", color: accentColor }}
         >
           {badge}
         </span>
@@ -187,7 +188,7 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
           <div className="font-mono text-[9px] tracking-[.4px] text-faint">{metaLine(record)}</div>
         )}
         {tp.showId && (
-          <div className="truncate font-mono text-[9.5px] font-semibold tracking-[.3px]" style={{ color: accentColor }}>
+          <div className="truncate font-mono text-[9.5px] font-semibold tracking-[.3px]" style={{ color: dataInk(accentColor) }}>
             {tp.id}
           </div>
         )}

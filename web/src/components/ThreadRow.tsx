@@ -19,6 +19,7 @@ import type { ThreadCard } from "../api/types";
 import { smallThumb } from "../lib/recordMedia";
 import { VoteButton } from "./VoteButton";
 import { StanceTag } from "./StanceTag";
+import { dataInk } from "../lib/dataInk";
 
 export interface ThreadRowProps {
   thread: ThreadCard;
@@ -56,7 +57,7 @@ export function ThreadRow({ thread, voted }: ThreadRowProps) {
       <div className="min-w-0 flex-1">
         <Link to={to} className="block text-left">
           <div className="mb-1.5 flex flex-wrap items-center gap-[7px]">
-            <span className="font-mono text-[9.5px] font-bold" style={{ color: thread.accent }}>
+            <span className="font-mono text-[9.5px] font-bold" style={{ color: dataInk(thread.accent) }}>
               {thread.boardSlug}
             </span>
             <span className="font-mono text-[8.5px] text-faint">No.{thread.no}</span>

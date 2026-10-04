@@ -292,7 +292,7 @@ export function Composer() {
                 style={{
                   borderColor: o.color,
                   background: active ? o.color : "transparent",
-                  color: active ? "#04140c" : o.color,
+                  color: active ? "var(--on-signal)" : o.color,
                 }}
               >
                 {o.label}
@@ -360,7 +360,7 @@ export function Composer() {
             type="button"
             onClick={handleSubmit}
             disabled={busy}
-            className="flex-none rounded-[11px] bg-signal px-[22px] py-[11px] font-mono text-xs font-bold tracking-[.5px] text-[#04140c] active:scale-[.96] disabled:pointer-events-none disabled:opacity-60"
+            className="flex-none rounded-[11px] bg-signal px-[22px] py-[11px] font-mono text-xs font-bold tracking-[.5px] text-on-signal active:scale-[.96] disabled:pointer-events-none disabled:opacity-60"
           >
             POST →
           </button>

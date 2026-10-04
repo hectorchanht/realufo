@@ -59,6 +59,7 @@ import { DEFAULT_VIEW, viewTransform } from "../lib/mediaView";
 import { useZoomPan } from "../lib/useZoomPan";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
 import { Skeleton } from "../components/Skeleton";
+import { dataInk } from "../lib/dataInk";
 
 // prototype line 522: `if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4)`.
 const SWIPE_MIN_DX = 55;
@@ -469,7 +470,7 @@ export function Doc() {
       <div className="flex items-start gap-2">
         <h1 className="mb-3.5 min-w-0 flex-1 text-[19px] font-bold leading-[1.3] text-ink" style={{ overflowWrap: "anywhere" }}>
           {tp!.showId && (
-            <span className="mb-2 block font-pixel text-[10px] font-normal leading-normal" style={{ color: accent }}>
+            <span className="mb-2 block font-pixel text-[10px] font-normal leading-normal" style={{ color: dataInk(accent) }}>
               {tp!.id}
               <span className="sr-only">, </span>
             </span>
@@ -573,7 +574,7 @@ export function Doc() {
             >
               <span
                 className="rounded-[9px] border-2 px-4 py-2 font-mono text-base font-bold"
-                style={{ color: accent, borderColor: accent }}
+                style={{ color: dataInk(accent), borderColor: dataInk(accent) }}
               >
                 {media === "audio" ? "AUD" : glyph}
               </span>
@@ -610,7 +611,7 @@ export function Doc() {
         <span
           data-lens-hide
           className={`absolute left-[10px] top-[10px] rounded-md px-2 py-1 font-mono text-[9px] font-bold ${fade}`}
-          style={{ background: "rgba(0,0,0,.72)", color: accent }}
+          style={{ background: "rgba(0,0,0,.85)", color: accent }}
         >
           {badge}
         </span>
@@ -705,7 +706,7 @@ export function Doc() {
       <div className="mb-[10px] flex flex-wrap gap-[7px]">
         <span
           className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px]"
-          style={{ color: accent }}
+          style={{ color: dataInk(accent) }}
         >
           {record.agency_full || record.agency}
         </span>
@@ -813,7 +814,7 @@ export function Doc() {
               >
                 <div className="text-[9px] tracking-[.5px] text-faint">{label}</div>
                 {sp.showId && (
-                  <div className="mt-1 text-[10px] font-semibold" style={{ color: accent, overflowWrap: "anywhere" }}>
+                  <div className="mt-1 text-[10px] font-semibold" style={{ color: dataInk(accent), overflowWrap: "anywhere" }}>
                     {sp.id}
                   </div>
                 )}
@@ -843,7 +844,7 @@ export function Doc() {
                 key={pt.id}
                 to={`/thread/${pt.id}`}
                 className="rounded-lg border border-line2 px-[10px] py-[7px] font-mono text-[10.5px]"
-                style={{ color: pt.accent }}
+                style={{ color: dataInk(pt.accent) }}
               >
                 {pt.title}
               </Link>

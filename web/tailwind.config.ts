@@ -16,6 +16,7 @@ export default {
         line: "var(--line)",
         line2: "var(--line2)",
         signal: "var(--signal)",
+        "on-signal": "var(--on-signal)",
         grn: "var(--grn)",
         cyan: "var(--cyan)",
         amber: "var(--amber)",

@@ -168,7 +168,7 @@ function archiveChipStyle(selected: boolean, isAll: boolean, accent?: string): C
   return {
     border: "1px solid transparent",
     background: isAll ? "var(--signal-dim)" : (accent ?? "var(--signal-dim)"),
-    color: isAll ? "var(--signal)" : "#fff",
+    color: isAll ? "var(--signal)" : "#04140c", // data accents are bright: dark text (white was 1.5-3.7:1)
   };
 }
 
@@ -456,7 +456,7 @@ export function Archive() {
               onClick={() => setParams({ archive: a.id, ...(a.id === "wargov" ? {} : { release: null }) })}
             >
               <span aria-hidden="true">{a.flag}</span>
-              {chipLabel(a.label)} <span className="opacity-60">{abbreviateCount(a.count)}</span>
+              {chipLabel(a.label)} <span className="text-[10px]">{abbreviateCount(a.count)}</span>
             </ArchiveChip>
           ))}
         </div>
@@ -472,7 +472,7 @@ export function Archive() {
               return (
                 <span key={r.no} title={`war.gov release ${r.no} · ${r.date}`} className="flex-none">
                   <TypeChip selected={on} style={typeChipStyle(on)} onClick={() => setParam("release", String(r.no))}>
-                    R{String(r.no).padStart(2, "0")} <span className="opacity-60">{abbreviateCount(r.count)}</span>
+                    R{String(r.no).padStart(2, "0")} <span className="text-[10px]">{abbreviateCount(r.count)}</span>
                   </TypeChip>
                 </span>
               );
@@ -513,7 +513,7 @@ export function Archive() {
               const n = k === "shorts" ? facets?.shorts : k ? kindCount(k) : totalRecords;
               return (
                 <TypeChip key={k} selected={type === k} style={typeChipStyle(type === k)} onClick={() => setParam("type", k || null)}>
-                  {TYPE_LABELS[k] ?? "All"} {n != null && <span className="opacity-60">{abbreviateCount(n)}</span>}
+                  {TYPE_LABELS[k] ?? "All"} {n != null && <span className="text-[10px]">{abbreviateCount(n)}</span>}
                 </TypeChip>
               );
             })}
@@ -529,7 +529,7 @@ export function Archive() {
             ] as const
           ).map(([v, label, n]) => (
             <TypeChip key={v} selected={redacted === v} style={typeChipStyle(redacted === v)} onClick={() => setParam("redacted", redacted === v ? null : v)}>
-              {label} {n != null && <span className="opacity-60">{abbreviateCount(n)}</span>}
+              {label} {n != null && <span className="text-[10px]">{abbreviateCount(n)}</span>}
             </TypeChip>
           ))}
           <span aria-hidden="true" className="mx-0.5 h-4 w-px flex-none bg-line2" />
@@ -542,7 +542,7 @@ export function Archive() {
                 style={typeChipStyle(on)}
                 onClick={() => setParam("has", hasParam(on ? has.filter((h) => h !== k) : [...has, k]))}
               >
-                {label} {flags && <span className="opacity-60">{abbreviateCount(flags[k])}</span>}
+                {label} {flags && <span className="text-[10px]">{abbreviateCount(flags[k])}</span>}
               </TypeChip>
             );
           })}

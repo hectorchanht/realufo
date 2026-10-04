@@ -90,7 +90,7 @@ export function Boards() {
         <button
           type="button"
           onClick={handleNewThread}
-          className="flex w-16 flex-none flex-col items-center justify-center gap-1 rounded-[14px] bg-signal text-[#04140c] active:scale-[.95]"
+          className="flex w-16 flex-none flex-col items-center justify-center gap-1 rounded-[14px] bg-signal text-on-signal active:scale-[.95]"
         >
           <span aria-hidden="true" className="text-[22px]">
             ✎

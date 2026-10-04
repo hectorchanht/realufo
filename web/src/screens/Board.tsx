@@ -36,6 +36,7 @@ import { ThreadRow } from "../components/ThreadRow";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { Skeleton } from "../components/Skeleton";
+import { dataInk } from "../lib/dataInk";
 
 function stripSlashes(s: string): string {
   return s.replace(/^\/+|\/+$/g, "");
@@ -103,7 +104,7 @@ export function Board() {
           type="button"
           onClick={handleNewThread}
           className="mt-[13px] w-full rounded-[11px] border py-2.5 font-mono text-xs font-bold tracking-[.5px] active:scale-[.98]"
-          style={{ borderColor: board.accent, color: board.accent }}
+          style={{ borderColor: dataInk(board.accent), color: dataInk(board.accent) }}
         >
           ✎ START A NEW THREAD
         </button>

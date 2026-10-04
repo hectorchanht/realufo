@@ -60,7 +60,7 @@ export function Ask() {
           placeholder="ask the archive — e.g. what did the 1949 Los Alamos conference conclude?"
           className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[12.5px] text-ink outline-none placeholder:text-faint"
         />
-        <button type="submit" className="flex-none rounded-md bg-signal px-2 py-0.5 font-mono text-[10px] font-bold text-[#04140c]">
+        <button type="submit" className="flex-none rounded-md bg-signal px-2 py-0.5 font-mono text-[10px] font-bold text-on-signal">
           ↵ ASK
         </button>
       </form>

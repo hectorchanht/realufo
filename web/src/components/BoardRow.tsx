@@ -10,6 +10,7 @@
 // segment).
 import { Link } from "react-router-dom";
 import type { Board } from "../api/types";
+import { dataInk } from "../lib/dataInk";
 
 export interface BoardRowProps {
   board: Board;
@@ -35,7 +36,7 @@ export function BoardRow({ board }: BoardRowProps) {
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <span className="text-[15px] font-bold text-ink">{board.name}</span>
-          <span className="font-mono text-[10px]" style={{ color: board.accent }}>
+          <span className="font-mono text-[10px]" style={{ color: dataInk(board.accent) }}>
             {board.slug}
           </span>
         </div>

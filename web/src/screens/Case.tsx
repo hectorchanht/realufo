@@ -19,6 +19,7 @@ import { useSetPageTitle } from "../lib/pageTitle";
 import { promoteCommentOpts } from "../lib/promoteComment";
 import type { Stance } from "../api/types";
 import { Skeleton } from "../components/Skeleton";
+import { dataInk } from "../lib/dataInk";
 
 const DEFAULT_CASE_BOARD = "cases";
 
@@ -73,7 +74,7 @@ export function Case() {
   return (
     <div data-screen="case" style={{ animation: "fadeup .3s ease both" }}>
       {/* coord line — prototype line 291 */}
-      <div className="mb-3 font-mono text-[10px]" style={{ color: caseDetail.accent, letterSpacing: ".4px" }}>
+      <div className="mb-3 font-mono text-[10px]" style={{ color: dataInk(caseDetail.accent), letterSpacing: ".4px" }}>
         {caseDetail.coord}
       </div>
 

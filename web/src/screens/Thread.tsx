@@ -47,6 +47,7 @@ import { useOverlay } from "../overlays/OverlayProvider";
 import { docPageTitle, docTitleParts } from "../lib/docTitle";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { Skeleton } from "../components/Skeleton";
+import { dataInk } from "../lib/dataInk";
 
 // Matches Doc.tsx's own local STANCE_COLOR/stanceColor (FRONTEND-CONTEXT.md
 // "Stance colors") — kept duplicated for the same reason Doc.tsx gives for
@@ -195,7 +196,7 @@ function PostRow({ post, sourceRecord, thread, nos, replies, onQuote }: PostRowP
       {/* meta row — prototype lines 265-271 */}
       <div className="mb-[9px] flex flex-wrap items-center gap-2">
         {(post.isOp || post.byOp) && (
-          <span className="rounded-[5px] bg-signal px-1.5 py-0.5 font-mono text-[8px] font-bold text-[#04140c]">
+          <span className="rounded-[5px] bg-signal px-1.5 py-0.5 font-mono text-[8px] font-bold text-on-signal">
             OP
           </span>
         )}
@@ -328,7 +329,7 @@ export function Thread() {
     <div data-screen="thread" className="pb-16" style={{ animation: "fadeup .3s ease both" }}>
       {/* header — prototype lines 260-261 */}
       <div className="mb-3 flex items-center gap-2">
-        <span className="font-mono text-[9.5px] font-bold" style={{ color: thread.accent }}>
+        <span className="font-mono text-[9.5px] font-bold" style={{ color: dataInk(thread.accent) }}>
           {thread.boardSlug}
         </span>
         <span className="font-mono text-[9px] text-faint">No.{thread.no}</span>

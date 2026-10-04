@@ -37,6 +37,8 @@
   --shadow: 0 18px 50px -16px rgba(0, 0, 0, 0.72);
   --grain: 0.055;
   --deskbg: #050609;
+  --on-signal: #04140c; /* text on a var(--signal)/stance-filled button */
+  --data-mix: 100%; /* dataInk(): data accents (sources, boards) used as-is */
 }
 [data-theme="light"] {
   --bg: #e9e5d9;
@@ -47,18 +49,23 @@
   --line: rgba(30, 35, 45, 0.13);
   --line2: rgba(30, 35, 45, 0.22);
   --ink: #161a21;
+  /* Text colors: Radix Colors step-11 hues, OKLCH lightness lowered until each
+     clears WCAG AA 4.5:1 on the darkest light surface (--bg) and on its own
+     12% tint (active chips); >=5.5:1 on --surface. */
   --dim: #4a525e;
-  --faint: #636c79;
-  --grn: #0f9e63;
-  --cyan: #0a86b8;
-  --amber: #b5730a;
-  --red: #d13b34;
-  --violet: #6a4fd0;
-  --signal: #0f9e63;
-  --signal-dim: rgba(15, 158, 99, 0.12);
+  --faint: #5d6673;
+  --grn: #00673e;
+  --cyan: #00627d;
+  --amber: #8c4800;
+  --red: #c52129;
+  --violet: #5e48b1;
+  --signal: #00673e;
+  --signal-dim: rgba(0, 103, 62, 0.12);
   --shadow: 0 18px 50px -18px rgba(50, 60, 80, 0.28);
   --grain: 0.03;
   --deskbg: #d8d3c4;
+  --on-signal: #ffffff; /* light accents are dark: white text on filled buttons */
+  --data-mix: 45%; /* data accents are tuned for black bg; 45% + ink -> >=4.5:1 on --bg */
 }
 [data-accent="cyan"] {
   --signal: var(--cyan);

@@ -2,7 +2,7 @@
 // lines 143/245) and any future post/comment vote control (doc-comment vote,
 // line 380). Colors/logic port `voteBg`/`voteBorder`/`voteColor` exactly
 // (lines 586-588 of realufo-handoff/RealUFO.dc.html):
-//   voted:  border/background var(--signal), text #04140c (dark-on-signal)
+//   voted:  border/background var(--signal), text var(--on-signal)
 //   unvoted: border var(--line2), background transparent, text var(--dim)
 //
 // `useVote()` does the *authoritative* optimistic cache patch and records the
@@ -75,7 +75,7 @@ export function VoteButton({ targetType, targetId, votes, voted, row }: VoteButt
       style={{
         borderColor: isVoted ? "var(--signal)" : "var(--line2)",
         background: isVoted ? "var(--signal)" : "transparent",
-        color: isVoted ? "#04140c" : "var(--dim)",
+        color: isVoted ? "var(--on-signal)" : "var(--dim)",
       }}
     >
       <span className="text-[13px] leading-none">▲</span>

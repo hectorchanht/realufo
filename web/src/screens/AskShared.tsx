@@ -70,7 +70,7 @@ function SharedAnswer({ id }: { id: number | null }) {
             placeholder="ask your own question…"
             className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[12.5px] text-ink outline-none placeholder:text-faint"
           />
-          <button type="submit" className="flex-none rounded-md bg-signal px-2 py-0.5 font-mono text-[10px] font-bold text-[#04140c]">
+          <button type="submit" className="flex-none rounded-md bg-signal px-2 py-0.5 font-mono text-[10px] font-bold text-on-signal">
             ↵ ASK
           </button>
         </form>

@@ -192,7 +192,7 @@ export function Feed() {
           </div>
           <Link
             to="/archive"
-            className="mt-[14px] inline-flex items-center gap-2 rounded-[11px] bg-signal px-4 py-[11px] font-mono text-[12px] font-bold tracking-[.5px] text-[#04140c] active:scale-[.97]"
+            className="mt-[14px] inline-flex items-center gap-2 rounded-[11px] bg-signal px-4 py-[11px] font-mono text-[12px] font-bold tracking-[.5px] text-on-signal active:scale-[.97]"
           >
             BROWSE THE ARCHIVE →
           </Link>
