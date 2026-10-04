@@ -1,6 +1,6 @@
 """Shared bits for showcase recipes: 9:16 1080x1920, safe-zone text, 30 fps segments, concat.
 Text sits below the app top tabs (~200 px) and above the caption/buttons area (bottom ~450 px)."""
-import hashlib, json, os, subprocess, tempfile, urllib.request
+import hashlib, json, os, re, subprocess, tempfile, urllib.request
 
 FFMPEG = os.environ.get("FFMPEG", "ffmpeg")
 FONT = os.environ.get("CLIP_FONT", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
@@ -10,10 +10,17 @@ ENC = ["-r", "30", "-c:v", "libx264", "-profile:v", "high", "-pix_fmt", "yuv420p
 SILENT = ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100"]
 _n = 0
 
+def written(text):
+    """Spoken spellings back to screen form: "F B I" -> "FBI", "real U F O dot org" -> "realufo.org"
+    (narration spells letters out so the voice reads them; captions often reuse the narration line)."""
+    text = re.sub(r"\b[A-Z](?: [A-Z](?=s?\b))+", lambda m: m.group(0).replace(" ", ""), text)
+    return re.sub(r"\breal UFO dot org\b", "realufo.org", text, flags=re.I)
+
 def txt(text, y, fs, color="white"):
     """drawtext via textfile= (quotes/colons in text can't break the filtergraph); centred, outline + shadow."""
     global _n
     _n += 1
+    text = written(text)
     fs = min(fs, int(1000 / (0.62 * max(len(text), 1))))  # shrink long lines to fit the 1080 width
     p = os.path.join(TMP, f"t{_n}.txt")
     open(p, "w", encoding="utf-8").write(text)
