@@ -22,14 +22,25 @@ Seek bar · play/pause · ‹ › frame step · timecode · mute · full screen.
 - **Link**: image → copy view link; video → copy moment link (with view + looks), as today.
 
 ### Console (opens under the strip)
-Three sections, side by side ≥ 900px, stacked on phones:
+Three sections, side by side ≥ 900px, stacked on phones (the click wheel first on phones, it is the most used):
 1. **Faders** — brightness, contrast, colour, shadows as vertical sliders (`<input type=range>` with `writing-mode: vertical-lr`, native and accessible). Double-click / double-tap a fader = back to 100.
 2. **Pads** — 4-column grid of square pads (44px), lit when on.
    - Effect pads: Enhance, Invert, B&W, Night, Ironbow, Rainbow, Sharpen, **Original** (momentary: shows the unfiltered file while held; dashed border).
    - Tool pads: Ruler, Motion (video), Turn, Save picture / Save frame, Post frame (video), Download video (video).
 3. **Deck**
-   - **Jog wheel** (≈120px): video → drag round to scrub, 1 frame per 12° (pauses playback), centre shows timecode; image → zoom dial, `zoom ×= exp(Δ°/180)` around the centre. `role="slider"`, arrow keys = one step.
-   - Video only next to it: speed (0.1–2×), loop, A–B loop.
+   - **Click wheel** (iPod style, ≈132px): a ring you slide a finger or the mouse around, four press points on the ring and a centre button.
+     - Ring: video → scrub, 1 frame per 12° (pauses playback), timecode in the centre; image → zoom, `zoom ×= exp(Δ°/180)` around the centre.
+     - Press points and centre:
+
+       | | Video | Image |
+       |---|---|---|
+       | Centre | play / pause | full view (undo zoom) |
+       | Left / right | previous / next frame | zoom out / in |
+       | Top | speed (cycles 0.25, 0.5, 1, 2×) | magnifier on/off |
+       | Bottom | A–B loop (start, end, clear) | turn |
+     - A tap that doesn't slide counts as a press; a slide of more than 6° is a scrub. A little tick sound is not played (silent site); a short `navigator.vibrate(5)` per frame step on phones that support it.
+     - `role="slider"` on the ring (arrow keys = one step, `aria-valuetext` = timecode or zoom); the five press points are real buttons with `aria-label` + `title`.
+     - Video only, next to the wheel: loop (whole clip) toggle; the speed shows as a small `0.5×` readout under the wheel.
    - **Magnifier knob**: 2× / 3× / 5× / 8×; drag up/down or tap to step; `role="slider"` with `aria-valuetext`.
 
 **Mirror (flip)** loses its button; the `F` key and `?flip=1` share links keep working. It leaves the help panel.
@@ -67,7 +78,7 @@ No cross-device sync (out of scope; could later ride on the anonymous ID).
 - `web/src/lib/mediaPresets.ts` — Preset type, defaults, load/save, `matches()`; pure, unit tested.
 - `web/src/lib/padOrder.ts` — load/save/move/reset of pad order; pure, unit tested.
 - `web/src/lib/useVideoTransport.ts` — the video state now inside `VideoTransport` (play, rate, loop, A–B, mute, full screen, capture, post, download) lifted into a hook, so the playback row and the console both drive one state. Replaces the `speedSlot` portal.
-- `web/src/components/console/` — `MediaConsole.tsx` (strip + console), `Fader.tsx`, `PadGrid.tsx` (incl. arrange mode), `JogWheel.tsx`, `Knob.tsx`.
+- `web/src/components/console/` — `MediaConsole.tsx` (strip + console), `Fader.tsx`, `PadGrid.tsx` (incl. arrange mode), `ClickWheel.tsx`, `Knob.tsx`.
 - `ImageTools.tsx` keeps filters, lens, minimap, `renderPng`; `MediaToolbar` is replaced by `MediaConsole`.
 - `VideoTools.tsx` keeps `VideoTransport` as the playback row only (built on the hook), `VideoLens`, `KeyMoments`.
 - `MediaHelp.tsx` regrouped to match the console (strip, presets, faders, pads, deck); flip row removed.
@@ -75,8 +86,8 @@ No cross-device sync (out of scope; could later ride on the anonymous ID).
 
 ## Testing
 - Unit: presets (defaults, round trip, corrupt storage, `matches`, motion ignored on images), pad order (move, unknown/missing ids, reset).
-- Doc tests: strip contents image vs video; console toggle remembered; preset apply sets URL params; save to slot persists; fader sets brightness; effect pad toggles; Original pad momentary; jog wheel arrow keys step a frame (video) / zoom (image); knob changes mag; no Flip button but `F` flips; `1`–`4` keys; arrange mode reorders and persists.
-- Browser: phone 375px and desktop, image + video, drag on the jog wheel, arrange-mode drag with mouse and touch emulation, tap sizes ≥ 36/32px.
+- Doc tests: strip contents image vs video; console toggle remembered; preset apply sets URL params; save to slot persists; fader sets brightness; effect pad toggles; Original pad momentary; click-wheel ring arrow keys step a frame (video) / zoom (image), press points (centre play/pause, left/right frame, top speed, bottom A–B; image: full view, zoom out/in, magnifier, turn), tap vs slide threshold; knob changes mag; no Flip button but `F` flips; `1`–`4` keys; arrange mode reorders and persists.
+- Browser: phone 375px and desktop, image + video, slide round the click wheel (mouse + touch emulation), arrange-mode drag with mouse and touch emulation, tap sizes ≥ 36/32px.
 
 ## Out of scope
 Naming presets, more than 4 slots, adding/removing pads, cross-device sync, MIDI controllers.
