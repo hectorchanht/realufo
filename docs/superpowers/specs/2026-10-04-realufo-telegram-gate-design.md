@@ -148,6 +148,39 @@ Every post carries the most eye-catching honest media the content has, chosen in
 
 Unknown commands get a short help list. v2: articles from the bot, `/poll`, site edits.
 
+## Add to the archive (official + semi-official releases)
+
+User (2026-10-04): "allow adding archive from official or semi-official release like UAP hearing, just like the
+hellfire one". The admin center can add new records, not just post existing ones.
+
+- **Inclusion rule** (written into the site's About text and the ingest code):
+  - **Official:** published by a government body: war.gov/DoD, AARO, NARA, NASA, FBI Vault, CIA reading room,
+    congress.gov / GPO, official committee channels (e.g. House Oversight YouTube), foreign defence ministries.
+  - **Semi-official:** made public by a government official acting in that role, e.g. footage shown or released by a
+    member of Congress at a UAP hearing or on their official account (the Hellfire/Yemen MQ-9 clip, released by
+    Rep. Eric Burlison, House Oversight UAP hearing, Sept 2025), exhibits entered into a hearing record, agency
+    documents released through FOIA to a third party.
+  - **Not included:** leaks nobody official released, anonymous uploads (separate idea, needs moderation), anything
+    not about UFO/UAP (the topical bar that removed the Pentagon Papers).
+- **Command:** `/add <url> [note]` (video, PDF or page). A GitHub Actions `step=fetch` job downloads it (yt-dlp for
+  video posts and hearing streams, with `--download-sections` when the note gives a time range; plain download for
+  PDFs), probes it, and returns a draft record: title, date, place, agency/body, `released_by`, `source_url`,
+  `provenance` (`official` | `semi-official`), proposed id, archive (`congress`, `wargov`, … or a new one), and a
+  thumbnail/money-shot still.
+- **Gate:** the draft record arrives as a Telegram preview (`kind='record'`): ✅ Add · ✏️ (reply to fix fields) · ❌
+  Skip. Only ✅ writes `records` + `assets` rows and the R2 files, then the normal ingest steps (thumbs, clips, AI
+  moments, OCR/full text) run for it. Adding a record never posts it; posting is a separate job.
+- **On the site:** semi-official records show a provenance line on the doc page and in crawler HTML: "Semi-official:
+  released by Rep. Eric Burlison at the House Oversight UAP hearing, Sept 9 2025 · source" (link to the original
+  post/stream). Official records keep today's look. Licence: the open-dataset export
+  (`tung00/realufo-uap-archive`) keeps its open-licence filter; semi-official items enter it only when the source
+  is a US government work.
+- **Data:** `records` gains `provenance TEXT CHECK(provenance IN ('official','semi-official')) DEFAULT 'official'`,
+  `released_by TEXT`, `source_url TEXT`; `bot_jobs.kind` gains `'record'`.
+- **First item:** the Hellfire clip (Burlison X post + hearing stream timestamps in memory), linked to the hearing
+  transcript record CONGRESS-CHRG-119hhrg61718.
+- Built as its own plan (Plan 4), after Plan 1.
+
 ## Data (D1)
 
 Migration `00xx_bot_jobs.sql`:
