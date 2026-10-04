@@ -6,6 +6,7 @@ import { fb, ig, threads } from "./meta";
 import { bsky } from "./bsky";
 import { yt } from "./yt";
 import { tiktok } from "./tiktok";
+import { token, type Rotating } from "./auth";
 
 // Social fan-out tick (Spec 5 §3): mirror posted x_posts to every enabled platform, one
 // new post per platform per tick. Only status='posted': pending/processing X rows may still
@@ -18,6 +19,7 @@ const FLAG: Record<Platform, keyof Env> = {
   fb: "FEATURE_SOCIAL_FB", ig: "FEATURE_SOCIAL_IG", threads: "FEATURE_SOCIAL_THREADS",
   bsky: "FEATURE_SOCIAL_BSKY", yt: "FEATURE_SOCIAL_YT", tiktok: "FEATURE_SOCIAL_TIKTOK",
 };
+const ROTATING: Platform[] = ["threads", "tiktok"];
 const MAX_ATTEMPTS = 3;
 const TIMEOUT_MS = 3600_000;
 
@@ -76,7 +78,8 @@ async function fail(env: Env, p: Platform, row: { id: number; attempts: number }
   }
   if (isAuth(e)) {
     // token revoked/expired: nothing posted; drop the row so the item isn't burned while we're down
-    await env.DB.prepare("UPDATE social_posts SET deleted_at=datetime('now') WHERE id=?").bind(row.id).run();
+    // (the reason stays on the retired row)
+    await env.DB.prepare("UPDATE social_posts SET deleted_at=datetime('now'), error=? WHERE id=?").bind(String(e).slice(0, 500), row.id).run();
     return log({ platform: p, halted: row.id, status: e.status, body: e.body.slice(0, 200) });
   }
   const attempts = row.attempts + 1;
@@ -127,6 +130,9 @@ async function resume(env: Env, p: Platform, a: Adapter, ctx: Ctx) {
 
 async function runPlatform(env: Env, p: Platform, a: Adapter, mode: string, ctx: Ctx) {
   if (mode === "on" && !a.configured(env)) return log({ platform: p, skipped: "missing secrets" });
+  // Rotating tokens refresh on every tick, also with nothing to post (else they lapse
+  // between posts). token() logs a failed refresh; posting then reports the 401.
+  if (mode === "on" && ROTATING.includes(p)) await token(env, p as Rotating, ctx.now).catch(() => {});
   if (mode === "on") await resume(env, p, a, ctx);
   const since = env.SOCIAL_SINCE ?? "";
   if (!since) return;
