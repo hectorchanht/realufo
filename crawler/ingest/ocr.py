@@ -18,7 +18,7 @@ Needs Paddle (crawler/.venv-ocr or requirements-ocr.txt); nothing else does.
 import argparse, json, os, re, subprocess, sys, tempfile, time
 from . import d1, fetch, r2
 from .chunking import split_pages
-from .fulltext import clean_page, keep_page
+from .fulltext import WORD, clean_page, keep_page
 from .textindex import pdf_pages
 
 SELECT = """SELECT r.id,
@@ -52,20 +52,30 @@ def redaction_bars(png: str) -> int:
     big = g.shape[0] * g.shape[1] * 0.002
     return sum(1 for _, _, w, h, a in stats[1:] if a >= big and a >= 0.9 * w * h)
 
+def real_words(text: str) -> int:
+    return sum(bool(WORD.match(t)) for t in text.split())
+
 def route_pages(texts: list[str], page_count: int, ocr_page, redacted=lambda n: False) -> list[dict]:
-    """Pages 1..page_count: clean text layer kept unless redacted(n), else ocr_page(n) -> (text, conf)."""
+    """Pages 1..page_count: clean text layer kept, else ocr_page(n) -> (text, conf). A clean layer on a
+    redacted(n) page is OCR'd too and loses only if OCR reads more real words (layers drop lines beside
+    redaction bars; on dark slides/figures the layer usually wins)."""
     out = []
     for n in range(1, page_count + 1):
         text = clean_page(texts[n - 1]) if n <= len(texts) else ""
-        if keep_page(text) and not redacted(n):
+        clean = keep_page(text)
+        if clean and not redacted(n):
             out.append({"n": n, "text": text, "src": "pdf"})
             continue
         try:
             t, conf = ocr_page(n)
-            out.append({"n": n, "text": t, "src": "ocr", "conf": round(conf, 2)})
         except Exception as e:
             print(f"  page {n}: {e}", flush=True)
-            out.append({"n": n, "text": "", "src": "err"})
+            out.append({"n": n, "text": text, "src": "pdf"} if clean else {"n": n, "text": "", "src": "err"})
+            continue
+        if clean and real_words(t) <= real_words(text):
+            out.append({"n": n, "text": text, "src": "pdf"})
+        else:
+            out.append({"n": n, "text": t, "src": "ocr", "conf": round(conf, 2)})
     return out
 
 def marker_sql(rid: str, pages: list[dict], engine: str) -> str:

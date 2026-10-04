@@ -203,8 +203,14 @@ def test_fts_rows_fit_d1_statement_bytes_not_just_chars():
 
 def test_route_pages_ocrs_a_clean_text_layer_with_redaction_bars():
     # DOW-UAP-D091 p.2: the text layer reads fine but drops whole lines beside the bars
-    pages = ocr.route_pages([CLEAN, CLEAN], 2, lambda n: ("visible text", 0.9), redacted=lambda n: n == 2)
+    more = CLEAN + " and the line the layer dropped beside the bar"
+    pages = ocr.route_pages([CLEAN, CLEAN], 2, lambda n: (more, 0.9), redacted=lambda n: n == 2)
     assert [p["src"] for p in pages] == ["pdf", "ocr"]
+
+def test_route_pages_keeps_the_layer_when_ocr_of_a_barred_page_reads_less():
+    # dark slides / figures look like bars; OCR there misses small text, so the layer stays
+    pages = ocr.route_pages([CLEAN], 1, lambda n: ("few words", 0.9), redacted=lambda n: True)
+    assert pages == [{"n": 1, "text": CLEAN, "src": "pdf"}]
 
 def test_redaction_bars_counts_solid_boxes_not_text(tmp_path):
     import cv2, numpy as np
