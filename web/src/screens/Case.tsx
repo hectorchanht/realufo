@@ -166,7 +166,7 @@ export function Case() {
         <div className="font-pixel text-[9px] uppercase text-faint" style={{ letterSpacing: "1px" }}>
           ◆ Discussion
         </div>
-        <span className="font-mono text-[10px] text-signal">{comments.length} comments</span>
+        <span className="font-mono text-[10px] text-signal">{comments.length} {comments.length === 1 ? "comment" : "comments"}</span>
       </div>
 
       <button

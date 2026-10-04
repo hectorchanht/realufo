@@ -56,6 +56,8 @@ export function docTitleParts(id: string, raw: string | null | undefined, kind?:
   // the kind appended, so the pair doesn't share one id and one title.
   else if (code) [label, t] = [kind && kind !== "pdf" ? `${code} (${kind})` : code, t.slice(code.length)];
   t = t.replace(/_/g, " ").replace(/\s+/g, " ").replace(/^[\s,:;]+|[\s,]+$/g, "");
+  // war.gov quotes some video titles whole ("Spherical UAP in clouds"), most not: show all bare.
+  t = t.replace(/^["“]([^"“”]+)["”]$/, "$1");
   if (!t) return { id: label, title: label, showId: false };
   const [a, b] = [squash(t), squash(label)];
   const [short, long] = a.length < b.length ? [a, b] : [b, a];

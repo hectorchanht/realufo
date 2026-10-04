@@ -354,6 +354,18 @@ describe("Doc", () => {
     expect(screen.getByText(/unusual radar contact over restricted airspace/)).toBeInTheDocument();
   });
 
+  it("leaves empty meta fields out instead of showing a bare label", () => {
+    useRecordMock.mockReturnValue({
+      data: { ...mockDetail, record: { ...mockDetail.record, incident_date: null, location: "N/A", virin: null } },
+      isLoading: false,
+    });
+    renderDoc();
+    expect(screen.queryByText("Incident")).toBeNull();
+    expect(screen.queryByText("Location")).toBeNull();
+    expect(screen.queryByText("VIRIN")).toBeNull();
+    expect(screen.getByText("Released")).toBeInTheDocument();
+  });
+
   it("shows the id once as a kicker inside the h1; the title drops the id prefix (no stray // text)", () => {
     renderDoc();
     expect(screen.getByText("rec1")).toBeInTheDocument();

@@ -1,13 +1,14 @@
 # One-off: apply db/fixes/2026-10-03-agency-location-cleanup.sql, then re-stamp
 # record_tldr.input_hash for rows whose TL;DR was current before, so the change
 # (agency short form / location spelling) doesn't trigger TL;DR + card regen.
-# Run from crawler/: python3 ../db/fixes/2026-10-03-agency-location-cleanup.py [--apply]  (no flag = dry run)
+# Run from crawler/: python3 ../db/fixes/2026-10-03-agency-location-cleanup.py [--apply] [fix.sql]  (no --apply = dry run)
 import re, sys, json
 sys.path.insert(0, ".")
 from ingest import d1
 from ingest.tldr import SELECT, build_input, input_hash
 
-FIX = "../db/fixes/2026-10-03-agency-location-cleanup.sql"
+# optional .sql arg: reuse this for later fix files of the same shape (UPDATE … WHERE id IN (…))
+FIX = next((a for a in sys.argv[1:] if a.endswith(".sql")), "../db/fixes/2026-10-03-agency-location-cleanup.sql")
 ids = sorted(set(re.findall(r"'([^']+)'", "".join(l.split("WHERE id IN", 1)[1] for l in open(FIX) if l.startswith("UPDATE")))))
 id_sql = " AND r.id IN (" + ",".join(d1.sql_q(i) for i in ids) + ")"
 

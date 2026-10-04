@@ -393,3 +393,13 @@ describe("Archive Shorts strip", () => {
     expect(useShortsMock).toHaveBeenCalledWith("", { enabled: false });
   });
 });
+
+describe("pageList", () => {
+  it("never hides a single page behind an ellipsis", async () => {
+    const { pageList } = await import("../screens/Archive");
+    expect(pageList(1, 4)).toEqual([1, 2, 3, 4]);
+    expect(pageList(4, 4)).toEqual([1, 2, 3, 4]);
+    expect(pageList(5, 20)).toEqual([1, "…", 4, 5, 6, "…", 20]);
+    expect(pageList(1, 20)).toEqual([1, 2, "…", 20]);
+  });
+});

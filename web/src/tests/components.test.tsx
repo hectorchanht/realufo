@@ -272,6 +272,17 @@ describe("DocCard", () => {
     expect(screen.getByText("Roswell, NM")).toBeInTheDocument();
   });
 
+  it("grid footer labels a date as a date, never in the place slot; N/A is dropped", () => {
+    const base: ListRecordCard = {
+      id: "rec4", archive: "wargov", agency: "DoW", title: "Study", summary: "", kind: "pdf", redacted: 0,
+      thumb: null, location: "N/A", incident_date: "N/A", doc_date: "6/12/26",
+    };
+    render(withRouter(<DocCard record={base} variant="grid" />));
+    expect(screen.queryByLabelText("Location")).toBeNull();
+    expect(screen.getByLabelText("Date").parentElement).toHaveTextContent("6/12/26");
+    expect(screen.queryByText("N/A")).toBeNull();
+  });
+
   it("a search hit inside the file's text shows the page and excerpt", () => {
     const hit: ListRecordCard = {
       id: "rec3", archive: "wargov", agency: "FBI", title: "Teletype", summary: "", kind: "pdf", redacted: 0,

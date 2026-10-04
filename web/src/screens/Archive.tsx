@@ -51,15 +51,18 @@ import { ShortsRow, shortHref } from "../components/ShortsRow";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
 import { Skeleton } from "../components/Skeleton";
+import { useMediaQuery } from "../lib/useMediaQuery";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
-// First, last, and current±1, with "…" for each skipped run:
-// (5, 20) -> [1, "…", 4, 5, 6, "…", 20].
+// First, last, and current±1, with "…" for each skipped run of 2+ pages
+// (a lone gap shows its page — "…" would take the same room):
+// (5, 20) -> [1, "…", 4, 5, 6, "…", 20]; (1, 4) -> [1, 2, 3, 4].
 export function pageList(page: number, total: number): (number | "…")[] {
   const out: (number | "…")[] = [];
+  const keep = (p: number) => p === 1 || p === total || Math.abs(p - page) <= 1;
   for (let p = 1; p <= total; p++) {
-    if (p === 1 || p === total || Math.abs(p - page) <= 1) out.push(p);
+    if (keep(p) || (keep(p - 1) && keep(p + 1))) out.push(p);
     else if (out[out.length - 1] !== "…") out.push("…");
   }
   return out;
@@ -267,6 +270,8 @@ const SORTS = [
 
 export function Archive() {
   const { data: boot } = useBootstrap();
+  // mouse + keyboard: Doc flips with ← →; "swipe" is touch wording
+  const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
   const totalRecords = boot?.stats?.records;
   const totalSources = boot?.stats?.archives;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -606,7 +611,7 @@ export function Archive() {
           {/* result count — line 187 */}
           <div className="mx-0.5 mb-3 font-mono text-[10px] uppercase tracking-[.8px] text-faint">
             <b className="text-signal">{count.toLocaleString()}</b> records
-            {totalPages > 1 && ` · page ${page} / ${totalPages}`} · swipe a file to flip through
+            {totalPages > 1 && ` · page ${page} / ${totalPages}`} · {finePointer ? "open a file, ← → to flip through" : "swipe a file to flip through"}
           </div>
 
           {/* grid — lines 188-203 */}

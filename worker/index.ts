@@ -148,7 +148,7 @@ export default {
     }
     if (url.pathname === "/__tick") return manualTick(req, env);
     if (url.pathname === "/sitemap.xml") return sitemap(req, env);
-    if (url.pathname === "/rss.xml") return rss(req, env);
+    if (/^\/(rss(\.xml)?|feed(\.xml)?)$/.test(url.pathname)) return rss(req, env);
     if (url.pathname === "/llms.txt") return llms(req, env);
     if (url.pathname === "/llms-full.txt") return llmsFull(req, env);
     const docText = url.pathname.match(/^\/doc\/([^/]+)\/text$/);

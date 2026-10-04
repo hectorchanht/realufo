@@ -27,11 +27,13 @@ export function BoardRow({ board }: BoardRowProps) {
       data-board-row
       className="flex items-center gap-[13px] rounded-[14px] border border-line bg-surface p-[14px] hover:border-line2 active:scale-[.99]"
     >
+      {/* monogram, not the slug: "/skeptic/" overflowed the 44px tile onto the title */}
       <div
-        className="grid h-11 w-11 flex-none place-items-center rounded-xl font-pixel text-[11px]"
+        aria-hidden="true"
+        className="grid h-11 w-11 flex-none place-items-center rounded-xl font-pixel text-[15px] uppercase"
         style={{ background: board.accent, color: "#04140c", boxShadow: `0 0 22px -6px ${board.accent}` }}
       >
-        {board.slug}
+        {slugPath(board.slug).charAt(0)}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">

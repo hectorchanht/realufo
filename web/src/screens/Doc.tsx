@@ -131,6 +131,10 @@ interface MetaCellProps {
 
 // One cell of the 2x2 meta grid (prototype lines 361-364). Hub links for these
 // facts live in the site footer ("This file" column), not inline.
+// Media panel cap: leaves room for the title above and the video tools bar below,
+// which otherwise sat on the viewport's bottom edge like a detached mini-player.
+const PANEL_MAX_H = "min(78vh, calc(100dvh - 280px))";
+
 function MetaCell({ label, value }: MetaCellProps) {
   return (
     <div className="bg-surface px-[13px] py-[11px]">
@@ -511,9 +515,9 @@ export function Doc() {
           // panel takes the media's own shape once known (turned with it at 90/270°), so it fills the
           // block with no letterbox bars; tall shapes narrow (centred) instead of being cut at 78vh
           aspectRatio: panelRatio ? `${panelRatio}` : "4/3",
-          width: panelRatio ? `min(100%, calc(78vh * ${panelRatio}))` : undefined,
+          width: panelRatio ? `min(100%, calc(${PANEL_MAX_H} * ${panelRatio}))` : undefined,
           marginInline: "auto",
-          maxHeight: "78vh",
+          maxHeight: PANEL_MAX_H,
           touchAction: view.z > 1 ? "none" : "pan-y",
           WebkitTouchCallout: "none",
         }}
@@ -736,11 +740,16 @@ export function Doc() {
       <VerdictBar recordId={record.id} state={detail.verdicts} />
 
       {/* meta grid — prototype lines 360-365 */}
-      <div className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line">
-        <MetaCell label="Incident" value={record.incident_date || ""} />
-        <MetaCell label="Location" value={location} />
-        <MetaCell label="Released" value={record.doc_date || ""} />
-        <MetaCell label="VIRIN" value={record.virin || ""} />
+      {/* empty fields are left out; an odd last cell spans the row */}
+      <div className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line empty:hidden [&>:last-child:nth-child(odd)]:col-span-2">
+        {(
+          [
+            ["Incident", record.incident_date && record.incident_date !== "N/A" ? record.incident_date : ""],
+            ["Location", location],
+            ["Released", record.doc_date || ""],
+            ["VIRIN", record.virin || ""],
+          ] as const
+        ).map(([label, value]) => (value ? <MetaCell key={label} label={label} value={value} /> : null))}
       </div>
       {detail.topics && detail.topics.length > 0 && (
         <div className="-mt-2 mb-4 flex flex-wrap items-center gap-[7px] font-mono text-[10px]">
@@ -857,7 +866,7 @@ export function Doc() {
       <div className="mb-3 flex items-baseline justify-between">
         <div className="font-pixel text-[9px] tracking-[1px] text-faint">◆ Discussion</div>
         {!(commentsError && !commentsData) && (
-          <span className="font-mono text-[10px] text-signal">{comments.length} comments</span>
+          <span className="font-mono text-[10px] text-signal">{comments.length} {comments.length === 1 ? "comment" : "comments"}</span>
         )}
       </div>
 

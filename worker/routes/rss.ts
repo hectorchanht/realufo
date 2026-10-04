@@ -27,5 +27,7 @@ export async function rss(req: Request, env: Env) {
     `<language>en</language>${results[0] ? `<lastBuildDate>${date(results[0].created_at)}</lastBuildDate>` : ""}` +
     items.join("") +
     `</channel></rss>`;
-  return new Response(xml, { headers: { "content-type": "application/rss+xml; charset=utf-8", "cache-control": "public, max-age=3600" } });
+  // application/xml, not rss+xml: Chrome downloads rss+xml (footer click "did nothing");
+  // feed readers go by the body, and <link rel="alternate"> still says rss+xml.
+  return new Response(xml, { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=3600" } });
 }

@@ -27,6 +27,7 @@
 //     `archives.find(a => a.id === record.archive)?.accent`, falling back to
 //     `var(--signal)` while bootstrap hasn't loaded yet or for an unknown
 //     archive id.
+import { CalendarDays, MapPin } from "lucide-react";
 import { useState } from "react";
 import type { MouseEvent } from "react";
 import { Link } from "react-router-dom";
@@ -77,9 +78,11 @@ function metaLine(r: RecordCard): string {
   return agency ? `${agency} · ${archive}` : archive;
 }
 
-function locOrDate(r: ListRecordCard): string {
-  if (r.location && r.location !== "N/A") return r.location;
-  return r.incident_date || r.doc_date || "—";
+const known = (v: string | null | undefined) => (v && v !== "N/A" ? v : "");
+
+// Place and date, each behind its own icon, so a date never reads as a place.
+function placeAndDate(r: ListRecordCard): { place: string; date: string } {
+  return { place: known(r.location), date: known(r.incident_date) || known(r.doc_date) };
 }
 
 export function DocCard({ record, variant = "grid", onOpen, search, priority }: DocCardProps) {
@@ -215,8 +218,27 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
           </div>
         )}
         {!isFeed && isListRecord(record) && (
-          <div className="mt-auto flex flex-wrap gap-2 font-mono text-[9px] text-faint">
-            <span>{locOrDate(record)}</span>
+          <div className="mt-auto flex flex-wrap gap-x-2.5 gap-y-1 font-mono text-[9px] text-faint">
+            {(() => {
+              const { place, date } = placeAndDate(record);
+              if (!place && !date) return <span>—</span>;
+              return (
+                <>
+                  {place && (
+                    <span className="inline-flex min-w-0 items-center gap-1" title="Location">
+                      <MapPin size={10} aria-label="Location" className="flex-none" />
+                      {place}
+                    </span>
+                  )}
+                  {date && (
+                    <span className="inline-flex items-center gap-1" title="Date">
+                      <CalendarDays size={10} aria-label="Date" className="flex-none" />
+                      {date}
+                    </span>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
       </div>

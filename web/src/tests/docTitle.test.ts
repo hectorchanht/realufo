@@ -16,7 +16,7 @@ const CASES: [string, string, string, boolean, string][] = [
   ["65-hs1-834228961-62-hq-83894-sub-a", "65_HS1-834228961_62-HQ-83894_SUB_A", "FBI file 62-HQ-83894, Sub A", false, "65-hs1-834228961-62-hq-83894-sub-a"],
   ["65-hs1-101634279-100-de-26505", "65_HS1-101634279_100-DE-26505", "FBI file 100-DE-26505", false, "65-hs1-101634279-100-de-26505"],
   ["AARO-956955", "Navy 2021 Flyby video", "Navy 2021 Flyby video", true, "AARO-956955"],
-  ["DOW-UAP", "DOW-UAP-PR057a, \"Spherical UAP in clouds\"", "\"Spherical UAP in clouds\"", true, "DOW-UAP-PR057a"],
+  ["DOW-UAP", "DOW-UAP-PR057a, \"Spherical UAP in clouds\"", "Spherical UAP in clouds", true, "DOW-UAP-PR057a"],
   ["AARO-AARO_Al_Taqaddam_Case_Resolution_Final.pdf", "Al Taqaddum Case Resolution", "Al Taqaddum Case Resolution", false, "AARO-AARO_Al_Taqaddam_Case_Resolution_Final.pdf"],
   ["AARO-AARO_GoFast_Case_Resolution_Card_Methodology_Final.pdf", "\"GO FAST\" Case Resolution Methodology", "\"GO FAST\" Case Resolution Methodology", false, "AARO-AARO_GoFast_Case_Resolution_Card_Methodology_Final.pdf"],
   ["NARA-2024-NDAA-Public-Law-118-31", "2024 National Defense Authorization Act — Public Law 118-31", "2024 National Defense Authorization Act — Public Law 118-31", true, "NARA-2024-NDAA-Public-Law-118-31"],

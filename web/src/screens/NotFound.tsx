@@ -7,7 +7,7 @@ export default function NotFound() {
     <div data-screen="not-found" className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
       signal lost — no page at this address.
       <div className="mt-4 flex justify-center gap-4 text-signal">
-        <Link to="/">feed</Link>
+        <Link to="/">home</Link>
         <Link to="/archive">archive</Link>
       </div>
     </div>
