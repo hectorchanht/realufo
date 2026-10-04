@@ -64,7 +64,7 @@ still(P("sold.jpg"), top("New Orleans, May 1950:", "sold for $1.00", "a \"man fr
       "New Orleans, 1950. Someone sells this photo for one dollar.", S5)
 still(P("wiesbaden.jpg"), top("The Army traced it:", "Wiesbaden, Germany", "military police, not agents · p.153"), 2.8,
       "The Army traced it to Wiesbaden, Germany.", S5)
-still(P("photo-clipping.jpg"), top("A German newspaper:", "an April Fools' joke", "Wiesbadener Tagblatt, 1 Apr 1950"), 2.8,
+still(P("photo-clipping.jpg"), top("A German newspaper:", "an April Fools' joke", "Wiesbadener Tagblatt, 1 Apr 1950 · source: hoaxes.org"), 2.8,
       "A newspaper's April Fools' joke.", S5, band=(440, 800), sub_y=1262)
 still(P("kids.jpg"), top("1969: kids ask the FBI:", "\"FBI agents\"?", "a UFO club, ages 12 and 13 · p.147"), 2.8,
       "Nineteen sixty-nine. Kids ask: are those F B I agents?", S10)

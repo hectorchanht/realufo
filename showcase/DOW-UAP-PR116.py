@@ -28,7 +28,7 @@ AI illustration, made to match the file (making-shorts skill, "AI illustrations"
 (needs pdftoppm for the D091 page)
 """
 import os, subprocess, urllib.request
-from lib import Cut, txt, tts, sfx, subtitles, IRONBOW, FFMPEG as F, TMP as D, ENC, SILENT as SIL, HERE
+from lib import Cut, txt, stamp, tts, sfx, subtitles, IRONBOW, FFMPEG as F, TMP as D, ENC, SILENT as SIL, HERE
 
 U = "https://assets.realufo.org/videos/wargov/DOD_111830151.mp4"
 PDF = "https://assets.realufo.org/pdfs/wargov/DOW-UAP-D091_Range-Fouler-Debrief_Atlantic-Ocean_2020.pdf"
@@ -47,7 +47,8 @@ AI = os.path.join(HERE, "DOW-UAP-PR116-ai.jpg")
 pdf = os.path.join(D, "d091.pdf"); urllib.request.urlretrieve(PDF, pdf)
 subprocess.run(["pdftoppm", "-r", "300", "-f", "1", "-l", "1", "-png", pdf, os.path.join(D, "p")], check=True)
 P1 = next(os.path.join(D, f) for f in os.listdir(D) if f.startswith("p-") and f.endswith(".png"))
-site = txt("realufo.org  ·  DOW-UAP-PR116", 1420, 52)  # the ID as a watermark: searchable on the site
+# watermark: story keyword · when · where · who over "realufo.org · ID" (search "deformed balloon" lands here)
+site = stamp("DOW-UAP-PR116", "DEFORMED BALLOON  ·  2020  ·  Atlantic Ocean  ·  Navy jet crew")
 segs = []
 def seg(inputs, vf, secs):
     out = os.path.join(D, f"seg{len(segs)}.mp4")
@@ -59,13 +60,13 @@ still = lambda img, vf, secs: seg(["-loop", "1", "-t", str(secs), "-i", img], vf
 # H: tease (thumbnail): the speck between the sensor's brackets, boxed; the close-up is the payoff
 TEASE = [TZOOM, BOX,
          txt("Navy jet, Atlantic, 2020", 250, 66), txt("What's in the brackets?", 335, 76, "yellow"),
-         txt("?", 1140, 150, "yellow"), txt("Let's zoom in", 1310, 62), site]
+         txt("?", 1110, 150, "yellow"), txt("Let's zoom in", 1270, 62), site]
 still(S0, TEASE, 2.5)
 # A: the sensor's whole zoom, 0 -> 29.3 s at 5.86x
 seg(["-t", "29.3", "-i", U], [FIT, "hqdn3d=4:3:6:4", "setpts=PTS/5.86", "fps=30", txt("Sensor zooming in", 250, 70), txt("6x speed", 335, 58, "yellow"), site], 5.0)
 # B: close-up, plain then the site's Ironbow palette
 still(SC, [CZOOM, txt("Up close:", 250, 70), txt("a lumpy, lobed cluster", 335, 70, "yellow"),
-           txt("enhanced: 9-frame stack + denoise", 1300, 44), site], 1.8)
+           txt("enhanced: 9-frame stack + denoise", 1280, 44), site], 1.8)
 still(SC, [CZOOM, IRONBOW, txt("Same frame", 250, 70), txt("Ironbow palette", 335, 70, "yellow"), site], 1.7)
 # C: the debrief form; each ticked box lights up as the narrator reads it (D091 p.1)
 def tick(x, y, w, h, t):
@@ -79,7 +80,7 @@ fc = ("color=c=0x111111:s=1080x1920:d=6.5,fps=30[bg];[0:v]format=rgb24[p];[bg][p
                   tick(700, 544, 361, 86, 4.8),
                   txt("The officer's form:", 250, 70), txt("Navy Range Fouler Debrief", 335, 58, "yellow"),
                   txt("All ticked.", 1250, 90, "yellow").replace("y=1250", "y=1250:enable='gte(t,4.8)'"),
-                  txt("DOW-UAP-D091  ·  p.1", 1380, 46)]) + "[v]")
+                  txt("DOW-UAP-D091  ·  p.1", 410, 44), site]) + "[v]")
 out = os.path.join(D, f"seg{len(segs)}.mp4")
 subprocess.run([F, "-v", "error", "-y", "-loop", "1", "-t", "6.5", "-i", form, *SIL, "-filter_complex", fc,
                 "-map", "[v]", "-map", "1:a", "-t", "6.5", *ENC, out], check=True)
@@ -88,11 +89,11 @@ segs.append(out)
 still(AI, ["scale=1920:1920,crop=1080:1920:431:0,cas=0.4", txt("\"it appeared as a large,", 215, 54, "yellow"),
            txt("somewhat deformed balloon,", 285, 54, "yellow"), txt("but we were unable", 355, 54, "yellow"),
            txt("to verify that\"  ·  D091 p.2", 425, 54, "yellow"),
-           txt("\"it traveled with the wind\"  ·  p.2", 1290, 50),
-           txt("AI render of the IR shape + crew's colour, not evidence", 1360, 40), site], 5.5)
+           txt("\"it traveled with the wind\"  ·  p.2", 1210, 50),
+           txt("AI render of the IR shape + crew's colour, not evidence", 1290, 40), site], 5.5)
 # L: the lesson; the file stays unresolved
 still(SC, [CZOOM, "eq=brightness=-0.2", txt("Foil party balloons:", 250, 70), txt("round, metallic, shiny", 335, 70, "yellow"),
-           txt("Nobody could verify it", 1210, 58), txt("AARO file: Unresolved", 1300, 58, "yellow"), site], 6.4)
+           txt("Nobody could verify it", 1190, 58), txt("AARO file: Unresolved", 1280, 58, "yellow"), site], 6.4)
 # C2: end card
 still(SC, [CZOOM, txt("Zoom in yourself", 250, 80), txt("frame by frame", 345, 80, "yellow"),
            txt("realufo.org/doc/DOW-UAP-PR116", 1380, 50, "yellow"), txt("DOW-UAP-PR116  ·  Atlantic Ocean, 2020", 1460, 42)], 4.0)

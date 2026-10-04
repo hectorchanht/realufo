@@ -20,7 +20,7 @@ ElevenLabs narration over the ambient bed, calm subtitles, record watermark per 
 """
 import os, subprocess, urllib.request
 from PIL import Image
-from lib import Cut, txt, tts, subtitles, TMP, HERE
+from lib import Cut, txt, stamp, tts, subtitles, TMP, HERE
 
 ID = "SPAIN-BVD-38287-Manises-791111-1979"
 OUT = os.path.join(HERE, f"{ID}.mp4")
@@ -53,7 +53,8 @@ SUB_Y = 1250
 def top(a, b, c=None):
     return [txt(a, 215, 66), txt(b, 300, 58, "yellow")] + ([txt(c, 375, 42)] if c else [])
 def mark(p):
-    return txt(f"realufo.org  ·  {ID}  ·  p.{p}", 1420, 34, "gray")
+    """Every-beat watermark: story keyword · when · where · who over "realufo.org · ID" (page is in the headline)."""
+    return stamp(ID, "MANISES  ·  Nov 11, 1979  ·  Valencia, Spain  ·  airliner crew")
 def subs(say):
     return subtitles([(0, tts(say)[0])], y=SUB_Y, fs=44)
 def doc(img, lines, p, secs, say, pan=(0, 0), caption=True, extra=()):

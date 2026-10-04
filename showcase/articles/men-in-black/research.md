@@ -25,7 +25,7 @@ Search how-to: "men in black suits" → Section 9 (card quotes p.82) + Section 1
 
 ## Background (not in the archive; cite, don't quote)
 
-- Photo = Wiesbadener Tagblatt April Fools' joke, 1 April 1950 (editor William Sprunkel, photographer Hans Scheffler;
+- Photo = Wiesbadener Tagblatt April Fools' joke, 1 April 1950 (journalist Wilhelm Sprunkel, photographer Hans Scheffler;
   US servicemen posed, Scheffler's 5-year-old son Peter in the "alien" costume). https://hoaxes.org/af_database/permalink/a_martian_in_the_usa , https://ufologie.patrickgross.org/ce3/1950-01-04-germany-wiesbaden.htm
 - Bender founded the International Flying Saucer Bureau (Bridgeport, CT, 1952), shut it in 1953 after a visit by three
   men in dark suits; Gray Barker's 1956 book framed them as government silencers (start of the "Men in Black" lore);

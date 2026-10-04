@@ -12,7 +12,7 @@ ElevenLabs narration + calm subtitles + ambient bed. 9:16, ~35 s. Footage bright
     FFMPEG=/path/to/ffmpeg-with-drawtext CLIP_FONT=/path/Bold.ttf python3 showcase/DOW-UAP-PR159.py
 """
 import os, subprocess
-from lib import Cut, txt, tts, subtitles, FFMPEG as F, TMP as D, ENC, SILENT as SIL, HERE
+from lib import Cut, txt, stamp, tts, subtitles, FFMPEG as F, TMP as D, ENC, SILENT as SIL, HERE
 
 U = "https://assets.realufo.org/videos/wargov/DOD_111985807.mp4"
 OUT = os.path.join(HERE, "DOW-UAP-PR159.mp4")
@@ -24,7 +24,8 @@ BOX = "drawbox=x=500:y=860:w=230:h=230:color=yellow@0.95:t=8"  # the 19.0 s clus
 STILL = {t: os.path.join(D, f"s{t}.png") for t in (19.0, 20.5)}
 for t, p in STILL.items():
     subprocess.run([F, "-v", "error", "-y", "-ss", str(t), "-i", U, "-frames:v", "1", p], check=True)
-site = txt("realufo.org  ·  DOW-UAP-PR159", 1420, 52)  # the ID as a watermark: searchable on the site
+# watermark: story keyword · when · where · who over "realufo.org · ID" (search "Tremonton" lands here)
+site = stamp("DOW-UAP-PR159", "TREMONTON FILM  ·  Jul 2, 1952  ·  Utah  ·  Navy photographer")
 segs, at = [], [0.0]  # at[0]: running start time of the next beat
 def run(args, secs):
     i = args.index("-vf"); args, vf = args[:i], args[i:i + 2]  # -vf belongs after every input
@@ -66,7 +67,7 @@ secs = say("The catch: at five miles, six hundred fifty miles an hour. "
            "At a quarter mile, thirty-three. No distance, no answer.", 5.5)
 still(20.5, [ZOOM, txt("Navy's own math, same dots:", 230, 58), txt("5 miles away: 653 mph", 320, 70),
              txt("1/4 mile away: 33 mph", 405, 70, "yellow"), txt("DOW-UAP-D102  ·  p.131", 495, 44),
-             txt("No distance, no answer.", 1290, 76, "yellow"), site], secs)
+             txt("No distance, no answer.", 1260, 76, "yellow"), site], secs)
 # C: end card
 secs = say("Step through it frame by frame on real U F O dot org.", 4.0)
 still(20.5, [ZOOM, txt("Step through the 1952 film", 250, 70), txt("frame by frame", 340, 80),
