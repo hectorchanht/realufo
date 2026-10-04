@@ -41,7 +41,7 @@ export function ftsQuery(q: string): string | null {
 }
 
 /** Search ranking tiers, best first: the words as one phrase, every word whole
- * (FTS5 queries for record_fts), and the same two as GLOBs over the metadata,
+ * (FTS5 queries for record_fts), and the same two as " word " needles for the metadata,
  * so "AFFA" ranks a whole-word hit above "Affairs" and "men in black" ranks the
  * phrase above pages that merely hold all three words. */
 export function searchTiers(q: string) {
@@ -49,15 +49,19 @@ export function searchTiers(q: string) {
   const all = (q.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).slice(0, 8);
   const words = all.filter((w) => w.length > 1);
   if (!words.length) return null;
-  // Words are letters/digits only, so they carry no GLOB or FTS syntax.
-  const B = "[^a-z0-9]";
+  // Words are letters/digits only, so they carry no FTS syntax.
   return {
     phrase: `"${all.join(" ")}"`,
     exact: words.map((w) => `"${w}"`).join(" "),
-    metaPhrase: `*${B}${all.join(B)}${B}*`,
-    metaWords: words.map((w) => `*${B}${w}${B}*`),
+    metaPhrase: ` ${all.join(" ")} `,
+    metaWords: words.map((w) => ` ${w} `),
   };
 }
+
+// META_HAY with separators turned into spaces, padded, so a " word " needle
+// finds whole words. Matched with instr(), not GLOB: D1 rejects LIKE/GLOB
+// patterns over 50 bytes, which a 4-word phrase pattern passes.
+const META_SEPS = ["-", "_", ".", ",", ":", ";", "/", "(", ")", "''", '"', "“", "”", "‘", "’"];
 
 // Metadata match: every word of q is a substring of id/title/agency/location/
 // summary/date, in any field and order ("uap pr104" finds DOW-UAP-PR104).
@@ -127,13 +131,14 @@ export async function listRecords(req: Request, env: Env) {
   if (tiers && fts) {
     // Best tier of either side (0 phrase, 1 all words whole, 2 prefix/substring),
     // metadata before text within a tier, then the best page's bm25.
-    const hay = `(' '||${META_HAY}||' ')`;
-    const metaTier = `CASE WHEN ${hay} GLOB ? THEN 0 WHEN ${tiers.metaWords.map(() => `${hay} GLOB ?`).join(" AND ")} THEN 1 WHEN ${meta.sql} THEN 2 ELSE 3 END`;
-    join = `LEFT JOIN (SELECT record_id, min(rank) bm FROM record_fts WHERE record_fts MATCH ? GROUP BY record_id) h ON h.record_id = r.id`;
-    joinBind.push(fts);
+    const hay = `(' '||${META_SEPS.reduce((h, c) => `replace(${h}, '${c}', ' ')`, `replace(${META_HAY}, char(10), ' ')`)}||' ')`;
+    const metaTier = `CASE WHEN instr(${hay}, ?) THEN 0 WHEN ${tiers.metaWords.map(() => `instr(${hay}, ?)`).join(" AND ")} THEN 1 WHEN ${meta.sql} THEN 2 ELSE 3 END`;
+    // vb: a page holds q exactly as typed, case and all ("AFFA" over OCR's "Bender Affa ir").
+    join = `LEFT JOIN (SELECT record_id, min(rank) bm, max(instr(body, ?)) > 0 vb FROM record_fts WHERE record_fts MATCH ? GROUP BY record_id) h ON h.record_id = r.id`;
+    joinBind.push(q, fts);
     const textTier = `CASE WHEN r.id IN (SELECT record_id FROM record_fts WHERE record_fts MATCH ?) THEN 0
       WHEN r.id IN (SELECT record_id FROM record_fts WHERE record_fts MATCH ?) THEN 1 WHEN h.bm IS NOT NULL THEN 2 ELSE 3 END`;
-    order = `min(${metaTier}, ${textTier}), ${metaTier}, h.bm IS NULL, h.bm, ${order}`;
+    order = `min(${metaTier}, ${textTier}), ${metaTier}, h.vb DESC, h.bm IS NULL, h.bm, ${order}`;
     const metaBind = [tiers.metaPhrase, ...tiers.metaWords, ...meta.bind];
     orderBind.push(...metaBind, tiers.phrase, tiers.exact, ...metaBind);
   } else if (q && !sort) {
