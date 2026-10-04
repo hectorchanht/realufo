@@ -71,13 +71,16 @@ export function TextSizeBadge({ style, up = false, size = BADGE }: { style: CSSP
         createPortal(
           <div
             ref={pop}
-            className="fixed z-50 w-[180px] rounded-xl border border-line bg-bg2 p-1.5 shadow-lg animate-[fadeup_.2s_ease_both]"
+            // px throughout (inline font-size skips pxToRem): the popover mustn't grow
+            // with the text size it sets, or A+ gets pushed out at 250%+.
+            className="fixed z-50 w-[180px] rounded-[12px] border border-line bg-bg2 p-[6px] font-mono font-medium shadow-lg animate-[fadeup_.2s_ease_both]"
             style={{
+              fontSize: 13,
               right: Math.max(8, innerWidth - open.right - 8),
               ...(up ? { bottom: innerHeight - open.top + 8 } : { top: open.bottom + 8 }),
             }}
           >
-            <TextSizer className="flex items-center gap-2 font-mono text-[13px] font-medium" />
+            <TextSizer className="flex items-center gap-[8px]" />
           </div>,
           document.body
         )}
