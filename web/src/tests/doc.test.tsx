@@ -738,6 +738,32 @@ describe("Doc", () => {
     expect(screen.getByRole("slider", { name: "Seek" })).toBeInTheDocument();
   });
 
+  it("shared view: ?z/cx/cy/rot applies on load; the link chip copies filters + view", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    renderDoc("/doc/rec1?br=120&z=2&cx=0.25&cy=0.5&rot=90");
+    const img = document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
+    const panel = img.closest("[data-chrome]") as HTMLElement;
+    panel.getBoundingClientRect = () => ({ width: 400, height: 300, top: 0, left: 0, right: 400, bottom: 300, x: 0, y: 0, toJSON: () => ({}) });
+    Object.defineProperty(img, "naturalWidth", { value: 800 });
+    Object.defineProperty(img, "naturalHeight", { value: 600 });
+    fireEvent.load(img);
+    expect(img.style.transform).toContain("rotate(90deg)");
+    expect(screen.getByRole("button", { name: "Reset zoom" })).toHaveTextContent("2.0×");
+    fireEvent.click(screen.getByRole("button", { name: "Copy link to this view" }));
+    const url = new URL(writeText.mock.calls[0][0]);
+    expect(url.pathname).toBe("/doc/rec1");
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({ br: "120", z: "2", cx: "0.25", cy: "0.5", rot: "90" });
+  });
+
   it("video key moments: parsed from the official description, click seeks, summary keeps only prose", () => {
     useRecordMock.mockReturnValue({
       data: {

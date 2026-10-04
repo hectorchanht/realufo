@@ -68,3 +68,49 @@ export function zoomAt(v: MediaView, box: Size, pic: Size, factor: number, px: n
   const f = z / v.z;
   return clampView({ ...v, z, x: sx - f * (sx - v.x), y: sy - f * (sy - v.y) }, box, pic);
 }
+
+// URL form of a view, for share links: zoom, rotation, flip and the picture
+// point at the panel centre (cx/cy, 0–1), so the same spot lands in the
+// middle on any screen size.
+export const VIEW_PARAMS = ["z", "cx", "cy", "rot", "flip"];
+
+/** Write a view into `sp` (in place); nothing for the default view. */
+export function viewToParams(sp: URLSearchParams, v: MediaView, box: Size, pic: Size) {
+  for (const k of VIEW_PARAMS) sp.delete(k);
+  if (v.z > 1) {
+    const c = pointToUV(box, box.w / 2, box.h / 2, pic, v);
+    sp.set("z", String(+v.z.toFixed(2)));
+    if (Number.isFinite(c.u + c.v)) {
+      sp.set("cx", String(+c.u.toFixed(3)));
+      sp.set("cy", String(+c.v.toFixed(3)));
+    }
+  }
+  if (v.rot) sp.set("rot", String(v.rot));
+  if (v.flip) sp.set("flip", "1");
+}
+
+/** Read a view off the URL for this panel; null when there is none (or it's junk). */
+export function viewFromParams(sp: URLSearchParams, box: Size, pic: Size): MediaView | null {
+  const n = (k: string, d: number) => {
+    const x = Number(sp.get(k) ?? d);
+    return Number.isFinite(x) ? x : d;
+  };
+  const rot = n("rot", 0);
+  const v: MediaView = {
+    ...DEFAULT_VIEW,
+    z: Math.min(MAX_ZOOM, Math.max(1, n("z", 1))),
+    rot: rot === 90 || rot === 180 || rot === 270 ? rot : 0,
+    flip: sp.get("flip") === "1",
+  };
+  if (v.z === 1 && !v.rot && !v.flip) return null;
+  // put picture point (cx, cy) at the panel centre: forward of pointToUV's undo
+  const { cw, ch, s } = fit(box, pic, v.rot);
+  const k = v.z * s;
+  let ux = (Math.min(1, Math.max(0, n("cx", 0.5))) - 0.5) * cw;
+  const uy = (Math.min(1, Math.max(0, n("cy", 0.5))) - 0.5) * ch;
+  if (v.flip) ux = -ux;
+  const r = (v.rot * Math.PI) / 180;
+  const cos = Math.round(Math.cos(r));
+  const sin = Math.round(Math.sin(r));
+  return clampView({ ...v, x: -k * (ux * cos - uy * sin), y: -k * (ux * sin + uy * cos) }, box, pic);
+}

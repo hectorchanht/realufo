@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_VIEW, clampView, pointToUV, zoomAt } from "../lib/mediaView";
+import { DEFAULT_VIEW, clampView, pointToUV, viewFromParams, viewToParams, zoomAt } from "../lib/mediaView";
 
 // 400×300 panel, 800×600 picture → drawn 400×300, filling the box.
 const box = { w: 400, h: 300 };
@@ -36,5 +36,33 @@ describe("mediaView", () => {
   it("clamps zoom to 1–8 and recentres at 1×", () => {
     expect(zoomAt(DEFAULT_VIEW, box, pic, 100, 0, 0).z).toBe(8);
     expect(clampView({ ...DEFAULT_VIEW, x: 50, y: -20 }, box, pic)).toMatchObject({ x: 0, y: 0 });
+  });
+
+  it("view survives a URL round trip (same spot at the panel centre, any panel size)", () => {
+    for (const rot of [0, 90, 180, 270] as const) {
+      for (const flip of [false, true]) {
+        const v = zoomAt({ ...DEFAULT_VIEW, rot, flip }, box, pic, 3, 320, 60);
+        const sp = new URLSearchParams("t=4");
+        viewToParams(sp, v, box, pic);
+        expect(sp.get("t")).toBe("4");
+        const other = { w: 600, h: 450 }; // the friend's screen is bigger
+        const back = viewFromParams(sp, other, pic)!;
+        expect(back).toMatchObject({ rot, flip });
+        expect(back.z).toBeCloseTo(3);
+        const a = pointToUV(box, box.w / 2, box.h / 2, pic, v);
+        const b = pointToUV(other, other.w / 2, other.h / 2, pic, back);
+        expect(b.u).toBeCloseTo(a.u, 2);
+        expect(b.v).toBeCloseTo(a.v, 2);
+      }
+    }
+  });
+
+  it("default view writes nothing; junk params read as no view", () => {
+    const sp = new URLSearchParams();
+    viewToParams(sp, DEFAULT_VIEW, box, pic);
+    expect(sp.toString()).toBe("");
+    expect(viewFromParams(sp, box, pic)).toBeNull();
+    expect(viewFromParams(new URLSearchParams("z=abc&rot=45"), box, pic)).toBeNull();
+    expect(viewFromParams(new URLSearchParams("z=99"), box, pic)!.z).toBe(8);
   });
 });

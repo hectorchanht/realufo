@@ -55,7 +55,7 @@ import { promoteCommentOpts } from "../lib/promoteComment";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { sourceLinks } from "../lib/sourceLinks";
 import { formatMoment, parseMoment, recordMedia } from "../lib/recordMedia";
-import { DEFAULT_VIEW, viewTransform } from "../lib/mediaView";
+import { DEFAULT_VIEW, VIEW_PARAMS, viewFromParams, viewToParams, viewTransform } from "../lib/mediaView";
 import { useZoomPan } from "../lib/useZoomPan";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
 import { Skeleton } from "../components/Skeleton";
@@ -227,6 +227,20 @@ export function Doc() {
     deadBottom: nativeControls ? 48 : 0,
     onShiftWheel: lens ? (d) => setMag((m) => LENS_MAGS[Math.min(LENS_MAGS.length - 1, Math.max(0, LENS_MAGS.indexOf(m) + d))]) : undefined,
   });
+  // A shared view (?z=&cx=&cy=&rot=&flip=, see handleShare) applies once the
+  // picture's size is known, then leaves the URL: the live view isn't synced
+  // there, so a stale copy must not survive into reloads or prev/next.
+  useEffect(() => {
+    if (!pic || !panel) return;
+    const sp = new URLSearchParams(paramsRef.current);
+    if (!VIEW_PARAMS.some((k) => sp.has(k))) return;
+    const r = panel.getBoundingClientRect();
+    const v = viewFromParams(sp, { w: r.width, h: r.height }, pic);
+    if (v) setView(v);
+    for (const k of VIEW_PARAMS) sp.delete(k);
+    paramsRef.current = sp;
+    setSearchParams(sp, { replace: true });
+  }, [pic, panel, setSearchParams]);
   const startAt = parseMoment(searchParams.get("t")) ?? undefined;
   // ?p=N: a PDF page, the document equivalent of ?t= (article evidence links use it).
   const pdfPage = Math.max(0, Math.floor(Number(searchParams.get("p")))) || undefined;
@@ -275,6 +289,7 @@ export function Doc() {
     const sp = new URLSearchParams(searchParams);
     sp.delete("t"); // a moment belongs to this file, not the next
     sp.delete("p"); // so does a page
+    for (const k of VIEW_PARAMS) sp.delete(k); // and a shared view
     if (targetPage > 1) sp.set("page", String(targetPage));
     else sp.delete("page");
     const qs = sp.toString();
@@ -423,11 +438,18 @@ export function Doc() {
     window.open(fileHref, "_blank", "noopener,noreferrer");
   }
 
-  function handleShare(t: number) {
-    const url = `${window.location.origin}/doc/${id}?t=${t.toFixed(2)}`;
+  // Link to this file as seen: filters, lens, the zoomed/rotated view and (video) the moment.
+  function handleShare(t?: number) {
+    const sp = new URLSearchParams(toolSp);
+    if (t !== undefined) sp.set("t", t.toFixed(2));
+    if (pic && panel) {
+      const r = panel.getBoundingClientRect();
+      viewToParams(sp, view, { w: r.width, h: r.height }, pic);
+    }
+    const url = `${window.location.origin}/doc/${id}${sp.size ? `?${sp}` : ""}`;
     if (!navigator.clipboard) return toast(url);
     navigator.clipboard.writeText(url).then(
-      () => toast(`Link to ${formatMoment(t)} copied`),
+      () => toast(t !== undefined ? `Link to ${formatMoment(t)} copied` : "Link to this view copied"),
       () => toast(url),
     );
   }
@@ -692,6 +714,7 @@ export function Doc() {
           view={view}
           onView={setView}
           onZoom={zoom.zoomBy}
+          onLink={media === "image" ? () => handleShare() : undefined}
           panelSlot={media === "video" ? setSpeedSlot : undefined}
           // desktop only: shortcuts need a keyboard
           keysHelp={

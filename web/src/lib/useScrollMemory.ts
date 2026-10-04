@@ -7,6 +7,7 @@
 // half-loaded page's clamped scrollTop never overwrites the real one.
 import { useLayoutEffect, type RefObject } from "react";
 import { TOOL_PARAMS } from "../components/ImageTools";
+import { VIEW_PARAMS } from "./mediaView";
 
 const saved = new Map<string, number>();
 const RESTORE_MS = 1500;
@@ -15,7 +16,7 @@ const RESTORE_MS = 1500;
  * the file page and ?p=N only turns its full-text page, so neither counts as a new page. */
 export function scrollKey(pathname: string, search: string): string {
   const sp = new URLSearchParams(search);
-  for (const k of TOOL_PARAMS) sp.delete(k);
+  for (const k of [...TOOL_PARAMS, ...VIEW_PARAMS]) sp.delete(k);
   sp.delete("p");
   const qs = sp.toString();
   return qs ? `${pathname}?${qs}` : pathname;

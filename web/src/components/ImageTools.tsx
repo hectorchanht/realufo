@@ -7,7 +7,7 @@
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode, RefObject } from "react";
-import { Contrast, DropletOff, Droplet, Flame, FlipHorizontal2, Focus, Keyboard, Rainbow, RotateCcw, RotateCw, Search, Shrink, SlidersHorizontal, Sun, SunMoon, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Contrast, DropletOff, Droplet, Flame, FlipHorizontal2, Focus, Keyboard, Link, Rainbow, RotateCcw, RotateCw, Search, Shrink, SlidersHorizontal, Sun, SunMoon, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { DEFAULT_VIEW, MAX_ZOOM, pointToUV } from "../lib/mediaView";
 import type { MediaView } from "../lib/mediaView";
@@ -204,6 +204,7 @@ export function MediaToolbar({
   view,
   onView,
   onZoom,
+  onLink,
   keysHelp,
   panelSlot,
 }: {
@@ -217,6 +218,8 @@ export function MediaToolbar({
   onView: (v: MediaView) => void;
   /** Frame zoom by a factor around the panel centre. */
   onZoom: (f: number) => void;
+  /** Copy a link to this view (images; video has its own moment link). */
+  onLink?: () => void;
   /** Keyboard/mouse shortcuts, shown as a hover tooltip. */
   keysHelp?: string;
   /** Top row of the Adjust panel, for controls another component portals in (video speed/loop). */
@@ -298,6 +301,11 @@ export function MediaToolbar({
             <Shrink {...ico} />
             {view.z.toFixed(1)}×
             <X {...ico} size={12} />
+          </button>
+        )}
+        {onLink && (
+          <button type="button" aria-label="Copy link to this view" title="Copy link to this view" onClick={onLink} className={`${chip} ${off}`}>
+            <Link {...ico} />
           </button>
         )}
         {keysHelp && <ShortcutsTip help={keysHelp} />}
