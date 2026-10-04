@@ -1,9 +1,11 @@
 // worker/lib/gate.ts
 import type { Env } from "../env";
-import { CDN, type Candidate } from "./xpick";
-import type { Draft } from "./xbot";
+import { CDN, nextCandidate, withinBudget, type Candidate } from "./xpick";
+import { publishDraft, stage, type Draft } from "./xbot"; // xbot imports gate back: only used inside functions, never at load
 import { createJob, move, setMessages, type Job } from "./jobs";
 import { sendMedia, sendMessage, TgError } from "./tg";
+import { tick as socialTick } from "./social/tick";
+import { indexNow } from "./indexnow";
 
 // The Telegram gate (spec 2026-10-04-realufo-telegram-gate-design): nothing is posted
 // until the owner taps ✅ on a preview in the private chat.
@@ -61,3 +63,53 @@ export async function preview(env: Env, job: Job): Promise<void> {
   }
   await setMessages(env, job.id, msgs);
 }
+
+// Runs an approved job: the same writes the pre-gate paths made. Caller has already moved it
+// post_wait → approved (exactly once). Ends posted or failed; returns a line for the owner.
+export async function approve(env: Env, job: Job, now = new Date()): Promise<string> {
+  try {
+    let line = "";
+    if (job.kind === "post" || job.kind === "showcase") {
+      const d: Draft = { ...job.payload.x, text: job.caption ?? job.payload.x.text };
+      line = await postDraft(env, d, now);
+    } else if (job.kind === "article") {
+      const p = job.payload as { sql: string[]; urls: string[]; showcase?: { record: string; text: string } };
+      // check the half that can refuse BEFORE writing site rows, so a failed job leaves nothing behind
+      if (p.showcase && (await env.DB.prepare("SELECT 1 FROM x_posts WHERE stream='showcase' AND ref=?").bind(p.showcase.record).first()))
+        throw new Error(`showcase already posted for ${p.showcase.record}`);
+      if (p.sql.length) await env.DB.batch(p.sql.map((s) => env.DB.prepare(s)));
+      await indexNow(p.urls);
+      line = `site: ${p.urls[0] ?? "rows written"}`;
+      if (p.showcase) {
+        const c = await nextCandidate({ ...env, X_FORCE_SHOWCASE: p.showcase.record, X_SHOWCASE_TEXT: p.showcase.text }, now);
+        const d = c && c.stream === "showcase" ? await stage(env, c, now) : null;
+        if (!d) throw new Error("showcase video missing in R2, already posted, or over budget");
+        line += ` · ${await postDraft(env, d, now)}`;
+      }
+    } else if (job.kind === "poll") {
+      line = "poll approved: posts on the next tick";
+    } else {
+      throw new Error(`kind ${job.kind} has no approve step yet`);
+    }
+    await move(env, job.id, job.version, ["approved"], "posted");
+    return `✅ #${job.id} ${line}`;
+  } catch (e) {
+    const msg = errMsg(e);
+    await move(env, job.id, job.version, ["approved"], "failed", msg);
+    return `⚠️ #${job.id} failed: ${msg}`;
+  }
+}
+
+async function postDraft(env: Env, d: Draft, now: Date): Promise<string> {
+  if (!(await withinBudget(env, d.cost, now, true))) throw new Error("over the monthly X budget");
+  const id = await publishDraft(env, d, now);
+  if (id === null) return "already on X";
+  // xbot swallows X's refusals (it drops the row on 401/402/403, marks it failed on other 4xx): read the outcome back
+  const r = await env.DB.prepare("SELECT status, error FROM x_posts WHERE id=?").bind(id).first<{ status: string; error: string | null }>();
+  if (!r || r.status === "failed") throw new Error(r?.error ?? "X rejected the post (auth or credits)");
+  await socialTick(env, now).catch(() => {}); // start the fan-out now; the cron finishes slow platforms
+  return `X row ${id} (${r.status}) · fan-out started`;
+}
+
+// "approved" too: frees a job stranded when the Worker died mid-approve
+export const skip = (env: Env, job: Job) => move(env, job.id, job.version, ["post_wait", "brief_wait", "video_wait", "handmade", "prep", "media", "making", "approved"], "skipped");

@@ -1,0 +1,58 @@
+// worker/routes/tg.ts
+import type { Env } from "../env";
+import { error, json } from "../lib/json";
+import { sameSecret } from "../lib/secret";
+import { getJob, jobByMessage, move, revise } from "../lib/jobs";
+import { approve, preview, skip } from "../lib/gate";
+import { answerCallback, clearButtons, sendMessage } from "../lib/tg";
+import { command } from "../lib/tgcmd";
+
+// POST /__tg: Telegram webhook (spec 2026-10-04-realufo-telegram-gate-design). Owner only;
+// everything else is answered 200 and ignored so Telegram doesn't retry it.
+export async function tgWebhook(req: Request, env: Env): Promise<Response> {
+  const secret = req.headers.get("x-telegram-bot-api-secret-token") ?? "";
+  if (!env.TELEGRAM_WEBHOOK_SECRET || req.method !== "POST" || !(await sameSecret(secret, env.TELEGRAM_WEBHOOK_SECRET))) return error(404, "not found");
+  const u = await req.json<any>().catch(() => ({}));
+  const from = u.callback_query?.from?.id ?? u.message?.from?.id;
+  if (!from || String(from) !== String(env.TELEGRAM_OWNER_ID)) return json({ ok: true });
+  if (u.callback_query) await onButton(env, u.callback_query);
+  else if (u.message) await onMessage(env, u.message);
+  return json({ ok: true });
+}
+
+// A stale callback id must never leave a job half-moved, so acks are best effort.
+const ack = (env: Env, id: string, text?: string) => answerCallback(env, id, text).catch(() => {});
+
+async function onButton(env: Env, q: any) {
+  const [action, id, v] = String(q.data ?? "").split(":");
+  const job = await getJob(env, Number(id));
+  const chat = env.TELEGRAM_OWNER_ID!;
+  if (!job) return ack(env, q.id, "job not found");
+  if (action === "skip") {
+    const ok = await skip(env, job.version === Number(v) ? job : { ...job, version: -1 });
+    await ack(env, q.id, ok ? "skipped" : "already handled");
+    if (ok) await clearButtons(env, chat, q.message.message_id).catch(() => {});
+    return;
+  }
+  if (action !== "ok") return ack(env, q.id);
+  if (!(await move(env, job.id, Number(v), ["post_wait"], "approved"))) return ack(env, q.id, "already handled or out of date");
+  await ack(env, q.id, "posting…"); // answer first: approval can take a while
+  await clearButtons(env, chat, q.message.message_id).catch(() => {});
+  await sendMessage(env, chat, await approve(env, { ...job, version: Number(v) }));
+}
+
+async function onMessage(env: Env, m: any) {
+  const chat = env.TELEGRAM_OWNER_ID!;
+  if (m.reply_to_message && typeof m.text === "string") {
+    const job = await jobByMessage(env, m.reply_to_message.message_id);
+    if (!job) return sendMessage(env, chat, "That preview is out of date (or not a job). Reply to the newest preview.", undefined, m.message_id);
+    if (job.kind !== "post" && job.kind !== "showcase") return sendMessage(env, chat, `#${job.id} is a ${job.kind} job; edit it at its source and re-send.`);
+    if (job.status !== "post_wait") return sendMessage(env, chat, `#${job.id} is ${job.status}; only waiting previews can be edited.`);
+    const link = (job.caption ?? "").match(/https:\/\/realufo\.org\/\S+$/)?.[0];
+    const text = link && !m.text.includes(link) ? `${m.text.trim()}\n${link}` : m.text.trim();
+    const next = await revise(env, job.id, job.version, text, m.text);
+    if (!next) return sendMessage(env, chat, `#${job.id} changed meanwhile; reply to the newest preview.`);
+    return preview(env, next);
+  }
+  return command(env, m);
+}

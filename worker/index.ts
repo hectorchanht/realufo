@@ -26,6 +26,7 @@ import { llms, llmsFull } from "./routes/llms";
 import { recordText } from "./routes/text";
 import { hubsIndex, getHub } from "./routes/hubs";
 import { releasesApi } from "./routes/releases";
+import { tgWebhook } from "./routes/tg";
 import { tick } from "./lib/xbot";
 import { tick as socialTick } from "./lib/social/tick";
 import { pollTick } from "./lib/xpoll";
@@ -143,6 +144,7 @@ export default {
       return res ?? error(404, "not found");
     }
     if (url.pathname === "/__tick") return manualTick(req, env);
+    if (url.pathname === "/__tg") return tgWebhook(req, env);
     if (url.pathname === "/sitemap.xml") return sitemap(req, env);
     if (/^\/(rss(\.xml)?|feed(\.xml)?)$/.test(url.pathname)) return rss(req, env);
     if (url.pathname === "/llms.txt") return llms(req, env);
