@@ -26,9 +26,37 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@realufo_org" />
     <!--/META-->
-    <!-- Homepage: start /api/feed now instead of after the bundle loads — its first
-         thumbnail is the LCP image. useFeed() (src/api/queries.ts) takes it over. -->
-    <script>if (location.pathname === "/") window.__feed = fetch("/api/feed").then((r) => (r.ok ? r.json() : null)).catch(() => null);</script>
+    <!-- Early fetch (docs/superpowers/specs/2026-10-04-realufo-early-fetch-design.md): start this
+         route's first API calls now, while the bundle downloads; api.get (src/api/client.ts)
+         adopts each once. Paths must equal the hooks' requests: src/tests/earlyFetch.test.ts. -->
+    <script>
+      try {
+        (function () {
+          var p = location.pathname, bare = !location.search, list = "/api/records?limit=40&offset=0";
+          var paths = ["/api/bootstrap", "/api/hubs"], doc = /^\/doc\/([^/]+)$/.exec(p);
+          if (p === "/") paths.push("/api/feed");
+          else if (doc) {
+            var id = decodeURIComponent(doc[1]);
+            paths.push("/api/records/" + id, "/api/records/" + id + "/comments");
+            if (bare) paths.push(list);
+          } else if (p === "/archive" && bare) paths.push("/api/records/facets", list);
+          var headers = {}, anon = null;
+          try { anon = localStorage.getItem("ufo_anon"); } catch (e) {}
+          if (anon) headers["X-Anon-Id"] = anon;
+          var early = (window.__early = {});
+          paths.forEach(function (u) {
+            early[u] = {
+              at: performance.now(),
+              p: fetch(u, { headers: headers })
+                .then(function (r) {
+                  return r.ok ? r.json().then(function (d) { return { d: d, stale: r.headers.get("X-SW-Cache") === "1" }; }) : null;
+                })
+                .catch(function () { return null; }),
+            };
+          });
+        })();
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -108,19 +108,9 @@ export function useBootstrap() {
   });
 }
 
-// index.html kicks /api/feed off before the bundle loads (homepage LCP). The first
-// fetch adopts that promise; a failed one (resolves null) falls back to a normal request.
-type EarlyFeed = { __feed?: Promise<Feed | null> };
-
+// index.html starts /api/feed before the bundle loads (homepage LCP image); api.get adopts it.
 export function useFeed() {
-  return useQuery({
-    queryKey: qk.feed,
-    queryFn: () => {
-      const early = (window as EarlyFeed).__feed;
-      delete (window as EarlyFeed).__feed;
-      return early ? early.then((d) => d ?? api.get<Feed>("/api/feed")) : api.get<Feed>("/api/feed");
-    },
-  });
+  return useQuery({ queryKey: qk.feed, queryFn: () => api.get<Feed>("/api/feed") });
 }
 
 // Shorts player queue / archive search strip, SHORTS_PAGE at a time (`data` =
