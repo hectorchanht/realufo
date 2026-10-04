@@ -1,6 +1,7 @@
 import { env, applyD1Migrations } from "cloudflare:test";
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from "vitest";
 import { token } from "../lib/social/auth";
+import { tick } from "../lib/social/tick";
 import { SocialError } from "../lib/social/common";
 
 beforeAll(() => applyD1Migrations(env.DB, env.TEST_MIGRATIONS));
@@ -23,6 +24,8 @@ beforeEach(async () => {
     if (u.startsWith("https://graph.threads.net/refresh_access_token")) return Response.json({ access_token: "TH2", expires_in: 5184000 });
     if (u === "https://open.tiktokapis.com/v2/oauth/token/") {
       expect(String(init.body)).toContain("grant_type=refresh_token");
+      // TikTok answers invalid_request to fetch's default "…;charset=UTF-8" form type
+      expect(new Headers(init.headers).get("content-type")).toBe("application/x-www-form-urlencoded");
       return Response.json({ access_token: "TT2", expires_in: 86400, refresh_token: "RT2" });
     }
     throw new Error("unexpected fetch " + u);
@@ -64,5 +67,26 @@ describe("token", () => {
     const e = await token(E, "tiktok", NOW).catch((x) => x);
     expect(e).toBeInstanceOf(SocialError);
     expect(e.status).toBe(401);
+    expect(e.body).toContain('social 400: {"error":"nope"}'); // the platform's answer reaches social_posts.error
+  });
+  it("tiktok refresh window: > 6 h left keeps the token, ≤ 6 h refreshes", async () => {
+    await put("tiktok", "TT1", "2026-10-10 18:01:00", "RT1");
+    expect(await token(E, "tiktok", NOW)).toBe("TT1");
+    await env.DB.prepare("UPDATE social_auth SET expires_at='2026-10-10 17:59:00'").run();
+    expect(await token(E, "tiktok", NOW)).toBe("TT2");
+  });
+});
+
+describe("tick refreshes rotating tokens", () => {
+  const idle = { needs: "video", vertical: true, configured: () => true, publish: async () => { throw new Error("no post expected"); } } as any;
+  it("tiktok token near expiry is refreshed on a tick with nothing to post", async () => {
+    await put("tiktok", "TT1", "2026-10-10 14:00:00", "RT1");
+    await tick({ ...E, FEATURE_SOCIAL_TIKTOK: "on", SOCIAL_SINCE: "" }, NOW, async () => {}, { tiktok: idle });
+    expect(await row("tiktok")).toMatchObject({ access_token: "TT2", refresh_token: "RT2" });
+  });
+  it("dry mode never refreshes", async () => {
+    await put("tiktok", "TT1", "2026-10-10 14:00:00", "RT1");
+    await tick({ ...E, FEATURE_SOCIAL_TIKTOK: "dry", SOCIAL_SINCE: "" }, NOW, async () => {}, { tiktok: idle });
+    expect(calls).toEqual([]);
   });
 });

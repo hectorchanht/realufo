@@ -175,7 +175,8 @@ describe("social tick", () => {
     const A = { fb: fake("fb", { publish: async () => { throw new SocialError(400, '{"error":{"code":190}}'); } }) };
     await tick(E({ FEATURE_SOCIAL_FB: "on" }), NOW, noSleep, A);
     expect(await rows()).toEqual([]);
-    expect((await env.DB.prepare("SELECT count(*) n FROM social_posts WHERE deleted_at IS NOT NULL").first<any>()).n).toBe(1);
+    // the halt reason stays on the retired row (visible in D1, not only in the logs)
+    expect(await env.DB.prepare("SELECT error FROM social_posts WHERE deleted_at IS NOT NULL").all<any>()).toMatchObject({ results: [{ error: 'Error: social 400: {"error":{"code":190}}' }] });
   });
 
   it("a soft-deleted row is posted again; the old row stays as history", async () => {
