@@ -192,3 +192,24 @@ def test_filters_catch_the_phrasings_seen_in_pilot_4():
     assert summaries._tidy("Pages 392–399 of the document list reconnaissance terms.", 392, 399) == "Reconnaissance terms."
     t = "A club meeting in Inglewood on June 25, 1966. No UFOs, UAP, flying saucers, or unidentified objects are mentioned."
     assert summaries._drop_absence(t) == "A club meeting in Inglewood on June 25, 1966."
+
+def test_openers_with_long_of_phrases_and_more_verbs_are_stripped():
+    assert summaries._tidy("Pages 13–15 of the 2024 National Defense Authorization Act outline sections on cyber.", 13, 15) == "Sections on cyber."
+    assert summaries._tidy("Pages 25–29 of a declassified document discuss warp drives.", 25, 29) == "Warp drives."
+    assert summaries._tidy("Pages 4–6 define terms related to UAP.", 4, 6) == "Terms related to UAP."
+
+def test_retidy_rewrites_stored_text_without_calling_the_model(monkeypatch):
+    rows = [{"id": "A", "ai_summary": "A summary. It does not mention saucers.",
+             "ai_sections": json.dumps([{"from": 1, "to": 3, "text": "Pages 1–3 of the act outline funding."}])},
+            {"id": "B", "ai_summary": "Clean.", "ai_sections": json.dumps([{"from": 1, "to": 2, "text": "Memos."}])}]
+    monkeypatch.setattr(summaries.d1, "_d1_json", lambda sql: rows)
+    monkeypatch.setattr(summaries.cfapi, "chat", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no model calls")))
+    written = []
+    monkeypatch.setattr(summaries, "flush", lambda lines, work: written.extend(lines))
+    with pytest.raises(SystemExit) as e:
+        summaries.main(["--retidy"])
+    assert e.value.code == 0 and len(written) == 1 and "'A'" in written[0]
+    assert "Funding." in written[0] and "does not mention" not in written[0]
+
+def test_noun_like_verbs_inside_the_of_phrase_dont_cut_too_early():
+    assert summaries._tidy("Pages 1–3 of FBI reports describe Seattle memos.", 1, 3) == "Seattle memos."

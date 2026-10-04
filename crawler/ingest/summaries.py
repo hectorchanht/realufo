@@ -94,8 +94,10 @@ def _short(raw, words: int) -> str:
 # qwen3 ignores "never claim absence" when also told to flag UFO mentions, so filter in code.
 ABSENT = re.compile(r"\b(?:no|not|without(?: any)?) (?:mention|reference)|\bdo(?:es)? not (?:mention|refer|discuss)"
                     r"|\bno\b[^.]{0,80}\b(?:is|are|were|was) (?:mentioned|referenced|discussed)", re.I)
-OPENER = re.compile(r"^(?:(?:these|the)\s+)?pages?\s*(?:(\d+)(?:\s*[\u2013-]\s*(\d+))?\s*)?(?:of\s+(?:the\s+)?\S+\s+)?"
-                    r"(?:contains?|describes?|details?|mentions?|discuss(?:es)?|includes?|covers?|outlines?|shows?|presents?|lists?)\s+", re.I)
+VERBS = (r"contains?|describes?|details?|mentions?|discuss(?:es)?|includes?|covers?|outlines?|shows?|presents?|lists?"
+         r"|defines?|features?|provides?|summari[sz]es?|address(?:es)?|explains?|concerns?|focus(?:es)? on")
+OPENER = re.compile(r"^(?:(?:these|the)\s+)?pages?\s*(?:(\d+)(?:\s*[\u2013-]\s*(\d+))?\s*)?(?:of\s+.{1,80}?\s+)?"
+                    rf"(?:{VERBS})\s+", re.I)
 
 def _drop_absence(text: str) -> str:
     """Drop sentences claiming the document lacks something (the model saw only part of it)."""
@@ -174,13 +176,32 @@ def _pages(row: dict, work: str) -> list[tuple[int, str]]:
         return list(enumerate(pdf_pages(row["url"], work, row["id"]), 1))
     return [(p["n"], p["text"]) for p in json.loads(row["pages"])]
 
+RETIDY = "SELECT record_id AS id, ai_summary, ai_sections FROM record_text WHERE ai_sections IS NOT NULL"
+
+def retidy(work: str) -> int:
+    """Re-apply the text filters to stored summaries/sections (after a filter fix): no model calls."""
+    changed = 0
+    for r in d1._d1_json(RETIDY):
+        secs = json.loads(r["ai_sections"])
+        new = [{**x, "text": _tidy(_drop_absence(x["text"]), x["from"], x["to"])} for x in secs]
+        summ = _drop_absence(r["ai_summary"] or "") or r["ai_summary"]
+        if new != secs or summ != r["ai_summary"]:
+            flush([row_sql(r["id"], summ, new)], work)
+            changed += 1
+    print(f"retidy changed={changed}")
+    return 0
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="call the model and print; no D1 writes")
     ap.add_argument("--limit", type=int, default=None, help="max records this run")
     ap.add_argument("--ids", nargs="*", default=None, help="only these record ids")
     ap.add_argument("--workers", type=int, default=1, help="records summarised in parallel (calls are network-bound)")
+    ap.add_argument("--retidy", action="store_true", help="re-apply text filters to stored summaries; no model calls")
     args = ap.parse_args(argv)
+    if args.retidy:
+        with tempfile.TemporaryDirectory() as work:
+            sys.exit(retidy(work))
     sql = SELECT.format(ids=f" AND rt.record_id IN ({','.join(d1.sql_q(i) for i in args.ids)})" if args.ids else "",
                         limit=f" LIMIT {int(args.limit)}" if args.limit else "")
     rows = d1._d1_json(" ".join(sql.split()))
