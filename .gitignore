@@ -28,4 +28,5 @@ crawler/seed_asks.json
 showcase/*.mp4
 showcase/articles/*/short/*.mp4
 showcase/.tts/
+showcase/.src/
 crawler/.venv-ocr/
