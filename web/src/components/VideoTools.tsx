@@ -463,6 +463,8 @@ export function KeyMoments({
   const both = official.length > 0 && ai.length > 0;
   const isAi = ai.length > 0 && (src === "ai" || official.length === 0);
   const moments = isAi ? ai : official;
+  // two moments in one second (fleeting events) would both read "00:08": show tenths for the whole list
+  const fine = moments.some((m, i) => i > 0 && Math.floor(m.start) === Math.floor(moments[i - 1].start));
   function choose(next: "official" | "ai") {
     setSrc(next);
     try {
@@ -534,7 +536,7 @@ export function KeyMoments({
             >
               <span className={`flex-none pt-px font-mono text-[10.5px] tabular-nums ${i === active ? "text-signal" : "text-dim"}`}>
                 <Play {...ico} size={10} className="mr-1 inline align-[-1px]" />
-                {formatMoment(m.start, true).slice(0, 5)}
+                {formatMoment(m.start, true).slice(0, fine ? 7 : 5)}
               </span>
               {isAi && (
                 <span className="flex-none self-start rounded border border-amber px-1 font-mono text-[8px] leading-[14px] text-amber">
