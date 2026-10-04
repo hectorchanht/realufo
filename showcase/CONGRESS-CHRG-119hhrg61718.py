@@ -237,9 +237,19 @@ clip(584, 607, 6, CLOSE, [*HEAD,
      T("pause Burlison's X clip at 0:19.8 (frame 595) and catch it", 392, 32),
      f"drawtext=fontfile={FONT}:textfile={hc}:fontcolor={AMB}:fontsize=56:borderw=4:bordercolor=black:x=(w-text_w)/2:y=1256",
      CREDIT, site], 4.6)
-# X: freeze on contact: the open question (frame check: brightness flat, near-white pixels 204 -> 70)
-still(596, TIGHT, [T("No flash at contact", 215, 80), T("Did it even explode?", 300, 80, AMB),
-                   T("frame 596: no brightness spike around the orb", 1256, 32), CREDIT, site], 2.0 if LAZY else 3.5)
+if LAZY:
+    # J1/J2 (lazy): the juicy part of the record itself, on realufo.org's Full Text (quotes marked)
+    site_card("hellfire-site-p46-scif.jpg", 481, [T("Asked about this clip,", 215, 64),
+              T("\"I prefer to answer that in SCIF\"", 300, 54, AMB),
+              T("Dylan Borland, U.S. Air Force veteran  ·  p.46", 1262, 28),
+              T("SCIF = secure room for classified info  ·  \"scare you?\" \"Yes.\"", 1296, 28)], 7.2)
+    site_card("hellfire-site-p32-servers.jpg", 481, [T("Knapp told Congress:", 215, 64),
+              T("\"a whole bank of these videos\"", 300, 58, AMB),
+              T("that Congress \"has not been allowed to see\"  ·  p.32", 1262, 28)], 4.4)
+else:
+    # X: freeze on contact: the open question (frame check: brightness flat, near-white pixels 204 -> 70)
+    still(596, TIGHT, [T("No flash at contact", 215, 80), T("Did it even explode?", 300, 80, AMB),
+                       T("frame 596: no brightness spike around the orb", 1256, 32), CREDIT, site], 2.0 if LAZY else 3.5)
 if not LAZY:
     # C: what Congress heard, on realufo.org's Full Text view (p.46 marked; Knapp is p.32)
     site_card("hellfire-site-p46.jpg", 656, [T("Congress heard it", 215, 66), T("\"bounced right off\"", 300, 76, AMB),
@@ -255,11 +265,11 @@ if not LAZY:
 run(["-i", SRC], ["trim=start_frame=596:end_frame=614,setpts=(PTS-STARTPTS)*3,fps=30,tpad=stop_mode=clone:stop_duration=4",
      MIDP, *dots(PRE, 576, 0, 3.375, 140, 60, always=True), *dots(POST, 597, 3, 3.375, 140, 60), srcstamp(596, 3, 613),
      T("After contact", 215, 84),
-     *seq([(0.2, 1.6, "same line"), (1.6, 2.8, "nearly the same speed"), (2.8, 9, "Through, not off.")] if LAZY else
+     *seq([(0.2, 1.4, "no flash"), (1.4, 2.8, "same line, same speed"), (2.8, 9, "Through, not off.")] if LAZY else
           [(0.2, 1.8, f"before: {PX_PRE:.1f} px per frame"),
            (1.8, 3.2, f"after: {PX_POST:.1f}, turned {abs(ANG_POST - ANG_PRE):.0f}°"), (3.2, 9, "Through, not off.")], 300, 54),
      T(f"before {PX_PRE:.1f} → after {PX_POST:.1f} px/frame, {abs(ANG_POST - ANG_PRE):.0f}° turn  ·  31 tracked frames"
-       if LAZY else "least-squares fit, 31 tracked frames", 1262, 28), CREDIT, site], 4.3 if LAZY else 5.3)
+       if LAZY else "least-squares fit, 31 tracked frames", 1262, 28), CREDIT, site], 4.8 if LAZY else 5.3)
 if not LAZY:
     # M3: why it looks slow: a line-of-sight diagram (the missile path is a thumb's width off our view)
     DIAG = os.path.join(D, "diag.png")
@@ -287,14 +297,18 @@ if not LAZY:
         T(f"speed: AGM-114 published max Mach 1.3, or {V_LO} m/s if slowed", 1296, 26),
         T(f"the range covers scale {MPP_LO*100:.0f}–{MPP_HI*100:.0f} cm per pixel", 1328, 26), site], 10.7)
 if LAZY:
-    # M4 (lazy): one killer number, everyday units (worst-case math in fine print)
-    still(650, TIGHT, ["eq=brightness=-0.45", T("To bounce a Hellfire,", 215, 72), T("this orb would have to weigh", 300, 54, AMB),
-        at(2.0, f"{M_LO/CAR:.0f}–{M_HI/CAR:.0f} cars", 560, 130, AMB),
-        at(2.0, f"in a ball {ORB_LO*100:.0f}–{ORB_HI*100:.0f} cm wide, a car tyre", 730, 44),
-        at(4.0, "Thin and light? It just tears.", 1080, 60, AMB),
-        T(f"{MASS} kg at up to {round(V_HI*3.6, -2):,.0f} km/h  ·  bounce back + barely move (< 5 m/s)", 1262, 26),
-        T(f"orb ≥ {M_LO/1000:.1f}–{M_HI/1000:.1f} t  ·  worst case {RHO_WORST/LEAD:.1f}× as dense as lead", 1296, 26),
-        site], 6.6)
+    # M4 (lazy): the impossibility of a real bounce, in everyday units (worst-case math in fine print).
+    # elephant: an adult bull African elephant ~6 t; altitude ~12,000 ft from the HUD ranges (Metabunk reading)
+    still(650, TIGHT, ["eq=brightness=-0.5", T("If it really bounced off,", 215, 72), T("this orb would weigh", 300, 60, AMB),
+        at(1.4, "an elephant", 590, 120, AMB),
+        at(1.4, f"{M_LO/1000:.1f}–{M_HI/1000:.1f} tonnes  =  {M_LO/CAR:.0f}–{M_HI/CAR:.0f} cars", 735, 46),
+        at(3.0, f"squeezed into a car tyre ({ORB_LO*100:.0f}–{ORB_HI*100:.0f} cm)", 805, 44),
+        at(4.6, "and still floating 12,000 ft up", 875, 48),
+        at(6.2, "Nothing known does that.", 975, 58, AMB),
+        at(7.6, "It just tore through.", 1090, 66, AMB),
+        T(f"{MASS} kg Hellfire at up to {round(V_HI*3.6, -2):,.0f} km/h  ·  bounce back + barely move (< 5 m/s)", 1262, 26),
+        T(f"worst case {RHO_WORST/LEAD:.1f}× as dense as lead  ·  altitude: HUD ranges (Metabunk)", 1296, 26),
+        site], 9.5)
 else:
     # M4: weigh it: energy, then what a "bounce" would demand of a tyre-sized orb (worst case shown)
     still(650, TIGHT, ["eq=brightness=-0.45", T("Now weigh it", 215, 80), T("energy  ·  momentum  ·  density", 300, 50, AMB),
@@ -327,11 +341,12 @@ subprocess.run([F, "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", lst,
 # narration cues (s); quiet 4.0-10.9 so the contact (~4.7 s) and the close-up (6.3-10.9) play clean
 if LAZY:
     SAY = [(0.2, "A drone fires a Hellfire missile at this orb. Watch the crosshair."),
-           (11.0, "No flash at contact."),
-           (13.0, "Track it. Same line, nearly the same speed. It went straight through."),
-           (17.3, "To bounce a Hellfire, this tyre-sized orb would have to weigh three to six cars. Thin and light? It just tears."),
-           (23.9, "In 2024, the Pentagon's U F O office called a look-alike orb a foil balloon."),
-           (28.6, "Read the hearing, page thirty two, on real U F O dot org.")]
+           (11.0, "Asked about this clip, one witness would only answer in a SCIF, a room for classified secrets. Another said it scares him."),
+           (18.2, "And Knapp says there's a whole bank of these videos Congress hasn't been allowed to see."),
+           (22.6, "No flash. Same line, nearly the same speed. It went straight through."),
+           (27.4, "If it bounced off, this tyre-sized orb would weigh as much as an elephant, and still float twelve thousand feet up. Nothing known does that. It just tore through."),
+           (36.9, "In 2024, the Pentagon's U F O office called a look-alike orb a foil balloon."),
+           (41.6, "Read the hearing, page thirty two, on real U F O dot org.")]
 else:
     SAY = [(0.2, "A drone fires a Hellfire missile at this orb. Watch the crosshair."),
            (11.0, "Look closely. No flash at contact. Did it even explode?"),
@@ -354,7 +369,7 @@ MIXED = os.path.join(D, "mix.wav")
 subprocess.run([F, "-v", "error", "-y", *ins, "-filter_complex", fc, "-map", "[a]", MIXED], check=True)
 # subtitles under the headline (y 392); skipped where the screen already carries it (X, C, the M3/M4 cards, end card)
 CAP = subtitles([(t, tts(line)[0]) for t, line in SAY
-                 if not line.startswith(("Look closely", "No flash", "Congress", "Measure it", "On screen", "Now weigh", "To bounce",
+                 if not line.startswith(("Look closely", "No flash", "Congress", "Measure it", "On screen", "Now weigh", "To bounce", "If it bounced", "Asked about", "And Knapp",
                                          "Read the"))], y=392)
 VO = os.path.join(D, "vo.mp4")
 subprocess.run([F, "-v", "error", "-y", "-i", CAT, "-i", MIXED, "-vf", ",".join(CAP), "-map", "0:v", "-map", "1:a",
