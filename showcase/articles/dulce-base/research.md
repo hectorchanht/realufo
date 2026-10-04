@@ -29,7 +29,7 @@ Status 2026-10-03: research in progress, story not written. Archive searched ove
 | DOW-UAP-D143 (AAWSAP DIRD, Laser Lightcraft Nanosatellites, 2010) | p.54 | "Figure 20. DARPA's High Energy Liquid Laser Area Defense System (courtesy of P. Saunders, AFRL/RDS, Kirtland AFB, NM)" | d143-kirtland-laser |
 | AARO-AARO_Historical_Record_Report_Vol_1_2024.pdf | p.6, p.9 | "persistent narrative"; "circular reporting" (never names Dulce) | hrr-persistent, hrr-circular |
 
-Not from the documents (background, from online sources): 1979 date, Bennewitz placing the base under Archuleta Mesa near Dulce. Site search can't find COMETA ("Bennewicz") or the CIA page ("man from Mars") yet: the search index still uses the old capped text, so the story links pages directly (?p=N).
+Not from the documents (background, from online sources): 1979 date, Bennewitz placing the base under Archuleta Mesa near Dulce.
 
 ## Archive hits (quote only these in the story)
 
