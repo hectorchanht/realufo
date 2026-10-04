@@ -47,8 +47,8 @@ def still(img, lines, secs, say, rec, band=(620, 560), box=None, caption=True, s
     vf += [*lines, stamp(*rec)] + (subs(say, sub_y) if caption else [])
     c.seg(["-loop", "1", "-framerate", "30", "-i", img], ",".join(vf), secs, say=say)
 
-PHOTO = dict(band=(440, 800), sub_y=1262)   # the portrait photo gets the tall band
-MRX = (250, 480, 450, 1000)                  # "Mister X" in photo-mrx.jpg
+PHOTO = dict(band=(432, 926), caption=False)  # the photo fills the frame; the headline carries the words
+MRX = (250, 260, 450, 780)                   # "Mister X" in photo-mrx.jpg
 
 def app(lines, secs, say):
     """Archive search "men in black suits": 2 records, Section 9's card quotes p.82; yellow box on the snippet."""
@@ -59,7 +59,7 @@ def app(lines, secs, say):
 TEASE = top("Two agents. One alien?", "It's in the FBI's file", "who are these men?")
 c = Cut()
 # frame 0: the tease (no subtitles), yellow box on "Mister X"
-still(P("photo-mrx.jpg"), TEASE, 2.5, "Two agents. One captured alien. It's in the F B I file.", S5, box=MRX, caption=False, **PHOTO)
+still(P("photo-mrx.jpg"), TEASE, 2.5, "Two agents. One captured alien. It's in the F B I file.", S5, box=MRX, **PHOTO)
 still(P("sold.jpg"), top("New Orleans, May 1950:", "sold for $1.00", "a \"man from Mars\" · p.153"), 2.8,
       "New Orleans, 1950. Someone sells this photo for one dollar.", S5)
 still(P("wiesbaden.jpg"), top("The Army traced it:", "Wiesbaden, Germany", "military police, not agents · p.153"), 2.8,

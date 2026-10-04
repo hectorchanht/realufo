@@ -45,6 +45,6 @@ for name, (segs, contrast) in C.items():
     print(name, out.size)
 # the photo itself (p.154): right half = "Mister X" between two military policemen; whole clipping with caption
 p = Image.open("M5-154.png").convert("RGB")
-p.crop((890, 80, 1680, 1150)).save(f"{OUT}/photo-mrx.jpg", quality=92)
+p.crop((890, 300, 1680, 1150)).save(f"{OUT}/photo-mrx.jpg", quality=92)  # men + "Mister X", arches trimmed
 p.save(f"{OUT}/photo-clipping.jpg", quality=90)
-print("photo-mrx", (790, 1070))
+print("photo-mrx", (790, 850))
