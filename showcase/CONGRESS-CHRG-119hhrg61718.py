@@ -77,6 +77,7 @@ def frame(crop, spot, pal=""):
 VIEW = frame("crop=400:288:120:20", (540, 437))     # wide: x2.7, orb at screen (540,907)
 MID = frame("crop=320:230:140:60", (607, 412))      # x3.4: orb (607,882), missile entry (91,602)
 TIGHT = frame("crop=240:173:200:100", (540, 369))   # x4.5 on the contact
+CLOSE = frame("crop=180:130:240:120", (480, 372))   # x6 on the contact zone: missile from f586, exit piece to f606
 
 site = stamp(ID, "HELLFIRE ORB  ·  Oct 30, 2024  ·  off Yemen  ·  MQ-9 drones")
 CREDIT = T("Video: Rep. Eric Burlison  ·  House UAP hearing, Sep 9 2025", 1334, 28)
@@ -213,6 +214,11 @@ def at(t0, text, y, fs, color=INK):
     return T(text, y, fs, color) + f":enable='gte(t,{t0})'"
 
 MIDP = frame("crop=320:230:140:60", (607, 412), pal=IRONBOW)   # mid zoom (x3.375 from 140,60), site Ironbow palette
+# HIT: the money shot up close: 6x zoom, 6x slower (real frames, no interpolation), frame counter, voice off
+hc = os.path.join(D, "hitcount.txt"); open(hc, "w").write("FRAME %{eif:584+floor(t*5):d} / 1506")
+clip(584, 607, 6, CLOSE, [T("The hit, up close", 215, 84), T("6x zoom  ·  6x slower  ·  real frames", 300, 46, AMB),
+     f"drawtext=fontfile={FONT}:textfile={hc}:fontcolor={AMB}:fontsize=56:borderw=4:bordercolor=black:x=(w-text_w)/2:y=1256",
+     CREDIT, site], 4.6)
 # X: freeze on contact: the open question (frame check: brightness flat, near-white pixels 204 -> 70)
 still(596, TIGHT, [T("No flash at contact", 215, 80), T("Did it even explode?", 300, 80, AMB),
                    T("frame 596: no brightness spike around the orb", 1256, 32), CREDIT, site], 3.5)
@@ -285,16 +291,16 @@ still(560, MID, TEASE, 0.5)
 lst = os.path.join(D, "list.txt"); open(lst, "w").write("".join(f"file '{s}'\n" for s in segs))
 CAT = os.path.join(D, "cat.mp4")
 subprocess.run([F, "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", CAT], check=True)
-# narration cues (s); quiet 4.0-6.3 so the contact (~4.7 s) plays clean
+# narration cues (s); quiet 4.0-10.9 so the contact (~4.7 s) and the close-up (6.3-10.9) play clean
 SAY = [(0.2, "A drone fires a Hellfire missile at this orb. Watch the crosshair."),
-       (6.4, "Look closely. No flash at contact. Did it even explode?"),
-       (9.9, "Congress heard it bounced right off, and that nothing we have could do that."),
-       (14.0, "Measure it. Thirty frames a second, five point seven kilometres away. That's fifty five football fields. One pixel is about a golf ball."),
-       (21.9, "After contact: same direction, ninety percent of the speed. It went through, not off."),
-       (27.2, "On screen it crawls at city-car speed. Real Hellfires fly faster than an airliner. So it's coming in almost straight along our view, a thumb's width off. Depth hides the hit."),
-       (37.9, "Now weigh it. This missile hits with the energy of a car crash at two hundred kilometres an hour, before any explosive. To bounce that and barely move, a tyre-sized orb would weigh as much as five cars. Denser than lead. A thin, light target just tears."),
-       (53.8, "In 2024, the Pentagon's U F O office called a look-alike orb a foil balloon."),
-       (58.5, "Read the hearing, page thirty two, on real U F O dot org.")]
+       (11.0, "Look closely. No flash at contact. Did it even explode?"),
+       (14.5, "Congress heard it bounced right off, and that nothing we have could do that."),
+       (18.6, "Measure it. Thirty frames a second, five point seven kilometres away. That's fifty five football fields. One pixel is about a golf ball."),
+       (26.5, "After contact: same direction, ninety percent of the speed. It went through, not off."),
+       (31.8, "On screen it crawls at city-car speed. Real Hellfires fly faster than an airliner. So it's coming in almost straight along our view, a thumb's width off. Depth hides the hit."),
+       (42.5, "Now weigh it. This missile hits with the energy of a car crash at two hundred kilometres an hour, before any explosive. To bounce that and barely move, a tyre-sized orb would weigh as much as five cars. Denser than lead. A thin, light target just tears."),
+       (58.4, "In 2024, the Pentagon's U F O office called a look-alike orb a foil balloon."),
+       (63.1, "Read the hearing, page thirty two, on real U F O dot org.")]
 FX = [(4.35, sfx("fast missile whoosh flyby, short, no explosion", 1.2), 0.3)]  # the one effect: the pass
 ins, fc = ["-i", CAT], ""
 for i, (t, line) in enumerate(SAY, 1):

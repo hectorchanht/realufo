@@ -14,6 +14,7 @@ Goal: the best piece of social media about this file. Viewers stop scrolling, en
 | **Frame 0 = thumbnail = tease** | 0–2.5 s | The question, not the answer: show **where** to look (a "?" or mark beside the spot, a zoom-in, plus a bold challenge headline; nothing drawn over the object itself), never the payoff. AARO-956955 shows an empty sky with "Something flies through this box in 1/10 of a second". No fade-in, black frame or title card. |
 | **First payoff** | by ~5 s | The event itself (the pass, the split, the blink) inside the first ~5 s, with the tease box still on. Start the clip close to the moment. |
 | **Show** | middle | The footage doing the work: slow-mo, then frame-step, then zoom. Something new every 2–3 s. |
+| **Money shot up close** | right after the first payoff | The key moment (hit, blink, split) in its own beat: tightest honest crop (~6x), ~6x slower on real frames (no interpolation), frame counter, voice off. The Hellfire Short: frames 584–606 at 6x/6x. |
 | **Reveal + lesson** | | The answer, plus **one takeaway that makes the viewer smarter**: the physics, how the camera fools you, what the document actually says. |
 | **Sound bite** | at the reveal | One quotable line, ≤8 words, said by the narrator **and** on screen: "Three frames. Then gone.", "Made on Earth." |
 | **Do it yourself** | last 3–4 s | "Step through it frame by frame on realufo.org" plus `realufo.org/doc/<ID>` on screen. This is the only call to action. |
