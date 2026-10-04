@@ -26,7 +26,7 @@ Beauty is a common feeling: see Design language below.
 - Arrange mode, pad order and presets are shared by all three styles (one order for effects, one for tools).
 - Default for a first visit is Simple, so new visitors meet the plainest one; the help panel mentions the other two.
 
-## Design language: minimal, Bauhaus, a real object
+## Design language: form follows function — minimal, Bauhaus, a real object
 
 Every style is designed like a physical instrument (think Braun / Dieter Rams, which the Walkman and iPod came from): less, but better.
 - **Form follows function.** Round = turn (click wheel, magnifier knob). Square = press (keys, pads, chips). Long = slide (faders, seek bar). Triangle only for play.
@@ -40,6 +40,9 @@ Every style is designed like a physical instrument (think Braun / Dieter Rams, w
   - Comfort beats proportion: every touch target is at least 36px on phones, black keys included (the keyboard grows taller rather than the keys shrinking).
   - A first-timer gets it without the help panel: the first time the console opens, one line under the strip says "Tap a key to try an effect. Hold the eye to compare with the original." with a ✕; it never shows again once closed (`ru:console-tip` = "1").
   - Plain, friendly words in every tooltip and the help panel (memory: user-friendly-ui).
+- **References: Apple, Japanese and zen, tea culture.** Clarity first; 間 (ma): empty space is part of the design, so sections breathe and nothing is crammed; calm, unhurried motion (120–200ms eases, no bounce); each control placed with the care of a tea set: few, deliberate, every one with its place.
+- **Round controls are drawn like the Junghans max bill dial**: a quiet face, hairline tick marks at the steps (frames on the click wheel, 2×/3×/5×/8× on the knob), one thin needle for the current value, the value itself small at the centre, a wide empty margin. No numerals around the edge.
+- **Self-explaining and responsive.** The shape says what a control does before any tooltip (round turns, square presses, long slides); the first-time hint is the only words that appear unasked. Every style works from a 320px phone to a wide desktop: sections reflow (stack on phones, side by side on wide screens), touch targets never shrink below 36px.
 - **Ornament earns its place or goes.** The cassette reels stay because they show playback state at a glance; nothing is there only to decorate.
 
 ## Layout
