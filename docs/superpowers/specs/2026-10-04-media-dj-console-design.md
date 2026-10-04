@@ -8,6 +8,20 @@ The Doc media tools (image + video) grew to ~20 equal-weight chips across two ro
 
 Constraints carried over: icon-only controls with `aria-label` + `title` (memory: icons-less-text), plain-word help panel (memory: user-friendly-ui), tap targets 36px on touch / 32px with a mouse, all filter/lens URL params unchanged (`br ct sat gam inv bw pal sharp lens mag`, share links keep working).
 
+## Console styles (the visitor picks)
+
+The same controls come in three looks. The visitor picks one; it is remembered on the device (`ru:media-skin`). Every style has the same strip, the same functions, keys and presets: only the console body differs.
+
+| Style | Console body |
+|---|---|
+| **Simple** (default for new visitors) | Today's panel, tidied: effect chips, tool chips, horizontal sliders, magnifier strength chips, video speed / loop / A–B chips. |
+| **DJ deck** | Faders · square pads (effects, tools) · deck with the click wheel and the magnifier knob. |
+| **Walkman** | Walkman body: cassette window, faders, the Wakeman keyboard (white keys = effects, black keys = tools), the click wheel and the magnifier knob. |
+
+- **Picker**: a `Palette` button in the console header opens a small menu: three rows, icon + name, the current one ticked. Picking switches at once (console stays open).
+- Arrange mode, pad order and presets are shared by all three styles (one order for effects, one for tools).
+- Default for a first visit is Simple, so new visitors meet the plainest one; the help panel mentions the other two.
+
 ## Layout
 
 ### Playback row (video only, always visible, above the strip)
@@ -21,7 +35,7 @@ Seek bar · play/pause · ‹ › frame step · timecode · mute · full screen.
 - **Status chips** appear only while something is on, one tap turns it off: zoom `2.3× ✕`, ruler ✕, motion ✕, and `eye` (hold for original) + `undo looks` while any look is applied. With the console closed this is how a visitor sees and clears what is active.
 - **Link**: image → copy view link; video → copy moment link (with view + looks), as today.
 
-### Console (opens under the strip)
+### Console body parts (used by the DJ deck and Walkman styles; Simple uses chips and horizontal sliders)
 Three sections, side by side ≥ 900px, stacked on phones (the click wheel first on phones, it is the most used):
 1. **Faders** — brightness, contrast, colour, shadows as vertical sliders (`<input type=range>` with `writing-mode: vertical-lr`, native and accessible). Double-click / double-tap a fader = back to 100.
 2. **Pads** — drawn as the keyboard (see Look and feel); lit/pressed when on.
@@ -45,7 +59,7 @@ Three sections, side by side ≥ 900px, stacked on phones (the click wheel first
 
 **Mirror (flip)** loses its button; the `F` key and `?flip=1` share links keep working. It leaves the help panel.
 
-### Look and feel: Walkman body, Wakeman keys
+### Walkman style: Walkman body, Wakeman keys
 The console is drawn as a retro **Walkman** with a **Rick Wakeman** keyboard rig inside. Flat surfaces, site colour tokens only (no gradients/glow), works in both themes.
 - **Body**: a rounded chassis panel with a coloured stripe along the top edge (site accent) and the preset buttons P1–P4 styled as the Walkman's chunky hardware buttons.
 - **Cassette window** (top of the console): a small display that shows what is going on: timecode (video) or zoom (image), the active preset name, and the speed. Two cassette reels sit either side and turn while the video plays (CSS rotation; still under `prefers-reduced-motion`, still for images).
@@ -83,6 +97,7 @@ Defaults:
 - `ru:media-presets` — `{ v: 1, presets: Preset[] }`
 - `ru:media-pads` — `{ v: 1, effects: PadId[], tools: PadId[] }`; unknown ids dropped, missing ids appended (new pads appear after an update).
 - `ru:console-open` — `"1" | "0"`
+- `ru:media-skin` — `"simple" | "dj" | "walkman"`; anything else → `"simple"`
 
 No cross-device sync (out of scope; could later ride on the anonymous ID).
 
@@ -90,7 +105,7 @@ No cross-device sync (out of scope; could later ride on the anonymous ID).
 - `web/src/lib/mediaPresets.ts` — Preset type, defaults, load/save, `matches()`; pure, unit tested.
 - `web/src/lib/padOrder.ts` — load/save/move/reset of pad order; pure, unit tested.
 - `web/src/lib/useVideoTransport.ts` — the video state now inside `VideoTransport` (play, rate, loop, A–B, mute, full screen, capture, post, download) lifted into a hook, so the playback row and the console both drive one state. Replaces the `speedSlot` portal.
-- `web/src/components/console/` — `MediaConsole.tsx` (strip + console), `Fader.tsx`, `Keyboard.tsx` (white/black keys, incl. arrange mode), `CassetteWindow.tsx`, `ClickWheel.tsx`, `Knob.tsx`.
+- `web/src/components/console/` — `MediaConsole.tsx` (strip + skin picker + the chosen body), `SimpleBody.tsx`, `DjBody.tsx`, `WalkmanBody.tsx`, `PadGrid.tsx`, `Fader.tsx`, `Keyboard.tsx` (white/black keys, incl. arrange mode), `CassetteWindow.tsx`, `ClickWheel.tsx`, `Knob.tsx`.
 - `ImageTools.tsx` keeps filters, lens, minimap, `renderPng`; `MediaToolbar` is replaced by `MediaConsole`.
 - `VideoTools.tsx` keeps `VideoTransport` as the playback row only (built on the hook), `VideoLens`, `KeyMoments`.
 - `MediaHelp.tsx` regrouped to match the console (strip, presets, faders, pads, deck); flip row removed.
@@ -98,8 +113,8 @@ No cross-device sync (out of scope; could later ride on the anonymous ID).
 
 ## Testing
 - Unit: presets (defaults, round trip, corrupt storage, `matches`, motion ignored on images), pad order (move, unknown/missing ids, reset).
-- Doc tests: strip contents image vs video; console toggle remembered; preset apply sets URL params; save to slot persists; fader sets brightness; effect pad toggles; Original pad momentary; click-wheel ring arrow keys step a frame (video) / zoom (image), press points (centre play/pause, left/right frame, top speed, bottom A–B; image: full view, zoom out/in, magnifier, turn), tap vs slide threshold; knob changes mag; no Flip button but `F` flips; `1`–`4` keys; arrange mode reorders and persists.
-- Browser: phone 375px and desktop, image + video, slide round the click wheel (mouse + touch emulation), arrange-mode drag with mouse and touch emulation, tap sizes ≥ 36/32px.
+- Doc tests: skin picker switches body and is remembered, each style's controls drive the same state; strip contents image vs video; console toggle remembered; preset apply sets URL params; save to slot persists; fader sets brightness; effect pad toggles; Original pad momentary; click-wheel ring arrow keys step a frame (video) / zoom (image), press points (centre play/pause, left/right frame, top speed, bottom A–B; image: full view, zoom out/in, magnifier, turn), tap vs slide threshold; knob changes mag; no Flip button but `F` flips; `1`–`4` keys; arrange mode reorders and persists.
+- Browser: each of the three styles × phone 375px and desktop × image and video, slide round the click wheel (mouse + touch emulation), arrange-mode drag with mouse and touch emulation, tap sizes ≥ 36/32px.
 
 ## Out of scope
 Naming presets, more than 4 slots, adding/removing pads, cross-device sync, MIDI controllers.
