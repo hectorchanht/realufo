@@ -119,3 +119,16 @@ export function centreOn(v: MediaView, box: Size, pic: Size, u: number, w: numbe
   const sin = Math.round(Math.sin(r));
   return clampView({ ...v, x: -k * (ux * cos - uy * sin), y: -k * (ux * sin + uy * cos) }, box, pic);
 }
+
+/** Picture point (u, v: 0–1) → where it sits in box coords under the view (pointToUV's inverse). */
+export function uvToPoint(box: Size, u: number, w: number, pic: Size, v: MediaView) {
+  const { cw, ch, s } = fit(box, pic, v.rot);
+  const k = v.z * s;
+  let ux = (u - 0.5) * cw;
+  const uy = (w - 0.5) * ch;
+  if (v.flip) ux = -ux;
+  const r = (v.rot * Math.PI) / 180;
+  const cos = Math.round(Math.cos(r));
+  const sin = Math.round(Math.sin(r));
+  return { x: box.w / 2 + v.x + k * (ux * cos - uy * sin), y: box.h / 2 + v.y + k * (ux * sin + uy * cos) };
+}

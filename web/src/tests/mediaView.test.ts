@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_VIEW, clampView, pointToUV, viewFromParams, viewToParams, zoomAt } from "../lib/mediaView";
+import { DEFAULT_VIEW, clampView, pointToUV, uvToPoint, viewFromParams, viewToParams, zoomAt } from "../lib/mediaView";
 
 // 400×300 panel, 800×600 picture → drawn 400×300, filling the box.
 const box = { w: 400, h: 300 };
@@ -64,5 +64,17 @@ describe("mediaView", () => {
     expect(viewFromParams(sp, box, pic)).toBeNull();
     expect(viewFromParams(new URLSearchParams("z=abc&rot=45"), box, pic)).toBeNull();
     expect(viewFromParams(new URLSearchParams("z=99"), box, pic)!.z).toBe(8);
+  });
+
+  it("uvToPoint undoes pointToUV under any zoom / pan / rotate / flip", () => {
+    for (const rot of [0, 90, 180, 270] as const) {
+      for (const flip of [false, true]) {
+        const v = zoomAt({ ...DEFAULT_VIEW, rot, flip }, box, pic, 2.7, 120, 210);
+        const p = uvToPoint(box, 0.3, 0.8, pic, v);
+        const back = pointToUV(box, p.x, p.y, pic, v);
+        expect(back.u).toBeCloseTo(0.3);
+        expect(back.v).toBeCloseTo(0.8);
+      }
+    }
   });
 });

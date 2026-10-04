@@ -1047,6 +1047,39 @@ describe("Doc", () => {
     expect(screen.getByLabelText("Shadows")).not.toHaveValue("100");
   });
 
+  it("ruler: drag a line, read source pixels, % of frame width and angle; turning it off clears it", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    const img = document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
+    const panel = img.closest("[data-chrome]") as HTMLElement;
+    const rect = { width: 400, height: 300, top: 0, left: 0, right: 400, bottom: 300, x: 0, y: 0, toJSON: () => ({}) };
+    panel.getBoundingClientRect = () => rect;
+    Object.defineProperty(img, "naturalWidth", { value: 800 });
+    Object.defineProperty(img, "naturalHeight", { value: 600 });
+    fireEvent.load(img);
+    fireEvent.click(screen.getByRole("button", { name: "Ruler" }));
+    const layer = document.querySelector("[data-ruler]") as HTMLElement;
+    layer.getBoundingClientRect = () => rect;
+    fireEvent.pointerDown(layer, { clientX: 100, clientY: 200, pointerId: 5 });
+    fireEvent.pointerMove(layer, { clientX: 300, clientY: 200, pointerId: 5 });
+    fireEvent.pointerUp(layer, { clientX: 300, clientY: 200, pointerId: 5 });
+    // 200 panel px across an 800 px picture drawn 400 wide = 400 source px = 50% of the width, level
+    expect(screen.getByTestId("ruler-label")).toHaveTextContent("400 px · 50.0% W · 0°");
+    // straight up = 90°
+    fireEvent.pointerDown(layer, { clientX: 200, clientY: 250, pointerId: 6 });
+    fireEvent.pointerMove(layer, { clientX: 200, clientY: 150, pointerId: 6 });
+    expect(screen.getByTestId("ruler-label")).toHaveTextContent("200 px · 25.0% W · 90°");
+    fireEvent.click(screen.getByRole("button", { name: "Ruler" }));
+    expect(document.querySelector("[data-ruler]")).toBeNull();
+  });
+
   it("no image tools on non-image records", () => {
     renderDoc();
     expect(screen.queryByRole("button", { name: /adjust/i })).toBeNull();

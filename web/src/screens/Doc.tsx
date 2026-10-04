@@ -36,6 +36,7 @@ import type { Comment, RecordDetail, RecordKind, RelatedGroup } from "../api/typ
 import { DocCard } from "../components/DocCard";
 import { LoadError } from "../components/LoadError";
 import { goBack } from "../components/navItems";
+import { MediaRuler } from "../components/MediaRuler";
 import { LENS_MAGS, MediaFilters, MediaToolbar, Minimap, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams, grabImage } from "../components/ImageTools";
 import type { ImageAdjust } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
@@ -207,6 +208,7 @@ export function Doc() {
   const setMag = tool<number>(magOf, (sp, v) => (v === 3 ? sp.delete("mag") : sp.set("mag", String(v))));
   const [view, setView] = useState(DEFAULT_VIEW); // frame zoom / pan / rotate / flip
   const [compare, setCompare] = useState(false); // held: panel shows the file unfiltered
+  const [ruler, setRuler] = useState(false);
   const [pic, setPic] = useState<{ w: number; h: number } | null>(null); // natural media size
   const [panel, setPanel] = useState<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -215,6 +217,7 @@ export function Doc() {
   useEffect(() => {
     setView(DEFAULT_VIEW);
     setPic(null);
+    setRuler(false);
   }, [id]);
   const panelMedia = recordMedia(detail, isDesktop).media;
   // A transformed <video> would zoom/rotate its native controls too, so they
@@ -656,6 +659,7 @@ export function Doc() {
             </span>
           </button>
         )}
+        {ruler && (media === "image" || media === "video") && <MediaRuler view={view} pic={pic} />}
         {(media === "image" || media === "video") && (
           <Minimap src={media === "image" ? fullUrl : thumbUrl || undefined} view={view} box={zoom.box} pic={pic} onView={setView} />
         )}
@@ -748,6 +752,8 @@ export function Doc() {
           onSave={media === "image" ? saveView : undefined}
           compare={compare}
           onCompare={setCompare}
+          ruler={ruler}
+          onRuler={setRuler}
           panelSlot={media === "video" ? setSpeedSlot : undefined}
           // desktop only: shortcuts need a keyboard
           keysHelp={

@@ -7,7 +7,7 @@
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { PointerEvent as ReactPointerEvent, ReactNode, RefObject } from "react";
-import { Contrast, DropletOff, Moon, MoonStar, Eye, Droplet, Flame, FlipHorizontal2, Focus, ImageDown, Keyboard, Link, LoaderCircle, Rainbow, RotateCcw, RotateCw, Search, Shrink, SlidersHorizontal, Sun, SunMoon, TriangleAlert, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Contrast, DropletOff, Moon, MoonStar, Eye, Droplet, Flame, FlipHorizontal2, Focus, ImageDown, Keyboard, Link, LoaderCircle, Rainbow, RotateCcw, RotateCw, Ruler, Search, Shrink, SlidersHorizontal, Sun, SunMoon, TriangleAlert, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { DEFAULT_VIEW, MAX_ZOOM, centreOn, pointToUV } from "../lib/mediaView";
 import type { MediaView } from "../lib/mediaView";
@@ -250,6 +250,8 @@ export function MediaToolbar({
   onZoom,
   onLink,
   onSave,
+  ruler,
+  onRuler,
   compare,
   onCompare,
   keysHelp,
@@ -269,6 +271,8 @@ export function MediaToolbar({
   onLink?: () => void;
   /** Save the picture as seen, as PNG (images; video has Save frame). */
   onSave?: () => Promise<void>;
+  ruler: boolean;
+  onRuler: (on: boolean) => void;
   /** Hold-to-compare: true while the unfiltered picture shows. */
   compare: boolean;
   onCompare: (on: boolean) => void;
@@ -366,6 +370,9 @@ export function MediaToolbar({
             <X {...ico} size={12} />
           </button>
         )}
+        <button type="button" aria-label="Ruler" aria-pressed={ruler} title="Ruler: drag a line (pixels, % of width, angle)" onClick={() => onRuler(!ruler)} className={`${chip} ${ruler ? on : off}`}>
+          <Ruler {...ico} />
+        </button>
         {onLink && (
           <button type="button" aria-label="Copy link to this view" title="Copy link to this view" onClick={onLink} className={`${chip} ${off}`}>
             <Link {...ico} />
