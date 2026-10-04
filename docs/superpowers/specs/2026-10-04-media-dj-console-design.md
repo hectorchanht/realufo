@@ -4,7 +4,7 @@ Date: 2026-10-04 · Status: approved direction, spec under review
 
 ## Goal
 
-The Doc media tools (image + video) grew to ~20 equal-weight chips across two rows. Visitors can't tell what matters. Rebuild them as a **DJ console**: a short strip that is always there, and a console that opens with faders, pads, a deck (jog wheel) and four **preset slots** that apply a whole setup in one tap. Layout choices and presets are remembered on the device.
+The Doc media tools (image + video) grew to ~20 equal-weight chips across two rows. Visitors can't tell what matters. Rebuild them as a **DJ console**: a short strip that is always there, and a console that opens with faders, pads, a deck (iPod-style click wheel) and four **preset slots** that apply a whole setup in one tap. Layout choices and presets are remembered on the device.
 
 Constraints carried over: icon-only controls with `aria-label` + `title` (memory: icons-less-text), plain-word help panel (memory: user-friendly-ui), tap targets 36px on touch / 32px with a mouse, all filter/lens URL params unchanged (`br ct sat gam inv bw pal sharp lens mag`, share links keep working).
 
