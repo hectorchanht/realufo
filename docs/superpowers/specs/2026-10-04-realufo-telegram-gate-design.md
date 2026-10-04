@@ -168,8 +168,16 @@ hellfire one". The admin center can add new records, not just post existing ones
   `provenance` (`official` | `semi-official`), proposed id, archive (`congress`, `wargov`, … or a new one), and a
   thumbnail/money-shot still.
 - **Gate:** the draft record arrives as a Telegram preview (`kind='record'`): ✅ Add · ✏️ (reply to fix fields) · ❌
-  Skip. Only ✅ writes `records` + `assets` rows and the R2 files, then the normal ingest steps (thumbs, clips, AI
-  moments, OCR/full text) run for it. Adding a record never posts it; posting is a separate job.
+  Skip. Only ✅ writes `records` + `assets` rows and the R2 files (through the ingest's own `crawler/ingest`
+  `models`/`d1`/`r2` code, as source `manual`, so the rows look like any crawled record).
+- **Same pipeline as every new archive file, no special path:** right after ✅ the Worker dispatches
+  `.github/workflows/ingest.yml`. Every step already works on "records still missing X", so the new record goes
+  through all of them like a crawled one: `thumbs` → `clips` (+ 9:16 twin) → `moments` (AI key moments) → `ocr`
+  (PaddleOCR) → `fulltext` → `summaries` (uncapped AI summary) → `visuals` → `textindex` (Ask / Vectorize vectors) →
+  `highlights` → `tldr` (懶人包) → `cards` (share card) → `links` (related / same-topic records) → `indexnow`. It
+  also lands in the sitemap, RSS, hubs, archive facets, the "new files" push and the next open-dataset refresh,
+  because those read `records`. Telegram reports when the ingest run finishes (✅ steps / ⚠️ failed step).
+- Adding a record never posts it; posting is a separate job.
 - **On the site:** semi-official records show a provenance line on the doc page and in crawler HTML: "Semi-official:
   released by Rep. Eric Burlison at the House Oversight UAP hearing, Sept 9 2025 · source" (link to the original
   post/stream). Official records keep today's look. Licence: the open-dataset export
