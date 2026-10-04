@@ -153,15 +153,14 @@ def main():
         live = d1(f"SELECT archive FROM records WHERE id={q(rec)} AND status='live'", read=True)
         if not live:
             sys.exit(f"showcase_record {rec} is not live")
-
-    print(f"== images → R2 ({slug})")
-    hero = upload(slug, a.get("hero"))
-    imgs = {e["id"]: upload(slug, e.get("image")) for e in a["evidence"]}
-
     cur = d1(f"""SELECT a.poll, (SELECT count(*) FROM poll_votes WHERE slug={q(slug)}) + (SELECT count(*) FROM poll_social WHERE slug={q(slug)}) n
                  FROM articles a WHERE a.slug={q(slug)}""", read=True)
     if cur and (err := freeze_error(cur[0]["poll"], cur[0]["n"], poll_json)):
         sys.exit(err)
+
+    print(f"== images → R2 ({slug})")
+    hero = upload(slug, a.get("hero"))
+    imgs = {e["id"]: upload(slug, e.get("image")) for e in a["evidence"]}
 
     print("== rows (written on ✅)")
     sql = [f"""INSERT INTO articles(slug,title,body,image_key,poll) VALUES({q(slug)},{q(a['title'])},{q(SEP.join(a['parts']))},{q(hero)},{q(poll_json)})
@@ -216,10 +215,12 @@ def main():
     # explicit user-agent: Cloudflare blocks the default Python-urllib one
     req = urllib.request.Request(f"{SITE}/__job", method="POST", data=json.dumps({"kind": "article", "ref": slug, "caption": caption, "media": media, "payload": payload}).encode(),
                                  headers={"authorization": f"Bearer {token}", "content-type": "application/json", "user-agent": "realufo-article/1"})
-    try:
-        print("== waiting for your ✅ on Telegram: job", json.load(urllib.request.urlopen(req))["job"])
-    except urllib.error.HTTPError as e:
+    try:  # the Worker sends the preview (maybe a video) to Telegram before it answers
+        print("== waiting for your ✅ on Telegram: job", json.load(urllib.request.urlopen(req, timeout=300))["job"])
+    except urllib.error.HTTPError as e:  # 4xx/5xx, e.g. 409 open job, 502 preview not delivered
         sys.exit(f"/__job {e.code}: {e.read().decode()[:300]}")
+    except (urllib.error.URLError, TimeoutError) as e:
+        sys.exit(f"/__job unreachable: {getattr(e, 'reason', e)} (check the deploy and Telegram for a preview before re-running)")
 
 
 if __name__ == "__main__":

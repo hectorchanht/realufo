@@ -61,12 +61,23 @@ describe("operator paths under the gate", () => {
       "DELETE FROM records",
       "INSERT INTO articles(slug,title,body) VALUES ('jr-story','T','B'); DELETE FROM records",
       "UPDATE posts SET body='x' -- '\n; DELETE FROM records",
+      // reads of other tables into a public row
+      "UPDATE posts SET body=(SELECT group_concat(access_token||refresh_token) FROM social_auth) WHERE id='p1'",
+      "UPDATE posts SET body=social_auth.refresh_token FROM social_auth WHERE posts.id='p1'",
+      "INSERT INTO posts(id,thread_id,body) SELECT 'p9','t1',endpoint FROM push_subs",
       42,
     ]) expect((await post(E(), "/__job", article({ sql: [sql] }))).status).toBe(400);
     expect((await post(E(), "/__job", article({ urls: ["https://evil.example/x"] }))).status).toBe(400);
     expect((await post(E(), "/__job", article({ showcase: { record: "JR-1" } }))).status).toBe(400);
-    // a ';' inside a string literal is fine
-    expect((await post(E(), "/__job", article({ sql: ["INSERT INTO articles(slug,title,body) VALUES ('jr-story','T','a; b -- c')"] }))).status).toBe(200);
+    // ';', '--', select/from inside a string literal are fine
+    expect((await post(E(), "/__job", article({ sql: ["INSERT INTO articles(slug,title,body) VALUES ('jr-story','T','a; b -- select x from y')"] }))).status).toBe(200);
     expect((await env.DB.prepare("SELECT count(*) n FROM bot_jobs").first<any>()).n).toBe(1);
+  });
+  it("/__job answers 502 when the preview never reached Telegram", async () => {
+    vi.mocked(globalThis.fetch).mockImplementation(async () => new Response(JSON.stringify({ ok: false, description: "chat not found" }), { status: 400 }));
+    const r = await post(E(), "/__job", article({}));
+    expect(r.status).toBe(502);
+    expect((await r.json<any>()).error).toMatch(/preview not delivered/);
+    expect((await env.DB.prepare("SELECT status FROM bot_jobs WHERE ref='jr-story'").first<any>()).status).toBe("failed");
   });
 });

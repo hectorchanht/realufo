@@ -2,14 +2,19 @@
 import type { Env } from "../env";
 import { error, json } from "../lib/json";
 import { sameSecret } from "../lib/secret";
-import { createJob } from "../lib/jobs";
+import { createJob, getJob } from "../lib/jobs";
 import { preview } from "../lib/gate";
 
 // The owner's ✅ runs payload.sql as-is, so a leaked ADMIN_TOKEN must not become arbitrary D1 writes:
 // only scripts/article.py's tables, one statement per item (D1 runs every statement in a string, so a
-// ';' — or a comment / quoted identifier that could hide one — outside '…' literals is refused).
+// ';' — or a comment / quoted identifier that could hide one — outside '…' literals is refused), and no
+// SELECT/FROM after the prefix (a subquery or UPDATE…FROM could copy social_auth tokens into a public post).
 const WRITE = /^\s*(INSERT INTO|UPDATE|DELETE FROM)\s+(articles|article_records|threads|posts)\b/i;
-const okSql = (s: unknown) => typeof s === "string" && WRITE.test(s) && !/[;"`[]|--|\/\*/.test(s.replace(/'(?:[^']|'')*'/g, ""));
+const okSql = (s: unknown) => {
+  const bare = typeof s === "string" ? s.replace(/'(?:[^']|'')*'/g, "") : "";
+  const m = WRITE.exec(bare);
+  return !!m && !/[;"`[]|--|\/\*|\b(select|from)\b/i.test(bare.slice(m[0].length));
+};
 const okUrl = (u: unknown) => typeof u === "string" && u.startsWith("https://realufo.org/");
 
 // POST /__job (Bearer ADMIN_TOKEN): operator jobs from scripts (article.py). The owner's ✅ in
@@ -27,5 +32,8 @@ export async function jobRoute(req: Request, env: Env): Promise<Response> {
   const job = await createJob(env, { kind: "article", stream: "article", ref: b.ref, status: "post_wait", caption: b.caption ?? null, media: b.media ?? null, payload: p });
   if (!job) return error(409, `an open job already exists for ${b.ref}`);
   await preview(env, job);
+  // preview() closes the job as failed when no buttons reached the owner: say so instead of "waiting"
+  const after = await getJob(env, job.id);
+  if (after?.status === "failed") return error(502, `job ${job.id}: ${after.error}`);
   return json({ ok: true, job: job.id });
 }
