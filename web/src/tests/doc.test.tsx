@@ -940,6 +940,50 @@ describe("Doc", () => {
     expect(img().style.filter).toContain("invert(1)");
   });
 
+  it("save view: an image saves as PNG with its filters, drawn from the same-origin copy", async () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    const loaded: string[] = [];
+    class FakeImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      naturalWidth = 80;
+      naturalHeight = 60;
+      set src(v: string) {
+        loaded.push(v);
+        setTimeout(() => this.onload?.());
+      }
+    }
+    vi.stubGlobal("Image", FakeImage);
+    const ctx = { filter: "", translate: vi.fn(), rotate: vi.fn(), scale: vi.fn(), drawImage: vi.fn() };
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(ctx as unknown as CanvasRenderingContext2D);
+    const toBlob = vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((cb) => cb(new Blob(["png"])));
+    Object.assign(URL, { createObjectURL: vi.fn(() => "blob:x"), revokeObjectURL: vi.fn() });
+    const clicks: HTMLAnchorElement[] = [];
+    const aClick = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      clicks.push(this);
+    });
+
+    renderDoc("/doc/rec1?inv=1");
+    fireEvent.click(screen.getByRole("button", { name: "Save view" }));
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+    expect(loaded).toEqual(["/api/file/rec1"]);
+    expect(ctx.filter).toContain("invert(1)");
+    expect(ctx.drawImage).toHaveBeenCalled();
+    expect(clicks.map((a) => a.download)).toEqual(["rec1.png"]);
+
+    vi.unstubAllGlobals();
+    getContext.mockRestore();
+    toBlob.mockRestore();
+    aClick.mockRestore();
+  });
+
   it("no image tools on non-image records", () => {
     renderDoc();
     expect(screen.queryByRole("button", { name: /adjust/i })).toBeNull();

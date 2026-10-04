@@ -36,7 +36,7 @@ import type { Comment, RecordDetail, RecordKind, RelatedGroup } from "../api/typ
 import { DocCard } from "../components/DocCard";
 import { LoadError } from "../components/LoadError";
 import { goBack } from "../components/navItems";
-import { LENS_MAGS, MediaFilters, MediaToolbar, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams } from "../components/ImageTools";
+import { LENS_MAGS, MediaFilters, MediaToolbar, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams, grabImage } from "../components/ImageTools";
 import type { ImageAdjust } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
 import { Articles } from "../components/Articles";
@@ -461,6 +461,16 @@ export function Doc() {
     );
   }
 
+  // Save the image as seen (filters, rotation, flip) from the same-origin route, so the canvas isn't tainted.
+  async function saveView() {
+    const blob = await grabImage(`/api/file/${id}`, adjustFilter(adjust), view);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${id}.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
+  }
+
   function handlePostFrame(frame: File, t: number) {
     openComposer({ mode: "comment", recordId: id, presetImage: frame, presetBody: `@${formatMoment(t)} ` });
   }
@@ -732,6 +742,7 @@ export function Doc() {
           onView={setView}
           onZoom={zoom.zoomBy}
           onLink={media === "image" ? () => handleShare() : undefined}
+          onSave={media === "image" ? saveView : undefined}
           compare={compare}
           onCompare={setCompare}
           panelSlot={media === "video" ? setSpeedSlot : undefined}

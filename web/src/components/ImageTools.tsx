@@ -7,7 +7,7 @@
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode, RefObject } from "react";
-import { Contrast, DropletOff, Eye, Droplet, Flame, FlipHorizontal2, Focus, Keyboard, Link, Rainbow, RotateCcw, RotateCw, Search, Shrink, SlidersHorizontal, Sun, SunMoon, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Contrast, DropletOff, Eye, Droplet, Flame, FlipHorizontal2, Focus, ImageDown, Keyboard, Link, LoaderCircle, Rainbow, RotateCcw, RotateCw, Search, Shrink, SlidersHorizontal, Sun, SunMoon, TriangleAlert, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { DEFAULT_VIEW, MAX_ZOOM, pointToUV } from "../lib/mediaView";
 import type { MediaView } from "../lib/mediaView";
@@ -139,6 +139,32 @@ export function MediaFilters() {
   );
 }
 
+/** Draw region `r` of `src` with the filter, rotation and flip applied, encoded as PNG. */
+export function renderPng(src: CanvasImageSource, r: { x: number; y: number; w: number; h: number }, filter: string, view: MediaView): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const c = document.createElement("canvas");
+    [c.width, c.height] = view.rot % 180 ? [r.h, r.w] : [r.w, r.h];
+    const ctx = c.getContext("2d");
+    if (!ctx) return reject(new Error("no canvas"));
+    ctx.filter = filter || "none"; // ignored by Safari < 18 → unfiltered capture
+    ctx.translate(c.width / 2, c.height / 2);
+    ctx.rotate((view.rot * Math.PI) / 180);
+    if (view.flip) ctx.scale(-1, 1);
+    ctx.drawImage(src, r.x, r.y, r.w, r.h, -r.w / 2, -r.h / 2, r.w, r.h);
+    c.toBlob((b) => (b ? resolve(b) : reject(new Error("encode failed"))), "image/png");
+  });
+}
+
+/** Load a same-origin copy of an image (so the canvas isn't tainted) and render it as PNG. */
+export function grabImage(src: string, filter: string, view: MediaView): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onerror = () => reject(new Error("load failed"));
+    img.onload = () => renderPng(img, { x: 0, y: 0, w: img.naturalWidth, h: img.naturalHeight }, filter, view).then(resolve, reject);
+    img.src = src;
+  });
+}
+
 export const chip = "inline-flex items-center gap-1 rounded-[7px] border px-[9px] py-1 font-mono text-[10px] active:scale-[.96]";
 /** Lucide icon size/stroke for chips. */
 export const ico = { size: 14, strokeWidth: 1.75, "aria-hidden": true } as const;
@@ -205,6 +231,7 @@ export function MediaToolbar({
   onView,
   onZoom,
   onLink,
+  onSave,
   compare,
   onCompare,
   keysHelp,
@@ -222,6 +249,8 @@ export function MediaToolbar({
   onZoom: (f: number) => void;
   /** Copy a link to this view (images; video has its own moment link). */
   onLink?: () => void;
+  /** Save the picture as seen, as PNG (images; video has Save frame). */
+  onSave?: () => Promise<void>;
   /** Hold-to-compare: true while the unfiltered picture shows. */
   compare: boolean;
   onCompare: (on: boolean) => void;
@@ -247,6 +276,17 @@ export function MediaToolbar({
     }
   }
   const changed = adjustFilter(adjust) !== "";
+  const [saving, setSaving] = useState<"idle" | "busy" | "failed">("idle");
+  async function save() {
+    if (!onSave || saving === "busy") return;
+    setSaving("busy");
+    try {
+      await onSave();
+      setSaving("idle");
+    } catch {
+      setSaving("failed");
+    }
+  }
   const nextMag = LENS_MAGS[(LENS_MAGS.indexOf(mag) + 1) % LENS_MAGS.length];
   return (
     <div className="mb-3.5">
@@ -311,6 +351,18 @@ export function MediaToolbar({
         {onLink && (
           <button type="button" aria-label="Copy link to this view" title="Copy link to this view" onClick={onLink} className={`${chip} ${off}`}>
             <Link {...ico} />
+          </button>
+        )}
+        {onSave && (
+          <button
+            type="button"
+            aria-label={saving === "failed" ? "Save failed, retry" : "Save view"}
+            title={saving === "failed" ? "Save failed — retry" : "Save view (PNG, with filters + rotation)"}
+            onClick={() => void save()}
+            disabled={saving === "busy"}
+            className={`${chip} ${saving === "failed" ? "border-amber text-amber" : off}`}
+          >
+            {saving === "busy" ? <LoaderCircle {...ico} className="animate-spin" /> : saving === "failed" ? <TriangleAlert {...ico} /> : <ImageDown {...ico} />}
           </button>
         )}
         {keysHelp && <ShortcutsTip help={keysHelp} />}

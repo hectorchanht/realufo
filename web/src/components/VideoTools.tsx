@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { RefObject } from "react";
 import { Camera, Download, Link, LoaderCircle, Maximize, MessageSquarePlus, Minimize, Pause, Play, Repeat, Repeat1, StepBack, StepForward, TriangleAlert, Volume2, VolumeX, X } from "lucide-react";
-import { LENS_PX, LensLayer, chip, ico, lensTurn, off, on } from "./ImageTools";
+import { LENS_PX, LensLayer, chip, ico, lensTurn, off, on, renderPng } from "./ImageTools";
 import type { LensHit } from "./ImageTools";
 import type { MediaView } from "../lib/mediaView";
 import { formatMoment } from "../lib/recordMedia";
@@ -36,19 +36,10 @@ function grabFrame(src: string, time: number, filter: string, view: MediaView, c
     // seeking to the current position fires no `seeked`, so never seek to exactly 0
     v.onloadedmetadata = () => (v.currentTime = Math.max(time, 0.001));
     v.onseeked = () => {
-      const { w, h, x, y } = crop ?? { w: v.videoWidth, h: v.videoHeight, x: 0, y: 0 };
-      const c = document.createElement("canvas");
-      [c.width, c.height] = view.rot % 180 ? [h, w] : [w, h];
-      const ctx = c.getContext("2d");
-      if (!ctx) return reject(new Error("no canvas"));
-      ctx.filter = filter || "none"; // ignored by Safari < 18 → unfiltered capture
-      ctx.translate(c.width / 2, c.height / 2);
-      ctx.rotate((view.rot * Math.PI) / 180);
-      if (view.flip) ctx.scale(-1, 1);
-      ctx.drawImage(v, x, y, w, h, -w / 2, -h / 2, w, h);
+      const png = renderPng(v, crop ?? { w: v.videoWidth, h: v.videoHeight, x: 0, y: 0 }, filter, view); // draws now, encodes async
       v.removeAttribute("src");
       v.load();
-      c.toBlob((b) => (b ? resolve(b) : reject(new Error("encode failed"))), "image/png");
+      png.then(resolve, reject);
     };
     v.src = src;
   });
