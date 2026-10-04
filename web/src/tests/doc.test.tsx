@@ -871,6 +871,49 @@ describe("Doc", () => {
     set.mockRestore();
   });
 
+  it("double-tap zooms 2.5× at that spot (and doesn't open the image); again resets; one tap opens after a beat", () => {
+    vi.useFakeTimers();
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    const img = document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
+    const panel = img.closest("[data-chrome]") as HTMLElement;
+    panel.getBoundingClientRect = () => ({ width: 400, height: 300, top: 0, left: 0, right: 400, bottom: 300, x: 0, y: 0, toJSON: () => ({}) });
+    Object.defineProperty(img, "naturalWidth", { value: 800 });
+    Object.defineProperty(img, "naturalHeight", { value: 600 });
+    fireEvent.load(img);
+    const tap = (el: Element, x = 300, y = 100) => {
+      const at = { clientX: x, clientY: y, pointerId: 1, pointerType: "touch" };
+      fireEvent.pointerDown(el, at);
+      fireEvent.pointerUp(el, at);
+      fireEvent.click(el, at);
+    };
+    tap(screen.getByRole("button", { name: /open IMG/i }));
+    act(() => vi.advanceTimersByTime(120));
+    tap(screen.getByRole("button", { name: /open IMG/i }));
+    expect(img.style.transform).toContain("scale(2.5)");
+    act(() => vi.advanceTimersByTime(1000));
+    expect(mockOpenViewer).not.toHaveBeenCalled();
+
+    tap(panel);
+    act(() => vi.advanceTimersByTime(120));
+    tap(panel);
+    expect(img.style.transform).toBe("");
+
+    act(() => vi.advanceTimersByTime(1000));
+    tap(screen.getByRole("button", { name: /open IMG/i }));
+    expect(mockOpenViewer).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(300));
+    expect(mockOpenViewer).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
   it("no image tools on non-image records", () => {
     renderDoc();
     expect(screen.queryByRole("button", { name: /adjust/i })).toBeNull();

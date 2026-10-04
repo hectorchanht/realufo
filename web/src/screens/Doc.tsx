@@ -611,7 +611,16 @@ export function Doc() {
         {(media === "thumb" || (media === "image" && view.z === 1 && (!lens || finePointer))) && (
           <button
             type="button"
-            onClick={handleOpenOriginal}
+            // an image waits a beat so a double tap can zoom instead (a PDF opens a tab: no delay, or popup blockers bite)
+            onClick={
+              media === "image"
+                ? () => {
+                    const at = Date.now();
+                    setTimeout(() => zoom.doubleAt.current < at && handleOpenOriginal(), 260);
+                  }
+                : handleOpenOriginal
+            }
+            data-tap-zoom
             aria-label={`open ${glyph}`}
             className="absolute inset-0"
             style={media === "thumb" ? { background: "linear-gradient(to top, rgba(0,0,0,.45), transparent 45%)" } : undefined}
@@ -716,7 +725,7 @@ export function Doc() {
           // desktop only: shortcuts need a keyboard
           keysHelp={
             isDesktop && finePointer
-              ? `${media === "video" ? "Space play · , . frame · [ ] speed\nA loop A–B · M mute · C save frame\n" : ""}L lens · - = lens zoom (or Shift+wheel)\nCtrl/⌘+wheel or pinch zoom, drag to pan\n0 reset · I invert · R rotate · F flip`
+              ? `${media === "video" ? "Space play · , . frame · [ ] speed\nA loop A–B · M mute · C save frame\n" : ""}L lens · - = lens zoom (or Shift+wheel)\nDouble-click, Ctrl/⌘+wheel or pinch zoom, drag to pan\n0 reset · I invert · R rotate · F flip`
               : undefined
           }
         />

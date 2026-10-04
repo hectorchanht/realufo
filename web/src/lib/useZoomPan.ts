@@ -1,6 +1,7 @@
 // Frame zoom + pan for the Doc media panel. Ctrl/⌘+wheel (also what a
 // trackpad pinch sends) or a two-finger pinch zooms around the pointer;
-// zoomBy (toolbar chips) zooms around the centre; a
+// zoomBy (toolbar chips) zooms around the centre; a double tap/click zooms
+// 2.5× there (or back out); a
 // drag pans while zoomed; Shift+wheel goes to `onShiftWheel` (lens
 // magnification). Native listeners so the wheel can be non-passive.
 import { useEffect, useEffectEvent, useRef, useState } from "react";
@@ -10,6 +11,10 @@ import type { MediaView } from "./mediaView";
 
 type Size = { w: number; h: number };
 type Pt = { x: number; y: number };
+
+const DOUBLE_MS = 300;
+const DOUBLE_PX = 30;
+const DOUBLE_ZOOM = 2.5;
 
 export function useZoomPan(
   panel: HTMLElement | null, // via a callback ref: the panel mounts after the loading state
@@ -51,6 +56,30 @@ export function useZoomPan(
   const pointers = useRef(new Map<number, Pt>());
   const start = useRef<{ v: MediaView; pts: Pt[] } | null>(null);
   const moved = useRef(false);
+  const lastTap = useRef<{ t: number; x: number; y: number } | null>(null);
+  /** Date.now() of the last double-tap zoom, so a delayed tap-to-open can stand down. */
+  const doubleAt = useRef(0);
+
+  function tapped(e: PointerEvent) {
+    const el = panel;
+    // controls inside the panel (prev/next, links, the touch lens) aren't picture taps
+    if (!el || !pic || (e.target as Element).closest?.("a, input, [data-zoom-lens], button:not([data-tap-zoom])")) {
+      lastTap.current = null;
+      return;
+    }
+    const now = Date.now();
+    const p = lastTap.current;
+    if (!p || now - p.t > DOUBLE_MS || Math.hypot(e.clientX - p.x, e.clientY - p.y) > DOUBLE_PX) {
+      lastTap.current = { t: now, x: e.clientX, y: e.clientY };
+      return;
+    }
+    lastTap.current = null;
+    doubleAt.current = now;
+    gestured.current = true; // swallows this tap's click
+    const r = el.getBoundingClientRect();
+    const b = { w: r.width, h: r.height };
+    setView((v) => (v.z > 1 ? { ...v, z: 1, x: 0, y: 0 } : zoomAt(v, b, pic, DOUBLE_ZOOM, e.clientX - r.left, e.clientY - r.top)));
+  }
 
   const down = useEffectEvent((e: PointerEvent) => {
     const el = panel;
@@ -96,7 +125,9 @@ export function useZoomPan(
   });
 
   const up = useEffectEvent((e: PointerEvent) => {
+    const tap = pointers.current.size === 1 && pointers.current.has(e.pointerId) && !gestured.current && !moved.current;
     pointers.current.delete(e.pointerId);
+    if (tap && e.type === "pointerup") tapped(e);
     start.current = pointers.current.size ? { v: view, pts: [...pointers.current.values()] } : null;
   });
 
@@ -120,6 +151,9 @@ export function useZoomPan(
     el.addEventListener("pointerup", u);
     el.addEventListener("pointercancel", u);
     el.addEventListener("click", c, true);
+    // a double click zooms the picture, not the video into native fullscreen
+    const dc = (e: MouseEvent) => e.preventDefault();
+    el.addEventListener("dblclick", dc, true);
     return () => {
       el.removeEventListener("wheel", w);
       el.removeEventListener("pointerdown", d);
@@ -127,6 +161,7 @@ export function useZoomPan(
       el.removeEventListener("pointerup", u);
       el.removeEventListener("pointercancel", u);
       el.removeEventListener("click", c, true);
+      el.removeEventListener("dblclick", dc, true);
     };
   }, [panel]);
 
@@ -138,5 +173,5 @@ export function useZoomPan(
     setView((v) => zoomAt(v, { w: r.width, h: r.height }, pic, f, r.width / 2, r.height / 2));
   }
 
-  return { box, gestured, zoomBy };
+  return { box, gestured, zoomBy, doubleAt };
 }
