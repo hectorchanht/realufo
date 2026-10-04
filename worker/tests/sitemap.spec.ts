@@ -67,6 +67,7 @@ describe("sitemap", () => {
     expect(md).toMatch(/^# RealUFO\n\n> Searchable archive of \d+ declassified/);
     expect(md).toContain("- [Archive](https://realufo.org/archive)");
     expect(md).toContain("## Agencies");
+    expect(md).toContain("Only agencies with 5+ files have a page");
     expect(md).toContain("- [FBI UAP files](https://realufo.org/agency/fbi): ");
     expect(md).toContain("`/doc/<file id>/text` serves its full text page by page as Markdown");
     expect(md).toContain("- [Open dataset](https://huggingface.co/datasets/tung00/realufo-uap-archive): ");

@@ -1,6 +1,6 @@
 import type { Env } from "../env";
 import { hubHref } from "../lib/ssr";
-import { hubTitle, type HubKind } from "../lib/hubs";
+import { MIN_HUB_FILES, hubTitle, type HubKind } from "../lib/hubs";
 import { listHubsCached } from "./hubs";
 import { DATASET_URL } from "../lib/profiles";
 import { docTitle, isoDate } from "../lib/pages";
@@ -49,7 +49,9 @@ export async function llms(req: Request, env: Env) {
     "",
     ...KINDS.flatMap(([k, heading]) => {
       const hs = hubs.filter((h) => h.kind === k);
-      return hs.length ? [`## ${heading}`, "", ...hs.map((h) => link(hubTitle(h), hubHref(h.kind, h.slug), `${h.count} files`)), ""] : [];
+      // Agency/location hubs need MIN_HUB_FILES files, so these lists don't sum to the total: say so.
+      const partial = k === "agency" || k === "location" ? [`Only ${heading.toLowerCase()} with ${MIN_HUB_FILES}+ files have a page; filter the [Archive](${origin}/archive) for the rest.`, ""] : [];
+      return hs.length ? [`## ${heading}`, "", ...partial, ...hs.map((h) => link(hubTitle(h), hubHref(h.kind, h.slug), `${h.count} files`)), ""] : [];
     }),
     "## Optional",
     "",

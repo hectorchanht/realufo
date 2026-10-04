@@ -226,7 +226,7 @@ function PostRow({ post, sourceRecord, thread, nos, replies, onQuote }: PostRowP
           className="relative float-left mb-2 mr-3 h-24 w-24 flex-none overflow-hidden rounded-[10px] border border-line2 bg-bg2 active:scale-[.96]"
         >
           {img.kind === "upload" || (img.kind === "record" && img.thumb) ? (
-            <img src={img.kind === "upload" ? img.url : img.thumb!} alt="" className="h-full w-full object-cover" />
+            <img src={img.kind === "upload" ? img.url : img.thumb!} alt="" loading="lazy" className="h-full w-full object-cover" />
           ) : (
             <div
               className="grid h-full w-full place-items-center px-1.5 text-center font-mono text-[9px]"

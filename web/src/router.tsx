@@ -10,9 +10,9 @@ import { RouteError } from "./components/RouteError";
 import type { ComponentType } from "react";
 import type { HubKind } from "./api/types";
 
-// Feed (the landing page) ships in the main bundle; every other screen is its
-// own chunk, fetched on first visit, so the homepage doesn't download the map,
-// Ask, Doc viewer, etc. up front.
+// Feed (the landing page) and Doc (where search traffic lands, aacdaa8) ship in
+// the main bundle; every other screen is its own chunk, fetched on first visit,
+// so the homepage doesn't download the map, Ask, Shorts, etc. up front.
 const screen = (load: () => Promise<{ default: ComponentType }>) => async () => ({
   Component: (await load()).default,
 });
