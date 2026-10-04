@@ -136,6 +136,11 @@ export default {
     const renamed = url.pathname.match(RENAMED_PATH);
     const to = renamed && RENAMED[renamed[2]]; // keys are plain ASCII: no decode (a bad % would throw)
     if (to) return Response.redirect(`${url.origin}/${renamed[1]}/${encodeURIComponent(to)}${renamed[3] ?? ""}${url.search}`, 301);
+    // /shorts has no index page (only the /shorts/:id player): the Shorts list is the archive's Shorts filter.
+    if (/^\/shorts\/?$/.test(url.pathname)) {
+      url.searchParams.set("type", "shorts");
+      return Response.redirect(`${url.origin}/archive?${url.searchParams}`, 301);
+    }
     if (PENTAGON_PAPERS.test(url.pathname)) return Response.redirect("https://www.archives.gov/research/pentagon-papers", 301);
     if (url.pathname.startsWith("/api/")) {
       const res = await dispatch(req, env, ctx);
