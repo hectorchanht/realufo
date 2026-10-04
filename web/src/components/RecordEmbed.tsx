@@ -1,8 +1,10 @@
 // A record id mentioned in post text (e.g. "NASA-UAP-D030"): the id becomes a
 // link to /doc/:id and the record's media renders right after it — image
-// (tap → MediaViewer), video/audio (native player), PDF (thumb → inline
+// (tap → MediaViewer), video/audio (native player; a video's controls stay
+// hidden until the first tap or focus, so the clip reads as a picture), PDF (thumb → inline
 // /api/file route). Same media rules as the Doc screen (lib/recordMedia).
 // Ids that don't resolve to a record stay plain text.
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useRecord } from "../api/queries";
 import { useOverlay } from "../overlays/OverlayProvider";
@@ -14,6 +16,7 @@ export function RecordEmbed({ id, t, withMedia }: { id: string; t?: number; with
   const { data } = useRecord(id);
   const { openViewer } = useOverlay();
   const isDesktop = useMediaQuery("(min-width: 900px)");
+  const [controls, setControls] = useState(false);
   if (!data?.record) return <>{id}</>;
 
   const { media, fullUrl, thumbUrl } = recordMedia(data, isDesktop);
@@ -36,7 +39,18 @@ export function RecordEmbed({ id, t, withMedia }: { id: string; t?: number; with
           )}
           {media === "video" && (
             // #t= media fragment: the clip opens at the cited moment
-            <video src={t !== undefined ? `${fullUrl}#t=${t}` : fullUrl} poster={thumbUrl ?? undefined} controls playsInline preload="metadata" className={`${box} max-h-[260px]`} />
+            <video
+              src={t !== undefined ? `${fullUrl}#t=${t}` : fullUrl}
+              poster={thumbUrl ?? undefined}
+              controls={controls}
+              onClick={() => setControls(true)}
+              onFocus={() => setControls(true)}
+              tabIndex={controls ? undefined : 0}
+              aria-label={label}
+              playsInline
+              preload="metadata"
+              className={`${box} max-h-[260px]`}
+            />
           )}
           {media === "audio" && <audio src={fullUrl} controls preload="metadata" className="my-2 block w-full max-w-[360px]" />}
           {(media === "pdf" || media === "thumb") && (

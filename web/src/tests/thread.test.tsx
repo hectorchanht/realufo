@@ -43,7 +43,12 @@ vi.mock("../api/queries", () => ({
               { role: "thumb", cdn_url: "https://cdn.example/d030-thumb.jpg", mime: "image/jpeg" },
             ],
           }
-        : undefined,
+        : id === "DOW-UAP-PR104"
+          ? {
+              record: { id, kind: "video", title: "DOW-UAP-PR104" },
+              assets: [{ role: "full", cdn_url: "https://cdn.example/pr104.mp4", mime: "video/mp4" }],
+            }
+          : undefined,
   }),
 }));
 
@@ -302,6 +307,18 @@ describe("Thread", () => {
     renderThread();
     expect(screen.getByRole("link", { name: "NASA-UAP-D030@1:23.04" })).toHaveAttribute("href", "/doc/NASA-UAP-D030?t=83.04");
     expect(screen.getByRole("button", { name: "open NASA-UAP-D030" })).toBeInTheDocument();
+  });
+
+  it("an embedded record video hides its controls until the first tap", () => {
+    useThreadMock.mockReturnValue({
+      data: { ...mockThreadDetail, posts: [{ ...mockThreadDetail.posts[1], body: "look DOW-UAP-PR104@0:06.00" }] },
+      isLoading: false,
+    });
+    const { container } = renderThread();
+    const video = container.querySelector('[data-record-embed="DOW-UAP-PR104"] video')!;
+    expect(video).not.toHaveAttribute("controls");
+    fireEvent.click(video);
+    expect(video).toHaveAttribute("controls");
   });
 
   it("renders a user-uploaded post image and opens it in the image viewer", () => {
