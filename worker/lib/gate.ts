@@ -1,6 +1,6 @@
 // worker/lib/gate.ts
 import type { Env } from "../env";
-import { CDN, nextCandidate, withinBudget, type Candidate } from "./xpick";
+import { CDN, nextCandidate, sqlTime, withinBudget, type Candidate } from "./xpick";
 import { publishDraft, stage, type Draft } from "./xbot"; // xbot imports gate back: only used inside functions, never at load
 import { createJob, move, setMessages, type Job } from "./jobs";
 import { sendMedia, sendMessage, TgError } from "./tg";
@@ -67,49 +67,69 @@ export async function preview(env: Env, job: Job): Promise<void> {
 // Runs an approved job: the same writes the pre-gate paths made. Caller has already moved it
 // post_wait → approved (exactly once). Ends posted or failed; returns a line for the owner.
 export async function approve(env: Env, job: Job, now = new Date()): Promise<string> {
+  let line = "";
+  let fanOut = false;
   try {
-    let line = "";
     if (job.kind === "post" || job.kind === "showcase") {
       const d: Draft = { ...job.payload.x, text: job.caption ?? job.payload.x.text };
       line = await postDraft(env, d, now);
+      fanOut = true;
     } else if (job.kind === "article") {
       const p = job.payload as { sql: string[]; urls: string[]; showcase?: { record: string; text: string } };
-      // check the half that can refuse BEFORE writing site rows, so a failed job leaves nothing behind
-      if (p.showcase && (await env.DB.prepare("SELECT 1 FROM x_posts WHERE stream='showcase' AND ref=?").bind(p.showcase.record).first()))
-        throw new Error(`showcase already posted for ${p.showcase.record}`);
+      // everything that can refuse comes BEFORE the site rows, so a failed job leaves nothing behind
+      let sc: Draft | null = null;
+      if (p.showcase) {
+        if (await env.DB.prepare("SELECT 1 FROM x_posts WHERE stream='showcase' AND ref=?").bind(p.showcase.record).first())
+          throw new Error(`showcase already posted for ${p.showcase.record}`);
+        const c = await nextCandidate({ ...env, X_FORCE_SHOWCASE: p.showcase.record, X_SHOWCASE_TEXT: p.showcase.text }, now);
+        sc = c && c.stream === "showcase" ? await stage(env, c, now) : null;
+        if (!sc) throw new Error("showcase video missing in R2 or over budget");
+      }
       if (p.sql.length) await env.DB.batch(p.sql.map((s) => env.DB.prepare(s)));
       await indexNow(p.urls);
       line = `site: ${p.urls[0] ?? "rows written"}`;
-      if (p.showcase) {
-        const c = await nextCandidate({ ...env, X_FORCE_SHOWCASE: p.showcase.record, X_SHOWCASE_TEXT: p.showcase.text }, now);
-        const d = c && c.stream === "showcase" ? await stage(env, c, now) : null;
-        if (!d) throw new Error("showcase video missing in R2, already posted, or over budget");
-        line += ` · ${await postDraft(env, d, now)}`;
+      if (sc) {
+        line += ` · ${await postDraft(env, sc, now)}`;
+        fanOut = true;
       }
     } else if (job.kind === "poll") {
       line = "poll approved: posts on the next tick";
     } else {
       throw new Error(`kind ${job.kind} has no approve step yet`);
     }
-    await move(env, job.id, job.version, ["approved"], "posted");
-    return `✅ #${job.id} ${line}`;
   } catch (e) {
     const msg = errMsg(e);
     await move(env, job.id, job.version, ["approved"], "failed", msg);
     return `⚠️ #${job.id} failed: ${msg}`;
   }
+  const ok = await move(env, job.id, job.version, ["approved"], "posted");
+  // only after the job is final: a slow platform must not hold it in "approved"; the cron finishes the rest
+  if (fanOut) await socialTick(env, now).catch(() => {});
+  return ok
+    ? `✅ #${job.id} ${line}${fanOut ? " · fan-out started" : ""}`
+    : `⚠️ #${job.id} went out (${line}) but the job changed meanwhile; check its status`;
 }
 
 async function postDraft(env: Env, d: Draft, now: Date): Promise<string> {
   if (!(await withinBudget(env, d.cost, now, true))) throw new Error("over the monthly X budget");
   const id = await publishDraft(env, d, now);
-  if (id === null) return "already on X";
-  // xbot swallows X's refusals (it drops the row on 401/402/403, marks it failed on other 4xx): read the outcome back
-  const r = await env.DB.prepare("SELECT status, error FROM x_posts WHERE id=?").bind(id).first<{ status: string; error: string | null }>();
+  // xbot swallows X's refusals (it drops the row on 401/402/403, marks it failed on other 4xx): read the outcome back.
+  // By (stream, ref) so a duplicate (id === null) goes through the same check as a fresh row.
+  const r = await env.DB.prepare("SELECT id, status, error FROM x_posts WHERE stream=? AND ref=?").bind(d.stream, d.ref).first<{ id: number; status: string; error: string | null }>();
   if (!r || r.status === "failed") throw new Error(r?.error ?? "X rejected the post (auth or credits)");
-  await socialTick(env, now).catch(() => {}); // start the fan-out now; the cron finishes slow platforms
-  return `X row ${id} (${r.status}) · fan-out started`;
+  return `${id === null ? "already on X" : "X row"} ${r.id} (${r.status})`;
 }
 
-// "approved" too: frees a job stranded when the Worker died mid-approve
-export const skip = (env: Env, job: Job) => move(env, job.id, job.version, ["post_wait", "brief_wait", "video_wait", "handmade", "prep", "media", "making", "approved"], "skipped");
+// Cron safety net: approve runs inside the webhook request, which Workers may cancel if Telegram hangs up.
+// A job still "approved" after 15 minutes is closed as failed and the owner is told to check X.
+export async function sweepStuck(env: Env, now = new Date()): Promise<void> {
+  if (!gateOn(env)) return;
+  const { results } = await env.DB.prepare("SELECT id, version FROM bot_jobs WHERE status='approved' AND deleted_at IS NULL AND updated_at < ?")
+    .bind(sqlTime(new Date(now.getTime() - 15 * 60_000))).all<{ id: number; version: number }>();
+  for (const j of results) {
+    if (!(await move(env, j.id, j.version, ["approved"], "failed", "approve interrupted; check the X row"))) continue;
+    await sendMessage(env, env.TELEGRAM_OWNER_ID!, `⚠️ #${j.id} approve was interrupted; check X before re-posting`).catch(() => {});
+  }
+}
+
+export const skip = (env: Env, job: Job) => move(env, job.id, job.version, ["post_wait", "brief_wait", "video_wait", "handmade", "prep", "media", "making"], "skipped");

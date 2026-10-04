@@ -27,6 +27,7 @@ import { recordText } from "./routes/text";
 import { hubsIndex, getHub } from "./routes/hubs";
 import { releasesApi } from "./routes/releases";
 import { tgWebhook } from "./routes/tg";
+import { sweepStuck } from "./lib/gate";
 import { tick } from "./lib/xbot";
 import { tick as socialTick } from "./lib/social/tick";
 import { pollTick } from "./lib/xpoll";
@@ -78,6 +79,7 @@ on("POST", "/api/follows/merge", mergeFollows);
 // FEATURE_SOCIAL_* gate it). Social failing never affects X.
 async function runTick(env: Env) {
   const logErr = (who: string) => (e: unknown) => console.log(JSON.stringify({ [who]: true, crashed: String(e).slice(0, 300) }));
+  await sweepStuck(env).catch(logErr("gate")); // first, and independent of FEATURE_X
   await tick(env).catch(logErr("xbot"));
   await socialTick(env).catch(logErr("social"));
   await pollTick(env).catch(logErr("xpoll"));

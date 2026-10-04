@@ -6,6 +6,8 @@ import { getJob, jobByMessage, move, revise } from "../lib/jobs";
 import { approve, preview, skip } from "../lib/gate";
 import { answerCallback, clearButtons, sendMessage } from "../lib/tg";
 import { command } from "../lib/tgcmd";
+import { THREAD_SEP } from "../lib/x";
+import { weightedLength } from "../lib/xcopy";
 
 // POST /__tg: Telegram webhook (spec 2026-10-04-realufo-telegram-gate-design). Owner only;
 // everything else is answered 200 and ignored so Telegram doesn't retry it.
@@ -14,7 +16,8 @@ export async function tgWebhook(req: Request, env: Env): Promise<Response> {
   if (!env.TELEGRAM_WEBHOOK_SECRET || req.method !== "POST" || !(await sameSecret(secret, env.TELEGRAM_WEBHOOK_SECRET))) return error(404, "not found");
   const u = await req.json<any>().catch(() => ({}));
   const from = u.callback_query?.from?.id ?? u.message?.from?.id;
-  if (!from || String(from) !== String(env.TELEGRAM_OWNER_ID)) return json({ ok: true });
+  const chat = u.callback_query ? u.callback_query.message?.chat?.id : u.message?.chat?.id; // the owner's private chat only, not a group
+  if (!from || String(from) !== String(env.TELEGRAM_OWNER_ID) || String(chat) !== String(env.TELEGRAM_OWNER_ID)) return json({ ok: true });
   if (u.callback_query) await onButton(env, u.callback_query);
   else if (u.message) await onMessage(env, u.message);
   return json({ ok: true });
@@ -38,7 +41,9 @@ async function onButton(env: Env, q: any) {
   if (!(await move(env, job.id, Number(v), ["post_wait"], "approved"))) return ack(env, q.id, "already handled or out of date");
   await ack(env, q.id, "posting…"); // answer first: approval can take a while
   await clearButtons(env, chat, q.message.message_id).catch(() => {});
-  await sendMessage(env, chat, await approve(env, { ...job, version: Number(v) }));
+  const line = await approve(env, { ...job, version: Number(v) });
+  // the job is already final: a lost message must not fail the webhook (Telegram would re-send the update)
+  await sendMessage(env, chat, line).catch((e) => console.log(JSON.stringify({ tg: true, resultNotSent: job.id, error: String(e).slice(0, 200) })));
 }
 
 async function onMessage(env: Env, m: any) {
@@ -48,9 +53,13 @@ async function onMessage(env: Env, m: any) {
     if (!job) return sendMessage(env, chat, "That preview is out of date (or not a job). Reply to the newest preview.", undefined, m.message_id);
     if (job.kind !== "post" && job.kind !== "showcase") return sendMessage(env, chat, `#${job.id} is a ${job.kind} job; edit it at its source and re-send.`);
     if (job.status !== "post_wait") return sendMessage(env, chat, `#${job.id} is ${job.status}; only waiting previews can be edited.`);
-    const link = (job.caption ?? "").match(/https:\/\/realufo\.org\/\S+$/)?.[0];
-    const text = link && !m.text.includes(link) ? `${m.text.trim()}\n${link}` : m.text.trim();
-    const next = await revise(env, job.id, job.version, text, m.text);
+    // A showcase caption may be a thread (parts joined by THREAD_SEP): the reply replaces only the head tweet.
+    const [head, ...rest] = (job.caption ?? "").split(THREAD_SEP);
+    const link = head.match(/https:\/\/realufo\.org\/\S+$/)?.[0];
+    const newHead = link && !m.text.includes(link) ? `${m.text.trim()}\n${link}` : m.text.trim();
+    const len = weightedLength(newHead);
+    if (len > 280) return sendMessage(env, chat, `#${job.id}: that is ${len}/280 for X; shorten it and reply again. Nothing changed.`);
+    const next = await revise(env, job.id, job.version, [newHead, ...rest].join(THREAD_SEP), m.text);
     if (!next) return sendMessage(env, chat, `#${job.id} changed meanwhile; reply to the newest preview.`);
     return preview(env, next);
   }
