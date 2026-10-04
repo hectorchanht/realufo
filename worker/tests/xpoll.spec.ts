@@ -33,6 +33,7 @@ beforeEach(async () => {
   read = () => new Response(JSON.stringify({ data: { id: "P1" }, includes: { polls: [{ voting_status: "open", options: [{ position: 1, votes: 7 }, { position: 2, votes: 3 }] }] } }));
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input: any, init: any = {}) => {
     const u = String(input);
+    if (u.startsWith("https://api.telegram.org/")) return new Response(JSON.stringify({ ok: true, result: { message_id: 1 } }));
     if (u.endsWith("/2/tweets") && init.method === "POST") { sent.push(JSON.parse(init.body)); return tweet(); }
     if (u.includes("/2/tweets/")) { reads.push(u); return read(); }
     throw new Error("unexpected fetch " + u);
@@ -239,5 +240,26 @@ describe("pollTick: threads (standalone poll post — the app can't reply)", () 
     create = () => new Response('{"error":{"message":"Application does not have permission","code":10}}', { status: 400 });
     await pollTick(TE(), NOW, noSleep);
     expect(await trow()).toMatchObject({ status: "failed" });
+  });
+});
+
+describe("gate (FEATURE_GATE=on)", () => {
+  const G = (extra: Record<string, unknown> = {}) => E({ FEATURE_GATE: "on", TELEGRAM_BOT_TOKEN: "T0K", TELEGRAM_OWNER_ID: "777", ...extra });
+  beforeEach(async () => {
+    await env.DB.prepare("DELETE FROM bot_job_versions").run();
+    await env.DB.prepare("DELETE FROM bot_jobs").run();
+  });
+  it("no poll is posted without an approved job; a poll job + preview is queued instead", async () => {
+    const before = sent.length;
+    await pollTick(G(), NOW, noSleep);
+    expect(sent.length).toBe(before); // nothing sent to X
+    const j = await env.DB.prepare("SELECT kind, stream, ref, status FROM bot_jobs").all<any>();
+    expect(j.results).toEqual([{ kind: "poll", stream: "poll", ref: "xp1", status: "post_wait" }]);
+  });
+  it("an approved article or poll job lets the poll post", async () => {
+    await env.DB.prepare("INSERT INTO bot_jobs(kind,stream,ref,status,payload) VALUES ('article','article','xp1','posted','{}')").run();
+    await pollTick(G(), NOW, noSleep);
+    const r = await env.DB.prepare("SELECT status FROM poll_social WHERE slug='xp1' AND platform='x'").first<any>();
+    expect(r?.status).toBe("posted");
   });
 });

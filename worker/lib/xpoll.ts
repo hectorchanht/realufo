@@ -5,6 +5,8 @@ import { boxFlow, graph, threadsBox, THREADS_API } from "./social/meta";
 import { SocialError, type Sleep } from "./social/common";
 import { secretsOf } from "./xbot";
 import { parsePoll } from "../routes/polls";
+import { createJob, NO_JOB } from "./jobs";
+import { gateOn, preview } from "./gate";
 
 // Spec 9: a story's question as a native X poll, posted as a reply under the story's X
 // thread (polls can't carry media, so not on the head tweet). One path for new stories and
@@ -21,6 +23,11 @@ const spaced = async (env: Env, platform: "x" | "threads", now: Date) =>
     .bind(platform, sqlTime(new Date(now.getTime() - GAP_MS))).first());
 const log = (o: Record<string, unknown>) => console.log(JSON.stringify({ xpoll: true, ...o }));
 
+// With the gate on, a story's poll posts only after the owner approved the story or the poll.
+const approvedPoll = (env: Env) => gateOn(env)
+  ? `AND EXISTS (SELECT 1 FROM bot_jobs j WHERE j.ref=a.slug AND j.kind IN ('article','poll') AND j.status IN ('approved','posted') AND j.deleted_at IS NULL)`
+  : "";
+
 async function postNext(env: Env, s: XSecrets, now: Date) {
   if (!(await spaced(env, "x", now))) return;
   const { results } = await env.DB.prepare(
@@ -28,7 +35,7 @@ async function postNext(env: Env, s: XSecrets, now: Date) {
      JOIN threads t ON t.id = a.thread_id
      JOIN x_posts x ON x.stream='showcase' AND x.ref=t.source_record_id AND x.status='posted' AND x.tweet_id IS NOT NULL
      LEFT JOIN poll_social p ON p.slug=a.slug AND p.platform='x'
-     WHERE a.poll IS NOT NULL AND p.slug IS NULL
+     WHERE a.poll IS NOT NULL AND p.slug IS NULL ${approvedPoll(env)}
      ORDER BY a.created_at`
   ).all<{ slug: string; poll: string; tweet_id: string }>();
   // an unparsable poll (hand-edited D1) is skipped, never allowed to block the stories after it
@@ -101,7 +108,7 @@ async function threadsPostNext(env: Env, now: Date, sleep: Sleep) {
      JOIN x_posts x ON x.stream='showcase' AND x.ref=t.source_record_id
      JOIN social_posts sp ON sp.x_post_id=x.id AND sp.platform='threads' AND sp.status='posted' AND sp.deleted_at IS NULL
      LEFT JOIN poll_social p ON p.slug=a.slug AND p.platform='threads'
-     WHERE a.poll IS NOT NULL AND p.slug IS NULL
+     WHERE a.poll IS NOT NULL AND p.slug IS NULL ${approvedPoll(env)}
      ORDER BY a.created_at`
   ).all<{ slug: string; poll: string }>();
   const c = results.find((r) => parsePoll(r.poll));
@@ -158,8 +165,25 @@ async function threadsRefreshNext(env: Env, now: Date) {
   }
 }
 
+// Gate: offer the oldest story poll that has no job yet (one open poll job at a time).
+async function queuePolls(env: Env) {
+  const r = await env.DB.prepare(
+    `SELECT a.slug, a.poll, a.image_key FROM articles a
+     LEFT JOIN poll_social p ON p.slug=a.slug AND p.platform='x'
+     WHERE a.poll IS NOT NULL AND p.slug IS NULL AND ${NO_JOB("a.slug")}
+     ORDER BY a.created_at LIMIT 1`
+  ).first<{ slug: string; poll: string; image_key: string | null }>();
+  const poll = r && parsePoll(r.poll);
+  if (!r || !poll) return;
+  const media = r.image_key ? { key: r.image_key, mime: "image/jpeg", size: 0 } : null;
+  const caption = `${poll.q} 👇\n${poll.opts.map((o) => `• ${o}`).join("\n")}\n(posted as a reply under the story's head post; story: ${SITE}/thread/ar_${r.slug})`;
+  const job = await createJob(env, { kind: "poll", stream: "poll", ref: r.slug, status: "post_wait", caption, media, payload: { slug: r.slug } });
+  if (job) await preview(env, job);
+}
+
 export async function pollTick(env: Env, now = new Date(), sleep: Sleep = (ms) => new Promise((r) => setTimeout(r, ms))) {
   if (env.FEATURE_X !== "on" || env.X_POLLS !== "on") return; // X_POLLS = the story-poll switch for every platform
+  if (gateOn(env)) await queuePolls(env).catch((e) => log({ queuePollsFailed: String(e).slice(0, 200) }));
   const s = secretsOf(env);
   if (s) {
     await postNext(env, s, now);
