@@ -694,8 +694,12 @@ describe("Doc", () => {
 
     // frame zoom chips: + / − step 1.5× around the centre, clamped 1–8×
     expect(screen.getByRole("button", { name: "Zoom out" })).toBeDisabled();
+    expect(panel.className).not.toContain("cursor-grab");
     fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
     expect(img().style.transform).toContain("scale(1.5)");
+    // zoomed: a grab cursor says it pans, and the <img> can't be dragged away natively (that cancels the pan)
+    expect(panel.className).toContain("cursor-grab");
+    expect(img().draggable).toBe(false);
     expect(screen.getByRole("button", { name: "Reset zoom" })).toHaveTextContent("1.5×");
     for (let i = 0; i < 6; i++) fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
     expect(screen.getByRole("button", { name: "Zoom in" })).toBeDisabled();

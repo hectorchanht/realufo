@@ -554,7 +554,8 @@ export function Doc() {
         data-chrome={chrome ? "on" : "off"}
         // image letterbox is the panel's black, not the <img>'s, so filters (invert) don't recolor it.
         // select-none: a long-press while lensing must not start a text selection on the badges.
-        className={`relative mb-3.5 select-none overflow-hidden rounded-2xl border border-line2 [&:fullscreen]:rounded-none [&:fullscreen]:border-0 ${media === "image" ? "bg-black" : "bg-bg2"}`}
+        // zoomed: grab cursor (drag pans)
+        className={`relative mb-3.5 select-none overflow-hidden rounded-2xl border border-line2 [&:fullscreen]:rounded-none [&:fullscreen]:border-0 ${media === "image" ? "bg-black" : "bg-bg2"} ${view.z > 1 ? "cursor-grab active:cursor-grabbing" : ""}`}
         style={{
           // panel takes the media's own shape once known (turned with it at 90/270°), so it fills the
           // block with no letterbox bars; tall shapes narrow (centred) instead of being cut at 78vh
@@ -572,6 +573,7 @@ export function Doc() {
             src={fullUrl}
             alt={title}
             onLoad={(e) => setPic({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+            draggable={false} // a native image drag would cancel the pan mid-way
             className="h-full w-full object-contain"
             style={{ filter: shownFilter || undefined, transform: viewTransform(view, zoom.box, pic) || undefined }}
           />
