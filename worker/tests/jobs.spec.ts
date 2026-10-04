@@ -49,17 +49,35 @@ describe("jobs", () => {
     expect(await getSetting(env as any, "paused_picks")).toBe("0");
     expect((await getJob(env as any, j.id))?.status).toBe("posted");
   });
-  it("NO_JOB ignores failed jobs, allowing retry on next tick", async () => {
-    const j = (await createJob(env as any, { ...base, stream: "pick", ref: "R1" }))!;
-    // Mark job as failed
-    await move(env as any, j.id, 1, ["post_wait"], "failed", "preview delivery failed");
-    // NO_JOB should return true (job can be retried) since only failed exists
+  it("NO_JOB blocks on post_wait/skipped/posted, ignores failed", async () => {
     const noJobSql = NO_JOB("'R1'");
-    const result = await env.DB.prepare(`SELECT 1 WHERE ${noJobSql}`).first<{ "1": number }>();
-    expect(result).not.toBeNull(); // Returns a row = NO_JOB is true
-    // Verify we can create another job for R1 (open jobs blocked, failed ignored)
-    const retry = await createJob(env as any, { ...base, stream: "pick", ref: "R1" });
-    expect(retry).not.toBeNull();
-    expect(retry?.ref).toBe("R1");
+
+    // Case 1: no job at all → NO_JOB is true
+    let result = await env.DB.prepare(`SELECT 1 WHERE ${noJobSql}`).first<{ "1": number }>();
+    expect(result).not.toBeNull();
+
+    // Case 2: post_wait → NO_JOB is false (blocks)
+    let j = (await createJob(env as any, { ...base, stream: "pick", ref: "R1" }))!;
+    result = await env.DB.prepare(`SELECT 1 WHERE ${noJobSql}`).first<{ "1": number }>();
+    expect(result).toBeNull();
+
+    // Case 3: skipped → NO_JOB is false (blocks)
+    await move(env as any, j.id, 1, ["post_wait"], "skipped");
+    result = await env.DB.prepare(`SELECT 1 WHERE ${noJobSql}`).first<{ "1": number }>();
+    expect(result).toBeNull();
+
+    // Case 4: posted → NO_JOB is false (blocks)
+    await env.DB.prepare("UPDATE bot_jobs SET deleted_at=datetime('now') WHERE id=?").bind(j.id).run();
+    j = (await createJob(env as any, { ...base, stream: "pick", ref: "R1" }))!;
+    await move(env as any, j.id, 1, ["post_wait"], "posted");
+    result = await env.DB.prepare(`SELECT 1 WHERE ${noJobSql}`).first<{ "1": number }>();
+    expect(result).toBeNull();
+
+    // Case 5: failed → NO_JOB is true (allows retry)
+    await env.DB.prepare("UPDATE bot_jobs SET deleted_at=datetime('now') WHERE id=?").bind(j.id).run();
+    j = (await createJob(env as any, { ...base, stream: "pick", ref: "R1" }))!;
+    await move(env as any, j.id, 1, ["post_wait"], "failed", "preview delivery failed");
+    result = await env.DB.prepare(`SELECT 1 WHERE ${noJobSql}`).first<{ "1": number }>();
+    expect(result).not.toBeNull();
   });
 });
