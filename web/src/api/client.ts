@@ -71,7 +71,29 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
   return res.json() as Promise<T>;
 }
 
+// index.html starts each landing route's first GETs before this bundle loads
+// (spec docs/superpowers/specs/2026-10-04-realufo-early-fetch-design.md). The first
+// GET of a path adopts that result once; a failed one (null) or one 10 s+ old means
+// a normal request, so this is never worse than no early fetch.
+type Early = { at: number; p: Promise<{ d: unknown; stale: boolean } | null> };
+const EARLY_MAX_AGE_MS = 10_000;
+
+async function early<T>(path: string): Promise<T | undefined> {
+  const all = (window as { __early?: Record<string, Early> }).__early;
+  const e = all?.[path];
+  if (!all || !e) return undefined;
+  delete all[path];
+  if (performance.now() - e.at >= EARLY_MAX_AGE_MS) return undefined;
+  const r = await e.p;
+  if (!r) return undefined;
+  setStale(r.stale);
+  return r.d as T;
+}
+
 export const api = {
-  get: <T>(path: string) => req<T>("GET", path),
+  get: async <T>(path: string): Promise<T> => {
+    const hit = await early<T>(path);
+    return hit !== undefined ? hit : req<T>("GET", path);
+  },
   post: <T>(path: string, body?: unknown) => req<T>("POST", path, body),
 };

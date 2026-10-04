@@ -82,7 +82,7 @@ export const qk = {
   caseComments: (slug: string) => ["caseComments", slug] as const,
 };
 
-function recordsPath(params: RecordsParams): string {
+export function recordsPath(params: RecordsParams): string {
   const usp = new URLSearchParams();
   if (params.archive) usp.set("archive", params.archive);
   if (params.type) usp.set("type", params.type);

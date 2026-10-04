@@ -68,3 +68,50 @@ describe("api client", () => {
     expect(isStale()).toBe(false);
   });
 });
+
+describe("early fetch adoption (index.html window.__early)", () => {
+  type Early = { at: number; p: Promise<{ d: unknown; stale: boolean } | null> };
+  const w = window as unknown as { __early?: Record<string, Early> };
+  const put = (path: string, r: { d: unknown; stale: boolean } | null, at = performance.now()) => {
+    w.__early = { ...(w.__early ?? {}), [path]: { at, p: Promise.resolve(r) } };
+  };
+  beforeEach(() => {
+    delete w.__early;
+    vi.restoreAllMocks();
+  });
+
+  it("adopts the early result without a network request", async () => {
+    const spy = vi.spyOn(globalThis, "fetch");
+    put("/api/records/X", { d: { record: { id: "X" } }, stale: false });
+    expect(await api.get("/api/records/X")).toEqual({ record: { id: "X" } });
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("adopts once: a second GET of the same path goes to the network", async () => {
+    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ n: 2 }), { status: 200 }));
+    put("/api/hubs", { d: { n: 1 }, stale: false });
+    expect(await api.get("/api/hubs")).toEqual({ n: 1 });
+    expect(await api.get("/api/hubs")).toEqual({ n: 2 });
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it("a failed early fetch (null) falls back to a normal request and surfaces its ApiError", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ error: "not found" }), { status: 404 }));
+    put("/api/records/GONE", null);
+    await expect(api.get("/api/records/GONE")).rejects.toMatchObject({ status: 404 });
+  });
+
+  it("ignores an entry 10 s or older and fetches fresh", async () => {
+    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ fresh: true }), { status: 200 }));
+    put("/api/bootstrap", { d: { fresh: false }, stale: false }, performance.now() - 10_000);
+    expect(await api.get("/api/bootstrap")).toEqual({ fresh: true });
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(w.__early?.["/api/bootstrap"]).toBeUndefined();
+  });
+
+  it("restores the service worker's stale flag from the early response", async () => {
+    put("/api/feed", { d: { cards: [] }, stale: true });
+    await api.get("/api/feed");
+    expect(isStale()).toBe(true);
+  });
+});
