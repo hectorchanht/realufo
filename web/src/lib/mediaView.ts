@@ -103,11 +103,16 @@ export function viewFromParams(sp: URLSearchParams, box: Size, pic: Size): Media
     flip: sp.get("flip") === "1",
   };
   if (v.z === 1 && !v.rot && !v.flip) return null;
-  // put picture point (cx, cy) at the panel centre: forward of pointToUV's undo
+  return centreOn(v, box, pic, n("cx", 0.5), n("cy", 0.5));
+}
+
+/** Pan `v` so picture point (u, v: 0–1) sits at the panel centre (clamped to the picture). */
+export function centreOn(v: MediaView, box: Size, pic: Size, u: number, w: number): MediaView {
+  // forward of pointToUV's undo
   const { cw, ch, s } = fit(box, pic, v.rot);
   const k = v.z * s;
-  let ux = (Math.min(1, Math.max(0, n("cx", 0.5))) - 0.5) * cw;
-  const uy = (Math.min(1, Math.max(0, n("cy", 0.5))) - 0.5) * ch;
+  let ux = (Math.min(1, Math.max(0, u)) - 0.5) * cw;
+  const uy = (Math.min(1, Math.max(0, w)) - 0.5) * ch;
   if (v.flip) ux = -ux;
   const r = (v.rot * Math.PI) / 180;
   const cos = Math.round(Math.cos(r));

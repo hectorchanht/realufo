@@ -984,6 +984,47 @@ describe("Doc", () => {
     aClick.mockRestore();
   });
 
+  it("minimap: shows while zoomed with the visible area marked; a click there pans to it", () => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(private cb: (e: { contentRect: { width: number; height: number } }[]) => void) {}
+        observe() {
+          this.cb([{ contentRect: { width: 400, height: 300 } }]);
+        }
+        disconnect() {}
+      },
+    );
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    const img = document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
+    const panel = img.closest("[data-chrome]") as HTMLElement;
+    panel.getBoundingClientRect = () => ({ width: 400, height: 300, top: 0, left: 0, right: 400, bottom: 300, x: 0, y: 0, toJSON: () => ({}) });
+    Object.defineProperty(img, "naturalWidth", { value: 800 });
+    Object.defineProperty(img, "naturalHeight", { value: 600 });
+    fireEvent.load(img);
+    expect(document.querySelector("[data-minimap]")).toBeNull(); // 1×: nothing to find your way around
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" })); // 2.25×, centred
+    const map = document.querySelector("[data-minimap]") as HTMLElement;
+    const rect = map.querySelector("[data-minimap-view]") as HTMLElement;
+    expect(parseFloat(rect.style.width)).toBeCloseTo(100 / 2.25, 0); // % of the picture
+    expect(parseFloat(rect.style.left)).toBeCloseTo((100 - 100 / 2.25) / 2, 0);
+    // top-left corner of the minimap → view pans to the picture's top-left edge
+    map.getBoundingClientRect = () => ({ width: 88, height: 66, top: 200, left: 300, right: 388, bottom: 266, x: 300, y: 200, toJSON: () => ({}) });
+    fireEvent.pointerDown(map, { clientX: 300, clientY: 200, pointerId: 3 });
+    expect(parseFloat(rect.style.left)).toBeCloseTo(0, 0);
+    expect(parseFloat(rect.style.top)).toBeCloseTo(0, 0);
+    vi.unstubAllGlobals();
+  });
+
   it("no image tools on non-image records", () => {
     renderDoc();
     expect(screen.queryByRole("button", { name: /adjust/i })).toBeNull();

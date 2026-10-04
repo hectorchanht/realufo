@@ -90,6 +90,7 @@ export function useZoomPan(
       moved.current = false;
     }
     if (deadBottom && e.clientY - r.top > r.height - deadBottom) return; // video control bar
+    if ((e.target as Element).closest?.("[data-no-pan]")) return; // the minimap pans by itself
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     start.current = { v: view, pts: [...pointers.current.values()] };
   });

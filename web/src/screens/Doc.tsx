@@ -36,7 +36,7 @@ import type { Comment, RecordDetail, RecordKind, RelatedGroup } from "../api/typ
 import { DocCard } from "../components/DocCard";
 import { LoadError } from "../components/LoadError";
 import { goBack } from "../components/navItems";
-import { LENS_MAGS, MediaFilters, MediaToolbar, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams, grabImage } from "../components/ImageTools";
+import { LENS_MAGS, MediaFilters, MediaToolbar, Minimap, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams, grabImage } from "../components/ImageTools";
 import type { ImageAdjust } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
 import { Articles } from "../components/Articles";
@@ -655,6 +655,9 @@ export function Doc() {
               ⛶ open {glyph}
             </span>
           </button>
+        )}
+        {(media === "image" || media === "video") && (
+          <Minimap src={media === "image" ? fullUrl : thumbUrl || undefined} view={view} box={zoom.box} pic={pic} onView={setView} />
         )}
         {media === "image" && lens && (
           <ZoomLens src={fullUrl} imgRef={imgRef} filter={shownFilter} view={view} mag={mag} clickThrough={finePointer} />

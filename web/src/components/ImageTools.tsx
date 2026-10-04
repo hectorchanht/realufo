@@ -6,10 +6,10 @@
 // (and no CORS dependency on the CDN).
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { ReactNode, RefObject } from "react";
+import type { PointerEvent as ReactPointerEvent, ReactNode, RefObject } from "react";
 import { Contrast, DropletOff, Eye, Droplet, Flame, FlipHorizontal2, Focus, ImageDown, Keyboard, Link, LoaderCircle, Rainbow, RotateCcw, RotateCw, Search, Shrink, SlidersHorizontal, Sun, SunMoon, TriangleAlert, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { DEFAULT_VIEW, MAX_ZOOM, pointToUV } from "../lib/mediaView";
+import { DEFAULT_VIEW, MAX_ZOOM, centreOn, pointToUV } from "../lib/mediaView";
 import type { MediaView } from "../lib/mediaView";
 
 export type Palette = "none" | "ironbow" | "rainbow";
@@ -464,6 +464,68 @@ export function MediaToolbar({
   );
 }
 
+const MINI = 88; // minimap's long side, px
+
+/**
+ * Overview of the whole picture while zoomed, the visible area boxed; press
+ * or drag on it to pan there. `data-no-pan` keeps the panel's own pan /
+ * swipe / double-tap / lens off it.
+ */
+export function Minimap({
+  src,
+  view,
+  box,
+  pic,
+  onView,
+}: {
+  src?: string;
+  view: MediaView;
+  box: { w: number; h: number } | null;
+  pic: { w: number; h: number } | null;
+  onView: (v: MediaView) => void;
+}) {
+  if (view.z <= 1 || !box || !pic) return null;
+  const [mw, mh] = pic.w >= pic.h ? [MINI, (MINI * pic.h) / pic.w] : [(MINI * pic.w) / pic.h, MINI];
+  const [ow, oh] = view.rot % 180 ? [mh, mw] : [mw, mh];
+  const a = pointToUV(box, 0, 0, pic, view);
+  const b = pointToUV(box, box.w, box.h, pic, view);
+  const c = (n: number) => Math.min(1, Math.max(0, n));
+  const [u0, u1, v0, v1] = [c(Math.min(a.u, b.u)), c(Math.max(a.u, b.u)), c(Math.min(a.v, b.v)), c(Math.max(a.v, b.v))];
+  function go(e: ReactPointerEvent<HTMLDivElement>) {
+    const r = e.currentTarget.getBoundingClientRect();
+    const p = pointToUV({ w: r.width, h: r.height }, e.clientX - r.left, e.clientY - r.top, pic!, { ...DEFAULT_VIEW, rot: view.rot, flip: view.flip });
+    onView(centreOn(view, box!, pic!, p.u, p.v));
+  }
+  return (
+    <div
+      data-minimap
+      data-no-pan
+      aria-hidden="true"
+      className="absolute bottom-2 right-2 z-[5] touch-none overflow-hidden rounded-md border border-white/50 bg-black/70 shadow-[0_2px_10px_rgba(0,0,0,.5)]"
+      style={{ width: ow, height: oh }}
+      onPointerDown={(e) => {
+        e.stopPropagation(); // not a swipe on the panel
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+        go(e);
+      }}
+      onPointerMove={(e) => e.currentTarget.hasPointerCapture?.(e.pointerId) && go(e)}
+      onPointerUp={(e) => e.stopPropagation()}
+    >
+      <div
+        className="absolute"
+        style={{ width: mw, height: mh, left: (ow - mw) / 2, top: (oh - mh) / 2, transform: view.rot || view.flip ? `rotate(${view.rot}deg)${view.flip ? " scaleX(-1)" : ""}` : undefined }}
+      >
+        {src && <img src={src} alt="" draggable={false} className="h-full w-full opacity-80" />}
+        <div
+          data-minimap-view
+          className="absolute border-[1.5px] border-signal shadow-[0_0_0_999px_rgba(0,0,0,.35)]"
+          style={{ left: `${u0 * 100}%`, top: `${v0 * 100}%`, width: `${(u1 - u0) * 100}%`, height: `${(v1 - v0) * 100}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export const LENS_PX = 170;
 
 /** Where the pointer sits on the picture, for painting the lens. */
@@ -482,7 +544,7 @@ export interface LensHit {
 /** Rotate/flip a lens layer to match the panel view (around the bubble centre). */
 export const lensTurn = (h: LensHit) => (h.rot || h.flip ? `rotate(${h.rot}deg)${h.flip ? " scaleX(-1)" : ""}` : undefined);
 
-type PointerLike = { clientX: number; clientY: number; pointerType: string };
+type PointerLike = { clientX: number; clientY: number; pointerType: string; target?: EventTarget | null };
 
 const GAP = 8;
 /** Bubble top-left in viewport px (see LensLayer). */
@@ -543,6 +605,7 @@ export function LensLayer({
     const px = e.clientX - box.left;
     const py = e.clientY - box.top;
     if (deadBottom && py > box.height - deadBottom) return show(null);
+    if ((e.target as Element | null)?.closest?.("[data-no-pan]")) return show(null); // over the minimap
     const p = pointToUV({ w: box.width, h: box.height }, px, py, s, view);
     if (p.u < 0 || p.u > 1 || p.v < 0 || p.v > 1) return show(null);
     show({ ...p, ...bubbleAt(e, box), mag, rot: view.rot, flip: view.flip });
