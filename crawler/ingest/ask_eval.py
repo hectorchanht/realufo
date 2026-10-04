@@ -33,6 +33,10 @@ def main(argv=None):
         print(f"{'ok  ' if set(got) & set(g['expect']) else 'MISS'} {g['q']}\n     got={got}")
     recall, misses = score(golden, answers)
     print(f"recall@8 = {recall:.0%} ({len(golden) - len(misses)}/{len(golden)})")
+    ocr = [g for g in golden if g.get("ocr_only")]
+    if ocr:  # questions only re-OCR'd pages can answer (spec 2026-10-03-realufo-paddleocr-reocr)
+        r_ocr, m_ocr = score(ocr, answers)
+        print(f"ocr-only recall@8 = {r_ocr:.0%} ({len(ocr) - len(m_ocr)}/{len(ocr)})")
     sys.exit(0 if recall >= 0.7 else 1)
 
 if __name__ == "__main__":

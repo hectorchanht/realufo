@@ -1,12 +1,132 @@
 [
-  {"q": "What was discussed at the 1949 Los Alamos conference on aerial phenomena?", "expect": ["DOE-UAP-D004"]},
-  {"q": "What did NASA's independent UAP study team recommend?", "expect": ["NASA-uap-independent-study-team-final-report"]},
-  {"q": "How did AARO explain the GoFast video?", "expect": ["AARO-AARO_GoFast_Case_Resolution_Card_Methodology_Final.pdf"]},
-  {"q": "What happened at Harare International Airport in July 2008?", "expect": ["CIA-UAP-017"]},
-  {"q": "Did the analysis of flying object incidents consider Soviet aircraft?", "expect": ["DOW-UAP-D094"]},
-  {"q": "What did Captain Edward Ruppelt present in 1952?", "expect": ["DOW-UAP-D154"]},
-  {"q": "What did Project Blue Book conclude about the Tremonton, Utah film?", "expect": ["DOW-UAP-D103"]},
-  {"q": "What was the AAWSAP program solicitation in 2008?", "expect": ["DOW-UAP-D111"]},
-  {"q": "What was reported in the 2022 mission report from Iraq?", "expect": ["DOW-UAP-D106"]},
-  {"q": "What does the 2024 NDAA require for UAP records?", "expect": ["NARA-2024-NDAA-Public-Law-118-31"]}
+  {
+    "q": "What was discussed at the 1949 Los Alamos conference on aerial phenomena?",
+    "expect": [
+      "DOE-UAP-D004"
+    ]
+  },
+  {
+    "q": "What did NASA's independent UAP study team recommend?",
+    "expect": [
+      "NASA-uap-independent-study-team-final-report"
+    ]
+  },
+  {
+    "q": "How did AARO explain the GoFast video?",
+    "expect": [
+      "AARO-AARO_GoFast_Case_Resolution_Card_Methodology_Final.pdf"
+    ]
+  },
+  {
+    "q": "What happened at Harare International Airport in July 2008?",
+    "expect": [
+      "CIA-UAP-017"
+    ]
+  },
+  {
+    "q": "Did the analysis of flying object incidents consider Soviet aircraft?",
+    "expect": [
+      "DOW-UAP-D094"
+    ]
+  },
+  {
+    "q": "What did Captain Edward Ruppelt present in 1952?",
+    "expect": [
+      "DOW-UAP-D154"
+    ]
+  },
+  {
+    "q": "What did Project Blue Book conclude about the Tremonton, Utah film?",
+    "expect": [
+      "DOW-UAP-D103"
+    ]
+  },
+  {
+    "q": "What was the AAWSAP program solicitation in 2008?",
+    "expect": [
+      "DOW-UAP-D111"
+    ]
+  },
+  {
+    "q": "What was reported in the 2022 mission report from Iraq?",
+    "expect": [
+      "DOW-UAP-D106"
+    ]
+  },
+  {
+    "q": "What does the 2024 NDAA require for UAP records?",
+    "expect": [
+      "NARA-2024-NDAA-Public-Law-118-31"
+    ]
+  },
+  {
+    "q": "How far away did ground control tell the Apollo 11 crew the S-IVB was when they saw an object?",
+    "expect": [
+      "NASA-UAP-D004"
+    ],
+    "ocr_only": true
+  },
+  {
+    "q": "What did Aldrin later conclude the bright light seen from the Moon on Apollo 11 probably was?",
+    "expect": [
+      "NASA-UAP-D004"
+    ],
+    "ocr_only": true
+  },
+  {
+    "q": "In which magazine did Dr. Eduard Ludwig submit his article on flying discs?",
+    "expect": [
+      "CIA-UAP-005"
+    ],
+    "ocr_only": true
+  },
+  {
+    "q": "Where was the August 1952 semi-monthly intelligence conference in the FBI Seattle file held?",
+    "expect": [
+      "FBI-UAP-D013"
+    ],
+    "ocr_only": true
+  },
+  {
+    "q": "What did the 1952 Seattle intelligence conference discuss about comic books and the armed forces?",
+    "expect": [
+      "FBI-UAP-D013"
+    ],
+    "ocr_only": true
+  },
+  {
+    "q": "What was Air Intelligence Division Study No. 203 of December 1948 about?",
+    "expect": [
+      "DOW-UAP-D093"
+    ],
+    "ocr_only": true
+  },
+  {
+    "q": "Which Department of Fisheries vessel reported a bright light near Cape Roseway, Nova Scotia in November 1967?",
+    "expect": [
+      "CANADA-NRC-UAR-N-201-214"
+    ],
+    "ocr_only": true
+  },
+  {
+    "q": "Which Oregon minister did J. Edgar Hoover thank by letter in February 1949?",
+    "expect": [
+      "FBI-UAP-D011"
+    ],
+    "ocr_only": true
+  },
+  {
+    "q": "Where did Delbert Newhouse's mother live according to his Navy record of emergency data?",
+    "expect": [
+      "DOW-UAP-D104"
+    ],
+    "ocr_only": true
+  },
+  {
+    "q": "Which unit and wing flew the August 2020 Arabian Gulf mission in the declassified mission report DOW-UAP-D060?",
+    "expect": [
+      "DOW-UAP-D060"
+    ],
+    "ocr_only": true
+  }
 ]

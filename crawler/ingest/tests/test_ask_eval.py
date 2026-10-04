@@ -11,5 +11,6 @@ def test_score_counts_any_expected_source_as_hit():
 
 def test_golden_file_is_well_formed():
     data = json.loads((pathlib.Path(__file__).parent.parent / "data" / "ask_golden.json").read_text())
-    assert len(data) == 10
-    assert all(set(g) == {"q", "expect"} and g["expect"] for g in data)
+    assert len(data) == 20
+    assert all(set(g) <= {"q", "expect", "ocr_only"} and g["expect"] for g in data)
+    assert sum(1 for g in data if g.get("ocr_only")) == 10  # answerable only from re-OCR'd pages
