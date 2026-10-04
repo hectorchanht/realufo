@@ -386,7 +386,7 @@ CAP = subtitles([(t, tts(line)[0]) for t, line in SAY
                  if not line.startswith(("Look closely", "No flash", "Congress", "Measure it", "On screen", "Now weigh", "To bounce", "If it bounced", "If it really", "Plot twist", "Asked about", "And Knapp",
                                          "Read the"))], y=392)
 VO = os.path.join(D, "vo.mp4")
-subprocess.run([F, "-v", "error", "-y", "-i", CAT, "-i", MIXED, "-vf", ",".join(CAP), "-map", "0:v", "-map", "1:a",
+subprocess.run([F, "-v", "error", "-y", "-i", CAT, "-i", MIXED, "-vf", ",".join(CAP) or "null", "-map", "0:v", "-map", "1:a",
                 "-c:v", "libx264", "-profile:v", "high", "-pix_fmt", "yuv420p", "-preset", "veryfast", "-crf", "20",
                 "-c:a", "aac", "-b:a", "128k", VO], check=True)
 c = Cut(); c.segs = [VO]; c.save(OUT, bed=True)
