@@ -9,7 +9,7 @@ beforeAll(() => seedTestDB(env.DB));
 const SECRETS = { X_API_KEY: "k", X_API_SECRET: "s", X_ACCESS_TOKEN: "t", X_ACCESS_SECRET: "ts" };
 const AI = { run: async () => ({ response: "A clip. #UAP" }) };
 // cloudflare:test carries wrangler.jsonc's production vars: switch every other fan-out off (/drain runs the social tick)
-const QUIET = { FEATURE_SOCIAL_FB: "off", FEATURE_SOCIAL_IG: "off", FEATURE_SOCIAL_THREADS: "off", FEATURE_SOCIAL_BSKY: "off", FEATURE_SOCIAL_YT: "off", FEATURE_SOCIAL_TIKTOK: "off", FEATURE_PUSH: "off", X_POLLS: "" };
+const QUIET = { FEATURE_SOCIAL_FB: "off", FEATURE_SOCIAL_IG: "off", FEATURE_SOCIAL_THREADS: "off", FEATURE_SOCIAL_BSKY: "off", FEATURE_SOCIAL_YT: "off", FEATURE_SOCIAL_TIKTOK: "off", FEATURE_SOCIAL_TG: "off", FEATURE_PUSH: "off", X_POLLS: "" };
 const E = () => ({ ...env, ...QUIET, ...SECRETS, AI, FEATURE_X: "dry", FEATURE_GATE: "on", X_MONTHLY_USD_CAP: "10", X_DAILY_MAX: "3",
   TELEGRAM_BOT_TOKEN: "T0K", TELEGRAM_OWNER_ID: "777", TELEGRAM_WEBHOOK_SECRET: "hook" }) as any;
 const say = (msg: Record<string, unknown>) =>
