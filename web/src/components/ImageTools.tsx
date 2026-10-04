@@ -7,7 +7,7 @@
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode, RefObject } from "react";
-import { Contrast, DropletOff, Droplet, Flame, FlipHorizontal2, Focus, Keyboard, Link, Rainbow, RotateCcw, RotateCw, Search, Shrink, SlidersHorizontal, Sun, SunMoon, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Contrast, DropletOff, Eye, Droplet, Flame, FlipHorizontal2, Focus, Keyboard, Link, Rainbow, RotateCcw, RotateCw, Search, Shrink, SlidersHorizontal, Sun, SunMoon, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { DEFAULT_VIEW, MAX_ZOOM, pointToUV } from "../lib/mediaView";
 import type { MediaView } from "../lib/mediaView";
@@ -205,6 +205,8 @@ export function MediaToolbar({
   onView,
   onZoom,
   onLink,
+  compare,
+  onCompare,
   keysHelp,
   panelSlot,
 }: {
@@ -220,6 +222,9 @@ export function MediaToolbar({
   onZoom: (f: number) => void;
   /** Copy a link to this view (images; video has its own moment link). */
   onLink?: () => void;
+  /** Hold-to-compare: true while the unfiltered picture shows. */
+  compare: boolean;
+  onCompare: (on: boolean) => void;
   /** Keyboard/mouse shortcuts, shown as a hover tooltip. */
   keysHelp?: string;
   /** Top row of the Adjust panel, for controls another component portals in (video speed/loop). */
@@ -309,6 +314,29 @@ export function MediaToolbar({
           </button>
         )}
         {keysHelp && <ShortcutsTip help={keysHelp} />}
+        {changed && (
+          // press and hold (pointer, or Space/Enter on the focused chip): see the file as it is, no filters
+          <button
+            type="button"
+            aria-label="Hold to see the original"
+            aria-pressed={compare}
+            title="Hold to see the original (\)"
+            onPointerDown={(e) => {
+              e.currentTarget.setPointerCapture?.(e.pointerId);
+              onCompare(true);
+            }}
+            onPointerUp={() => onCompare(false)}
+            onPointerCancel={() => onCompare(false)}
+            onLostPointerCapture={() => onCompare(false)}
+            onKeyDown={(e) => (e.key === " " || e.key === "Enter") && onCompare(true)}
+            onKeyUp={() => onCompare(false)}
+            onBlur={() => onCompare(false)}
+            onContextMenu={(e) => e.preventDefault()}
+            className={`${chip} ${compare ? on : off} touch-none select-none`}
+          >
+            <Eye {...ico} />
+          </button>
+        )}
         {changed && (
           <button type="button" aria-label="Reset filters" title="Reset filters" onClick={() => onAdjust(DEFAULT_ADJUST)} className={`${chip} ${off} ml-auto`}>
             <RotateCcw {...ico} />

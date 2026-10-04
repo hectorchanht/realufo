@@ -206,6 +206,7 @@ export function Doc() {
   const setLens = tool<boolean>(lensOf, (sp, v) => (v === finePointer ? sp.delete("lens") : sp.set("lens", v ? "1" : "0")));
   const setMag = tool<number>(magOf, (sp, v) => (v === 3 ? sp.delete("mag") : sp.set("mag", String(v))));
   const [view, setView] = useState(DEFAULT_VIEW); // frame zoom / pan / rotate / flip
+  const [compare, setCompare] = useState(false); // held: panel shows the file unfiltered
   const [pic, setPic] = useState<{ w: number; h: number } | null>(null); // natural media size
   const [panel, setPanel] = useState<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -364,12 +365,21 @@ export function Doc() {
         else if (k === "r") setView((v) => ({ ...DEFAULT_VIEW, flip: v.flip, rot: ((v.rot + 90) % 360) as typeof v.rot }));
         else if (k === "f") setView((v) => ({ ...v, flip: !v.flip }));
         else if (k === "0") setView((v) => ({ ...v, z: 1, x: 0, y: 0 }));
+        else if (k === "\\") setCompare(true);
         else return;
         e.preventDefault();
       }
     };
+    const onKeyUp = (e: KeyboardEvent) => e.key === "\\" && setCompare(false);
+    const release = () => setCompare(false);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", release);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", release);
+    };
   }, [composer, viewer, prevHref, nextHref, navigate, id, panelMedia, setAdjust, setLens, setMag]);
 
   const record = detail?.record;
@@ -506,6 +516,7 @@ export function Doc() {
     </>
   );
 
+  const shownFilter = compare ? "" : adjustFilter(adjust); // the panel's look; viewer + saved frames keep the real one
   const shown = pic ?? crop; // crop known before metadata: panel takes its shape at once
   const panelRatio =
     shown && (media === "image" || media === "video") ? (view.rot % 180 ? shown.h / shown.w : shown.w / shown.h) : null;
@@ -549,14 +560,14 @@ export function Doc() {
             alt={title}
             onLoad={(e) => setPic({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
             className="h-full w-full object-contain"
-            style={{ filter: adjustFilter(adjust) || undefined, transform: viewTransform(view, zoom.box, pic) || undefined }}
+            style={{ filter: shownFilter || undefined, transform: viewTransform(view, zoom.box, pic) || undefined }}
           />
         )}
         {media === "video" && (
           // filter on a wrapper, not the <video>: macOS Chrome hands an unoccluded playing video
           // to a hardware overlay that skips url() (SVG) filters, so palettes went flat navy
           // whenever the controls/chrome faded out.
-          <div className="h-full w-full" style={{ filter: adjustFilter(adjust) || undefined }}>
+          <div className="h-full w-full" style={{ filter: shownFilter || undefined }}>
             <video
               ref={videoRef}
               src={fullUrl}
@@ -636,10 +647,10 @@ export function Doc() {
           </button>
         )}
         {media === "image" && lens && (
-          <ZoomLens src={fullUrl} imgRef={imgRef} filter={adjustFilter(adjust)} view={view} mag={mag} clickThrough={finePointer} />
+          <ZoomLens src={fullUrl} imgRef={imgRef} filter={shownFilter} view={view} mag={mag} clickThrough={finePointer} />
         )}
         {media === "video" && lens && (
-          <VideoLens videoRef={videoRef} crop={crop} filter={adjustFilter(adjust)} view={view} mag={mag} clickThrough={finePointer} />
+          <VideoLens videoRef={videoRef} crop={crop} filter={shownFilter} view={view} mag={mag} clickThrough={finePointer} />
         )}
         <span
           data-lens-hide
@@ -721,11 +732,13 @@ export function Doc() {
           onView={setView}
           onZoom={zoom.zoomBy}
           onLink={media === "image" ? () => handleShare() : undefined}
+          compare={compare}
+          onCompare={setCompare}
           panelSlot={media === "video" ? setSpeedSlot : undefined}
           // desktop only: shortcuts need a keyboard
           keysHelp={
             isDesktop && finePointer
-              ? `${media === "video" ? "Space play · , . frame · [ ] speed\nA loop A–B · M mute · C save frame\n" : ""}L lens · - = lens zoom (or Shift+wheel)\nDouble-click, Ctrl/⌘+wheel or pinch zoom, drag to pan\n0 reset · I invert · R rotate · F flip`
+              ? `${media === "video" ? "Space play · , . frame · [ ] speed\nA loop A–B · M mute · C save frame\n" : ""}L lens · - = lens zoom (or Shift+wheel)\nDouble-click, Ctrl/⌘+wheel or pinch zoom, drag to pan\n0 reset · I invert · R rotate · F flip\nhold \\ original (no filters)`
               : undefined
           }
         />

@@ -914,6 +914,32 @@ describe("Doc", () => {
     vi.useRealTimers();
   });
 
+  it("hold to compare: the Original chip (or \\ key) shows the unfiltered picture while held", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    const img = () => document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
+    expect(screen.queryByRole("button", { name: /hold to see the original/i })).toBeNull(); // nothing to compare yet
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i }));
+    fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
+    const chipBtn = screen.getByRole("button", { name: /hold to see the original/i });
+    fireEvent.pointerDown(chipBtn, { pointerId: 1 });
+    expect(img().style.filter).toBe("");
+    expect(chipBtn).toHaveAttribute("aria-pressed", "true");
+    fireEvent.pointerUp(chipBtn, { pointerId: 1 });
+    expect(img().style.filter).toContain("invert(1)");
+    fireEvent.keyDown(window, { key: "\\" });
+    expect(img().style.filter).toBe("");
+    fireEvent.keyUp(window, { key: "\\" });
+    expect(img().style.filter).toContain("invert(1)");
+  });
+
   it("no image tools on non-image records", () => {
     renderDoc();
     expect(screen.queryByRole("button", { name: /adjust/i })).toBeNull();
