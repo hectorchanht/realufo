@@ -57,15 +57,27 @@ BLUR = "boxblur=28:2,eq=brightness=-0.32:saturation=0.75"
 def T(text, y, fs, color=INK):
     return txt(text, y, fs, color)
 
-def frame(crop, pre=""):
-    """The shot over a blurred, darkened full-screen copy of itself (the whole 9:16 is used, no black bars);
-    `crop` of the 640x328 source scaled to 1080 wide at y 470."""
-    return (f"{pre}split[fg][bk];[bk]scale=-2:1920,crop=1080:1920,{BLUR}[bg];"
-            f"[fg]{crop},scale=1080:-2:flags=lanczos[v0];[bg][v0]overlay=0:470")
+def enh(tag, pal=""):
+    """Real-detail enhancement at source resolution (no invented pixels): denoise, large-radius local contrast
+    (A + 0.9*(A - blur16(A)): flattens the sensor's bright centre glow so the orb/missile stand out), a curve
+    that sinks the grey sea haze, then (palette,) lanczos upscale and CAS sharpening."""
+    return (f"hqdn3d=4:3:6:4,format=gray,split[la{tag}][lb{tag}];[lb{tag}]gblur=sigma=16[lc{tag}];"
+            f"[la{tag}][lc{tag}]blend=all_expr='clip(A+(A-B)*0.9\\,0\\,255)',curves=all='0/0 0.5/0.42 0.85/0.78 1/1',"
+            f"{pal + ',' if pal else ''}scale=1080:-2:flags=lanczos,cas=0.6")
 
-VIEW = frame("crop=400:288:120:20")     # wide: x2.7, orb at screen (540,907)
-MID = frame("crop=320:230:140:60")      # x3.4: orb (607,882), missile entry (91,602)
-TIGHT = frame("crop=240:173:200:100")   # x4.5 on the contact
+def frame(crop, spot, pal=""):
+    """The enhanced shot over a blurred, darkened full-screen copy of itself (the whole 9:16 is used, no black
+    bars); `crop` of the 640x328 source scaled to 1080 wide at y 470, labelled as enhanced. (`spot`: where the
+    eye should go, fg coords; a vignette there left black corner arcs, so it's unused for now.)"""
+    return (f"split[fg][bk];[bk]{pal + ',' if pal else ''}scale=-2:1920,crop=1080:1920,{BLUR}[bg];"
+            f"[fg]{crop},{enh('f', pal)}[v0];[bg][v0]overlay=0:470,"
+            f"drawtext=fontfile={FONT}:text='enhanced\\: denoise · contrast · sharpen (no AI)':fontcolor={INK}@0.85:"
+            "fontsize=24:borderw=2:bordercolor=black:x=18:y=482")
+
+VIEW = frame("crop=400:288:120:20", (540, 437))     # wide: x2.7, orb at screen (540,907)
+MID = frame("crop=320:230:140:60", (607, 412))      # x3.4: orb (607,882), missile entry (91,602)
+TIGHT = frame("crop=240:173:200:100", (540, 369))   # x4.5 on the contact
+
 site = stamp(ID, "HELLFIRE ORB  ·  Oct 30, 2024  ·  off Yemen  ·  MQ-9 drones")
 CREDIT = T("Video: Rep. Eric Burlison  ·  House UAP hearing, Sep 9 2025", 1334, 28)
 segs = []
@@ -90,10 +102,13 @@ def clip(f0, f1, slow, frm, vf, secs):
     run(["-i", SRC], [f"trim=start_frame={f0}:end_frame={f1},setpts=(PTS-STARTPTS)*{slow},fps=30", frm, *vf], secs)
 
 STILL = {}
-def still(f, frm, vf, secs):
+def still(f, frm, vf, secs, stack=0):
+    """A held frame; `stack`=N averages N frames ending at f (only while the camera tracks the orb), else a light nlmeans."""
     if f not in STILL:
         STILL[f] = os.path.join(D, f"f{f}.png")
-        subprocess.run([F, "-v", "error", "-y", "-i", SRC, "-vf", f"select=eq(n\\,{f})", "-frames:v", "1", STILL[f]], check=True)
+        pick = (f"trim=start_frame={f - stack + 1}:end_frame={f + 1},tmix=frames={stack},select=eq(n\\,{stack - 1})"
+                if stack else f"select=eq(n\\,{f})")
+        subprocess.run([F, "-v", "error", "-y", "-i", SRC, "-vf", f"{pick}{'' if stack else ',nlmeans=s=1.5:p=5:r=11'}", "-frames:v", "1", STILL[f]], check=True)
     run(["-loop", "1", "-t", str(secs), "-i", STILL[f]], [frm, *vf], secs)
 
 def lens_clip(f0, f1, vf, secs):
@@ -101,7 +116,8 @@ def lens_clip(f0, f1, vf, secs):
     out = os.path.join(D, f"seg{len(segs)}.mp4")
     fc = (f"[0:v]trim=start_frame={f0}:end_frame={f1},setpts=PTS-STARTPTS,fps=30,split[a][b];"
           f"[a]{VIEW},{','.join(vf)}[base];"
-          "[b]crop=150:150:245:107,scale=400:400:flags=lanczos,format=rgba[lz];[1:v]format=gray[m];[lz][m]alphamerge[lm];"
+          f"[b]crop=150:150:245:107,{enh('l')},scale=400:400:flags=lanczos,format=rgba[lz];"
+          "[1:v]format=gray[m];[lz][m]alphamerge[lm];"
           f"[base][lm]overlay=650:480[o];[o][2:v]overlay=650:480,"
           f"drawtext=fontfile={FONT}:text='LENS 2.7x':fontcolor={AMB}:fontsize=30:borderw=3:bordercolor=black:x=850-text_w/2:y=888,"
           "format=yuv420p[v]")
@@ -137,7 +153,7 @@ def balloon_player(vf, secs):
 
 # H: tease = frame 0 = thumbnail: mid zoom, orb in the crosshair, "?" under it (nothing drawn over it)
 TEASE = [T("A Hellfire missile", 215, 78), T("is about to hit this", 300, 78, AMB), T("?", 965, 140, AMB), CREDIT, site]
-still(560, MID, TEASE, 2.5)
+still(560, MID, TEASE, 2.5, stack=7)
 # A: real speed, wide + lens; impact ~4.7 s in (f595)
 lens_clip(530, 644, [T("Watch the crosshair", 215, 80), T("real speed", 1258, 50, AMB), CREDIT, site], 3.8)
 # ---- the measurements (frame-tracked source pixels; see docstring) ----
@@ -177,7 +193,7 @@ def seq(lines, y, fs, color=AMB):
     """Lines that replace each other at one spot: [(t0, t1, text), ...]."""
     return [T(text, y, fs, color) + f":enable='gte(t,{t0})*lt(t,{t1})'" for t0, t1, text in lines]
 
-MIDP = frame("crop=320:230:140:60", pre=IRONBOW + ",")   # mid zoom (x3.375 from 140,60), site Ironbow palette
+MIDP = frame("crop=320:230:140:60", (607, 412), pal=IRONBOW)   # mid zoom (x3.375 from 140,60), site Ironbow palette
 SRCLINE = T(f"FOV {FOV_DEG:.2f}°: Metabunk (Zaine M.) estimate  ·  range: on-screen HUD", 1262, 26)
 # X: freeze on contact: the open question (frame check: brightness flat, near-white pixels 204 -> 70)
 still(596, TIGHT, [T("No flash at contact", 215, 80), T("Did it even explode?", 300, 80, AMB),

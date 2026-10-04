@@ -60,6 +60,7 @@ A link isn't enough: the Short shows the site's own tools so viewers know what t
 
 - **Frame stack:** when the sensor tracks the target, take the mean of 5–9 frames around the moment (`tmix=frames=9,select='eq(n\,8)'`). Noise drops and the target stays sharp. See `showcase/DOW-UAP-PR116.py`.
 - **Denoise and sharpen:** `nlmeans=s=3:p=5:r=11` and then `cas=0.6` on stills, `hqdn3d=4:3:6:4` on moving footage. Upscale with `scale=…:flags=lanczos`.
+- **Local contrast (makes small hot objects pop):** at source resolution, `hqdn3d=4:3:6:4,format=gray,split[a][b];[b]gblur=sigma=16[c];[a][c]blend=all_expr='clip(A+(A-B)*0.9,0,255)',curves=all='0/0 0.5/0.42 0.85/0.78 1/1'`, then lanczos upscale + `cas=0.6`. It flattens the sensor's bright centre glow and sinks the grey haze. `unsharp` caps at 13 px, too small for this. Stacked stills skip nlmeans (stack + nlmeans + contrast looks plastic). Skip `vignette` on wide frames (black corner arcs). See `showcase/CONGRESS-CHRG-119hhrg61718.py` `enh()`.
 - **Palettes:** use the site's own palettes (`lib.IRONBOW`), which double as a demo of the site's tools.
 - **Label it:** put a small line on screen, e.g. "enhanced: 9-frame stack + denoise".
 - **Not real enhancement:** AI upscaling or "AI 4K" invents pixels. Never run it on the evidence itself.
