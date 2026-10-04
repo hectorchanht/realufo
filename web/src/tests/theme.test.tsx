@@ -5,6 +5,8 @@ import { useTheme } from "../theme/useTheme";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { AppearanceSwitcher } from "../components/AppearanceSwitcher";
 import { TextSizer } from "../components/TextSizer";
+import { MoreMenu } from "../components/MoreMenu";
+import { MemoryRouter } from "react-router-dom";
 
 afterEach(() => {
   localStorage.clear();
@@ -125,5 +127,21 @@ describe("text sizer", () => {
       </ThemeProvider>,
     );
     expect(document.documentElement.style.fontSize).toBe("100%");
+  });
+});
+
+describe("More menu text size badge", () => {
+  it("the Aa badge in the bitten More icon opens the sizer", () => {
+    render(
+      <MemoryRouter>
+        <ThemeProvider>
+          <MoreMenu sheet items={[]} activeTab="feed" />
+        </ThemeProvider>
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole("button", { name: "Larger text" })).toBeNull();
+    act(() => screen.getByRole("button", { name: "Text size" }).click());
+    act(() => screen.getByRole("button", { name: "Larger text" }).click());
+    expect(document.documentElement.style.fontSize).toBe("110%");
   });
 });
