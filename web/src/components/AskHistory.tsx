@@ -1,6 +1,7 @@
 // Ask mode with no question open: this browser's past questions and the
 // public "shared questions" list (questions their askers shared). Tapping an item
 // asks it, or opens its shared page when it has one. Each list hides when empty; the recent list also hides on error.
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAskRecent } from "../api/queries";
@@ -23,14 +24,15 @@ export function AskHistory({ onPick }: { onPick: (q: string) => void }) {
             <span>YOUR QUESTIONS</span>
             <button
               type="button"
-              aria-label="clear your questions"
+              aria-label="Clear your questions"
+              title="Clear your questions"
               onClick={() => {
                 clearAskHistory();
                 setMine([]);
               }}
               className="text-dim hover:text-signal"
             >
-              clear
+              <Trash2 size={13} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>
           <div className="flex flex-col gap-1">

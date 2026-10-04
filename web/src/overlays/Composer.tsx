@@ -15,6 +15,7 @@
 // small grab-bar element is added here purely to host that pointer handling
 // without stealing pointer capture from the header's close button or any
 // input inside the sheet.
+import { ImagePlus } from "lucide-react";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAddComment, useAddCaseComment, useCreateThread, useReply } from "../api/queries";
@@ -337,10 +338,11 @@ export function Composer() {
               </button>
             </div>
           ) : (
-            <label className="max-w-[45%] flex-none cursor-pointer truncate rounded-[10px] border border-dashed border-line2 px-3 py-[9px] font-mono text-[11px] text-dim active:scale-[.96]">
-              ＋ attach image
+            <label title="Attach image" className="flex-none cursor-pointer rounded-[10px] border border-dashed border-line2 px-3 py-[9px] text-dim active:scale-[.96]">
+              <ImagePlus size={16} strokeWidth={1.75} aria-hidden="true" />
               <input
                 type="file"
+                aria-label="Attach image"
                 accept="image/jpeg,image/png,image/gif,image/webp"
                 className="sr-only"
                 onChange={(e) => {

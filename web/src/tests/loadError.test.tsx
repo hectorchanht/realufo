@@ -17,13 +17,13 @@ describe("LoadError", () => {
   it("shows the not-found copy (no retry) for a 404", () => {
     render(<LoadError error={new ApiError(404, "x")} onRetry={vi.fn()} notFound="file not found." />);
     expect(screen.getByText("file not found.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "retry" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
   });
 
   it("shows a retry button for a 500 and calls onRetry", () => {
     const fn = vi.fn();
     render(<LoadError error={new ApiError(500, "x")} onRetry={fn} notFound="file not found." />);
-    fireEvent.click(screen.getByRole("button", { name: "retry" }));
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(fn).toHaveBeenCalledTimes(1);
   });
 });

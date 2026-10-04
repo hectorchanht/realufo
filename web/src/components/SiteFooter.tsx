@@ -111,3 +111,12 @@ export default function SiteFooter() {
     </footer>
   );
 }
+
+/** A brand mark from ICONS (e.g. "X"), sized like a lucide icon. */
+export function BrandIcon({ name, size = 14 }: { name: string; size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden="true">
+      <path d={ICONS[name]} />
+    </svg>
+  );
+}

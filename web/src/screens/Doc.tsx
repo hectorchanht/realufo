@@ -27,6 +27,7 @@
 // Loading/not-found: `record` is undefined both while `useRecord` hasn't
 // settled and if the id doesn't resolve to a real record — both cases render
 // the same simple safe states (no attempt to index into `undefined`).
+import { Expand } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -682,7 +683,7 @@ export function Doc() {
               className={`absolute bottom-[11px] right-3 rounded-[7px] px-[9px] py-1 font-mono text-[10px] text-white ${fade}`}
               style={{ background: "rgba(0,0,0,.6)" }}
             >
-              ⛶ open {glyph}
+              {media === "image" ? <Expand size={13} strokeWidth={2} /> : `⛶ open ${glyph}`}
             </span>
           </button>
         )}

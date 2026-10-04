@@ -1,5 +1,7 @@
 // Live "Ask the Archive" answer: fetches /api/ask, shows loading/error states,
 // and lets the asker share it as a public page (Spec 8 §3.3).
+import { RotateCw, Share2 } from "lucide-react";
+import { BrandIcon } from "./SiteFooter";
 import { useState } from "react";
 import { useAsk, useShareAsk } from "../api/queries";
 import { ApiError } from "../api/client";
@@ -47,11 +49,11 @@ function ShareControls({ question, logId }: { question: string; logId: number })
   return (
     <>
       <span className="font-mono text-[10px] text-signal">✓ shared</span>
-      <button type="button" onClick={async () => setResult(await shareLink(question, url))} className={ACTION}>
-        share link
+      <button type="button" onClick={async () => setResult(await shareLink(question, url))} aria-label="Share link" title="Share link" className={ACTION}>
+        <Share2 size={13} strokeWidth={1.75} aria-hidden="true" />
       </button>
-      <a href={xIntent(question, url)} target="_blank" rel="noopener" className={ACTION}>
-        post on X
+      <a href={xIntent(question, url)} target="_blank" rel="noopener" aria-label="Post on X" title="Post on X" className={ACTION}>
+        <BrandIcon name="X" size={12} />
       </a>
       <button
         type="button"
@@ -83,8 +85,8 @@ export function AskAnswer({ question, onPost }: { question: string; onPost?: (da
       <div className={`${CARD} flex items-center gap-3 font-mono text-[11px] text-dim`}>
         <span className="flex-1">{copy ?? "Couldn't reach the archive — try again"}</span>
         {!copy && (
-          <button type="button" onClick={() => refetch()} className="rounded-md border border-line2 px-2 py-0.5 text-signal">
-            retry
+          <button type="button" onClick={() => refetch()} aria-label="Retry" title="Retry" className="rounded-md border border-line2 px-2 py-1 text-signal">
+            <RotateCw size={13} strokeWidth={1.75} aria-hidden="true" />
           </button>
         )}
       </div>

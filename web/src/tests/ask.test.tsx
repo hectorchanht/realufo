@@ -150,11 +150,11 @@ describe("AskAnswer", () => {
     expect(shareLinkMock).toHaveBeenCalledWith("what did radar see?", "/ask/7-what-did-radar-see");
     expect(screen.getByText("✓ shared")).toBeInTheDocument();
     expect(screen.getByText("link copied")).toBeInTheDocument();
-    const x = screen.getByRole("link", { name: "post on X" });
+    const x = screen.getByRole("link", { name: "Post on X" });
     expect(x.getAttribute("href")).toContain("https://x.com/intent/post?text=what%20did%20radar%20see%3F&url=");
     expect(x).toHaveAttribute("target", "_blank");
 
-    fireEvent.click(screen.getByRole("button", { name: "share link" }));
+    fireEvent.click(screen.getByRole("button", { name: "Share link" }));
     expect(shareLinkMock).toHaveBeenLastCalledWith("what did radar see?", "/ask/7-what-did-radar-see");
 
     fireEvent.click(screen.getByRole("button", { name: "undo" }));
@@ -334,7 +334,7 @@ describe("Ask screen", () => {
   it("clear button empties your questions", async () => {
     localStorage.setItem(ASK_HISTORY_KEY, JSON.stringify(["Old one"]));
     renderAppAt("/ask");
-    fireEvent.click(await screen.findByRole("button", { name: "clear your questions" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Clear your questions" }));
     expect(screen.queryByRole("button", { name: "Old one" })).toBeNull();
     expect(localStorage.getItem(ASK_HISTORY_KEY)).toBeNull();
   });

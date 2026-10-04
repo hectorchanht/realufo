@@ -1,5 +1,6 @@
 // Spec 7 TL;DR ("懶人包"): AI-written, fact-checked at ingest (crawler ingest.tldr).
 // Null → nothing, so files without one look exactly as before.
+import { Share2 } from "lucide-react";
 import type { Tldr } from "../api/types";
 import { useOverlay } from "../overlays/OverlayProvider";
 
@@ -48,8 +49,8 @@ export function TldrCard({ tldr, title, onBoring }: { tldr?: Tldr | null; title:
         ))}
       </ul>
       <div className="flex justify-between gap-2 font-mono text-[11px] font-semibold">
-        <button type="button" onClick={share} className="min-h-[36px] rounded-[9px] border border-line2 px-3 text-ink active:scale-[.97]">
-          ↗ Share
+        <button type="button" onClick={share} aria-label="Share" title="Share" className="min-h-[36px] rounded-[9px] border border-line2 px-3 text-ink active:scale-[.97]">
+          <Share2 size={15} strokeWidth={1.75} aria-hidden="true" />
         </button>
         <button type="button" onClick={onBoring} className="min-h-[36px] px-1 text-dim">
           Boring version ↓

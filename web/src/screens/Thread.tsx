@@ -31,6 +31,7 @@
 // thumb. Guarded defensively below (`post.source_record_id ===
 // sourceRecord?.id`) rather than assumed, so an unmatched id degrades to "no
 // image" instead of a wrong thumb.
+import { Reply } from "lucide-react";
 import { Fragment } from "react";
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -258,8 +259,8 @@ function PostRow({ post, sourceRecord, thread, nos, replies, onQuote }: PostRowP
           <VoteButton targetType="post" targetId={post.id} votes={post.votes} />
         )}
         <span className="text-dim">credible</span>
-        <button type="button" onClick={() => onQuote(post.no)} className="text-dim hover:text-signal">
-          ↩ reply
+        <button type="button" onClick={() => onQuote(post.no)} aria-label={`Reply to No.${post.no}`} title="Reply" className="text-dim hover:text-signal">
+          <Reply size={14} strokeWidth={1.75} aria-hidden="true" />
         </button>
       </div>
       {replies.length > 0 && (

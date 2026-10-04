@@ -61,12 +61,12 @@ describe("shared answer page", () => {
 
   it("share opens the share sheet for the page URL without publishing again", async () => {
     renderAppAt("/ask/12-what-about-gimbal");
-    fireEvent.click(await screen.findByRole("button", { name: "share" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Share" }));
     await act(async () => {});
     expect(shareLinkMock).toHaveBeenCalledWith("What about Gimbal?", "/ask/12-what-about-gimbal");
     expect(shareMutate).not.toHaveBeenCalled();
     expect(screen.getByText("link copied")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "post on X" }).getAttribute("href")).toContain("x.com/intent/post");
+    expect(screen.getByRole("link", { name: "Post on X" }).getAttribute("href")).toContain("x.com/intent/post");
   });
 
   it("an unshared or unknown answer says so", async () => {
@@ -112,7 +112,7 @@ describe("shared answer page", () => {
         </Routes>
       </MemoryRouter>,
     );
-    fireEvent.click(await screen.findByRole("button", { name: "share" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Share" }));
     await act(async () => {});
     expect(screen.getByText("link copied")).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText(/ask your own question/), { target: { value: "half typed" } });

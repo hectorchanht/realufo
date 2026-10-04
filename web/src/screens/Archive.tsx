@@ -78,8 +78,8 @@ function Pager({ page, totalPages, onPage }: PagerProps) {
   const btn = "min-w-[30px] rounded-lg px-[9px] py-[5px] font-mono text-[11px] active:scale-[.96] disabled:opacity-35 disabled:active:scale-100";
   return (
     <nav aria-label="Pagination" className="mt-5 flex flex-wrap items-center justify-center gap-1.5">
-      <button type="button" className={btn} style={typeChipStyle(false)} disabled={page <= 1} onClick={() => onPage(page - 1)}>
-        ‹ prev
+      <button type="button" className={btn} style={typeChipStyle(false)} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page" title="Previous page">
+        ‹
       </button>
       {pageList(page, totalPages).map((p, i) =>
         p === "…" ? (
@@ -99,8 +99,8 @@ function Pager({ page, totalPages, onPage }: PagerProps) {
           </button>
         ),
       )}
-      <button type="button" className={btn} style={typeChipStyle(false)} disabled={page >= totalPages} onClick={() => onPage(page + 1)}>
-        next ›
+      <button type="button" className={btn} style={typeChipStyle(false)} disabled={page >= totalPages} onClick={() => onPage(page + 1)} aria-label="Next page" title="Next page">
+        ›
       </button>
     </nav>
   );

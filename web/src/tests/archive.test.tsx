@@ -210,15 +210,15 @@ describe("Archive", () => {
 
     const nav = screen.getByRole("navigation", { name: "Pagination" });
     // 1000 / 40 = 25 pages: 1 … 4 5 6 … 25
-    expect(nav.textContent).toBe("‹ prev1…456…25next ›");
+    expect(nav.textContent).toBe("‹1…456…25›");
     expect(screen.getByRole("button", { name: "5" })).toHaveAttribute("aria-current", "page");
 
-    fireEvent.click(screen.getByRole("button", { name: /next/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
     await waitFor(() => expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 200 })));
 
     fireEvent.click(screen.getByRole("button", { name: "25" }));
     await waitFor(() => expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 960 })));
-    expect(screen.getByRole("button", { name: /next/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Next page" })).toBeDisabled();
 
     fireEvent.click(screen.getByRole("button", { name: /^Docs/ }));
     await waitFor(() =>

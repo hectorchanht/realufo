@@ -218,7 +218,7 @@ export function Case() {
                 }
                 className="flex items-center gap-1.5 font-mono text-[11px] text-amber active:scale-[.93]"
               >
-                <span className="text-[12px]">⤴</span>to a board
+                <span aria-hidden="true" className="text-[12px]">⤴</span>to a board
               </button>
             </div>
           </div>

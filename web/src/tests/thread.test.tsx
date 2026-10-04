@@ -224,7 +224,7 @@ describe("Thread", () => {
   it('"↩ reply" on a post opens the composer pre-filled with its >>No', () => {
     useThreadMock.mockReturnValue({ data: withNos("hi"), isLoading: false });
     renderThread();
-    fireEvent.click(screen.getAllByRole("button", { name: "↩ reply" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Reply to No\./ })[0]);
     expect(mockOpenComposer).toHaveBeenCalledWith(
       expect.objectContaining({ mode: "reply", threadId: "th1", presetBody: ">>24420001\n" }),
     );
