@@ -98,9 +98,23 @@ def run(inp, vf, secs):
                     "-t", str(secs), *ENC, out], check=True)
     segs.append(out)
 
+_ns = 0
+def srcstamp(f0, slow=1, fmax=None):
+    """Top-left counter mapping this beat back to the original clip (Burlison's X post, 30 fps), so viewers can
+    find the moment themselves: "Burlison clip 0:19.83 · frame 595". Holds at fmax through freezes / tpad."""
+    global _ns
+    _ns += 1
+    fexpr = f"min({f0}+floor(t*30/{slow}),{fmax if fmax is not None else f0})"
+    tf = os.path.join(D, f"src{_ns}.txt")
+    open(tf, "w").write(f"Burlison clip 0:%{{eif:floor(({fexpr})/30):d:2}}.%{{eif:floor(mod({fexpr},30)*100/30):d:2}}"
+                        f"  ·  frame %{{eif:{fexpr}:d}}")
+    return (f"drawtext=fontfile={FONT}:textfile={tf}:fontcolor={INK}:fontsize=28:borderw=3:bordercolor=black:"
+            "x=18:y=516")
+
 def clip(f0, f1, slow, frm, vf, secs):
     """Source frames f0..f1 (exact, by frame number), `slow`x slower, through `frm` (VIEW/MID/TIGHT)."""
-    run(["-i", SRC], [f"trim=start_frame={f0}:end_frame={f1},setpts=(PTS-STARTPTS)*{slow},fps=30", frm, *vf], secs)
+    run(["-i", SRC], [f"trim=start_frame={f0}:end_frame={f1},setpts=(PTS-STARTPTS)*{slow},fps=30", frm, *vf,
+                      srcstamp(f0, slow, f1 - 1)], secs)
 
 STILL = {}
 def still(f, frm, vf, secs, stack=0):
@@ -110,7 +124,7 @@ def still(f, frm, vf, secs, stack=0):
         pick = (f"trim=start_frame={f - stack + 1}:end_frame={f + 1},tmix=frames={stack},select=eq(n\\,{stack - 1})"
                 if stack else f"select=eq(n\\,{f})")
         subprocess.run([F, "-v", "error", "-y", "-i", SRC, "-vf", f"{pick}{'' if stack else ',nlmeans=s=1.5:p=5:r=11'}", "-frames:v", "1", STILL[f]], check=True)
-    run(["-loop", "1", "-t", str(secs), "-i", STILL[f]], [frm, *vf], secs)
+    run(["-loop", "1", "-t", str(secs), "-i", STILL[f]], [frm, *vf, srcstamp(f)], secs)
 
 def lens_clip(f0, f1, vf, secs):
     """Wide view + a borderless 2.7x lens on the contact area (source 150x150 at 245,107); nothing drawn on the object."""
@@ -156,7 +170,7 @@ def balloon_player(vf, secs):
 TEASE = [T("A Hellfire missile", 215, 78), T("is about to hit this", 300, 78, AMB), T("?", 965, 140, AMB), CREDIT, site]
 still(560, MID, TEASE, 2.5, stack=7)
 # A: real speed, wide + lens; impact ~4.7 s in (f595)
-lens_clip(530, 644, [T("Watch the crosshair", 215, 80), T("real speed", 1258, 50, AMB), CREDIT, site], 3.8)
+lens_clip(530, 644, [T("Watch the crosshair", 215, 80), T("real speed", 1258, 50, AMB), CREDIT, site, srcstamp(530, 1, 643)], 3.8)
 # ---- the measurements (double-checked 2026-10-04; asserts below fail the build if they drift) ----
 FPS, W_PX, H_PX = 30, 640, 328
 R_LO, R_HI = 3.10 * 1852, 3.19 * 1852          # HUD slant range at contact "3.1x" NM (last digit cropped)
@@ -217,6 +231,7 @@ MIDP = frame("crop=320:230:140:60", (607, 412), pal=IRONBOW)   # mid zoom (x3.37
 # HIT: the money shot up close: 6x zoom, 6x slower (real frames, no interpolation), frame counter, voice off
 hc = os.path.join(D, "hitcount.txt"); open(hc, "w").write("FRAME %{eif:584+floor(t*5):d} / 1506")
 clip(584, 607, 6, CLOSE, [T("The hit, up close", 215, 84), T("6x zoom  ·  6x slower  ·  real frames", 300, 46, AMB),
+     T("pause Burlison's X clip at 0:19.8 (frame 595) and catch it", 392, 32),
      f"drawtext=fontfile={FONT}:textfile={hc}:fontcolor={AMB}:fontsize=56:borderw=4:bordercolor=black:x=(w-text_w)/2:y=1256",
      CREDIT, site], 4.6)
 # X: freeze on contact: the open question (frame check: brightness flat, near-white pixels 204 -> 70)
@@ -227,14 +242,15 @@ site_card("hellfire-site-p46.jpg", 656, [T("Congress heard it", 215, 66), T("\"b
           T("Knapp p.32  ·  witnesses p.46  ·  realufo.org full text", 1290, 30)], 4.1)
 # M1: measure it: 6x slower up to contact, trail dots, the scale built step by step, each with an everyday size
 run(["-i", SRC], ["trim=start_frame=576:end_frame=597,setpts=(PTS-STARTPTS)*6,fps=30,tpad=stop_mode=clone:stop_duration=4",
-     MIDP, *dots(PRE, 576, 6, 3.375, 140, 60), T("Measure it", 215, 84),
+     MIDP, *dots(PRE, 576, 6, 3.375, 140, 60), srcstamp(576, 6, 596), T("Measure it", 215, 84),
      *seq([(0.3, 1.8, "30 frames per second"), (1.8, 4.2, f"{R_LO/1000:.1f} km away  ≈  55 football fields"),
            (4.2, 5.8, "view: 0.26° across 640 pixels"), (5.8, 9, f"1 pixel ≈ {MPP*100:.0f} cm  ≈  a golf ball")], 300, 50),
      T("range: on-screen HUD 3.1 NM  ·  view: Metabunk est., Raytheon spec ≤ 0.31°", 1262, 26),
      T(f"scale {MPP_LO*100:.0f}–{MPP_HI*100:.0f} cm per pixel, best {MPP*100:.1f}", 1296, 26), CREDIT, site], 7.9)
 # M2: after contact: same direction, ~90% of the screen speed -> it went through
 run(["-i", SRC], ["trim=start_frame=596:end_frame=614,setpts=(PTS-STARTPTS)*3,fps=30,tpad=stop_mode=clone:stop_duration=4",
-     MIDP, *dots(PRE, 576, 0, 3.375, 140, 60, always=True), *dots(POST, 597, 3, 3.375, 140, 60), T("After contact", 215, 84),
+     MIDP, *dots(PRE, 576, 0, 3.375, 140, 60, always=True), *dots(POST, 597, 3, 3.375, 140, 60), srcstamp(596, 3, 613),
+     T("After contact", 215, 84),
      *seq([(0.2, 1.8, f"before: {PX_PRE:.1f} px per frame"),
            (1.8, 3.2, f"after: {PX_POST:.1f}, turned {abs(ANG_POST - ANG_PRE):.0f}°"), (3.2, 9, "Through, not off.")], 300, 54),
      T("least-squares fit, 31 tracked frames", 1262, 28), CREDIT, site], 5.3)

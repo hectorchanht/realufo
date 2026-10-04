@@ -20,7 +20,7 @@ Goal: the best piece of social media about this file. Viewers stop scrolling, en
 | **Do it yourself** | last 3–4 s | "Step through it frame by frame on realufo.org" plus `realufo.org/doc/<ID>` on screen. This is the only call to action. |
 | **Loop** | last frame | End on the frame-0 image (or cut straight back into it) so the replay feels seamless. |
 
-Length is 20–35 s. Get the hook in fast and the end card out fast.
+Length is 20–35 s. **Made for lazy viewers:** they get it with zero effort (the picture tells it, one idea per beat, numbers as everyday things); deep math goes in fine print or on the site. Get the hook in fast and the end card out fast.
 
 **Why (2025–26 creator data, rules of thumb):** 50–60 % of drop-offs happen in the first 3 s, so viewers decide in about 1.5–2 s from frame 0 and the first line. Aim for ≥70 % "viewed vs swiped away" in YouTube Studio. Changing something every 2–3 s keeps people watching. Loops push average % viewed past 100 %. Most people watch **muted**. If the best moment is buried 15 s in, most viewers never see it.
 
