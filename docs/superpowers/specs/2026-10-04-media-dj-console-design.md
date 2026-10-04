@@ -1,6 +1,6 @@
 # Media DJ console — design
 
-Date: 2026-10-04 · Status: approved direction, spec under review
+Date: 2026-10-04 · Status: approved direction (warm, minimal, Bauhaus), spec under review
 
 ## Goal
 
@@ -34,6 +34,12 @@ Every style is designed like a physical instrument (think Braun / Dieter Rams, w
 - **Strict grid.** One 8px grid, aligned edges, one corner radius per shape family (squares 8px, the body 16px, round = full circle). No stray sizes.
 - **Colour.** Black, white and the site's greys for the body; one accent (site `--signal`) means "on"; amber only for "failed, try again". No gradients, glows or textures.
 - **State is physical.** On = lit and sunk 2px (inset shadow-free: a darker face + thinner bottom edge); off = raised (thicker bottom edge). Momentary controls (Original) sink only while held.
+- **Warm, from the user's side.** Minimal must not feel cold:
+  - Gentle feedback: keys and pads sink with a 120ms ease when pressed; the click wheel gives a small haptic tick per step on phones that have one; a short toast in plain words confirms saves ("Saved to P2").
+  - Forgiving: every change can be undone in one tap (undo looks, full view, P1 Clean, reset order, reset presets); nothing is lost by exploring.
+  - Comfort beats proportion: every touch target is at least 36px on phones, black keys included (the keyboard grows taller rather than the keys shrinking).
+  - A first-timer gets it without the help panel: the first time the console opens, one line under the strip says "Tap a key to try an effect. Hold the eye to compare with the original." with a ✕; it never shows again once closed (`ru:console-tip` = "1").
+  - Plain, friendly words in every tooltip and the help panel (memory: user-friendly-ui).
 - **Ornament earns its place or goes.** The cassette reels stay because they show playback state at a glance; nothing is there only to decorate.
 
 ## Layout
@@ -81,7 +87,7 @@ The console is drawn as a retro **Walkman** with a **Rick Wakeman** keyboard rig
   - White keys = effects: Enhance, Invert, B&W, Night, Ironbow, Rainbow, Sharpen, Original (Original is held, like holding a note).
   - Black keys = tools, sitting between the white keys: Ruler, Motion (video), Turn, Save, Post frame (video), Download (video).
   - A key that is on stays pressed down (inset, accent colour); icons on the keys, names in `title` / `aria-label`.
-  - Phone (375px): 8 white keys ≈ 42px wide × 64px tall, black keys ≈ 30 × 40px: both above the 36px / WCAG 24px targets.
+  - Phone (375px): 8 white keys ≈ 42px wide × 72px tall; black keys ≈ 36 × 36px sitting on the top half of the white keys (the keyboard is 72px tall): every key at least 36px.
 - **Faders**: synth-style vertical sliders (Minimoog feel) beside the keyboard on desktop, above it on phones.
 - **Click wheel** (iPod) sits on the right of the body like the Walkman's control dial; first under the cassette window on phones.
 
@@ -111,6 +117,7 @@ Defaults:
 - `ru:media-presets` — `{ v: 1, presets: Preset[] }`
 - `ru:media-pads` — `{ v: 1, effects: PadId[], tools: PadId[] }`; unknown ids dropped, missing ids appended (new pads appear after an update).
 - `ru:console-open` — `"1" | "0"`
+- `ru:console-tip` — `"1"` once the first-time hint is closed
 - `ru:media-skin` — `"simple" | "dj" | "walkman"`; anything else → `"simple"`
 
 No cross-device sync (out of scope; could later ride on the anonymous ID).
