@@ -13,6 +13,8 @@ const srcTitle = (s: { record_id: string; title: string; kind?: string }) => doc
 
 export const CARD = "mb-3.5 rounded-xl border border-line2 bg-surface px-[13px] py-3";
 export const ACTION = "rounded-md border border-line2 px-2.5 py-1 font-mono text-[10px] text-signal hover:border-signal disabled:opacity-50";
+/** ACTION for an icon-only button (32px target). */
+export const ICON_ACTION = "inline-grid size-8 place-items-center rounded-md border border-line2 text-signal hover:border-signal disabled:opacity-50";
 
 const CHIP_KINDS: HubKind[] = ["release", "agency", "location", "decade"];
 

@@ -183,9 +183,10 @@ export function grabImage(src: string, filter: string, view: MediaView): Promise
   });
 }
 
-export const chip = "inline-flex items-center gap-1 rounded-[7px] border px-[9px] py-1 font-mono text-[10px] active:scale-[.96]";
+// 36px tall for fingers, 32px with a mouse (WCAG 2.2 target size, room for 8 in a phone row)
+export const chip = "inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-[8px] border px-2 font-mono text-[11px] active:scale-[.96] [@media(pointer:fine)]:h-8 [@media(pointer:fine)]:min-w-8";
 /** Lucide icon size/stroke for chips. */
-export const ico = { size: 14, strokeWidth: 1.75, "aria-hidden": true } as const;
+export const ico = { size: 18, strokeWidth: 1.75, "aria-hidden": true } as const;
 export const on = "border-signal text-signal";
 export const off = "border-line2 text-dim";
 

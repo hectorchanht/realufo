@@ -30,9 +30,9 @@ export function AskHistory({ onPick }: { onPick: (q: string) => void }) {
                 clearAskHistory();
                 setMine([]);
               }}
-              className="text-dim hover:text-signal"
+              className="-m-2 grid size-8 place-items-center text-dim hover:text-signal"
             >
-              <Trash2 size={13} strokeWidth={1.75} aria-hidden="true" />
+              <Trash2 size={16} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>
           <div className="flex flex-col gap-1">

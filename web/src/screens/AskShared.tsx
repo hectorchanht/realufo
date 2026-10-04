@@ -6,7 +6,7 @@ import { BrandIcon } from "../components/SiteFooter";
 import { useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useBootstrap, useSharedAsk } from "../api/queries";
-import { AskCard, ShareNote, CARD, ACTION } from "../components/AskCard";
+import { AskCard, ShareNote, CARD, ACTION, ICON_ACTION } from "../components/AskCard";
 import { LoadError } from "../components/LoadError";
 import { addAskHistory } from "../lib/askHistory";
 import { askIdOf, shareLink, xIntent, type ShareResult } from "../lib/shareLink";
@@ -49,11 +49,11 @@ function SharedAnswer({ id }: { id: number | null }) {
         data={data}
         footer={
           <>
-            <button type="button" onClick={async () => setResult(await shareLink(data.question, data.url))} aria-label="Share" title="Share" className={ACTION}>
-              <Share2 size={13} strokeWidth={1.75} aria-hidden="true" />
+            <button type="button" onClick={async () => setResult(await shareLink(data.question, data.url))} aria-label="Share" title="Share" className={ICON_ACTION}>
+              <Share2 size={16} strokeWidth={1.75} aria-hidden="true" />
             </button>
-            <a href={xIntent(data.question, data.url)} target="_blank" rel="noopener" aria-label="Post on X" title="Post on X" className={ACTION}>
-              <BrandIcon name="X" size={12} />
+            <a href={xIntent(data.question, data.url)} target="_blank" rel="noopener" aria-label="Post on X" title="Post on X" className={ICON_ACTION}>
+              <BrandIcon name="X" size={14} />
             </a>
             <ShareNote result={result} url={data.url} />
           </>

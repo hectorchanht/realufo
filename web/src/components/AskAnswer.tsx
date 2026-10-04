@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useAsk, useShareAsk } from "../api/queries";
 import { ApiError } from "../api/client";
 import { shareLink, xIntent, type ShareResult } from "../lib/shareLink";
-import { AskCard, ShareNote, CARD, ACTION } from "./AskCard";
+import { AskCard, ShareNote, CARD, ACTION, ICON_ACTION } from "./AskCard";
 import type { AskResponse } from "../api/types";
 
 function errorCopy(e: unknown) {
@@ -49,11 +49,11 @@ function ShareControls({ question, logId }: { question: string; logId: number })
   return (
     <>
       <span className="font-mono text-[10px] text-signal">✓ shared</span>
-      <button type="button" onClick={async () => setResult(await shareLink(question, url))} aria-label="Share link" title="Share link" className={ACTION}>
-        <Share2 size={13} strokeWidth={1.75} aria-hidden="true" />
+      <button type="button" onClick={async () => setResult(await shareLink(question, url))} aria-label="Share link" title="Share link" className={ICON_ACTION}>
+        <Share2 size={16} strokeWidth={1.75} aria-hidden="true" />
       </button>
-      <a href={xIntent(question, url)} target="_blank" rel="noopener" aria-label="Post on X" title="Post on X" className={ACTION}>
-        <BrandIcon name="X" size={12} />
+      <a href={xIntent(question, url)} target="_blank" rel="noopener" aria-label="Post on X" title="Post on X" className={ICON_ACTION}>
+        <BrandIcon name="X" size={14} />
       </a>
       <button
         type="button"
@@ -85,8 +85,8 @@ export function AskAnswer({ question, onPost }: { question: string; onPost?: (da
       <div className={`${CARD} flex items-center gap-3 font-mono text-[11px] text-dim`}>
         <span className="flex-1">{copy ?? "Couldn't reach the archive — try again"}</span>
         {!copy && (
-          <button type="button" onClick={() => refetch()} aria-label="Retry" title="Retry" className="rounded-md border border-line2 px-2 py-1 text-signal">
-            <RotateCw size={13} strokeWidth={1.75} aria-hidden="true" />
+          <button type="button" onClick={() => refetch()} aria-label="Retry" title="Retry" className="grid size-8 place-items-center rounded-md border border-line2 text-signal">
+            <RotateCw size={16} strokeWidth={1.75} aria-hidden="true" />
           </button>
         )}
       </div>
