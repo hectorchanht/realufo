@@ -27,6 +27,7 @@
 // app).
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 
 export interface PageTitleValue {
   title: string;
@@ -81,8 +82,34 @@ export function usePageTitle(): PageTitleValue {
  */
 export function useSetPageTitle(title: string, sub: string, docTitle?: string): void {
   const { setValue } = useContext(PageTitleContext);
+  const { pathname } = useLocation();
   useEffect(() => {
     setValue({ title, sub });
     document.title = title === DEFAULT_PAGE_TITLE.title ? DEFAULT_DOCUMENT_TITLE : `${docTitle || title} · RealUFO`;
-  }, [title, sub, docTitle, setValue]);
+    syncHead(pathname, title === DEFAULT_PAGE_TITLE.title ? DEFAULT_DOCUMENT_TITLE : docTitle || title);
+  }, [title, sub, docTitle, setValue, pathname]);
+}
+
+// The Worker injects canonical/description/OG/JSON-LD for the page that was
+// loaded (worker/lib/meta.ts); after a client-side route change they would
+// still describe that landing page (an SEO audit rendering JS saw every doc
+// canonical to "/"). Point canonical/og:url/og:title at the current route and
+// drop the landing page's tags we have no client copy of. Crawlers always get
+// the Worker's full per-route set on a fresh load.
+const LANDING = {
+  path: location.pathname,
+  canonical: document.querySelector('link[rel="canonical"]')?.getAttribute("href"),
+};
+const LANDING_ONLY =
+  'meta[name="description"],meta[property="og:description"],meta[property="og:image"],meta[name="robots"],script[type="application/ld+json"]';
+let leftLanding = false;
+
+function syncHead(pathname: string, ogTitle: string) {
+  if (pathname === LANDING.path && !leftLanding) return;
+  leftLanding = true;
+  const url = (pathname === LANDING.path && LANDING.canonical) || location.origin + pathname;
+  document.querySelector('link[rel="canonical"]')?.setAttribute("href", url);
+  document.querySelector('meta[property="og:url"]')?.setAttribute("content", url);
+  document.querySelector('meta[property="og:title"]')?.setAttribute("content", ogTitle);
+  document.head.querySelectorAll(LANDING_ONLY).forEach((el) => el.remove());
 }

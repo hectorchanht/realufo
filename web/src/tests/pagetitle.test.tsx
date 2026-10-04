@@ -113,4 +113,18 @@ describe("AppBar contextual title", () => {
     expect(bar.getByText("Placement on High Alert near Roswell")).toBeInTheDocument();
     expect(bar.queryByText("FILE")).not.toBeInTheDocument();
   });
+
+  it("points canonical/og at the current route after a client-side route change, dropping the landing page's description", async () => {
+    document.head.innerHTML =
+      '<link rel="canonical" href="https://realufo.org/"><meta property="og:url" content="https://realufo.org/">' +
+      '<meta property="og:title" content="Declassified UAP Archive"><meta name="description" content="home">';
+    renderAppAt("/doc/rec1");
+    await screen.findByText(/Placement on High Alert near Roswell/, { selector: "[data-screen='doc'] h1" });
+
+    const url = `${location.origin}/doc/rec1`;
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe(url);
+    expect(document.querySelector('meta[property="og:url"]')?.getAttribute("content")).toBe(url);
+    expect(document.querySelector('meta[property="og:title"]')?.getAttribute("content")).toMatch(/rec1/);
+    expect(document.querySelector('meta[name="description"]')).toBeNull();
+  });
 });
