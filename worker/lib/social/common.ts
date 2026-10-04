@@ -3,7 +3,7 @@ import type { Env } from "../../env";
 // Shared types for the social fan-out (Spec 5). Adapters throw SocialError for
 // HTTP errors; anything else (network) is treated as "may have posted".
 
-export type Platform = "fb" | "ig" | "threads" | "bsky" | "yt" | "tiktok";
+export type Platform = "fb" | "ig" | "threads" | "bsky" | "yt" | "tiktok" | "tg";
 export type Sleep = (ms: number) => Promise<void>;
 export type Ctx = { now: Date; sleep: Sleep };
 export type SocialMedia = { kind: "video" | "image"; key: string; url: string; size: number };

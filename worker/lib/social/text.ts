@@ -88,6 +88,8 @@ export function compose(p: Platform, xText: string, archive: string | null, rec?
       return { text: room(5000, `${linkPart}\n\n${tags}`), title: ytTitle(head ?? line), link };
     case "tiktok":
       return { text: room(2200, `${link ? "\n\n🔗 full file: realufo.org" : ""}\n\n${tags}`), title, link };
+    case "tg": // media caption limit 1024
+      return { text: room(1024, `${linkPart}\n\n${tags}`), title, link };
   }
 }
 

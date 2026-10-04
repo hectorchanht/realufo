@@ -6,6 +6,7 @@ import { fb, ig, threads } from "./meta";
 import { bsky } from "./bsky";
 import { yt } from "./yt";
 import { tiktok } from "./tiktok";
+import { tg } from "./tg";
 import { token, type Rotating } from "./auth";
 
 // Social fan-out tick (Spec 5 §3): mirror posted x_posts to every enabled platform, one
@@ -14,10 +15,10 @@ import { token, type Rotating } from "./auth";
 // the live-row unique index (x_post_id, platform) makes a second attempt a no-op. Rows are
 // never hard-deleted: deleted_at retires one (history kept) and frees the pair to post again.
 
-export const ADAPTERS: Record<Platform, Adapter> = { fb, ig, threads, bsky, yt, tiktok };
+export const ADAPTERS: Record<Platform, Adapter> = { fb, ig, threads, bsky, yt, tiktok, tg };
 const FLAG: Record<Platform, keyof Env> = {
   fb: "FEATURE_SOCIAL_FB", ig: "FEATURE_SOCIAL_IG", threads: "FEATURE_SOCIAL_THREADS",
-  bsky: "FEATURE_SOCIAL_BSKY", yt: "FEATURE_SOCIAL_YT", tiktok: "FEATURE_SOCIAL_TIKTOK",
+  bsky: "FEATURE_SOCIAL_BSKY", yt: "FEATURE_SOCIAL_YT", tiktok: "FEATURE_SOCIAL_TIKTOK", tg: "FEATURE_SOCIAL_TG",
 };
 const ROTATING: Platform[] = ["threads", "tiktok"];
 const MAX_ATTEMPTS = 3;

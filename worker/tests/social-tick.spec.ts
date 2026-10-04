@@ -9,7 +9,7 @@ beforeAll(() => seedTestDB(env.DB));
 
 const NOW = new Date("2026-10-10T15:00:00Z");
 const noSleep = async () => {};
-const OFF = { FEATURE_SOCIAL_FB: "off", FEATURE_SOCIAL_IG: "off", FEATURE_SOCIAL_THREADS: "off", FEATURE_SOCIAL_BSKY: "off", FEATURE_SOCIAL_YT: "off", FEATURE_SOCIAL_TIKTOK: "off" };
+const OFF = { FEATURE_SOCIAL_FB: "off", FEATURE_SOCIAL_IG: "off", FEATURE_SOCIAL_THREADS: "off", FEATURE_SOCIAL_BSKY: "off", FEATURE_SOCIAL_YT: "off", FEATURE_SOCIAL_TIKTOK: "off", FEATURE_SOCIAL_TG: "off" };
 const E = (extra: Record<string, unknown> = {}) => ({ ...env, ...OFF, SOCIAL_SINCE: "2026-10-01", YT_DAILY_MAX: "5", ...extra }) as any;
 
 let seen: { platform: string; p: SocialPost }[] = [];
