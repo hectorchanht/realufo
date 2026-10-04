@@ -95,6 +95,8 @@ async function manualTick(req: Request, env: Env) {
   const over: Partial<Env> = {};
   if (q.get("force")) over.X_FORCE_PICK = q.get("force")!;
   if (q.get("showcase")) Object.assign(over, { X_FORCE_SHOWCASE: q.get("showcase")!, X_SHOWCASE_TEXT: q.get("text") ?? "" });
+  // operator post = the user's OK for that item: run X for this call even while the bot is paused
+  if (over.X_FORCE_PICK || over.X_FORCE_SHOWCASE) over.FEATURE_X = "on";
   await runTick({ ...env, ...over });
   return json({ ok: true });
 }
