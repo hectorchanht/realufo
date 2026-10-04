@@ -12,11 +12,15 @@ Constraints carried over: icon-only controls with `aria-label` + `title` (memory
 
 The same controls come in three looks. The visitor picks one; it is remembered on the device (`ru:media-skin`). Every style has the same strip, the same functions, keys and presets: only the console body differs.
 
-| Style | Console body |
-|---|---|
-| **Simple** (default for new visitors) | Today's panel, tidied: effect chips, tool chips, horizontal sliders, magnifier strength chips, video speed / loop / A–B chips. |
-| **DJ deck** | Faders · square pads (effects, tools) · deck with the click wheel and the magnifier knob. |
-| **Walkman** | Walkman body: cassette window, faders, the Wakeman keyboard (white keys = effects, black keys = tools), the click wheel and the magnifier knob. |
+Design has a purpose; each style is there for a use, and its layout follows that use.
+
+| Style | Who it's for, what it's for | Console body |
+|---|---|---|
+| **Simple** (default for new visitors) | A first look, on any screen: find the tool by its icon, change one thing, done. | Today's panel, tidied: effect chips, tool chips, horizontal sliders, magnifier strength chips, video speed / loop / A–B chips. |
+| **DJ deck** | Studying footage: hands stay on the wheel to scrub frame by frame while the other hand mixes effects and faders, everything visible at once on a wide screen. | Faders · square pads (effects, tools) · deck with the click wheel and the magnifier knob. |
+| **Walkman** | One-thumb use on a phone: one compact body, what is on shows in the cassette window, every tool is one big key, the wheel sits under the thumb. | Walkman body: cassette window, faders, the Wakeman keyboard (white keys = effects, black keys = tools), the click wheel and the magnifier knob. |
+
+Beauty is a common feeling: flat site tokens, calm spacing, one accent colour for "on", no decoration that doesn't help someone use the tool.
 
 - **Picker**: a `Palette` button in the console header opens a small menu: three rows, icon + name, the current one ticked. Picking switches at once (console stays open).
 - Arrange mode, pad order and presets are shared by all three styles (one order for effects, one for tools).
