@@ -92,9 +92,10 @@ def _short(raw, words: int) -> str:
     return head[: cut + 1] if cut > 0 else head
 
 # qwen3 ignores "never claim absence" when also told to flag UFO mentions, so filter in code.
-ABSENT = re.compile(r"\b(?:no|not|without(?: any)?) (?:mention|reference)|\bdo(?:es)? not (?:mention|refer|discuss)", re.I)
-OPENER = re.compile(r"^(?:(?:these|the)\s+)?pages?\s*(?:(\d+)(?:\s*[\u2013-]\s*(\d+))?\s*)?(?:of\s+\S+\s+)?"
-                    r"(?:contains?|describes?|details?|mentions?|discuss(?:es)?|includes?|covers?|outlines?|shows?|presents?)\s+", re.I)
+ABSENT = re.compile(r"\b(?:no|not|without(?: any)?) (?:mention|reference)|\bdo(?:es)? not (?:mention|refer|discuss)"
+                    r"|\bno\b[^.]{0,80}\b(?:is|are|were|was) (?:mentioned|referenced|discussed)", re.I)
+OPENER = re.compile(r"^(?:(?:these|the)\s+)?pages?\s*(?:(\d+)(?:\s*[\u2013-]\s*(\d+))?\s*)?(?:of\s+(?:the\s+)?\S+\s+)?"
+                    r"(?:contains?|describes?|details?|mentions?|discuss(?:es)?|includes?|covers?|outlines?|shows?|presents?|lists?)\s+", re.I)
 
 def _drop_absence(text: str) -> str:
     """Drop sentences claiming the document lacks something (the model saw only part of it)."""

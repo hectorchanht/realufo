@@ -186,3 +186,9 @@ def test_final_summary_drops_absence_claims_too():
                 "It does not mention flying saucers anywhere else in the text at all.")
     out, _ = summaries.summarize("T", [(1, LONG)], chat=chat)
     assert "does not mention" not in out and out.startswith("This is the 2024 NDAA")
+
+def test_filters_catch_the_phrasings_seen_in_pilot_4():
+    assert summaries._tidy("Pages 4–6 of the document outline sections of the NDAA.", 4, 6) == "Sections of the NDAA."
+    assert summaries._tidy("Pages 392–399 of the document list reconnaissance terms.", 392, 399) == "Reconnaissance terms."
+    t = "A club meeting in Inglewood on June 25, 1966. No UFOs, UAP, flying saucers, or unidentified objects are mentioned."
+    assert summaries._drop_absence(t) == "A club meeting in Inglewood on June 25, 1966."
