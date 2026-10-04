@@ -10,6 +10,8 @@ Each story can ask one crowd question. The same `poll` field in `article.json` d
 - **X:** a native poll posted as a **reply** under the story's head tweet, open for 3 days.
 - **Threads:** a native poll as a **standalone post** with the story link. The app has no `threads_manage_replies`, so it can't reply.
 
+With the Telegram gate on, a story's poll posts only after its article (or a separate poll preview) is approved in Telegram.
+
 Spec: `docs/superpowers/specs/2026-10-03-realufo-story-polls-design.md`. Code: `worker/routes/polls.ts`, `worker/lib/xpoll.ts`, `web/src/components/PollCard.tsx`.
 
 ## Quick reference
@@ -39,7 +41,7 @@ Add the poll to `showcase/articles/SLUG/article.json`:
 
 ## 2. Publish
 
-- **Story already published** (its X thread is out): run `python3 scripts/article.py SLUG`. That puts the site poll live and sends IndexNow. The cron handles the social polls; no `--social` run.
+- **Story already published** (its X thread is out): run `python3 scripts/article.py SLUG`. That sends a Telegram preview; after your ✅ the site poll goes live and IndexNow is sent. The cron handles the social polls; no `--social` run.
 - **New story:** follow the publish-article skill. Its `--social` caption then ends "<q> Vote → link". `--social` exits if that line pushes the last tweet past 280; shorten the question if so.
 
 Nothing posts to X or Threads while `"X_POLLS"` isn't `"on"` in `wrangler.jsonc`, which must also be deployed. It is the switch for every platform. To check the deployed value:

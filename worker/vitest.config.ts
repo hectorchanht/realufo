@@ -33,7 +33,8 @@ export default defineConfig({
         wrangler: { configPath: "./wrangler.jsonc" },
         miniflare: {
           compatibilityFlags: ["nodejs_compat"],
-          bindings: { TEST_MIGRATIONS: migrations, TEST_SEED_SQL: seedStatements, UPLOAD_BASE: "/api/u/" },
+          // FEATURE_GATE/FEATURE_SOCIAL_TG are off here so pre-gate specs keep the direct path; gate specs set them "on".
+          bindings: { TEST_MIGRATIONS: migrations, TEST_SEED_SQL: seedStatements, UPLOAD_BASE: "/api/u/", FEATURE_GATE: "off", FEATURE_SOCIAL_TG: "off" },
         },
       };
     }),

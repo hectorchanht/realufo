@@ -53,11 +53,11 @@ showcase/articles/<slug>/
 ## 3. Publish
 
 ```bash
-python3 scripts/article.py SLUG            # images → R2, rows → D1, site thread, IndexNow
-python3 scripts/article.py SLUG --social   # + Short and story as an X thread, mirrored everywhere (publish.sh)
+python3 scripts/article.py SLUG            # images → R2, then one Telegram preview (nothing in D1 yet)
+python3 scripts/article.py SLUG --social   # + the Short → R2; after ✅: story rows, site thread, IndexNow, X thread mirrored everywhere
 ```
 
-- Re-running is safe: images (uuid5 keys), rows (upserts), the thread (made once) and the social post (once per record) are all idempotent.
-- **Never post to social before the user has approved the Short and the copy** ("no post until we make it good"). The site part can go first.
+- `article.py` uploads the images (and with `--social` the Short) to R2, then sends one Telegram preview. **Nothing is written to D1 or posted until the owner taps ✅**; the Worker then writes the story rows and site thread, pings IndexNow, and posts the Short + thread. Re-running while a preview waits returns 409. After ❌ or a failure, re-running is safe: images (uuid5 keys), rows (upserts), the thread (made once) and the social post (once per record) are all idempotent.
+- **Never post to social before the user has approved the Short and the copy** ("no post until we make it good"). With the Telegram gate on, the preview is the last check: the site part waits for ✅ too.
 - The X poll is posted by the cron (`worker/lib/xpoll.ts`), not by `--social`: one per tick, as a reply to the story's head tweet, once `X_POLLS=on` and the head tweet is posted.
 - Needs migration 0025 applied and the Worker deployed with the article code (doc card + X thread replies).

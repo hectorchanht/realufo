@@ -16,9 +16,11 @@
     // X bot (Spec 4): off | dry (drafts to x_posts, no X calls) | on.
     // X_HIGHLIGHT_MIN_VOTES "" = community highlights off (votes are forgeable; opt in deliberately)
     // X_POLLS "on" = cron posts each story's question as an X poll reply ("" = off; Spec 9)
-    // FEATURE_X "off" since 2026-10-04: bot paused until the video approval gate ships (user OK per video).
-    // Operator posts (/__tick?force= / ?showcase=, scripts/publish.sh) still run: manualTick turns X on for that call.
-    "FEATURE_X": "off", "X_PICK_HOURS": "15", "X_DAILY_MAX": "1", "X_MONTHLY_USD_CAP": "25", "X_HIGHLIGHT_MIN_VOTES": "", "X_SINCE": "2026-10-02", "X_POLLS": "on",
+    // Telegram gate (spec 2026-10-04-realufo-telegram-gate-design): every post waits for the owner's ✅
+    // in the private chat with @real_ufo_bot. Bot picks stay paused (D1 bot_settings.paused_picks) until
+    // Plan 2's auto Shorts; releases/highlights/polls/operator posts go through the gate.
+    "FEATURE_GATE": "on", "TELEGRAM_CHANNEL": "-1004320401355", "FEATURE_SOCIAL_TG": "dry", // channel "RealUFO" by numeric id: works public or private, survives a username change
+    "FEATURE_X": "on", "X_PICK_HOURS": "15", "X_DAILY_MAX": "1", "X_MONTHLY_USD_CAP": "25", "X_HIGHLIGHT_MIN_VOTES": "", "X_SINCE": "2026-10-02", "X_POLLS": "on",
     // X_DAILY_MAX caps bot posts (picks, releases); operator showcase posts skip it but still count toward it.
     // Social fan-out (Spec 5): mirrors x_posts to other platforms, so X_DAILY_MAX caps them too. off | dry | on per platform.
     "FEATURE_SOCIAL_FB": "on", "FEATURE_SOCIAL_IG": "on", "FEATURE_SOCIAL_THREADS": "on",
