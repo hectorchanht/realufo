@@ -31,7 +31,10 @@ build/app-foundation as 2f73c07). Operator `/__tick?force=|showcase=` still post
   of already-approved items.
 - **Two gates for videos the system makes:** brief gate (before rendering) → video gate (before posting).
   Videos the owner made themselves (hand-made showcase, uploaded mp4) get one gate: the final preview.
-  Non-video posts get one gate: the exact text + image preview.
+  Every other post (release, highlight, poll, `/post`) gets one gate: the exact text + media preview.
+- **Media in every post** (user: "add vid or at least img (money shoot) in all posting to be attractive to
+  eyeball"): no text-only posts. Video when the content has footage, else at least the money-shot image
+  (see Media for every post).
 - **Maker = fully automatic:** Workers AI writes the brief, GitHub Actions renders (user choice: no local Claude).
 - **Brief model:** Workers AI `@cf/openai/gpt-oss-120b` (already used for TL;DRs).
 - **Voice:** ElevenLabs (same voice as hand-made Shorts) + ElevenLabs speech-to-text for subtitle timings.
@@ -48,6 +51,8 @@ build/app-foundation as 2f73c07). Operator `/__tick?force=|showcase=` still post
                            bot_jobs row  ──────────────────────────
                                 |
         kind=video (auto) ──────┼────── kind=post | poll | showcase (owner-made video)
+                                |                     |
+                                |        media (Actions: teaser clip / money-shot still / page crop)
                 |               |                     |
    prep (Actions: frames, tracks, vision) → brief (Workers AI) → brief_wait                post_wait  ── Telegram preview: ✅ Post · ❌ Skip
    Telegram: 繁中 brief  ✅ Make · ❌ Skip               |
@@ -72,7 +77,8 @@ build/app-foundation as 2f73c07). Operator `/__tick?force=|showcase=` still post
   new job (at most one open job per stream: pick / release / highlight / poll / manual), so an unanswered brief
   never blocks a release announcement.
 - Pick rule unchanged: unposted live video record with a clip (`pickCandidate`).
-- Release announcements post the thumbnail image, never video.
+- Release announcements carry the release's best media (teaser clip of its strongest video, else the
+  money-shot still), picked by the same media step.
 
 ## Quality bar (same as hand-made, or better)
 
@@ -103,6 +109,29 @@ than Claude at seeing frames and doing physics, so the pipeline closes those gap
 - **Escape hatch.** ✋ "hand-make" button on either gate parks the job as `handmade` for a Claude session (the
   making-shorts skill); the finished file comes back through `publish.sh` as a normal Telegram preview.
 
+## Media for every post
+
+Every post carries the most eye-catching honest media the content has, chosen in this order:
+
+| Content | Media |
+|---|---|
+| Record with footage | **Teaser clip** 6–12 s 9:16 around the money shot (slow-mo on the key frames, `lib.stamp` watermark, site colours, no narration needed; muted-friendly on-screen line). Full Shorts stay for `kind=video`. |
+| Footage but platform takes images only, or a poll | **Money-shot still**: the prep step's best frame, enhanced (frame stack + `enh()` local contrast, labelled "enhanced"), lens inset beside the object (never a box on it), watermark |
+| PDF / text record | **Page crop**: the strongest quoted page at phone size, quote marked amber per the skill, ID + realufo.org |
+| Image record | The image itself, cropped to the subject, watermark |
+| Highlight (site thread) | The source record's media by the rules above; never user uploads |
+| Release announcement | Strongest video in the release as a teaser clip, else its best still |
+| Article | Its Short (head post) + hero image |
+
+- Made by GitHub Actions `step=media` (same prep code: frames, tracks, vision pick), uploaded to R2
+  `media/<kind>/<ID>[-vN].mp4|jpg`, shown in the Telegram preview with the exact caption. Notes re-make it.
+- **Polls can't hold media** on X (a tweet has a poll or media, not both), on Threads (poll = text post) and on
+  Telegram (`sendPoll`). So each poll is posted right after a media post in the same place: as a reply under
+  the story's head post (which already has the Short/still) on X/Threads, and as a media message followed by
+  the poll in the Telegram channel. Bluesky/FB/IG get the media post with the question in the caption.
+- Each platform gets the best form it accepts: video where video posts work (X, Bluesky, FB, IG Reels,
+  Threads, YouTube, TikTok, Telegram), still otherwise; YouTube/TikTok get only video items.
+
 ## Admin commands (private chat, owner only)
 
 | Command | Does |
@@ -124,7 +153,7 @@ Unknown commands get a short help list. v2: articles from the bot, `/poll`, site
 Migration `00xx_bot_jobs.sql`:
 
 - `bot_jobs(id, kind CHECK(kind IN ('video','post','poll','showcase','article')), stream, ref, record_id,
-  status CHECK(status IN ('prep','brief_wait','making','video_wait','post_wait','handmade','approved','posted','skipped','failed')),
+  status CHECK(status IN ('prep','media','brief_wait','making','video_wait','post_wait','handmade','approved','posted','skipped','failed')),
   prep TEXT /*JSON: frames, tracks, fps, vision pick*/,
   version INTEGER, brief TEXT /*JSON*/, notes TEXT /*JSON list of owner notes*/, caption TEXT, media_key TEXT,
   payload TEXT /*JSON: what to insert on approve*/, tg_msg_id INTEGER, attempts INTEGER, error TEXT,
@@ -167,7 +196,7 @@ Migration `00xx_bot_jobs.sql`:
 
 ## Render (GitHub Actions)
 
-- Workflow `.github/workflows/short.yml`, `workflow_dispatch` inputs `job_id`, `record_id`, `step` (`prep` | `render`); the Worker
+- Workflow `.github/workflows/short.yml`, `workflow_dispatch` inputs `job_id`, `record_id`, `step` (`prep` | `media` | `render`); the Worker
   dispatches it with `GH_DISPATCH_TOKEN` (fine-grained, this repo, `actions: write` only).
 - The job fetches the brief from `GET /__job/<id>` (ADMIN_TOKEN), runs `showcase/auto.py`, uploads
   `showcase/<archive>/<ID>.mp4` (re-cut → next `-vN` key, never overwrite) and `contact/<job>.jpg` to R2, then
@@ -213,7 +242,8 @@ Migration `00xx_bot_jobs.sql`:
 - Worker vitest (style of `xpick.spec.ts`): job state machine (each tap only from the right status/version);
   webhook rejects wrong secret and wrong user; reply-notes map to the right job; with `FEATURE_GATE=on` no path
   inserts an `x_posts`/thread/poll row without an approved job; `tg` platform request shapes; brief validator
-  drops unsourced numbers/quotes and out-of-range timestamps; lessons reach the brief prompt.
+  drops unsourced numbers/quotes and out-of-range timestamps; lessons reach the brief prompt; no job reaches `post_wait` without a media key (every post has media); polls
+  are inserted only after their media post.
 - Python: `showcase/auto.py --dry-run` on a fixture brief asserts the beat timeline and filter graph without
   rendering; blob tracker test on a synthetic moving-dot clip (`crawler/ingest/tests` style).
 - Parity: PR116 + PR003 auto-rendered vs the hand-made Shorts against the skill checklist, before go-live.
