@@ -111,24 +111,6 @@ export function Feed() {
 
   return (
     <div data-screen="feed" className="animate-[fadeup_.4s_ease_both]">
-      <div className="mx-0.5 mb-3 flex items-baseline justify-between">
-        <div className="font-pixel text-[9px] uppercase tracking-[1px] text-faint">◆ Trending threads</div>
-        <Link to="/boards" className="font-mono text-[11px] text-signal">
-          all boards ›
-        </Link>
-      </div>
-      {feedFailed ? null : (
-        <div aria-busy={feedLoading} className="mb-[26px] flex flex-col gap-[10px]">
-          {feedLoading
-            ? // Row-sized placeholders (the feed returns 4): this list sits above the
-              // card grid, so a one-line loader here would shove the grid down on load.
-              Array.from({ length: 4 }, (_, i) => (
-                <div key={i} aria-hidden="true" className="h-[136px] rounded-[14px] border border-line bg-surface motion-safe:animate-pulse" />
-              ))
-            : hot.map((thread) => <ThreadRow key={thread.id} thread={thread} />)}
-        </div>
-      )}
-
       {feedFailed ? null : <ClipCarousel clips={feed?.clips ?? []} loading={feedLoading} />}
 
       <div className="mx-0.5 mb-3 font-pixel text-[9px] uppercase tracking-[1px] text-faint">◆ Hot right now</div>
@@ -154,6 +136,24 @@ export function Feed() {
               <DocCard key={record.id} record={record} variant="feed" priority />
             ))}
       </div>
+
+      <div className="mx-0.5 mb-3 flex items-baseline justify-between">
+        <div className="font-pixel text-[9px] uppercase tracking-[1px] text-faint">◆ Trending threads</div>
+        <Link to="/boards" className="font-mono text-[11px] text-signal">
+          all boards ›
+        </Link>
+      </div>
+      {feedFailed ? null : (
+        <div aria-busy={feedLoading} className="mb-[26px] flex flex-col gap-[10px]">
+          {feedLoading
+            ? // Row-sized placeholders (the feed returns 4): this list sits above the
+              // card grid, so a one-line loader here would shove the grid down on load.
+              Array.from({ length: 4 }, (_, i) => (
+                <div key={i} aria-hidden="true" className="h-[136px] rounded-[14px] border border-line bg-surface motion-safe:animate-pulse" />
+              ))
+            : hot.map((thread) => <ThreadRow key={thread.id} thread={thread} />)}
+        </div>
+      )}
 
       <BrowseStrip />
 
