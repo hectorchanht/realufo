@@ -9,17 +9,20 @@ export interface AffiliatePick {
   title: string;
   creator: string;
   blurb: string; // why this book matters HERE — the click driver
-  query: string; // Amazon search query
+  query: string; // Amazon search query (fallback when asin is absent)
+  asin?: string; // direct product link: amazon.com/dp/<asin> — preferred
   match?: string[]; // keywords (lowercase) matched against record title+summary
 }
 
-function amz(query: string): string {
-  const base = `https://www.amazon.com/s?k=${encodeURIComponent(query)}`;
-  return AMAZON_TAG ? `${base}&tag=${encodeURIComponent(AMAZON_TAG)}` : base;
+function amz(pick: AffiliatePick): string {
+  const base = pick.asin
+    ? `https://www.amazon.com/dp/${pick.asin}/`
+    : `https://www.amazon.com/s?k=${encodeURIComponent(pick.query)}`;
+  return AMAZON_TAG ? `${base}${pick.asin ? "?" : "&"}tag=${encodeURIComponent(AMAZON_TAG)}` : base;
 }
 
 export function affiliateUrl(pick: AffiliatePick): string {
-  return amz(pick.query);
+  return amz(pick);
 }
 
 const PICKS: AffiliatePick[] = [
@@ -28,6 +31,7 @@ const PICKS: AffiliatePick[] = [
     creator: "J. Allen Hynek",
     blurb: "Written by Blue Book's own chief scientist — the astronomer who classified the very cases in this archive, and who went from skeptic to believer.",
     query: "The UFO Experience J Allen Hynek",
+    asin: "1590033086",
     match: ["blue book", "hynek"],
   },
   {
@@ -35,6 +39,7 @@ const PICKS: AffiliatePick[] = [
     creator: "J. Allen Hynek",
     blurb: "A case-by-case walkthrough of hundreds of Blue Book files — the same incidents you're browsing, analyzed by the insider who read them all.",
     query: "Hynek UFO Report",
+    asin: "1982187210",
     match: ["blue book"],
   },
   {
@@ -49,6 +54,7 @@ const PICKS: AffiliatePick[] = [
     creator: "Kenneth Arnold",
     blurb: "By the pilot whose 1947 sighting coined 'flying saucer' — the origin story of every disc report in this collection.",
     query: "Coming of the Saucers Kenneth Arnold",
+    asin: "1585092262",
     match: ["flying disc", "flying saucer", "kenneth arnold", "1947"],
   },
   {
@@ -56,6 +62,7 @@ const PICKS: AffiliatePick[] = [
     creator: "Donald Keyhoe",
     blurb: "The 1950 bestseller by a Marine Corps major that forced the Air Force to answer for the saucer wave, using the same era's official files.",
     query: "Flying Saucers Are Real Donald Keyhoe",
+    asin: "8986476010",
     match: ["flying disc", "flying saucer", "keyhoe"],
   },
   {
@@ -63,6 +70,7 @@ const PICKS: AffiliatePick[] = [
     creator: "Robert Hastings",
     blurb: "40 years, 160+ military witnesses: the definitive investigation of UFOs over nuclear weapons sites — the incidents in this archive are its source material.",
     query: "UFOs and Nukes Robert Hastings",
+    asin: "1544822197",
     match: ["nuclear", "oak ridge", "los alamos", "missile", "silo", "warhead"],
   },
   {
@@ -70,6 +78,7 @@ const PICKS: AffiliatePick[] = [
     creator: "Lacatski, Kelleher & Knapp",
     blurb: "By the creator of the Pentagon's secret AAWSAP program itself — the insider account of the program behind these documents.",
     query: "Skinwalkers at the Pentagon Lacatski",
+    asin: "B09HR54GQF",
     match: ["aawsap", "dird", "aatip", "bigelow", "skinwalker"],
   },
   {
@@ -77,6 +86,7 @@ const PICKS: AffiliatePick[] = [
     creator: "Luis Elizondo",
     blurb: "By the former Pentagon UAP official whose testimony drove the congressional hearings — the insider story behind the push for disclosure.",
     query: "Imminent Luis Elizondo",
+    asin: "0063235560",
     match: ["elizondo", "congress", "hearing", "uaptf", "aaro", "grusch"],
   },
   {
@@ -84,6 +94,7 @@ const PICKS: AffiliatePick[] = [
     creator: "Bruce Maccabee",
     blurb: "A Navy physicist documents — from declassified files — how deeply the FBI and CIA tracked UFOs through the Cold War. The files you're reading are his evidence.",
     query: "FBI CIA UFO Connection Maccabee",
+    asin: "1502317214",
     match: ["fbi", "62-hq-83894", "cia", "hoover"],
   },
   {
@@ -91,6 +102,7 @@ const PICKS: AffiliatePick[] = [
     creator: "Richard Dolan",
     blurb: "The definitive history of the intelligence community's 50-year entanglement with UFOs — CIA, NSA, and the cover apparatus behind the documents.",
     query: "UFOs and the National Security State Dolan",
+    asin: "1571743170",
     match: ["cia", "nsa", "intelligence community", "national security"],
   },
   {
@@ -98,6 +110,7 @@ const PICKS: AffiliatePick[] = [
     creator: "John Greenewald",
     blurb: "By the man behind the world's largest FOIA UFO archive — how he pried these very documents out of the government, and what he learned.",
     query: "Inside The Black Vault Greenewald",
+    asin: "1538118378",
     match: ["foia", "black vault"],
   },
   {
@@ -105,6 +118,7 @@ const PICKS: AffiliatePick[] = [
     creator: "Garrett Graff",
     blurb: "A Pulitzer finalist traces the government's 80-year search — from Roswell to the UAP hearings — through declassified documents like these.",
     query: "UFO Inside Story Garrett Graff",
+    asin: "1982196777",
     match: ["roswell", "congress", "disclosure"],
   },
 ];
