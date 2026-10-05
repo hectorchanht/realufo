@@ -3,7 +3,7 @@
 // doc pages show the picks whose keywords hit the record's title/summary.
 // Links are Amazon searches; set AMAZON_TAG to your Associates tag to earn
 // commission (then the FTC disclosure in GoDeeper.tsx activates).
-export const AMAZON_TAG = ""; // e.g. "realufo-20"
+export const AMAZON_TAG = "realufo-20";
 
 export interface AffiliatePick {
   title: string;
