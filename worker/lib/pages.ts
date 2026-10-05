@@ -130,6 +130,30 @@ const mapPage: Loader = async (env, _g, url) => {
 };
 const askPage: Loader = async () => ({ meta: TAB.ask, body: tabBody(TAB.ask.title, TAB.ask.description) });
 
+const timelinePage: Loader = async () => ({
+  meta: {
+    title: "Sightings Timeline",
+    description: "Every dated UAP sighting in the archive, year by year — each year has its own shareable link.",
+    type: "website" as const,
+  },
+  body: tabBody("Sightings Timeline", "Every dated sighting in the archive, year by year. Open a year to see its files."),
+});
+
+// /timeline/:year — one year's slice of the timeline. A malformed year returns
+// null so serveWithMeta serves index.html untouched (the SPA bounces to /timeline).
+const timelineYearPage: Loader = async (_env, g) => {
+  const y = g.year ?? "";
+  if (!/^\d{4}$/.test(y)) return null;
+  return {
+    meta: {
+      title: `${y} UAP Sightings — Timeline`,
+      description: `Declassified UAP files from ${y}, on the RealUFO sightings timeline.`,
+      type: "website" as const,
+    },
+    body: tabBody(`${y} Sightings`, `Declassified UAP files from ${y} — open the year on the timeline.`),
+  };
+};
+
 // A shared Ask answer (Spec 8 §2): indexed, unlike the /ask tab. Duplicate
 // shares of one question canonicalise to the earliest public copy.
 const sharedAskPage: Loader = async (env, g, url) => {
@@ -437,6 +461,8 @@ export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/archive" }), load: archivePage },
   { pattern: new URLPattern({ pathname: "/boards" }), load: boardsPage },
   { pattern: new URLPattern({ pathname: "/map" }), load: mapPage },
+  { pattern: new URLPattern({ pathname: "/timeline" }), load: timelinePage },
+  { pattern: new URLPattern({ pathname: "/timeline/:year" }), load: timelineYearPage },
   { pattern: new URLPattern({ pathname: "/ask" }), load: askPage },
   { pattern: new URLPattern({ pathname: "/ask/:id" }), load: sharedAskPage },
   { pattern: new URLPattern({ pathname: "/browse" }), load: browsePage },

@@ -2,25 +2,28 @@
 // Data: GET /api/timeline (D1 `records.incident_date` aggregated through
 // yearOf(), the same parser the Archive decade filter uses). Visual language
 // follows web/src/screens/Map.tsx: pixel headings, stat tiles, gradient bars,
-// fadeup animation. Tapping a year opens a panel with that year's files
-// (useRecords with the `year` param, same free-text matching as the decade
-// filter); "See all" goes to the year's decade hub.
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+// fadeup animation. Each year bar is a real link to /timeline/:year — opening
+// a year shows its files (useRecords with the `year` param, same free-text
+// matching as the decade filter) and the URL is shareable/referenceable;
+// "See all" goes to the year's decade hub.
+import { useEffect, useMemo } from "react";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { useRecords, useTimeline } from "../api/queries";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { DocCard } from "../components/DocCard";
 import { Skeleton } from "../components/Skeleton";
 
 const PANEL_FILES = 12;
+const YEAR_RE = /^\d{4}$/;
 
-function YearPanel({ year, count, onClose }: { year: number; count: number; onClose: () => void }) {
+function YearPanel({ year, count }: { year: number; count: number }) {
   const { data, isLoading } = useRecords({ year: String(year), limit: PANEL_FILES }, { enabled: true });
   const decade = Math.floor(year / 10) * 10;
   return (
     <section
+      id={`year-${year}`}
       aria-label={`${year} sightings`}
-      className="mb-[14px] rounded-2xl border border-line2 bg-surface p-[14px]"
+      className="mb-[14px] scroll-mt-[76px] rounded-2xl border border-line2 bg-surface p-[14px]"
       style={{ animation: "fadeup .25s ease both" }}
     >
       <div className="mb-3 flex items-start gap-2">
@@ -30,9 +33,13 @@ function YearPanel({ year, count, onClose }: { year: number; count: number; onCl
             {count} file{count === 1 ? "" : "s"}
           </div>
         </div>
-        <button type="button" aria-label="Close" onClick={onClose} className="px-1 font-mono text-[14px] text-faint hover:text-ink">
+        <Link
+          to="/timeline"
+          aria-label="Close year panel"
+          className="px-1 font-mono text-[14px] text-faint hover:text-ink"
+        >
           ✕
-        </button>
+        </Link>
       </div>
       {isLoading ? (
         <Skeleton cards rows={4} />
@@ -53,10 +60,24 @@ function YearPanel({ year, count, onClose }: { year: number; count: number; onCl
 }
 
 export function TimelineScreen() {
-  useSetPageTitle("SIGHTINGS TIMELINE", "Year-by-year sightings from the archive");
+  const { year: yearParam } = useParams();
+  // The selected year lives in the URL (/timeline/:year) so every year bar is
+  // a real, shareable link. A malformed :year bounces back to /timeline.
+  const selected = yearParam != null && YEAR_RE.test(yearParam) ? Number(yearParam) : null;
+
+  useSetPageTitle(
+    "SIGHTINGS TIMELINE",
+    "Year-by-year sightings from the archive",
+    selected != null ? `${selected} UAP sightings` : undefined
+  );
 
   const { data, isLoading } = useTimeline();
-  const [selected, setSelected] = useState<number | null>(null);
+
+  // Deep link (/timeline/1947): bring the year's panel into view on arrival
+  // and when hopping between years.
+  useEffect(() => {
+    if (selected != null) document.getElementById(`year-${selected}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [selected]);
 
   const years = data?.years ?? [];
   const byYear = useMemo(() => new Map(years.map((y) => [y.year, y.count])), [years]);
@@ -100,10 +121,13 @@ export function TimelineScreen() {
 
   const selectedCount = selected != null ? byYear.get(selected) ?? 0 : 0;
 
+  if (yearParam != null && selected == null) return <Navigate to="/timeline" replace />;
+
   return (
     <div data-screen="timeline" style={{ animation: "fadeup .35s ease both" }}>
       <p className="mb-3 text-[13px] leading-[1.55] text-dim">
-        Every dated sighting in the archive, year by year. Tap a year to see its files.
+        Every dated sighting in the archive, year by year. Open a year to see its files — each year has its own
+        shareable link.
       </p>
 
       {/* Stat tiles — same shape as Map's STAT_TILES. */}
@@ -124,9 +148,7 @@ export function TimelineScreen() {
         <p className="py-8 text-center font-mono text-[12px] text-faint">No dated sightings in the archive yet.</p>
       ) : (
         <>
-          {selected != null && (
-            <YearPanel year={selected} count={selectedCount} onClose={() => setSelected(null)} />
-          )}
+          {selected != null && <YearPanel year={selected} count={selectedCount} />}
           {decades.map(({ decade, cells, total }) => (
             <div key={decade} className="mb-6">
               <div className="mx-0.5 mb-3 font-pixel text-[9px] tracking-[1px] text-faint">
@@ -137,13 +159,12 @@ export function TimelineScreen() {
                   const active = selected === year;
                   const isPeak = peakYear === year;
                   return (
-                    <button
+                    <Link
                       key={year}
-                      type="button"
-                      onClick={() => setSelected((s) => (s === year ? null : year))}
-                      aria-pressed={active}
+                      to={active ? "/timeline" : `/timeline/${year}`}
+                      aria-current={active ? "page" : undefined}
                       aria-label={`${year}: ${count} files`}
-                      title={`${year} · ${count} files`}
+                      title={`${year} · ${count} files — ${active ? "close" : "open"} year link`}
                       className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-[6px] rounded-sm py-1 hover:bg-surface"
                     >
                       <span className="font-mono text-[8.5px] text-dim">{count > 0 ? count : ""}</span>
@@ -159,7 +180,7 @@ export function TimelineScreen() {
                         }}
                       />
                       <span className="font-mono text-[7.5px] text-faint">{String(year).slice(2)}</span>
-                    </button>
+                    </Link>
                   );
                 })}
               </div>
