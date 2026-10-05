@@ -7,6 +7,7 @@ export const SOCIAL_PROFILES: [name: string, url: string][] = [
   ["Instagram", "https://www.instagram.com/realufo_org/"],
   ["Threads", "https://www.threads.com/@realufo_org"],
   ["YouTube", "https://www.youtube.com/@realufo_org"],
+  ["Ko-fi", "https://ko-fi.com/realufo"],
 ];
 
 // Open dataset (records + page text) exported by scripts/export_dataset.py.
