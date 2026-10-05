@@ -4,7 +4,7 @@ import type { Media } from "./xpick";
 // Job store for the Telegram gate (spec 2026-10-04-realufo-telegram-gate-design).
 // A job = a post that is ready but waits for the owner's tap. Rows are never hard-deleted.
 
-export type JobKind = "post" | "poll" | "showcase" | "article" | "video";
+export type JobKind = "post" | "poll" | "showcase" | "article" | "video" | "record" | "short";
 export type JobStatus = "prep" | "media" | "brief_wait" | "making" | "video_wait" | "post_wait" | "handmade" | "approved" | "posted" | "skipped" | "failed";
 export type Job = {
   id: number; kind: JobKind; stream: string; ref: string; status: JobStatus; version: number;
@@ -71,8 +71,39 @@ export const setMessages = async (env: Env, id: number, msgs: number[]) => {
   await env.DB.prepare("UPDATE bot_jobs SET tg_msgs=? WHERE id=?").bind(JSON.stringify(msgs), id).run();
 };
 
+// Portal v2: swap a job's media JSON (e.g. the owner sent a replacement image).
+// Call before revise() so the new version row carries the new media.
+export const setJobMedia = async (env: Env, id: number, media: { key: string; mime?: string; size?: number } | null): Promise<void> => {
+  await env.DB.prepare("UPDATE bot_jobs SET media=?, updated_at=datetime('now') WHERE id=? AND deleted_at IS NULL")
+    .bind(media ? JSON.stringify(media) : null, id).run();
+};
+
+// Portal v2: merge keys into a job's payload JSON (e.g. an edit intent's field/value).
+// Versioned via revise(); the payload patch itself doesn't bump the version.
+export const patchPayload = async (env: Env, id: number, patch: Record<string, unknown>): Promise<void> => {
+  const row = await env.DB.prepare("SELECT payload FROM bot_jobs WHERE id=? AND deleted_at IS NULL").bind(id).first<{ payload: string }>();
+  if (!row) return;
+  const merged = { ...JSON.parse(row.payload), ...patch };
+  await env.DB.prepare("UPDATE bot_jobs SET payload=?, updated_at=datetime('now') WHERE id=?").bind(JSON.stringify(merged), id).run();
+};
+
 export const openJobs = async (env: Env) =>
   (await env.DB.prepare(`SELECT ${COLS} FROM bot_jobs WHERE deleted_at IS NULL AND status IN (${OPEN_SQL}) ORDER BY id`).all<Row>()).results.map((r) => parse(r)!);
+
+// Portal v2: per-stream human pause. "1" = paused (queueContent refuses new jobs); existing
+// pending jobs are untouched. Key: paused_<stream>; "all" fans out in the callers.
+export const streamPaused = async (env: Env, stream: string): Promise<boolean> =>
+  (await getSetting(env, `paused_${stream}`)) === "1";
+
+export const setStreamPaused = async (env: Env, stream: string, paused: boolean): Promise<void> => {
+  await setSetting(env, `paused_${stream}`, paused ? "1" : "0");
+};
+
+// Pending-job counts per stream for /status.
+export const pendingByStream = async (env: Env): Promise<{ stream: string; n: number }[]> =>
+  (await env.DB.prepare(
+    `SELECT stream, count(*) n FROM bot_jobs WHERE deleted_at IS NULL AND status IN (${OPEN_SQL}) GROUP BY stream ORDER BY stream`
+  ).all<{ stream: string; n: number }>()).results;
 
 export const getSetting = async (env: Env, key: string) =>
   (await env.DB.prepare("SELECT value FROM bot_settings WHERE key=?").bind(key).first<{ value: string }>())?.value ?? null;

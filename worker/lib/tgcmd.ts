@@ -1,11 +1,12 @@
 // worker/lib/tgcmd.ts
 import type { Env } from "../env";
-import { getJob, openJobs, OPEN, setSetting } from "./jobs";
+import { getJob, openJobs, OPEN, pendingByStream, setSetting, setStreamPaused, streamPaused } from "./jobs";
 import { queue, skip } from "./gate";
 import { stage } from "./xbot";
 import { costOf, monthSpend, nextCandidate, sqlTime, type Candidate } from "./xpick";
 import { SKIP_REASONS, tick as socialTick } from "./social/tick";
 import { getFile, sendMessage } from "./tg";
+import { PORTAL_STREAMS } from "./tg-nlu";
 
 // Owner commands in the private chat (spec: "Admin commands"). Every post still waits for ✅.
 const DOWNLOAD_MAX = 20 * 1024 * 1024; // Telegram bots can download ≤20 MB
@@ -14,11 +15,11 @@ const HELP = [
   "/post <ID> · preview a record post (video clip or image)",
   "send an mp4 with caption \"<ID> text\" · your own video as a showcase post (≤20 MB; bigger: scripts/publish.sh)",
   "/queue · open jobs",
-  "/status · today's posts, failures, month spend",
-  "/pause · /resume · the bot's own daily picks",
+  "/status · posts today, waiting jobs per stream, paused streams, failures, spend",
+  "/pause [stream] · /resume [stream] · stream = record|short|article|social|poll|all (no arg = bot picks, as before)",
   "/drain · re-run the fan-out for missed platforms",
   "/skip <job> · drop a job",
-  "Reply to a preview to replace its text.",
+  "Reply to a preview: ok / 唔要 / title 改做 X / pause shorts / status — natural text works too.",
 ].join("\n");
 
 export async function command(env: Env, m: any) {
@@ -49,15 +50,27 @@ export async function command(env: Env, m: any) {
          WHERE status='failed' AND deleted_at IS NULL AND created_at>=datetime(?1,'-1 day') GROUP BY platform, skip ORDER BY platform`
       ).bind(day, JSON.stringify(SKIP_REASONS)).all<{ platform: string; skip: number; n: number }>();
       const list = (skip: number) => f.results.filter((r) => r.skip === skip).map((r) => `${r.platform} ${r.n}`).join(", ");
+      // Portal v2: waiting jobs per stream + paused streams
+      const pending = await pendingByStream(env);
+      const paused = (await Promise.all([...PORTAL_STREAMS].map(async (s) => ((await streamPaused(env, s)) ? s : null)))).filter(Boolean);
       return say([
         `Today on X: ${x.results.map((r) => `${r.status} ${r.n}`).join(", ") || "nothing"}`,
+        `Waiting: ${pending.length ? pending.map((p) => `${p.stream} ${p.n}`).join(", ") : "none"}`,
+        ...(paused.length ? [`Paused: ${paused.join(", ")}`] : []),
         `Failed last 24 h: ${list(0) || "none"}`,
         ...(list(1) ? [`Skipped (needs video) last 24 h: ${list(1)}`] : []),
         `Month spend: $${(await monthSpend(env, now)).toFixed(2)} of $${env.X_MONTHLY_USD_CAP ?? "10"}`,
       ].join("\n"));
     }
-    case "/pause": await setSetting(env, "paused_picks", "1"); return say("Bot picks paused.");
-    case "/resume": await setSetting(env, "paused_picks", "0"); return say("Bot picks on (each still waits for your ✅).");
+    case "/pause": {
+      // no arg = legacy: the bot's own daily picks. With arg: portal stream(s).
+      if (!arg) { await setSetting(env, "paused_picks", "1"); return say("Bot picks paused."); }
+      return say(await setPause(env, arg, true));
+    }
+    case "/resume": {
+      if (!arg) { await setSetting(env, "paused_picks", "0"); return say("Bot picks on (each still waits for your ✅)."); }
+      return say(await setPause(env, arg, false));
+    }
     case "/drain": await socialTick(env, now); return say("Fan-out ran once; /status for failures.");
     case "/skip": {
       const n = Number(arg.replace(/^#/, "")); // "#12" as /queue prints it
@@ -67,6 +80,18 @@ export async function command(env: Env, m: any) {
     }
     default: return say(HELP);
   }
+}
+
+// Portal v2: /pause <stream|all> / /resume <stream|all>
+async function setPause(env: Env, arg: string, pausing: boolean): Promise<string> {
+  const v = arg.toLowerCase().replace(/s$/, "");
+  const streams = v === "all" ? [...PORTAL_STREAMS] : [v];
+  for (const s of streams) {
+    if (!(PORTAL_STREAMS as readonly string[]).includes(s)) return `Unknown stream "${arg}". Use: ${(PORTAL_STREAMS as readonly string[]).join("|")} or all.`;
+  }
+  for (const s of streams) await setStreamPaused(env, s, pausing);
+  const label = v === "all" ? "all streams" : streams.join(", ");
+  return pausing ? `⏸️ ${label} paused — no new jobs will queue.` : `▶️ ${label} resumed.`;
 }
 
 // The one reason a /post <ID> got no preview. c = forced candidate (null: the record itself was refused).

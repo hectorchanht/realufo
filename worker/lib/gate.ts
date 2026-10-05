@@ -2,7 +2,7 @@
 import type { Env } from "../env";
 import { CDN, nextCandidate, sqlTime, withinBudget, type Candidate } from "./xpick";
 import { publishDraft, stage, type Draft } from "./xbot"; // xbot imports gate back: only used inside functions, never at load
-import { createJob, move, setMessages, type Job } from "./jobs";
+import { createJob, move, setMessages, streamPaused, type Job, type JobKind } from "./jobs";
 import { sendMedia, sendMessage, TgError } from "./tg";
 import { indexNow } from "./indexnow";
 
@@ -36,6 +36,22 @@ export async function queue(env: Env, c: Candidate, d: Draft): Promise<Job | nul
   return job;
 }
 
+// Portal v2: the universal content gate. EVERY content addition (record, short, article,
+// social, poll) goes through here; nothing goes live without the owner's tap.
+// Returns null when the stream is human-paused (caller stays quiet — the owner paused it).
+export async function queueContent(env: Env, j: {
+  kind: JobKind; stream: string; ref: string; caption: string | null;
+  media?: { key: string; mime?: string; size?: number } | null; payload?: unknown;
+}): Promise<Job | null> {
+  if (await streamPaused(env, j.stream)) return null;
+  const job = await createJob(env, {
+    kind: j.kind, stream: j.stream, ref: j.ref, status: "post_wait",
+    caption: j.caption, media: j.media ?? null, payload: j.payload ?? {},
+  });
+  if (job) await preview(env, job);
+  return job;
+}
+
 export async function preview(env: Env, job: Job): Promise<void> {
   const chat = env.TELEGRAM_OWNER_ID!;
   const msgs: number[] = [];
@@ -50,12 +66,11 @@ export async function preview(env: Env, job: Job): Promise<void> {
   }
   const chars = Array.from(job.caption ?? ""); // code points: never cut an emoji in half
   const caption = chars.length > TEXT_MAX ? `${chars.slice(0, TEXT_MAX).join("")}…` : chars.join("");
-  // only post/showcase run the caption; other kinds (article, poll) run their payload, so an edit would do nothing
-  const edit = job.kind === "post" || job.kind === "showcase" ? "\nReply to this message to replace the text." : "";
-  const text = `#${job.id} v${job.version} · ${job.kind} · ${job.stream} · ${job.ref}${note}\n\n${caption}\n\n→ ${targets(env)}${edit}`;
+  const goLabel = job.kind === "record" ? "✅ Publish" : job.kind === "short" ? "✅ Post short" : "✅ Post";
+  const text = `#${job.id} v${job.version} · ${job.kind} · ${job.stream} · ${job.ref}${note}\n\n${caption}\n\n→ ${targets(env)}\nReply: ok / 唔要 / title 改做 X / pause ${job.stream} / status`;
   try {
     msgs.push(await sendMessage(env, chat, text, [[
-      { text: "✅ Post", callback_data: `ok:${job.id}:${job.version}` },
+      { text: goLabel, callback_data: `ok:${job.id}:${job.version}` },
       { text: "❌ Skip", callback_data: `skip:${job.id}:${job.version}` },
     ]]));
   } catch (e) {
@@ -100,6 +115,19 @@ export async function approve(env: Env, job: Job, now = new Date()): Promise<str
       }
     } else if (job.kind === "poll") {
       line = "poll approved: posts on the next tick";
+    } else if (job.kind === "record") {
+      // Portal v2: a staged record goes live. Payload carries the publish SQL
+      // (e.g. UPDATE records SET status='live' WHERE id=? plus index rows).
+      const p = job.payload as { sql?: string[] };
+      if (p.sql?.length) await env.DB.batch(p.sql.map((s) => env.DB.prepare(s)));
+      siteRows = true;
+      line = `record ${job.ref} is live`;
+    } else if (job.kind === "short") {
+      // Portal v2: the curated short is already rendered to R2 by the operator;
+      // approval publishes it (payload.sql flips its listing flag, or records the post).
+      const p = job.payload as { sql?: string[]; note?: string };
+      if (p.sql?.length) await env.DB.batch(p.sql.map((s) => env.DB.prepare(s)));
+      line = `short ${job.ref} posted${p.note ? ` (${p.note})` : ""}`;
     } else {
       throw new Error(`kind ${job.kind} has no approve step yet`);
     }

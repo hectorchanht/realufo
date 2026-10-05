@@ -2,10 +2,11 @@
 import type { Env } from "../env";
 import { error, json } from "../lib/json";
 import { sameSecret } from "../lib/secret";
-import { getJob, jobByMessage, move, revise } from "../lib/jobs";
+import { getJob, jobByMessage, move, openJobs, patchPayload, pendingByStream, revise, setJobMedia, setStreamPaused, streamPaused } from "../lib/jobs";
 import { approve, preview, skip } from "../lib/gate";
-import { answerCallback, clearButtons, sendMessage } from "../lib/tg";
+import { answerCallback, clearButtons, getFile, sendMessage } from "../lib/tg";
 import { command } from "../lib/tgcmd";
+import { classifyIntent, PORTAL_STREAMS, T, zh, type NluIntent } from "../lib/tg-nlu";
 import { THREAD_SEP } from "../lib/x";
 import { weightedLength } from "../lib/xcopy";
 
@@ -58,21 +59,163 @@ async function onButton(env: Env, q: any) {
 
 async function onMessage(env: Env, m: any) {
   const chat = env.TELEGRAM_OWNER_ID!;
-  // a reply that starts with "/" is a command, not a new caption
-  if (m.reply_to_message && typeof m.text === "string" && !m.text.trimStart().startsWith("/")) {
-    const job = await jobByMessage(env, m.reply_to_message.message_id);
-    if (!job) return sendMessage(env, chat, "That preview is out of date (or not a job). Reply to the newest preview.", undefined, m.message_id);
-    if (job.kind !== "post" && job.kind !== "showcase") return sendMessage(env, chat, `#${job.id} is a ${job.kind} job; edit it at its source and re-send.`);
-    if (job.status !== "post_wait") return sendMessage(env, chat, `#${job.id} is ${job.status}; only waiting previews can be edited.`);
-    // A showcase caption may be a thread (parts joined by THREAD_SEP): the reply replaces only the head tweet.
-    const [head, ...rest] = (job.caption ?? "").split(THREAD_SEP);
-    const link = head.match(/https:\/\/realufo\.org\/\S+$/)?.[0];
-    const newHead = link && !m.text.includes(link) ? `${m.text.trim()}\n${link}` : m.text.trim();
-    const len = weightedLength(newHead);
-    if (len > 280) return sendMessage(env, chat, `#${job.id}: that is ${len}/280 for X; shorten it and reply again. Nothing changed.`);
-    const next = await revise(env, job.id, job.version, [newHead, ...rest].join(THREAD_SEP), m.text);
-    if (!next) return sendMessage(env, chat, `#${job.id} changed meanwhile; reply to the newest preview.`);
-    return preview(env, next);
+  // photo reply → image swap for a job that asked for one ("換張圖")
+  if (m.photo && m.reply_to_message) {
+    if (await onPhotoReply(env, m, chat)) return;
   }
-  return command(env, m);
+  const text = typeof m.text === "string" ? m.text.trim() : "";
+  // commands and media uploads keep the old path
+  if (!text || text.startsWith("/")) return command(env, m);
+  // Portal v2: natural-language replies. A reply targets its preview's job;
+  // a bare message targets the single waiting job (if exactly one).
+  let job = null;
+  if (m.reply_to_message) {
+    job = await jobByMessage(env, m.reply_to_message.message_id);
+    if (!job) return sendMessage(env, chat, T.stale(zh(text)), undefined, m.message_id);
+  } else {
+    const waiting = (await openJobs(env)).filter((j) => j.status === "post_wait");
+    if (waiting.length === 1) job = waiting[0];
+    else if (waiting.length > 1) return sendMessage(env, chat, T.multi(zh(text)), undefined, m.message_id);
+    // no waiting jobs: fall through to commands (HELP)
+  }
+  if (!job) return command(env, m);
+  const cjk = zh(text);
+  const intent = await classifyIntent(env, text, job);
+  const done = await runIntent(env, m, chat, job, intent, cjk);
+  if (done) return;
+  // unknown + legacy kinds: the old behaviour — a bare reply replaces the caption.
+  // (Other kinds have no caption to replace, so they get the clarification above.)
+  if (job.kind === "post" || job.kind === "showcase") return legacyCaptionReplace(env, m, chat, job);
+  return sendMessage(env, chat, T.clarify(cjk), undefined, m.message_id);
+}
+
+// Executes a classified intent. Returns true when handled (false → caller tries legacy fallbacks).
+async function runIntent(env: Env, m: any, chat: number, job: any, intent: NluIntent, cjk: boolean): Promise<boolean> {
+  const say = (t: string) => sendMessage(env, chat, t, undefined, m.message_id);
+  switch (intent.intent) {
+    case "approve": {
+      if (job.status !== "post_wait") { await say(cjk ? `#${job.id} 而家係 ${job.status},批唔到` : `#${job.id} is ${job.status}, can't approve`); return true; }
+      if (!(await move(env, job.id, job.version, ["post_wait"], "approved"))) { await say(T.stale(cjk)); return true; }
+      const replyId = m.reply_to_message?.message_id;
+      if (replyId) await clearButtons(env, chat, replyId).catch(() => {});
+      const line = await approve(env, { ...job, version: job.version });
+      await say(`${T.approved(job.id, cjk)}\n${line}`);
+      return true;
+    }
+    case "skip": {
+      const ok = await skip(env, job);
+      await say(ok ? T.skipped(job.id, cjk) : T.stale(cjk));
+      return true;
+    }
+    case "edit": {
+      if (job.status !== "post_wait") { await say(cjk ? `#${job.id} 而家係 ${job.status},改唔到` : `#${job.id} is ${job.status}, can't edit`); return true; }
+      if (intent.field === "image") {
+        // "換張圖": flag the job and ask for the new image; the photo reply completes the swap.
+        await patchPayload(env, job.id, { awaitingImage: true });
+        await say(T.sendImage(job.id, cjk));
+        return true;
+      }
+      const next = await applyEdit(env, job, intent.field, intent.value);
+      if (!next) { await say(T.stale(cjk)); return true; }
+      await say(intent.field === "pace" ? T.paceNoted(job.id, intent.value || "slower", cjk) : T.edited(job.id, cjk));
+      await preview(env, next);
+      return true;
+    }
+    case "pause":
+    case "resume": {
+      const pausing = intent.intent === "pause";
+      const streams = intent.stream === "all" ? [...PORTAL_STREAMS] : [intent.stream];
+      for (const s of streams) await setStreamPaused(env, s, pausing);
+      const label = intent.stream === "all" ? (cjk ? "全部" : "all streams") : intent.stream;
+      await say(pausing ? T.paused(label, cjk) : T.resumed(label, cjk));
+      return true;
+    }
+    case "status": {
+      const [pending, paused] = await Promise.all([
+        pendingByStream(env),
+        Promise.all([...PORTAL_STREAMS].map(async (s) => ((await streamPaused(env, s)) ? s : null))),
+      ]);
+      const pausedList = paused.filter(Boolean);
+      const lines = [
+        cjk ? "📋 等緊:" : "📋 Waiting:",
+        ...(pending.length ? pending.map((p) => `· ${p.stream}: ${p.n}`) : [cjk ? "· 冇" : "· none"]),
+        ...(pausedList.length ? [`${cjk ? "⏸️ 停咗:" : "⏸️ Paused:"} ${pausedList.join(", ")}`] : []),
+      ];
+      await say(lines.join("\n"));
+      return true;
+    }
+    case "help": {
+      await say(
+        cjk
+          ? "指令:\nok / 好 — 批\n唔要 — skip\ntitle 改做 X — 改\npause shorts / resume all — 停/開\nstatus — 睇 queue"
+          : "Commands:\nok — approve\nskip — drop\ntitle 改做 X — edit\npause shorts / resume all\nstatus — queue"
+      );
+      return true;
+    }
+    default:
+      return false; // unknown → caller tries legacy caption replace, else clarification
+  }
+}
+
+// Applies an edit intent: new caption + version bump + payload patch, then the caller re-previews.
+// Text fields replace the caption; non-text fields (pace) keep the caption and ride in the payload.
+const TEXT_FIELDS = ["title", "caption", "text", "description"];
+async function applyEdit(env: Env, job: any, field: string, value: string) {
+  let caption: string;
+  if (TEXT_FIELDS.includes(field)) {
+    if (job.kind === "post" || job.kind === "showcase") {
+      // legacy thread rule: the reply replaces only the head tweet, link preserved
+      const [head, ...rest] = String(job.caption ?? "").split(THREAD_SEP);
+      const link = head.match(/https:\/\/realufo\.org\/\S+$/)?.[0];
+      const newHead = link && !value.includes(link) ? `${value.trim()}\n${link}` : value.trim();
+      if (weightedLength(newHead) > 280) return null; // too long: caller reports stale/unchanged
+      caption = [newHead, ...rest].join(THREAD_SEP);
+    } else {
+      caption = value.trim();
+    }
+  } else {
+    caption = job.caption ?? "";
+  }
+  await patchPayload(env, job.id, { [field]: value.trim(), [`edited_${field}_at`]: new Date().toISOString() });
+  return revise(env, job.id, job.version, caption, `edit ${field}: ${value.slice(0, 80)}`);
+}
+
+// "換張圖" completion: Hector replies to a job preview with a photo. Downloads the
+// largest size, stores it in R2 under a job-scoped key, swaps the job media, and re-previews.
+async function onPhotoReply(env: Env, m: any, chat: number): Promise<boolean> {
+  const job = await jobByMessage(env, m.reply_to_message.message_id);
+  const cjk = true; // photo replies follow a Cantonese prompt; keep the follow-ups in Chinese
+  if (!job) { await sendMessage(env, chat, T.stale(cjk), undefined, m.message_id); return true; }
+  if (!job.payload?.awaitingImage) {
+    await sendMessage(env, chat, `🖼️ 要換圖先覆「換張圖」,然後再掟張相嚟`, undefined, m.message_id);
+    return true;
+  }
+  if (job.status !== "post_wait") { await sendMessage(env, chat, `#${job.id} 而家係 ${job.status},換唔到圖`, undefined, m.message_id); return true; }
+  try {
+    const sizes = m.photo as any[];
+    const best = sizes[sizes.length - 1];
+    const buf = await getFile(env, best.file_id);
+    const key = `portal/${job.stream}/${job.ref}-v${job.version + 1}.jpg`;
+    await env.MEDIA.put(key, buf, { httpMetadata: { contentType: "image/jpeg", cacheControl: "public, max-age=2592000" } });
+    await setJobMedia(env, job.id, { key, mime: "image/jpeg", size: buf.byteLength });
+    await patchPayload(env, job.id, { awaitingImage: false });
+    const next = await revise(env, job.id, job.version, job.caption ?? "", "image swapped by owner");
+    if (!next) { await sendMessage(env, chat, T.stale(cjk), undefined, m.message_id); return true; }
+    await sendMessage(env, chat, T.edited(job.id, cjk), undefined, m.message_id);
+    await preview(env, next);
+  } catch (e) {
+    await sendMessage(env, chat, `🖼️ 換圖失敗: ${String(e).slice(0, 120)}`, undefined, m.message_id);
+  }
+  return true;
+}
+
+// The pre-portal behaviour, kept for post/showcase: a bare reply replaces the caption text.
+async function legacyCaptionReplace(env: Env, m: any, chat: number, job: any) {
+  if (job.status !== "post_wait") return sendMessage(env, chat, `#${job.id} is ${job.status}; only waiting previews can be edited.`);
+  const next = await applyEdit(env, job, "caption", m.text.trim());
+  if (!next) {
+    const cjk = zh(m.text);
+    return sendMessage(env, chat, cjk ? `#${job.id}: 太長,改唔到` : `#${job.id}: too long for X; shorten it and reply again. Nothing changed.`);
+  }
+  return preview(env, next);
 }
