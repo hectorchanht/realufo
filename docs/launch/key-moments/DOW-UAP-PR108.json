@@ -1,0 +1,66 @@
+{
+ "id": "DOW-UAP-PR108",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 15.6,
+   "text": "Infrared view of a plain grey background with a crosshair and four bracket bars; nothing else is visible."
+  },
+  {
+   "start": 15.75,
+   "end": 18.9,
+   "text": "The picture goes dark, bursts into white line noise, flashes grey once at 17.9 s, then turns fully black."
+  },
+  {
+   "start": 19.0,
+   "end": 19.85,
+   "text": "Picture back. Two small square dots slide from the left edge up to the top centre and merge into one dot on the top edge."
+  },
+  {
+   "start": 19.89,
+   "end": 25.75,
+   "text": "Black redaction blocks cover most of the view: the top half is blacked out and a black bar slides left to right along the bottom."
+  },
+  {
+   "start": 25.79,
+   "end": 29.0,
+   "text": "The view clears to brighter grey, a dot riding the top edge. At 28 s a small bright spot appears just below the crosshair centre."
+  },
+  {
+   "start": 29.04,
+   "end": 32.0,
+   "text": "Zoom in: the spot, a short bright dash, sits just right of the crosshair. At 30.6 s the view zooms out and it drifts down-right."
+  },
+  {
+   "start": 32.09,
+   "end": 34.5,
+   "text": "A small box flickers in place of the crosshair, then grows around the spot and turns into a tiny two-bar reticle at centre."
+  },
+  {
+   "start": 34.53,
+   "end": 65.4,
+   "text": "The reticle holds the spot at centre: a short bright dash tilted down to the right, sometimes with a dark halo, as the background shifts."
+  },
+  {
+   "start": 65.55,
+   "end": 68.3,
+   "text": "Zoom in: the spot becomes a bright irregular blob with a dark edge on its upper right, at the reticle's left side, until 67.2 s."
+  },
+  {
+   "start": 68.4,
+   "end": 70.65,
+   "text": "The reticle opens into two bars and the spot breaks out to their right, then moves left as the bars widen, leaving the left edge."
+  },
+  {
+   "start": 70.9,
+   "end": 71.9,
+   "text": "The crosshair returns with no object; the picture flashes white, then dark."
+  },
+  {
+   "start": 71.92,
+   "end": 94.8,
+   "text": "A wider view of layered grey bands, later diagonal ridge-like patterns, pans under the crosshair. No object is visible."
+  }
+ ],
+ "notes": "Clip is 94.8 s, summary says 2 min 16 s (its own timeline ends at 1:34). Stored crop 756:720:262:0 keeps a thin white strip at the left edge."
+}

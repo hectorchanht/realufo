@@ -1,0 +1,11 @@
+{"id": "AARO-DOD_111217027", "moments": [
+ {"start": 0.0, "end": 31.8, "text": "Infrared sensor view looking down: crosshair over a flat grey background that slowly gains a faint mottled texture."},
+ {"start": 31.9, "end": 32.4, "text": "The view zooms out in a flicker: the old picture shows as a rectangle in the centre while the wider view fills in around it."},
+ {"start": 32.5, "end": 34.7, "text": "Mottled ground with dark patches and bright cloud at left. A tiny dark dot appears just above and left of the crosshair."},
+ {"start": 34.8, "end": 147.9, "text": "The view drifts through grey and bright cloud for about two minutes; the tiny dark dot keeps the same spot above and left of the crosshair."},
+ {"start": 148.0, "end": 155.1, "text": "Textured ground shows through and slides past quickly; the dark dot is still in place."},
+ {"start": 155.2, "end": 170.0, "text": "After a quick zoom flicker, cloud clears to a sharp close view of tree cover and a forked dirt track at upper right."},
+ {"start": 170.1, "end": 184.3, "text": "The view widens in steps with flickers: bright cloud over dark ground, then hazy ground with faint straight lines."},
+ {"start": 184.4, "end": 265.0, "text": "Wide view over flat land dotted with many small bright clouds and thin straight tracks."},
+ {"start": 266.0, "end": 298.07, "text": "The view tilts toward a hazy band across the top of the frame, with scattered cloud below, to the end."}
+], "notes": "No clear object beyond a tiny dark dot fixed at one screen position (32-155 s); could be a sensor artefact."}

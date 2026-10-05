@@ -1,0 +1,46 @@
+{
+ "id": "DOW-UAP-PR066",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 0.9,
+   "text": "Black-and-white infrared view, green crosshair and corner brackets: dark sky over a bright band of cloud tops, with a pale elongated shape on it."
+  },
+  {
+   "start": 3.43,
+   "end": 8.2,
+   "text": "The sensor swings: a bright band sweeps across, the picture turns dark and blurred, then layered cloud comes into view."
+  },
+  {
+   "start": 8.28,
+   "end": 26.4,
+   "text": "A small dark elongated shape enters at the upper right edge, slides left across the top of the frame and lingers upper left."
+  },
+  {
+   "start": 10.07,
+   "end": 15.2,
+   "text": "A small white dot enters at the right edge, crosses the upper third right to left and exits left; the sensor does not follow."
+  },
+  {
+   "start": 26.47,
+   "end": 29.1,
+   "text": "The view tilts onto towering bright cloud."
+  },
+  {
+   "start": 29.13,
+   "end": 33.3,
+   "text": "The picture jumps to a wider view: rows of small clouds under a dark band of sky."
+  },
+  {
+   "start": 33.42,
+   "end": 36.0,
+   "text": "A tiny white dot emerges above the lower-right redaction box and moves left; the view zooms in, pans left, and the dot exits lower left."
+  },
+  {
+   "start": 36.0,
+   "end": 48.6,
+   "text": "The sensor keeps panning left in steps over rows of cloud until the clip ends."
+  }
+ ],
+ "notes": "Clip appears to be ~15 fps content in a 30 fps file (duplicated frames)."
+}

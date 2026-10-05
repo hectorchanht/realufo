@@ -1,0 +1,31 @@
+{
+ "id": "DOW-UAP-PR048",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 4.5,
+   "text": "Infrared view looking out over the sea, wind turbines along the bottom edge; a tiny bright dot sits just upper right of the crosshair."
+  },
+  {
+   "start": 4.5,
+   "end": 38.5,
+   "text": "Open water only, no turbines; the dot wanders around the crosshair, drifting up near the N marker, then to the lower right."
+  },
+  {
+   "start": 38.5,
+   "end": 68.0,
+   "text": "Wind turbines slide in from the right and fill the frame as the view crosses a wind farm; the dot stays near the crosshair."
+  },
+  {
+   "start": 68.0,
+   "end": 79.0,
+   "text": "The turbines thin out and leave at the upper left; mostly open water remains, with the dot just below-left of the crosshair."
+  },
+  {
+   "start": 79.0,
+   "end": 99.37,
+   "text": "More turbines enter from the lower right and spread across the frame; the dot keeps wandering close to the crosshair to the end."
+  }
+ ],
+ "notes": ""
+}

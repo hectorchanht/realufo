@@ -1,0 +1,31 @@
+{
+ "id": "DOW-UAP-PR065",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 8.0,
+   "text": "Low-contrast colour view of broken, peach-tinted cloud against hazy blue-grey, no on-screen symbols. A tiny pale speck right of centre drifts left."
+  },
+  {
+   "start": 8.0,
+   "end": 19.3,
+   "text": "The speck holds still just above-left of centre while the clouds slide past to the right; the sensor is panning with it."
+  },
+  {
+   "start": 19.3,
+   "end": 27.6,
+   "text": "The speck slips down to just left of centre, then drifts further left."
+  },
+  {
+   "start": 27.8,
+   "end": 34.2,
+   "text": "The view swings left in jerks; the speck slides right across the frame and leaves past the right edge."
+  },
+  {
+   "start": 34.2,
+   "end": 39.5,
+   "text": "Only cloud remains in view until the clip ends."
+  }
+ ],
+ "notes": "Speck is 2-3 px and very low contrast; needs a contrast boost to see. Muted colour-looking picture, no HUD."
+}

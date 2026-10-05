@@ -1,0 +1,66 @@
+{
+ "id": "DOW-UAP-PR140",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 4.9,
+   "text": "Grey IR view looking down at a rocky ridge with a crosshair and black masking boxes; a disclosure notice runs along the bottom."
+  },
+  {
+   "start": 4.9,
+   "end": 9.55,
+   "text": "The view switches to colour: the same sandy ridge in pinkish tones, with a dark channel sliding in at the top from 7.4 s."
+  },
+  {
+   "start": 6.3,
+   "end": 7.5,
+   "text": "A tiny dark speck crosses from upper right of the crosshair, past it, to the lower left in about 1 s. Faint; use frame step."
+  },
+  {
+   "start": 9.55,
+   "end": 15.0,
+   "text": "Quick flips between grey and colour, then the grey view settles and the ridge edge slides off to the upper left."
+  },
+  {
+   "start": 15.0,
+   "end": 27.3,
+   "text": "Plain grey ground with faint streaks. A tiny dark dot appears upper right near 18 s and drifts in to just above the crosshair."
+  },
+  {
+   "start": 27.35,
+   "end": 31.3,
+   "text": "Colour view again: the dark dot sits far left of the crosshair at 27.6 s and is gone off the left edge by 28.5 s."
+  },
+  {
+   "start": 31.35,
+   "end": 45.3,
+   "text": "Back to grey with diagonal streaks across the ground; the dark dot reappears low on the left, below left of the crosshair."
+  },
+  {
+   "start": 45.35,
+   "end": 72.9,
+   "text": "Colour view of plain ground: the dot sits far left near 52 s, just left of the crosshair by 62 s, then drifts upper left."
+  },
+  {
+   "start": 72.95,
+   "end": 84.0,
+   "text": "Grey view again with bright patches lower left; the dark dot sits upper left of the crosshair."
+  },
+  {
+   "start": 84.2,
+   "end": 88.6,
+   "text": "A dark channel with bright, bumpy banks sweeps across the frame from left to right as the view pans."
+  },
+  {
+   "start": 88.6,
+   "end": 102.75,
+   "text": "Grey streaky ground; the dark dot shows right of the crosshair near 90 s and next to it by 98 s."
+  },
+  {
+   "start": 102.8,
+   "end": 107.7,
+   "text": "The view switches to colour for the last 5 seconds over plain ground."
+  }
+ ],
+ "notes": ""
+}

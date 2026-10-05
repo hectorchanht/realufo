@@ -1,0 +1,51 @@
+{
+ "id": "LLE-UAP-PR001",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 2.5,
+   "text": "Upright phone video at night, the lower half blurred for privacy. A small blue-white light sits just right of centre in the dark sky."
+  },
+  {
+   "start": 2.5,
+   "end": 32.5,
+   "text": "The light slowly slides from right of centre to the left edge of the frame; a faint row of four points sits above it."
+  },
+  {
+   "start": 32.5,
+   "end": 37.4,
+   "text": "The camera brings the light back left of centre, then quick sideways jerks smear it into short streaks at 0:36.5-0:37.4."
+  },
+  {
+   "start": 37.5,
+   "end": 46.0,
+   "text": "The light drifts to the left edge again around 0:40, then is brought back toward the centre."
+  },
+  {
+   "start": 46.1,
+   "end": 54.4,
+   "text": "The camera zooms in: the light swells into a larger, soft blue-white glow, and the blurred lights below grow bigger."
+  },
+  {
+   "start": 54.5,
+   "end": 61.3,
+   "text": "Zoomed back out, the light is a small point again; it swings to the left side, then back to the centre."
+  },
+  {
+   "start": 61.4,
+   "end": 70.9,
+   "text": "A second zoom-in: the soft glow grows larger, sky fills most of the frame and the blurred ground below goes dark."
+  },
+  {
+   "start": 71.0,
+   "end": 77.4,
+   "text": "Zoomed out again: a small point in the upper centre, held fairly steady."
+  },
+  {
+   "start": 77.5,
+   "end": 79.97,
+   "text": "The camera zooms in once more and the light swells into a soft glow as the clip ends."
+  }
+ ],
+ "notes": "Review tool's old auto-crop 608:508:0:572 (live has no crop; tool fixed) keeps only the privacy-blurred bottom half; the light is in the top half. No black bars: crop should be cleared or set to the top half."
+}

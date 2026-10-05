@@ -1,0 +1,46 @@
+{
+ "id": "DOW-UAP-PR123",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 2.5,
+   "text": "Handheld recording of an infrared screen: grainy grey background, broken crosshair left of picture centre, a small dark spot boxed at its centre."
+  },
+  {
+   "start": 2.5,
+   "end": 5.3,
+   "text": "The box opens into empty corner brackets and the spot is no longer visible; the brackets vanish at 5.3 s."
+  },
+  {
+   "start": 9.0,
+   "end": 13.7,
+   "text": "A dark spot shows left of the crosshair, slides close to the left edge, then the view pans and brings it back toward the crosshair."
+  },
+  {
+   "start": 13.75,
+   "end": 19.9,
+   "text": "A small white x marker appears beside the spot, and the spot settles just right of the crosshair centre."
+  },
+  {
+   "start": 20.0,
+   "end": 23.0,
+   "text": "The view zooms in: the spot becomes a larger round dark blob right of the crosshair, swings left past its centre and back."
+  },
+  {
+   "start": 23.06,
+   "end": 24.2,
+   "text": "A tracking box appears beside the blob and slides onto it."
+  },
+  {
+   "start": 24.2,
+   "end": 25.5,
+   "text": "The view zooms back out and the picture blurs briefly as the recording tilts."
+  },
+  {
+   "start": 25.5,
+   "end": 64.06,
+   "text": "The box holds the dark spot at the crosshair centre for the rest of the video while the grainy background drifts."
+  }
+ ],
+ "notes": "Full-frame recheck: crosshair sits left of picture centre; positions now relative to it."
+}

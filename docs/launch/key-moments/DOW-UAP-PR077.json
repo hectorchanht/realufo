@@ -1,0 +1,56 @@
+{
+ "id": "DOW-UAP-PR077",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 60.0,
+   "text": "Black-and-white infrared view over a streaky grey surface, darker at centre. A faint white dot drifts close to the crosshair."
+  },
+  {
+   "start": 60.0,
+   "end": 141.0,
+   "text": "The streaks give way to softer grey shading; the white dot grows clearer as the sensor keeps it near the crosshair."
+  },
+  {
+   "start": 141.0,
+   "end": 147.0,
+   "text": "A blue box opens around the crosshair, labelled 13M; the dot crosses from right to left inside it, then up onto the crosshair."
+  },
+  {
+   "start": 147.0,
+   "end": 151.0,
+   "text": "The box turns into corner brackets that shrink onto the dot as the label counts down 13M, 7M, 5M, 4M."
+  },
+  {
+   "start": 151.0,
+   "end": 199.8,
+   "text": "The dot, now bright, stays on the crosshair with a small blue marker beside it."
+  },
+  {
+   "start": 195.9,
+   "end": 197.3,
+   "text": "A second white dot enters at the right edge near the top and slides left along the top edge, gone in about 1.4 s."
+  },
+  {
+   "start": 199.8,
+   "end": 203.05,
+   "text": "The first dot slides off the crosshair down and right, its blue marker labelled 1M, and leaves through the bottom edge."
+  },
+  {
+   "start": 202.6,
+   "end": 216.0,
+   "text": "Another white dot drops in from the top edge left of centre; the sensor swings after it as it sweeps back and forth."
+  },
+  {
+   "start": 216.0,
+   "end": 229.0,
+   "text": "The dot keeps swinging, up to the top of the frame and back down the left side, as the sensor hunts for it."
+  },
+  {
+   "start": 229.0,
+   "end": 298.9,
+   "text": "The sensor settles with this dot close to the crosshair; streaks return to the background and the dot grows fainter toward the end."
+  }
+ ],
+ "notes": "No black bars; redaction boxes over HUD. A fixed dark pixel sits lower right of the crosshair throughout (sensor artefact)."
+}

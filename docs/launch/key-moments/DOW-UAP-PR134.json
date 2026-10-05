@@ -1,0 +1,11 @@
+{"id": "DOW-UAP-PR134", "moments": [
+ {"start": 0.0, "end": 5.2, "text": "Blue-tinted daylight view looking down on a city, crosshair at centre. A small white round spot sits just left of the crosshair."},
+ {"start": 5.23, "end": 17.0, "text": "The view switches to grey infrared over open ground; hot vehicles show white. No spot stands out near the crosshair."},
+ {"start": 17.02, "end": 17.3, "text": "The picture flashes white and black as the view zooms in."},
+ {"start": 17.33, "end": 18.6, "text": "Zoomed in on grey ground, a small dark dot right of the crosshair moves right and leaves the right edge."},
+ {"start": 20.67, "end": 21.2, "text": "More black and white flashes, then the wide infrared view returns."},
+ {"start": 21.2, "end": 55.3, "text": "The infrared view pans over a dark river channel, fields and buildings; no spot is clearly visible."},
+ {"start": 55.35, "end": 84.0, "text": "Back in the blue-tinted daylight view over the city, the small white round spot shows near the crosshair, drifting around it."},
+ {"start": 84.0, "end": 86.0, "text": "The white spot passes over a stretch of dark water, left of the crosshair, where it is easiest to see."},
+ {"start": 86.0, "end": 97.0, "text": "The view pans over buildings and a sports track; the white spot drifts toward the lower left of the frame."}
+], "notes": "Object is only clearly visible in the blue daylight mode; in grey IR mode only during the 17.3-18.6 s zoom."}

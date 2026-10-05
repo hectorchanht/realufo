@@ -1,0 +1,36 @@
+{
+ "id": "DOW-UAP-PR064",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 6.5,
+   "text": "Black-and-white infrared view down onto flat-roofed buildings, walls and a street, purple crosshair and north marker, redaction boxes at the edges."
+  },
+  {
+   "start": 6.5,
+   "end": 12.1,
+   "text": "The picture washes out, first pale, then flat grey, until building detail almost disappears."
+  },
+  {
+   "start": 12.13,
+   "end": 12.53,
+   "text": "The screen goes dark, then flashes white for about 0.4 s. Use frame step."
+  },
+  {
+   "start": 12.57,
+   "end": 14.5,
+   "text": "A wider view of rooftops and streets returns around the crosshair."
+  },
+  {
+   "start": 14.5,
+   "end": 14.95,
+   "text": "A dark elongated streak enters past the left redaction box, crosses below the crosshair and exits right. 15 frames (~0.5 s): use frame step."
+  },
+  {
+   "start": 15.0,
+   "end": 17.6,
+   "text": "The picture dims to darker grey and holds on the same streets until the clip ends."
+  }
+ ],
+ "notes": "Official description says 0:00-0:13 'No content', but the frames show buildings in IR the whole time."
+}

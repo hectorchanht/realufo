@@ -1,0 +1,66 @@
+{
+ "id": "LLE-UAP-PR004",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 31.0,
+   "text": "Night phone video, portrait: one small blue-white point of light near the centre of a dark sky, blurred lit shapes along the bottom edge."
+  },
+  {
+   "start": 31.1,
+   "end": 33.6,
+   "text": "The camera shakes: the light smears into short streaks and lit shapes rise into the bottom of the frame."
+  },
+  {
+   "start": 36.45,
+   "end": 43.4,
+   "text": "A fainter second point appears just below the light and stays with it for about 7 seconds."
+  },
+  {
+   "start": 40.2,
+   "end": 55.9,
+   "text": "A blue glow, then grey haze, spreads up from the lower right; the point of light stays near the centre."
+  },
+  {
+   "start": 50.0,
+   "end": 51.5,
+   "text": "The point of light changes colour: green, then red-pink, then white. Tiny: zoom in."
+  },
+  {
+   "start": 56.0,
+   "end": 61.7,
+   "text": "Bright white light floods up from the bottom edge, a red glow appears lower left; the point of light holds its place above."
+  },
+  {
+   "start": 59.92,
+   "end": 61.4,
+   "text": "Two white lights side by side enter at the top-left edge and cross the top of the frame left→right in about 1.5 s."
+  },
+  {
+   "start": 61.73,
+   "end": 67.8,
+   "text": "The background turns black and the light shows as a larger, bright white dot."
+  },
+  {
+   "start": 67.83,
+   "end": 92.4,
+   "text": "The light shrinks back to a small point, flickering blue, green and white against a black sky."
+  },
+  {
+   "start": 91.95,
+   "end": 95.1,
+   "text": "Two faint lights side by side enter at the top-left edge, drift right along the top and leave over the top edge near mid-frame."
+  },
+  {
+   "start": 92.6,
+   "end": 96.8,
+   "text": "An orange-white glare with red lights rises in the lower right, then fades; the point of light stays above it."
+  },
+  {
+   "start": 101.63,
+   "end": 102.47,
+   "text": "The camera tilts down: the light streaks upward and blurred lit shapes with a small red light fill the bottom as the clip ends."
+  }
+ ],
+ "notes": "No stored crop; ffmpeg cropdetect on this dark portrait clip picks a 78x256 sliver (78:256:530:824), so moment_sheets' auto-crop is wrong here. Reviewed uncropped. Do not store that crop. Full-frame recheck: the 61.1 s 'streaks' are a pair of lights crossing the top edge 59.9-61.4 s; added a second faint pair 92-95.1 s."
+}

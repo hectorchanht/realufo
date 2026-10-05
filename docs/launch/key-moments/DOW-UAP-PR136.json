@@ -1,0 +1,46 @@
+{
+ "id": "DOW-UAP-PR136",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 2.2,
+   "text": "IR view over rugged mountain slopes, crosshair in the middle; a small dark dot sits just above it. Bright white blobs show at both edges."
+  },
+  {
+   "start": 2.2,
+   "end": 5.95,
+   "text": "A smooth dark shade sweeps in from the left and hides the terrain; a bright band crosses at 4.1–4.9 s, then the slopes fade back."
+  },
+  {
+   "start": 5.97,
+   "end": 8.5,
+   "text": "Clear view of a steep ravine; the dark dot sits just below right of the crosshair."
+  },
+  {
+   "start": 8.55,
+   "end": 8.95,
+   "text": "A black frame, then flat grey frames for under half a second."
+  },
+  {
+   "start": 8.96,
+   "end": 16.5,
+   "text": "Zoomed in on lit rock: the dark dot sits upper right of the crosshair; a magenta box marks it 10.1–11.9 s and 14.1–15.9 s."
+  },
+  {
+   "start": 16.5,
+   "end": 26.5,
+   "text": "The dot stays right of the crosshair as ridges slide past; from 20 s a bright ridge fills the lower half, dot near its top."
+  },
+  {
+   "start": 26.5,
+   "end": 29.7,
+   "text": "Haze drifts across and the image dims; the dot fades and is lost near 29.7 s."
+  },
+  {
+   "start": 30.13,
+   "end": 33.17,
+   "text": "Flat light grey frames at 30.1 s, then smooth featureless grey with a soft glow to the end."
+  }
+ ],
+ "notes": ""
+}

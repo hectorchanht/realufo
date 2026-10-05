@@ -1,0 +1,8 @@
+{"id": "DOW-UAP-PR120", "moments": [
+ {"start": 0.0, "end": 4.7, "text": "Phone video of a light infrared screen: tick-marked crosshair, two small rings and a triangle just below-right of centre. A tiny dark dot moves around beside them."},
+ {"start": 4.75, "end": 8.25, "text": "The phone shifts, showing the screen's dark left edge; the two rings and triangle hold their place below-right of the crosshair."},
+ {"start": 8.28, "end": 8.7, "text": "The rings-and-triangle group vanishes, leaving one ring, and the picture flickers bright and dark as the sensor switches mode."},
+ {"start": 8.71, "end": 10.06, "text": "New mode: a mottled, wave-textured grey background. One ring sits right of centre and another near the lower-right edge."},
+ {"start": 10.06, "end": 10.5, "text": "The display flashes white, then shows a black view with a white crosshair for 3 frames (~0.1 s), then white again."},
+ {"start": 10.5, "end": 13.27, "text": "Back on the light picture, the two rings and triangle return below-right of the crosshair and stay to the end."}
+], "notes": ""}

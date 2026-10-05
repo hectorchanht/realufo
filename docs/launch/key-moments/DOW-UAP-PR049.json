@@ -1,0 +1,56 @@
+{
+ "id": "DOW-UAP-PR049",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 4.6,
+   "text": "Night infrared view, dark with faint grey clouds; a bright elongated white shape with small bumps on top sits in a box at the crosshair."
+  },
+  {
+   "start": 1.5,
+   "end": 4.2,
+   "text": "A second small light enters at the upper right and crosses above the crosshair, leaving at the left edge."
+  },
+  {
+   "start": 4.7,
+   "end": 7.3,
+   "text": "The box drops away; the bright shape slides off to the right and is gone as the sensor swings left."
+  },
+  {
+   "start": 7.3,
+   "end": 16.5,
+   "text": "Two small lights side by side appear left of the crosshair; the view zooms in and they sit to its right, then drift back."
+  },
+  {
+   "start": 17.0,
+   "end": 34.7,
+   "text": "The pair stays just left of the crosshair as the view widens; a faint pale streak runs across the upper left."
+  },
+  {
+   "start": 34.8,
+   "end": 48.2,
+   "text": "Contrast switches: the background turns light grey, briefly black, then light grey again; a long pale streak stretches left of the pair."
+  },
+  {
+   "start": 62.3,
+   "end": 65.4,
+   "text": "The sensor zooms in: the pair shows as two round bright spots side by side left of the crosshair, then the zoom snaps back out."
+  },
+  {
+   "start": 89.5,
+   "end": 91.2,
+   "text": "Another short zoom-in shows the two round bright spots again, upper left of the crosshair."
+  },
+  {
+   "start": 92.75,
+   "end": 98.3,
+   "text": "A white flash and black frames, then smeared grey cloud shapes as the sensor changes setting; the pair is faint by the crosshair."
+  },
+  {
+   "start": 98.5,
+   "end": 109.2,
+   "text": "The normal view returns: the two small lights sit left of the crosshair to the end, with a pale streak at upper left."
+  }
+ ],
+ "notes": ""
+}

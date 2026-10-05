@@ -1,0 +1,16 @@
+{
+ "id": "DOW-UAP-PR050",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 9.94,
+   "text": "Infrared view looking down at water: three dark elongated shapes in a diagonal row, each trailing a long bright white streak to the upper left."
+  },
+  {
+   "start": 2.0,
+   "end": 4.9,
+   "text": "A small cluster of dark specks enters at the left edge below the left-hand shape and drifts down-right, leaving at the bottom edge."
+  }
+ ],
+ "notes": "File is 9.9 s but the official description says 20 s. The official 0:01-0:04 transit matches only the faint speck cluster at lower left (2.0-4.9 s here); the 0:05 entry from the top left is not visible. The frame is dominated by three dark shapes with bright trails that the description does not mention."
+}

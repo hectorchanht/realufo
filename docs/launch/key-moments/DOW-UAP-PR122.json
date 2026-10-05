@@ -1,0 +1,61 @@
+{
+ "id": "DOW-UAP-PR122",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 5.6,
+   "text": "Phone video of a light infrared screen: tick-marked crosshair, a small dark ring below-right of centre and a tiny dark dot just left of centre."
+  },
+  {
+   "start": 2.98,
+   "end": 5.53,
+   "text": "A bolder dark ring peeks in at the right edge, then drifts down the lower right and leaves at the bottom edge."
+  },
+  {
+   "start": 5.68,
+   "end": 6.23,
+   "text": "A larger dark double blob enters from the bottom, left of the ring, and rises past the crosshair to leave at the top in about half a second."
+  },
+  {
+   "start": 6.98,
+   "end": 7.13,
+   "text": "The double blob reappears at the upper left and slides down toward the lower left."
+  },
+  {
+   "start": 7.13,
+   "end": 10.83,
+   "text": "The screen flashes white and black as the sensor switches mode; two small rings and a triangle then sit just below-right of the crosshair."
+  },
+  {
+   "start": 10.87,
+   "end": 11.33,
+   "text": "Two more bright flashes; afterwards only one ring remains below-right of the crosshair."
+  },
+  {
+   "start": 11.5,
+   "end": 12.83,
+   "text": "A trail of dark dots enters from the top, merges into one dark dot above-right of centre, and moves left across the vertical crosshair line."
+  },
+  {
+   "start": 12.83,
+   "end": 26.33,
+   "text": "The dark dot hovers just below the crosshair centre, wandering left and right, for the rest of the clip."
+  },
+  {
+   "start": 16.91,
+   "end": 19.28,
+   "text": "The bolder ring rises in from the bottom at the lower right, hangs there for about 2 s, then sinks back out."
+  },
+  {
+   "start": 20.61,
+   "end": 23.43,
+   "text": "The bolder ring appears at the upper right, rises to the top edge, then moves down the right side and leaves at the bottom."
+  },
+  {
+   "start": 23.81,
+   "end": 26.33,
+   "text": "A small circle with a cross inside appears lower right of the crosshair and slides up to sit above-right of its centre."
+  }
+ ],
+ "notes": "Same footage as DOW-UAP-PR121 from 8.07 s onward (PR122 t = PR121 t - 8.07). Full-frame recheck: added the bolder ring's two earlier passes at the right edge and the circled-cross marker at the end; dot wanders both sides of centre."
+}

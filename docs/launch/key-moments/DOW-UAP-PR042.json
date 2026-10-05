@@ -1,0 +1,15 @@
+{"id": "DOW-UAP-PR042", "moments": [
+ {"start": 0.0, "end": 11.1, "text": "Infrared view: a bright V-shaped patch lower left under a dark band, crosshair at centre. A tiny bright dot sits left of and below the crosshair."},
+ {"start": 11.1, "end": 40.25, "text": "The screen flashes black then white; a flat grey view returns with a box around the crosshair. The tiny dot stays at the same spot."},
+ {"start": 40.25, "end": 40.8, "text": "The picture flashes white, black and grey several times as the view zooms in."},
+ {"start": 40.8, "end": 41.2, "text": "Zoomed view: a bright elongated dash crosses from the crosshair up and left, leaving the top edge. About 0.4 s: use frame step."},
+ {"start": 41.2, "end": 52.4, "text": "Mottled dark disc view; the dash is gone. A faint dot sits right of the crosshair."},
+ {"start": 52.4, "end": 129.8, "text": "Back to the wide grey view; the view drifts and shading changes, but the tiny dot stays fixed left of and below the crosshair."},
+ {"start": 129.8, "end": 149.0, "text": "A display change: smoother shading, a black box at top left, and the tiny dot now sits right of and above the crosshair."},
+ {"start": 149.0, "end": 234.8, "text": "The earlier display returns; the tiny dot is back left of and below the crosshair."},
+ {"start": 234.8, "end": 242.0, "text": "A small dark shape trailing a pale line enters at the upper right and drifts across to the left edge."},
+ {"start": 251.6, "end": 255.0, "text": "Narrow view: a dark dot with a faint grey smear sits at the upper right corner of the crosshair box."},
+ {"start": 255.7, "end": 261.5, "text": "After a flash, a zoomed view of rippled water: a dark blob trailing a pale wake below centre; a long dark rectangle slides in from the right."},
+ {"start": 280.4, "end": 285.3, "text": "Another zoomed water view: a small dark shape trailing a wake moves from the left edge toward the crosshair."},
+ {"start": 291.5, "end": 293.17, "text": "The picture turns flat purple-grey with no image as the clip ends."}
+], "notes": "Grey side panels not cropped (crop null). The tiny dot stays at a fixed screen position across pans for most of the clip."}

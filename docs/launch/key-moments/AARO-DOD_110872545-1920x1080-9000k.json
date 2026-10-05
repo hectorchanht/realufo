@@ -1,0 +1,12 @@
+{"id": "AARO-DOD_110872545-1920x1080-9000k", "moments": [
+ {"start": 0.0, "end": 2.0, "text": "A grey noisy screen with faint display symbols before the picture comes up."},
+ {"start": 2.0, "end": 14.6, "text": "Infrared targeting display on dark sky: a small glowing white spot sits in the tracking brackets just below the centre marker."},
+ {"start": 14.6, "end": 17.5, "text": "The display zooms in (1.0 to 2.0): the white spot grows into a fuzzy glow with a brighter core."},
+ {"start": 17.53, "end": 18.9, "text": "A brief black screen, then the sensor switches from IR to TV: a bright ring with a small dark dot below and right of centre."},
+ {"start": 18.95, "end": 40.95, "text": "TV view on grey sky: a dark oval shape, wider than tall, held steady in the brackets just below centre."},
+ {"start": 41.0, "end": 42.45, "text": "Black screen and a striped glitch, then back to infrared: the object is a bright white glow, stretched sideways."},
+ {"start": 42.47, "end": 69.4, "text": "The view zooms out: the object shrinks to a small dot held in the brackets while patches of sky drift behind it."},
+ {"start": 69.5, "end": 71.3, "text": "A short zoom in: a bright, horizontally stretched glow fills the brackets, then the view zooms back out."},
+ {"start": 74.38, "end": 75.05, "text": "The dot leaves the brackets and streaks left, growing into a bright smear before leaving the left edge. About 0.7 s; use frame step."},
+ {"start": 75.17, "end": 76.23, "text": "Grainy grey picture with empty brackets as the clip ends."}
+], "notes": "Display is centre-cropped (452px pillarbox each side cut). Short black/glitch frames at 0:41, 0:43, 1:12 and 1:13."}

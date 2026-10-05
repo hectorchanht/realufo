@@ -1,0 +1,7 @@
+{"id": "DOW-UAP-PR029", "moments": [
+ {"start": 0.0, "end": 2.38, "text": "Infrared view looking down on rippled sea, cyan box at centre. A small bright spot drifts from upper left to just above the box."},
+ {"start": 2.38, "end": 6.28, "text": "The box shrinks to a small reticle. The spot, a bright point with a thin vertical tail below, sits upper right and drifts down beside it."},
+ {"start": 6.28, "end": 12.28, "text": "The reticle opens to a plain crosshair. The spot circles down below the crosshair to its left side; an orange marker blinks around it."},
+ {"start": 12.28, "end": 19.6, "text": "A small box returns at the crosshair; the spot wanders just below and left of it, never far from centre."},
+ {"start": 19.6, "end": 21.8, "text": "The spot moves into the box and stays there, the orange marker flashing over it, until the clip ends."}
+], "notes": "White bars on the left and right edges are not cropped (crop null)."}

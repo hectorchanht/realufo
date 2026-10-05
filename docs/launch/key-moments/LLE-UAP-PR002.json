@@ -1,0 +1,51 @@
+{
+ "id": "LLE-UAP-PR002",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 2.25,
+   "text": "Upright phone video at night, lower half blurred for privacy. A small bright light sits just left of centre at a thin overhead wire."
+  },
+  {
+   "start": 2.28,
+   "end": 2.82,
+   "text": "The sky tints pink, then the whole frame flashes pink-white for 4 frames (about 0.15 s) before the view returns. Use frame step."
+  },
+  {
+   "start": 2.85,
+   "end": 93.3,
+   "text": "The light sits on the upper wire near the centre, barely moving. Frame by frame, its colour flickers between white, green, red and violet."
+  },
+  {
+   "start": 93.4,
+   "end": 95.5,
+   "text": "Still on the wire, the light shrinks to a fainter point for about two seconds, then brightens again."
+  },
+  {
+   "start": 112.0,
+   "end": 114.8,
+   "text": "The camera tilts and swings, smearing the light into streaks, then settles with it right of centre above the wire, a pole at left."
+  },
+  {
+   "start": 114.8,
+   "end": 414.0,
+   "text": "With the camera mostly still, the light hangs just above the wire and slowly opens a gap above it."
+  },
+  {
+   "start": 414.0,
+   "end": 476.0,
+   "text": "The camera drifts twice, sliding the light to the right of centre and back (6:54-7:08 and 7:42-7:56)."
+  },
+  {
+   "start": 476.0,
+   "end": 690.0,
+   "text": "Held steady again, the light sits clearly above the wire now, the gap still slowly widening; the colour flicker continues."
+  },
+  {
+   "start": 690.0,
+   "end": 900.17,
+   "text": "Late on, the light sits well above the wire with fainter points nearby; the camera twice shifts it into the left third (13:30, 14:42)."
+  }
+ ],
+ "notes": "Review tool's old auto-crop 608:698:0:382 (live has no crop; tool fixed) keeps mostly the privacy-blurred bottom; the light and wires are in the top third. No black bars: crop should be cleared or moved up."
+}

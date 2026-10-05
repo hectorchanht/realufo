@@ -1,0 +1,51 @@
+{
+ "id": "DOW-UAP-PR078",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 139.5,
+   "text": "Black-and-white infrared view over a streaky grey surface, darker at centre. A faint white dot drifts near the crosshair, mostly above and left of it."
+  },
+  {
+   "start": 139.6,
+   "end": 169.7,
+   "text": "A blue box opens around the crosshair, its label counting down from 21M to 17M; the dot wanders inside it, mostly left of the crosshair."
+  },
+  {
+   "start": 169.8,
+   "end": 190.7,
+   "text": "The box becomes corner brackets that spread out and vanish; the dot swings to the upper right and back, then bobs around the crosshair."
+  },
+  {
+   "start": 190.8,
+   "end": 208.3,
+   "text": "A blue box labelled 15M reopens; the dot swings far to the right and back, then circles the crosshair inside the box."
+  },
+  {
+   "start": 208.4,
+   "end": 224.7,
+   "text": "Brackets close in on the dot and a small blue marker locks onto it; the dot now sits on the crosshair."
+  },
+  {
+   "start": 224.8,
+   "end": 251.3,
+   "text": "The picture switches to an even, flat grey; the bright dot stays on the crosshair with its blue marker."
+  },
+  {
+   "start": 251.4,
+   "end": 253.5,
+   "text": "The dot slides off the crosshair toward the lower right while the marker stays behind."
+  },
+  {
+   "start": 253.65,
+   "end": 254.75,
+   "text": "The picture turns grainy, flashes white and black, then the streaky, dark-centred view returns."
+  },
+  {
+   "start": 254.77,
+   "end": 298.6,
+   "text": "The white dot shows only now and then, fainter, wandering around the crosshair as the sensor drifts."
+  }
+ ],
+ "notes": "Official video description is a copy of PR077's: no second object crossing the top-right corner at 03:15-03:17 is visible in this file. Here the tracking box appears twice (2:20-2:50 and 3:11-3:28) and the view switches to flat grey at 3:45."
+}

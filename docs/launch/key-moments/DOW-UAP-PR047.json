@@ -1,0 +1,31 @@
+{
+ "id": "DOW-UAP-PR047",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 4.0,
+   "text": "Wide infrared view: crosshair, red ring and corner brackets over grey, lighter at top; a small bright spot drifts right near the right edge."
+  },
+  {
+   "start": 4.05,
+   "end": 7.0,
+   "text": "The view jumps to an even grey; a tiny speck passes above the ring from right to left, then settles inside it."
+  },
+  {
+   "start": 7.05,
+   "end": 7.45,
+   "text": "A few dark frames as the sensor zooms in; the corner brackets disappear."
+  },
+  {
+   "start": 8.12,
+   "end": 95.5,
+   "text": "Three small white oval spots in a tight row sit just above the ring and wander around above the crosshair, keeping the same spacing."
+  },
+  {
+   "start": 96.5,
+   "end": 119.67,
+   "text": "The row of three drops to crosshair level and hovers near the ring's left side, dipping below it around 1:52, then back above."
+  }
+ ],
+ "notes": ""
+}

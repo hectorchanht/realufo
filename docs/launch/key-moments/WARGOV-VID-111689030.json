@@ -1,0 +1,51 @@
+{
+ "id": "WARGOV-VID-111689030",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 5.75,
+   "text": "IR view looking down at a vessel on the sea, crosshair on it; green overlay lines and many black boxes mask parts of the image."
+  },
+  {
+   "start": 5.28,
+   "end": 5.72,
+   "text": "A small white dot rises from the left side to the green horizon line, left of the vessel, in under 0.5 s: use frame step."
+  },
+  {
+   "start": 5.77,
+   "end": 13.95,
+   "text": "White, black and noisy frames as the view switches: a wider view, the vessel again, then it slides off lower left at 12 s."
+  },
+  {
+   "start": 14.0,
+   "end": 44.5,
+   "text": "Darker view, pale ring upper left. From 0:19 a tiny white dot enters along the top edge, drifts left and down, then wanders faintly."
+  },
+  {
+   "start": 44.55,
+   "end": 75.4,
+   "text": "The image turns flat grey. From 0:49 a small white dot rises from lower left toward the crosshair, then roams left of it."
+  },
+  {
+   "start": 75.45,
+   "end": 115.9,
+   "text": "Zoom in: grainier picture, larger dot roaming the left half; low left near 1:28, near the top at 1:32 and 1:39, by the crosshair 1:42."
+  },
+  {
+   "start": 115.95,
+   "end": 127.4,
+   "text": "Second zoom: noisier image and a bigger white oval, wandering left of the crosshair between the upper left and the horizon line."
+  },
+  {
+   "start": 127.45,
+   "end": 132.35,
+   "text": "A black mask covers right of centre. A blue square frames the crosshair 2:09–2:11 as the oval climbs past it and out the top."
+  },
+  {
+   "start": 135.0,
+   "end": 137.37,
+   "text": "The view changes, flashes white, then shows a bright band across the top as the clip ends."
+  }
+ ],
+ "notes": ""
+}

@@ -1,0 +1,61 @@
+{
+ "id": "DOW-UAP-PR105",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 15.0,
+   "text": "Infrared view over grey clouds with a crosshair, corner brackets and black redaction boxes. A small light spot drifts upper right of the crosshair."
+  },
+  {
+   "start": 15.1,
+   "end": 18.0,
+   "text": "The picture breaks into black blocks, almost fully black at 15.1 s, and clears over about 3 s."
+  },
+  {
+   "start": 36.0,
+   "end": 43.0,
+   "text": "The spot drifts far left of the crosshair, about a sixth of the frame from the left edge, then back toward the centre."
+  },
+  {
+   "start": 43.0,
+   "end": 53.0,
+   "text": "The spot swings across to the right, past the right corner brackets, and hangs there before returning to the centre."
+  },
+  {
+   "start": 53.0,
+   "end": 94.5,
+   "text": "Back near the crosshair, the spot often shows as two light blobs, one above the other, with a faint dotted trail below."
+  },
+  {
+   "start": 70.12,
+   "end": 72.0,
+   "text": "A blocky pure-white streak flashes left of centre below the spot while block patterns smear the clouds at lower right; gone by 72 s."
+  },
+  {
+   "start": 94.58,
+   "end": 112.5,
+   "text": "The view zooms in. The blurrier spot drifts to the right edge and slips out of frame around 100 s and 111 s, then returns."
+  },
+  {
+   "start": 113.0,
+   "end": 125.65,
+   "text": "The spot comes back to the crosshair, swings right once more, then settles just right of it as a short vertical chain of blobs."
+  },
+  {
+   "start": 125.68,
+   "end": 128.2,
+   "text": "Zoom out: tall clouds above a low cloud layer, the spot a tiny dot just above the crosshair. Then the picture flashes dark and bright."
+  },
+  {
+   "start": 128.25,
+   "end": 259.2,
+   "text": "Wide, slanting view down onto a vast field of small cloud tops. The scene holds for two minutes with no object."
+  },
+  {
+   "start": 259.2,
+   "end": 299.53,
+   "text": "The sensor whips across in a blur, then pans over broken clouds against darker sky, ending on a field of cloud tops. No object visible."
+  }
+ ],
+ "notes": ""
+}

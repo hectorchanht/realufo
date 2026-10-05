@@ -1,0 +1,8 @@
+{"id": "DOW-UAP-PR069", "moments": [
+ {"start": 0.0, "end": 13.43, "text": "Infrared sensor view over broken grey clouds, with a crosshair, tilting horizon bars and black redaction boxes. The view pans and rolls across the cloud tops."},
+ {"start": 13.45, "end": 14.85, "text": "A small box appears below the crosshair, then grows around a small dark spot just below centre."},
+ {"start": 14.86, "end": 24.8, "text": "The box turns into two vertical bars that hold the dark spot just below the crosshair while clouds slide past and the picture dims and brightens."},
+ {"start": 24.8, "end": 26.9, "text": "A large dark cloud bank streaks through the view, then clears; the dark spot is back between the bars by 26.3 s."},
+ {"start": 27.0, "end": 29.0, "text": "The background turns to a darker textured surface. The dark spot slips down-right out of the bars, which widen, and drifts toward the lower right."},
+ {"start": 29.05, "end": 29.77, "text": "The dark spot is gone; at 29.55 s the display switches back to its plain search crosshair as the clip ends."}
+], "notes": "Black pillarbox bars left/right not cropped (crop None)."}

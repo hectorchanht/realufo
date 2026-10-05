@@ -1,0 +1,61 @@
+{
+ "id": "DOW-UAP-PR111",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 5.4,
+   "text": "Dark infrared view: steeply tilted horizon bar, crosshair, angle readout, irregular black redaction boxes. A bright cloud edge at upper right fades by 3 s."
+  },
+  {
+   "start": 2.5,
+   "end": 23.03,
+   "text": "A small bright dot emerges from the redaction near the top edge, left of centre, and drifts slowly right until a black box covers it."
+  },
+  {
+   "start": 5.5,
+   "end": 23.9,
+   "text": "The crosshair keeps turning into a small box that grows to a large frame, then back. Faint one-pixel specks drift near it around 7.5–9.5 s."
+  },
+  {
+   "start": 24.47,
+   "end": 35.1,
+   "text": "An arrow symbol appears upper left. At 25.3 s the redaction grows; a diamond marker, then a box, appear, with a readout falling from 72M."
+  },
+  {
+   "start": 35.13,
+   "end": 40.2,
+   "text": "The box shrinks to a tiny two-bar reticle below the centre circle as the horizon bar levels; the readout keeps falling to 50M."
+  },
+  {
+   "start": 40.2,
+   "end": 40.85,
+   "text": "The picture flickers dark, banded, then bright."
+  },
+  {
+   "start": 40.87,
+   "end": 42.84,
+   "text": "Two tall bars open around a faint dot at centre; the readout jumps to 398M, then 386M."
+  },
+  {
+   "start": 42.85,
+   "end": 45.7,
+   "text": "Another flicker, then a grainier picture: the bars spread to the frame edges and the readout drops to 81M, then 77M."
+  },
+  {
+   "start": 45.77,
+   "end": 49.47,
+   "text": "The bars snap back to the usual brackets with a diamond marker; the readout counts down from about 280M to 220M."
+  },
+  {
+   "start": 49.5,
+   "end": 49.97,
+   "text": "The markers vanish and the picture goes black for half a second, leaving only the horizon bar and angle readout."
+  },
+  {
+   "start": 50.0,
+   "end": 60.29,
+   "text": "Plain crosshair over the grainy background as the angle readout climbs from -14° to -25°, with a banded flash at 54.3 s. No object visible."
+  }
+ ],
+ "notes": "Low-resolution 640x480 source; the objects the summary describes are at most one-pixel specks, mostly unresolvable. Full-frame recheck: added the bright dot drifting along the top edge 2.5-23 s (cropped out before)."
+}

@@ -1,0 +1,36 @@
+{
+ "id": "DOW-UAP-PR112",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 3.33,
+   "text": "Infrared view with crosshair, 'N' marker and redaction boxes. A small bright blob with a dark rim drifts from left of the crosshair to above."
+  },
+  {
+   "start": 3.37,
+   "end": 11.82,
+   "text": "The background turns grainy and the blob slides to just right of the crosshair, where it stays, bobbing slightly."
+  },
+  {
+   "start": 7.58,
+   "end": 8.33,
+   "text": "A second, tiny bright spot crosses below the crosshair from left edge to right edge, behind the left redaction box, in about 0.8 s."
+  },
+  {
+   "start": 11.85,
+   "end": 12.45,
+   "text": "The picture flashes white, dark, then white; in the first white frame the blob shows as a short horizontal capsule outline right of centre."
+  },
+  {
+   "start": 12.52,
+   "end": 12.92,
+   "text": "In the washed-out view a small outlined oval moves right to left across the lower half, leaving past the left redaction box at 12.9 s."
+  },
+  {
+   "start": 12.95,
+   "end": 20.9,
+   "text": "Crosshair over plain grey with no object. The picture flashes white at 15 s, stays dark until 16.2 s, and washes out white 18.8–19.7 s."
+  }
+ ],
+ "notes": ""
+}

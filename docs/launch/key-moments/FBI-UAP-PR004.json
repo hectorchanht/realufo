@@ -1,0 +1,9 @@
+{"id": "FBI-UAP-PR004", "moments": [
+ {"start": 0.0, "end": 0.85, "text": "The phone swings up toward the trees; motion blur turns two lights above them into short red streaks."},
+ {"start": 0.9, "end": 9.0, "text": "Wide view of a backyard: tall trees against pale sky, fence and lawn below. Two small orange lights, one above the other, drift slowly left."},
+ {"start": 9.06, "end": 15.0, "text": "The camera zooms in on the two orange-red lights, one above the other, each glowing with a brighter centre against the sky."},
+ {"start": 15.0, "end": 20.0, "text": "Both lights hang just above the treetops beside a trunk; the upper one slips behind leaves at 0:17.5, the lower one at 0:20."},
+ {"start": 20.0, "end": 36.2, "text": "The camera wanders through dark foliage; the lights are mostly hidden, glimpsed only as faint red dots or streaks between branches."},
+ {"start": 36.3, "end": 44.0, "text": "A blurred house wall with a bright light on it fills the left foreground; two small red dots still show above the trees at 0:41-0:43."},
+ {"start": 44.2, "end": 49.38, "text": "The camera drops to the fence, lawn and driveway, and the clip ends pointing at the ground."}
+], "notes": "Missing stored crop: upright 606 px strip inside black side bars (content crop 606:1080:656:0); auto cropdetect fails on the dark frames, so assets.crop should be set by hand."}

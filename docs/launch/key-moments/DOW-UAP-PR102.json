@@ -1,0 +1,6 @@
+{"id": "DOW-UAP-PR102", "moments": [
+ {"start": 0.0, "end": 5.0, "text": "IR view with a magenta crosshair over streaky grey sea; a tiny white speck sits just below right of the crosshair."},
+ {"start": 5.0, "end": 18.3, "text": "The speck drifts right of the crosshair, then climbs steadily toward the top, leaving at the top edge by the black box at 18.3 s."},
+ {"start": 29.68, "end": 30.37, "text": "Black, grey and white frames flash around a rectangular inset as the sensor changes zoom (~0.7 s)."},
+ {"start": 30.4, "end": 36.8, "text": "Wider view: bright streaky water at the top fading to dark below; the centre inset glitches again near 34.3 s. No object in view."}
+], "notes": ""}

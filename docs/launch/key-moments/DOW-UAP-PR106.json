@@ -1,0 +1,21 @@
+{
+ "id": "DOW-UAP-PR106",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 2.7,
+   "text": "Infrared view of plain grey sky with a crosshair and four bracket bars. A small bright spot sits just below the top bar."
+  },
+  {
+   "start": 2.75,
+   "end": 3.85,
+   "text": "The crosshair and bars vanish, leaving a small square box at centre. The spot, now a short streak, darts up, then down beside the box."
+  },
+  {
+   "start": 3.88,
+   "end": 5.03,
+   "text": "The spot shoots up to the top edge and leaves the view at 3.95 s; only the box, which widens, remains until the end."
+  }
+ ],
+ "notes": "Clip is 5.0 s, summary says 11 s. Square IR picture inside black bars plus white pillarbox bars at far left/right; crop None, not cropped."
+}

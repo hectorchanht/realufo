@@ -1,0 +1,14 @@
+{"id": "DOW-UAP-PR098", "moments": [
+ {"start": 0.0, "end": 6.5, "text": "IR view with crosshair over a shoreline and a long pier-like structure; black boxes mask the edges. The view drifts off the shore by 6.5 s."},
+ {"start": 22.25, "end": 63.4, "text": "The image steps brighter and a faint white dash appears lower left of the crosshair; it wanders around the centre as the sensor follows."},
+ {"start": 63.52, "end": 65.2, "text": "A dark shape with a short smeared trail crosses the lower frame left to right in under 2 s, vanishing behind the lower-right black box."},
+ {"start": 81.0, "end": 118.0, "text": "Seen closer, the bright dash is a short row of two or three dots, drifting around the crosshair rather than held on it."},
+ {"start": 119.0, "end": 122.4, "text": "The dots are out of view; at 2:01.5 they slide in along the bottom edge, then sit right of the crosshair after a quick swing."},
+ {"start": 168.85, "end": 266.6, "text": "Black, blotchy and white frames for ~0.4 s, then a wider, brighter view with diagonal streaks and a dark curve at the left edge; the dots shrink to a speck."},
+ {"start": 266.68, "end": 300.0, "text": "Another glitch, then a closer view: one bright dot near the crosshair. Around 4:34 a dashed box reading 30M briefly frames it."},
+ {"start": 579.3, "end": 793.0, "text": "Clearest stretch: a tight cluster of two or three bright dots that the crosshair keeps chasing. At 9:55 a box reading 20M frames it."},
+ {"start": 804.05, "end": 857.6, "text": "The cluster is gone. After another glitch the view widens to bright streaks with a dark curve lower left; only faint specks remain."},
+ {"start": 857.68, "end": 959.2, "text": "A burst of white and black frames, then a closer view: the dots are back upper left and drift around the crosshair again."},
+ {"start": 959.25, "end": 1043.6, "text": "Zoom step: the dots merge into one larger bright spot below left of the crosshair; it later slips out near the bottom edge and back."},
+ {"start": 1043.65, "end": 1056.3, "text": "A last glitch, then a wider streaky view; a tiny spot sits just below the crosshair, then is lost as the image brightens to the end."}
+], "notes": ""}

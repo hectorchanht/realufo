@@ -1,0 +1,21 @@
+{
+ "id": "FBI-UAP-PR007",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 6.15,
+   "text": "Handheld thermal view, black-hot: grey sky under a dark cloud bank. Two small dark spots near the side edges drift slowly right against the cloud."
+  },
+  {
+   "start": 6.25,
+   "end": 6.9,
+   "text": "The view jumps: the cloud bank shifts up to a thin strip along the top, and both dark spots now sit higher."
+  },
+  {
+   "start": 6.95,
+   "end": 10.0,
+   "text": "The image turns grainy as the sensor adjusts; the two dark spots stay visible, keep their spacing and keep drifting slowly right."
+  }
+ ],
+ "notes": ""
+}

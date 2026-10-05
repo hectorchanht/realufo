@@ -1,0 +1,61 @@
+{
+ "id": "DOW-UAP-PR141",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 5.5,
+   "text": "Grey IR view of a curving dark channel between flat ground and bright pitted terrain, crosshair and black masking boxes; disclosure notice along the bottom."
+  },
+  {
+   "start": 5.5,
+   "end": 8.0,
+   "text": "The view pans: the channel slides off to the upper right, leaving plain grey ground. A tiny dark dot shows at the upper left."
+  },
+  {
+   "start": 8.0,
+   "end": 13.5,
+   "text": "Plain grey ground; the dark dot drifts around the crosshair: upper left at 9 s, just below at 11 s, lower right by 12.8 s."
+  },
+  {
+   "start": 13.55,
+   "end": 19.5,
+   "text": "Split screen: grey view left, pinkish colour view right. From 15.5 s a dark dot crosses the colour side from lower right toward upper left."
+  },
+  {
+   "start": 19.55,
+   "end": 27.3,
+   "text": "Grey full view for 2 s, then the split screen returns at 21.4 s; no dot stands out."
+  },
+  {
+   "start": 27.33,
+   "end": 77.3,
+   "text": "Long grey IR stretch over streaky ground; a small black box masks the spot just below the crosshair, and faint dark specks come and go."
+  },
+  {
+   "start": 77.33,
+   "end": 81.4,
+   "text": "Split screen again: a dark dot sits just above the crosshair on both halves, then slides left, leaving the grey side's left edge by 1:21."
+  },
+  {
+   "start": 81.4,
+   "end": 87.6,
+   "text": "Split screen with plain ground on both sides; the dot is gone."
+  },
+  {
+   "start": 87.63,
+   "end": 135.0,
+   "text": "Back to the full grey view: a tiny dark dot wanders near the crosshair, mostly left of it, often hard to see."
+  },
+  {
+   "start": 137.5,
+   "end": 145.0,
+   "text": "The view pans across a dark channel with bumpy banks, then along a broad dark band low in the frame."
+  },
+  {
+   "start": 145.0,
+   "end": 156.23,
+   "text": "Plain grey ground to the end; the dark band fades out at the bottom."
+  }
+ ],
+ "notes": ""
+}

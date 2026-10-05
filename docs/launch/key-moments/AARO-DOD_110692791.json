@@ -1,0 +1,14 @@
+{"id": "AARO-DOD_110692791", "moments": [
+ {"start": 0.0, "end": 55.9, "text": "Grey-scale infrared view from far off: dark plume puffs above a flat pale layer, a snowy summit on the horizon. Grey boxes hide text at the top."},
+ {"start": 55.95, "end": 60.1, "text": "The screen flashes white, black and grey, then shows a closer view of dark billowing plume clouds."},
+ {"start": 60.15, "end": 180.0, "text": "Zoomed on the snow-covered volcano summit: dark plume clouds roll across the lower slopes and dark smoke rises beside the crater."},
+ {"start": 180.05, "end": 316.0, "text": "The view moves closer to the crater, with a dark fan-shaped streak down the snowy slope; haze slowly thickens over the summit."},
+ {"start": 316.05, "end": 338.4, "text": "After a white flash, a wider view of the summit and plume, then the sensor swings into the plume clouds."},
+ {"start": 338.45, "end": 592.7, "text": "Zoomed into the plume: a small dark round spot, sometimes with a pale edge, drifts across dark and light patches of plume, often away from the crosshair."},
+ {"start": 599.05, "end": 612.8, "text": "The view goes soft: a large dark ring with a lighter centre sits around the crosshair, fading in and out."},
+ {"start": 613.05, "end": 685.9, "text": "A flat grey screen, then the view widens over dark, lumpy plume clouds seen from above."},
+ {"start": 686.0, "end": 689.9, "text": "The picture switches to colour for about 4 s: pink, then blue-tinted clouds."},
+ {"start": 690.05, "end": 692.4, "text": "Back to infrared, zoomed in: a bright white spot with a dark core sits just above the crosshair box on a plain grey background."},
+ {"start": 692.45, "end": 695.9, "text": "The screen flashes black, then stays plain white for about 3 s."},
+ {"start": 696.05, "end": 741.2, "text": "Infrared returns on a wide view of dark plume clouds, nearly still, until the clip ends."}
+], "notes": "Left ~15% of the frame is a flat grey strip (padding/redaction), not cropped."}

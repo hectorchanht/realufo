@@ -1,0 +1,61 @@
+{
+ "id": "DOW-UAP-PR083",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 5.4,
+   "text": "Black-and-white sensor view looking down at an angle on a city: a large walled park with trees in the middle, streets and pylons around it."
+  },
+  {
+   "start": 5.43,
+   "end": 27.3,
+   "text": "After a brief black frame the view widens over the dense city and drifts across rooftops toward bare hills."
+  },
+  {
+   "start": 27.4,
+   "end": 48.4,
+   "text": "A small dark round spot appears at the left; as the view moves onto bare ridges, the sensor keeps it just left of the crosshair."
+  },
+  {
+   "start": 48.5,
+   "end": 85.0,
+   "text": "The sensor zooms in; the picture flattens to grey over rocky slopes, the dark spot hovering left of the crosshair, sometimes near the edge."
+  },
+  {
+   "start": 85.0,
+   "end": 125.2,
+   "text": "Over plain grey ground the spot looks larger, a dark disc with a light rim, wandering around the crosshair."
+  },
+  {
+   "start": 125.3,
+   "end": 147.6,
+   "text": "The sensor cycles its zoom over flat grey haze, with white and black flashes. No spot visible."
+  },
+  {
+   "start": 147.7,
+   "end": 201.1,
+   "text": "A small light round spot shows below the crosshair, then circles close to it as cloud tops pass behind."
+  },
+  {
+   "start": 201.2,
+   "end": 234.1,
+   "text": "The picture turns blue-tinted; only a faint blurry smudge left of the crosshair remains."
+  },
+  {
+   "start": 234.5,
+   "end": 249.5,
+   "text": "Back in grey, a light spot sits on the crosshair, drifts out to the left edge, then returns beside the N symbol."
+  },
+  {
+   "start": 250.0,
+   "end": 270.1,
+   "text": "The spot is gone; the picture dims and goes black several times as the sensor changes settings."
+  },
+  {
+   "start": 270.2,
+   "end": 274.07,
+   "text": "A tiny light dot enters at the right edge and the sensor swings to bring it toward the centre."
+  }
+ ],
+ "notes": "No black bars; redaction boxes over HUD. No object found over the city at 0:09-0:25 (official text says one enters there); the tracked spot first shows at 0:27."
+}

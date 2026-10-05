@@ -1,0 +1,21 @@
+{
+ "id": "DOW-UAP-PR142",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 5.2,
+   "text": "Steady IR view across hazy water to a low bright shoreline, two tall thin structures right of the crosshair, a small dark shape above it."
+  },
+  {
+   "start": 5.22,
+   "end": 8.6,
+   "text": "A small white dash with a faint trail enters at the upper left edge, crosses left to right, sinking slightly, exits right after 3.4 s."
+  },
+  {
+   "start": 8.6,
+   "end": 11.7,
+   "text": "The view stays fixed on the shoreline with nothing moving until the clip ends."
+  }
+ ],
+ "notes": "Official text says 14 s; the file is 11.7 s, but the transit times match."
+}

@@ -1,0 +1,12 @@
+{"id": "DOW-UAP-PR100", "moments": [
+ {"start": 0.0, "end": 7.6, "text": "IR view with a cyan crosshair looking down at a hazy grey sea surface; black boxes mask the corners."},
+ {"start": 7.65, "end": 22.7, "text": "After ~0.4 s of dark and flat grey frames the view jumps closer: rippled water framed by curved light bands at the sides."},
+ {"start": 22.75, "end": 64.0, "text": "The bands vanish and a small white shape with short arms shows below left of the crosshair; it wanders around the centre, mostly to its left."},
+ {"start": 64.1, "end": 69.9, "text": "The display switches to a blue-tinted daylight camera: a small dark shape sits right on the crosshair."},
+ {"start": 70.0, "end": 73.6, "text": "Back to IR: a bright white glow fills the centre and the shape is no longer visible."},
+ {"start": 96.24, "end": 133.0, "text": "A square track box locks on the crosshair beside the small white spot; it breaks up at 1:42, returns, and drops again at 2:12.8."},
+ {"start": 133.8, "end": 146.0, "text": "The spot slips away right of the crosshair, reaching the right edge, while the sensor chases it back toward centre."},
+ {"start": 166.85, "end": 226.6, "text": "Zoom step: the white shape is now a larger blotch with short arms, held below or left of the crosshair; at 3:29 it looks rounder."},
+ {"start": 226.67, "end": 271.0, "text": "The view widens again; from 3:51 the track box is back on the crosshair while large white patches slide through the lower frame."},
+ {"start": 271.0, "end": 285.5, "text": "The box is gone and the picture turns blocky and speckled; the crosshair breaks up and no object stands out to the end."}
+], "notes": ""}

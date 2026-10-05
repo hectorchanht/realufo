@@ -1,0 +1,11 @@
+{"id": "DOW-UAP-PR073", "moments": [
+ {"start": 0.0, "end": 4.95, "text": "Black screen until 5 s."},
+ {"start": 4.97, "end": 9.3, "text": "Infrared view of plain grey sky inside corner brackets, heavily redacted. A tiny dot in a small box drifts from upper left onto the crosshair as the sensor centres it."},
+ {"start": 9.42, "end": 11.5, "text": "A bright flash, then the brackets drop away; the tiny object sits in a small box at the crosshair against lighter grey."},
+ {"start": 11.55, "end": 38.0, "text": "The view zooms in: the object is a bright shape with crossed glints and a short bright trail to its right, held in the box as zoom and contrast change."},
+ {"start": 38.0, "end": 42.0, "text": "The glints turn from a slanted cross to a flat horizontal shape, so the object appears to rotate in the box."},
+ {"start": 42.2, "end": 74.5, "text": "A second small bright dot enters at the top centre and drifts down-right across the view, slipping behind the lower-right black box at 74.5 s."},
+ {"start": 76.0, "end": 80.1, "text": "The first object fades from the box; by 78 s the box is gone and the view turns grainy around a dashed crosshair."},
+ {"start": 80.15, "end": 80.8, "text": "The picture flashes bright; the second dot reappears at lower right and climbs to the top centre, gone in about 0.7 s."},
+ {"start": 80.87, "end": 88.57, "text": "Contrast flickers bright and dark and a bright band appears along the bottom; the picture cuts to black at 83.5 s."}
+], "notes": "Portrait 608x1080 frame: the picture is a small band in the middle, large black bars above and below not cropped (crop None)."}

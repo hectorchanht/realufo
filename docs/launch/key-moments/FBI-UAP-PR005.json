@@ -1,0 +1,41 @@
+{
+ "id": "FBI-UAP-PR005",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 3.0,
+   "text": "Digital recreation fades in from black: a rocky desert ridge on the left, a cactus near its foot, under a deep blue sky with faint specks."
+  },
+  {
+   "start": 3.1,
+   "end": 5.4,
+   "text": "A small orange light glows up right of centre, then fades out."
+  },
+  {
+   "start": 7.3,
+   "end": 22.3,
+   "text": "It keeps returning in pulses, at 0:07, 0:11, 0:15 and 0:20, each time larger, a round glossy orange shape, fading out in between."
+  },
+  {
+   "start": 24.0,
+   "end": 28.5,
+   "text": "The orange shape comes back at its largest and now stays lit."
+  },
+  {
+   "start": 28.6,
+   "end": 36.5,
+   "text": "Small red lights appear at its right side and step outward to the right in a short row."
+  },
+  {
+   "start": 36.5,
+   "end": 45.0,
+   "text": "The orange shape dims and turns see-through, fading away by about 0:45, while a row of three red lights keeps stepping right."
+  },
+  {
+   "start": 45.0,
+   "end": 53.1,
+   "text": "The three red lights move on in small jumps toward the right edge; the last one leaves at 0:53."
+  }
+ ],
+ "notes": "Digital recreation (FBI, 2026), not original footage. Review tool's old auto-crop 1920:850:0:0 (live has no crop; tool fixed) trims the dark brush foreground (there are no black bars)."
+}

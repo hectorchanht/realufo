@@ -1,0 +1,36 @@
+{
+ "id": "DOW-UAP-PR084",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 25.08,
+   "text": "Grey-scale camera looking down on broken white cloud with dark patches of ground and buildings. North marker at right; black boxes hide the overlay text."
+  },
+  {
+   "start": 25.08,
+   "end": 27.0,
+   "text": "A tiny bright spot enters at the right edge just above the lower-right black box and crosses diagonally to the left edge, over rooftops upper left. About 2 s."
+  },
+  {
+   "start": 90.7,
+   "end": 91.2,
+   "text": "The picture breaks into vertical stripes, then jumps to a closer view of rooftops and streets between the clouds."
+  },
+  {
+   "start": 127.0,
+   "end": 140.5,
+   "text": "The signal breaks up with vertical stripes at the edges; the view jumps several times between cloud and town."
+  },
+  {
+   "start": 140.5,
+   "end": 186.3,
+   "text": "The camera looks across the cloud tops at a shallow angle: rows of cloud, almost no ground, with stripe glitches coming and going."
+  },
+  {
+   "start": 186.5,
+   "end": 253.83,
+   "text": "After a brief breakup the view looks down again through broken cloud at roads and buildings until the clip ends."
+  }
+ ],
+ "notes": "Review tool's old auto-crop 1070:900:422:180 (live has no crop; tool fixed) keeps a black band along the bottom (~180 px); picture ends near y=900."
+}

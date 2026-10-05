@@ -1,0 +1,36 @@
+{
+ "id": "DOW-UAP-PR110",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 3.4,
+   "text": "Infrared view of grey sky, light at left, dark at right, with crosshair and bracket bars. A faint dark dot sits right of centre."
+  },
+  {
+   "start": 3.5,
+   "end": 9.0,
+   "text": "As the sensor pans, the dark dot wanders: to the upper right, back past the crosshair, below it, then up and left of centre."
+  },
+  {
+   "start": 9.02,
+   "end": 11.9,
+   "text": "A small box replaces the crosshair. The dot skirts around it, a large box closes over the dot, then shrinks back to a small box."
+  },
+  {
+   "start": 11.95,
+   "end": 20.75,
+   "text": "A tiny two-bar reticle holds the dot at centre while it slowly grows into a dark blob with a small bump at its upper right."
+  },
+  {
+   "start": 20.78,
+   "end": 21.22,
+   "text": "The reticle splits and the dark shape, smeared, shoots to the upper right and leaves the right edge in about 0.4 s."
+  },
+  {
+   "start": 21.31,
+   "end": 22.53,
+   "text": "The picture darkens and the two bars spread wide over empty grey sky until the end."
+  }
+ ],
+ "notes": "Clip is 22.5 s, summary says 27 s."
+}

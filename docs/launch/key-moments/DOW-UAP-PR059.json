@@ -1,0 +1,14 @@
+{"id": "DOW-UAP-PR059", "moments": [
+ {"start": 0.0, "end": 1.4, "text": "Infrared view framed by black redaction boxes: after a blank grey start, a bright light with a long reflection below flares just upper left of the crosshair."},
+ {"start": 1.4, "end": 7.3, "text": "A dark offshore structure with cranes stands on the water right of the crosshair, reflected below, and drifts off the right edge."},
+ {"start": 7.3, "end": 21.9, "text": "After a blank grey moment the view shows a grey textured surface with dark patches; a small bright spot darts around the frame."},
+ {"start": 22.0, "end": 38.0, "text": "A square box appears at the centre; the bright spot loops around it, passing below, far left and then above it."},
+ {"start": 38.2, "end": 95.2, "text": "Small cyan brackets lock onto the spot beside a dark round patch upper right of the crosshair, and it stays there."},
+ {"start": 95.3, "end": 140.0, "text": "After a blank frame the sensor zooms in: the bracketed spot sits upper right of the crosshair on a smooth bright background."},
+ {"start": 140.0, "end": 186.0, "text": "The sensor zooms in further; the bracketed spot grows into a small white shape."},
+ {"start": 186.1, "end": 218.6, "text": "Another zoom step: the white shape shows a pale streak hanging below it, holding upper right of the crosshair."},
+ {"start": 218.65, "end": 218.86, "text": "The shape blurs into a bright blob that sweeps left across the upper half and out of the frame in about 0.2 s. Use frame step."},
+ {"start": 221.4, "end": 237.0, "text": "The picture goes black, zooms out to the textured surface, then flicks through plain grey views with no spot."},
+ {"start": 237.7, "end": 275.4, "text": "Zoomed in again, the bracketed spot is back upper right of the crosshair and grows into the white shape with a streak below."},
+ {"start": 275.5, "end": 291.1, "text": "The shape is gone; the view goes dark, zooms out and cycles through bright and grey views to the end."}
+], "notes": ""}

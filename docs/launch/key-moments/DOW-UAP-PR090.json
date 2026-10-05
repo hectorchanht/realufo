@@ -1,0 +1,9 @@
+{"id": "DOW-UAP-PR090", "moments": [
+ {"start": 0.0, "end": 3.3, "text": "Grey-scale infrared view looking down at farmland: fields, a canal, tree lines and walled compounds. Round white patches dot the fields."},
+ {"start": 3.3, "end": 21.8, "text": "The sensor zooms in and pans steadily across the fields; the white patches move along with the ground."},
+ {"start": 22.0, "end": 68.3, "text": "After a white flash, a much closer view: fields, tree lines and buildings slide past as the sensor swings, and bright white oval patches pass through the frame."},
+ {"start": 68.3, "end": 69.3, "text": "An elongated bright white blob enters at the lower left and slides up to the top of the frame in about 1 s, faster than the ground."},
+ {"start": 74.4, "end": 79.3, "text": "The view zooms far out: a wide grid of fields and compounds dotted with many small white spots."},
+ {"start": 96.7, "end": 136.6, "text": "A steady closer view of two fields split by a dark diagonal ditch."},
+ {"start": 207.4, "end": 252.9, "text": "The view settles on a square walled enclosure in smooth grey ground."}
+], "notes": "Mid-grey pillarbox bars on both sides are not cropped (cropdetect only removes black)."}

@@ -1,0 +1,36 @@
+{
+ "id": "DOW-UAP-PR063",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 49.7,
+   "text": "Colour sensor view with crosshair over flat dark scrubland crossed by dirt tracks and a straight road; the sensor pans so the ground streams past."
+  },
+  {
+   "start": 1.5,
+   "end": 41.2,
+   "text": "A tiny dark dot, only a few pixels wide, stays close to the crosshair, mostly just left of it, while the ground streams by."
+  },
+  {
+   "start": 49.77,
+   "end": 51.1,
+   "text": "The sensor swings away: the picture smears into blurred streaks, then settles on steep mountain slopes."
+  },
+  {
+   "start": 51.1,
+   "end": 272.7,
+   "text": "A wider view of steep, ridged mountain slopes in bluish light holds on the same area, drifting slowly."
+  },
+  {
+   "start": 272.77,
+   "end": 273.05,
+   "text": "The picture smears, goes black for 5 frames, then flashes white. Use frame step."
+  },
+  {
+   "start": 273.07,
+   "end": 289.2,
+   "text": "A wider view of brown, deeply folded mountain ridges follows, drifting slowly until the end."
+  }
+ ],
+ "notes": ""
+}

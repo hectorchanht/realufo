@@ -1,0 +1,31 @@
+{
+ "id": "DOW-UAP-PR125",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 6.13,
+   "text": "Handheld recording of an infrared screen: grainy grey background, a small dark spot held in a box at the crosshair centre."
+  },
+  {
+   "start": 6.17,
+   "end": 9.35,
+   "text": "The box drops and the dark spot drifts left away from the crosshair, fading as it nears the left side."
+  },
+  {
+   "start": 9.4,
+   "end": 15.9,
+   "text": "Only the empty crosshair and a small white marker remain; no spot is visible."
+  },
+  {
+   "start": 15.98,
+   "end": 22.9,
+   "text": "A faint dark spot appears right of the crosshair, grows darker, and the view pans to bring it onto the crosshair."
+  },
+  {
+   "start": 22.9,
+   "end": 28.63,
+   "text": "A tracking box locks onto the spot, which stays boxed at the crosshair to the end."
+  }
+ ],
+ "notes": ""
+}

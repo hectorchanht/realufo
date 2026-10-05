@@ -1,0 +1,61 @@
+{
+ "id": "DOW-UAP-PR113",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 6.4,
+   "text": "Grainy black-and-white view down onto rugged terrain, overlaid with a numbered pitch ladder, a circle reticle and black redaction boxes."
+  },
+  {
+   "start": 6.5,
+   "end": 13.4,
+   "text": "The overlay changes to a long vertical line, then to stacked numbered rungs that climb as the view sweeps over blurred, hazy ground."
+  },
+  {
+   "start": 13.55,
+   "end": 13.7,
+   "text": "Two small dark spots appear right of centre, below the top redaction bar, and streak down-left past the ladder. 5 frames (~0.15 s): frame step."
+  },
+  {
+   "start": 15.7,
+   "end": 17.1,
+   "text": "A long dark diagonal streak enters at the top, right of centre, and sweeps down to the lower left, gone by 17.1 s."
+  },
+  {
+   "start": 18.27,
+   "end": 82.33,
+   "text": "The footage restarts from about 12 s and steps through frame by frame."
+  },
+  {
+   "start": 54.4,
+   "end": 56.9,
+   "text": "Frame-by-frame, the two dark spots enter right of the top rung and step down-left across the tilted ladder toward its left end."
+  },
+  {
+   "start": 82.37,
+   "end": 98.43,
+   "text": "The footage restarts again from about 12 s at slower speed."
+  },
+  {
+   "start": 98.47,
+   "end": 114.43,
+   "text": "Much larger black boxes cover most of the view while the slow replay zooms in on the centre of the ladder."
+  },
+  {
+   "start": 106.3,
+   "end": 108.3,
+   "text": "Zoomed in, the two dark spots show as blurry blobs drifting down-left from the upper right toward the diamond marker on the ladder."
+  },
+  {
+   "start": 133.67,
+   "end": 175.79,
+   "text": "The video holds on one enlarged frame: two dark blobs, one upper right and one left of centre, above the diamond marker and ladder rungs."
+  },
+  {
+   "start": 175.82,
+   "end": 176.37,
+   "text": "The picture breaks into noise and turns flat grey as the clip ends."
+  }
+ ],
+ "notes": "First frame carries a video-player 'Tracking' progress bar overlay."
+}

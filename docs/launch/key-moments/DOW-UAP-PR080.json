@@ -1,0 +1,61 @@
+{
+ "id": "DOW-UAP-PR080",
+ "moments": [
+  {
+   "start": 12.3,
+   "end": 71.8,
+   "text": "After 12 s of black screen: infrared view looking down on a rippled sea with a large dark patch; the sensor holds steady."
+  },
+  {
+   "start": 77.35,
+   "end": 81.5,
+   "text": "A bright shape with a dark smudge beside it enters at the top right edge; the sensor follows it down toward the centre-right."
+  },
+  {
+   "start": 81.55,
+   "end": 131.8,
+   "text": "The sensor whips away (a smeared frame, a white flash), then zooms in on a small bright shape trailing a dark wake on the water."
+  },
+  {
+   "start": 132.3,
+   "end": 194.8,
+   "text": "The view moves to a large ship seen from above at the left of the frame, with churned water beside it."
+  },
+  {
+   "start": 165.83,
+   "end": 166.07,
+   "text": "A tiny dark dash streaks right to left along the bottom right of the frame, gone in about 0.25 s."
+  },
+  {
+   "start": 192.13,
+   "end": 193.0,
+   "text": "A tiny dark dash crosses from the top edge on the right down to the lower left past the ship; then the view changes."
+  },
+  {
+   "start": 200.47,
+   "end": 201.07,
+   "text": "Over plain grey water, another dark dash streaks from the upper right to the bottom left edge in about half a second."
+  },
+  {
+   "start": 216.37,
+   "end": 216.57,
+   "text": "A dark dash flicks across the lower right toward the bottom edge, visible for about 0.2 s."
+  },
+  {
+   "start": 220.77,
+   "end": 221.53,
+   "text": "A dark dash enters at the right side and streaks down-left to the bottom edge below the crosshair."
+  },
+  {
+   "start": 242.43,
+   "end": 242.6,
+   "text": "A dark dash streaks leftward across the lower right of the frame, about 0.2 s."
+  },
+  {
+   "start": 263.2,
+   "end": 271.13,
+   "text": "Two more dark dashes skim the bottom left corner, at 4:23 and 4:31, each visible for a few frames."
+  }
+ ],
+ "notes": "0:00-0:12 black. Transits are tiny dark dashes lasting 0.2-0.9 s; use frame step. A second bottom-left dash at 4:31 is not in the official list."
+}

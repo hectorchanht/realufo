@@ -1,0 +1,8 @@
+{"id": "DOW-UAP-PR101", "moments": [
+ {"start": 0.0, "end": 13.1, "text": "IR view with a cyan crosshair looking down on scattered white clouds over a darker sea; the crosshair sits on a clear patch."},
+ {"start": 13.15, "end": 29.1, "text": "After a dark frame the view zooms in: clouds drift past, and a faint short dash hovers just left of the crosshair."},
+ {"start": 29.13, "end": 29.5, "text": "White, black and flat grey frames for ~0.4 s as the sensor zooms in again."},
+ {"start": 29.54, "end": 32.6, "text": "A long curved line of bright dots appears lower right and slides up-left across the crosshair, leaving the top-left edge by 32.6 s."},
+ {"start": 35.8, "end": 56.0, "text": "The line re-enters at the upper left and the sensor swings onto it; it then holds in the lower frame as cloud banks slide through."},
+ {"start": 57.0, "end": 104.5, "text": "The line of dots stays just below the crosshair, thinning and fading against the sea and clouds until only a faint arc is left."}
+], "notes": ""}

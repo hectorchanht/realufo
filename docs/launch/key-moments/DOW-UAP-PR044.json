@@ -1,0 +1,66 @@
+{
+ "id": "DOW-UAP-PR044",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 5.3,
+   "text": "Infrared view looking down at the sea: a tanker ship sits small at the crosshair inside a dark ring; black masking blocks frame the picture."
+  },
+  {
+   "start": 5.38,
+   "end": 6.4,
+   "text": "The screen flashes black and white as the sensor changes setting, then returns zoomed in on the tanker."
+  },
+  {
+   "start": 6.4,
+   "end": 28.0,
+   "text": "Close view of the tanker from above: deck pipes, white tanks and the stern superstructure, with a wake trailing lower left."
+  },
+  {
+   "start": 28.0,
+   "end": 31.5,
+   "text": "The sensor pans down and right off the tanker to open grey sea; a dark circular patch stays around the crosshair."
+  },
+  {
+   "start": 34.0,
+   "end": 56.3,
+   "text": "A small bright dot sits just below the crosshair inside the dark patch; the sensor keeps it there for the next three minutes."
+  },
+  {
+   "start": 56.35,
+   "end": 57.4,
+   "text": "Brief black, white and flat grey flashes as the sensor cycles contrast and zoom; it happens again at 1:13."
+  },
+  {
+   "start": 199.6,
+   "end": 203.4,
+   "text": "A square box reticle appears around the crosshair, grows larger, then snaps back small with a short readout to its right."
+  },
+  {
+   "start": 203.4,
+   "end": 253.0,
+   "text": "The dot drifts away from the box and wanders around it: lower left, then upper right, then lower right."
+  },
+  {
+   "start": 254.2,
+   "end": 264.6,
+   "text": "The dot slides left past the box, drops to the bottom edge of the frame, then climbs back up to the box's upper left."
+  },
+  {
+   "start": 266.02,
+   "end": 291.0,
+   "text": "The box reticle disappears and the north marker jumps to the top; the dot drifts up and left to the upper-left edge."
+  },
+  {
+   "start": 291.25,
+   "end": 299.8,
+   "text": "The view jerks, flashes white and black, then shows a flat grey scene with a dark ring at centre; the dot is gone."
+  },
+  {
+   "start": 299.8,
+   "end": 311.9,
+   "text": "After another flash, the last 12 seconds show a plain grey gradient darkening toward the bottom, with no object."
+  }
+ ],
+ "notes": "Official description says 00:00-00:30 'No content', but the footage shows a tanker ship for the first ~30 s. The large dark ring at the crosshair is present throughout (including on the ship) and is not the tracked object; the object is the small bright dot."
+}

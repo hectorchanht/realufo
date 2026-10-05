@@ -1,0 +1,86 @@
+{
+ "id": "DOW-UAP-PR067",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 44.0,
+   "text": "Black-and-white infrared view down on the sea, purple crosshair and north marker. A surfaced submarine sits near the crosshair as the sensor follows it."
+  },
+  {
+   "start": 45.35,
+   "end": 52.0,
+   "text": "A small bright dot enters at the left edge, just above the lower-left redaction box, and moves right along the bottom of the frame."
+  },
+  {
+   "start": 49.0,
+   "end": 61.5,
+   "text": "The sensor pans right after the dot and the submarine leaves at the upper left; the dot then drifts left and up toward the crosshair."
+  },
+  {
+   "start": 57.72,
+   "end": 66.2,
+   "text": "A second bright dot enters at the lower right, crosses up and to the left below the first, and leaves at the left edge."
+  },
+  {
+   "start": 62.0,
+   "end": 68.4,
+   "text": "The first dot turns and moves right across the frame, leaving at the right edge."
+  },
+  {
+   "start": 69.22,
+   "end": 72.4,
+   "text": "A bright dot enters at the left edge, above centre, and moves right to just above the crosshair."
+  },
+  {
+   "start": 72.4,
+   "end": 93.0,
+   "text": "The sensor keeps the dot close to the crosshair, at times hidden behind it. The picture blinks dark briefly three times."
+  },
+  {
+   "start": 93.0,
+   "end": 97.0,
+   "text": "The dot slides down to the lower right; the picture flickers and the view zooms out to a wide, smooth grey sea."
+  },
+  {
+   "start": 97.0,
+   "end": 114.1,
+   "text": "In the wide view the submarine is a tiny shape, first right of the crosshair, then left of it."
+  },
+  {
+   "start": 114.17,
+   "end": 130.6,
+   "text": "After a brief flicker the view zooms back in on the submarine, now lying left to right just below the crosshair."
+  },
+  {
+   "start": 130.7,
+   "end": 134.0,
+   "text": "A small bright dot appears near the right edge, below centre, and moves up and left to the submarine."
+  },
+  {
+   "start": 134.5,
+   "end": 139.7,
+   "text": "The view pans left; the submarine slides right and leaves at the right edge, leaving open sea."
+  },
+  {
+   "start": 166.6,
+   "end": 172.5,
+   "text": "A small bright dot appears upper right of the crosshair, hangs just to its right for several seconds, then slides onto it."
+  },
+  {
+   "start": 177.4,
+   "end": 185.2,
+   "text": "Two small bright dots sit in the upper left of the frame, drifting slowly right."
+  },
+  {
+   "start": 189.47,
+   "end": 196.0,
+   "text": "The view briefly zooms out wide, the submarine a small shape below-right of the crosshair, then zooms back in on it."
+  },
+  {
+   "start": 263.8,
+   "end": 290.4,
+   "text": "The view pans left and the submarine slides off the right edge; near 4:39 it slides back in and settles on the crosshair."
+  }
+ ],
+ "notes": "Many brief dark/white flickers (1-10 frames) at zoom changes. Dots are a few pixels wide; official 4:09-4:37 object not confirmed in the frames."
+}

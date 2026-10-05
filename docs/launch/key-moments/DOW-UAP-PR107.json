@@ -1,0 +1,41 @@
+{
+ "id": "DOW-UAP-PR107",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 2.2,
+   "text": "Infrared view down onto a dark mottled surface: horizon bar with a circle, crosshair and brackets inside an irregular black redaction mask."
+  },
+  {
+   "start": 2.22,
+   "end": 3.35,
+   "text": "A small dark spot appears just under the right arm of the horizon bar and drifts toward the centre circle."
+  },
+  {
+   "start": 3.38,
+   "end": 8.37,
+   "text": "A small tracking box replaces the crosshair and grows into a large frame, then a tall rectangle; the spot slides left past the bar's end."
+  },
+  {
+   "start": 10.73,
+   "end": 12.95,
+   "text": "Vertical stripe noise covers the picture, with banded bright-and-dark flashes at 10.9 s and 12.8 s; the surface looks more rippled in between."
+  },
+  {
+   "start": 12.97,
+   "end": 16.7,
+   "text": "Clear again: the dark spot sits right of the horizon bar, dips below its end, then hangs just above the right arm near the circle."
+  },
+  {
+   "start": 16.72,
+   "end": 17.05,
+   "text": "As a new tracking box appears, the spot streaks down-left across the horizon bar as a dark dash and leaves the left edge."
+  },
+  {
+   "start": 18.3,
+   "end": 23.6,
+   "text": "Crosshair back. The dark spot slips in and out along the left side near the angle readout, sliding down then up; gone by 23 s."
+  }
+ ],
+ "notes": "Clip is 23.6 s, summary says 28 s. Square picture inside black bars plus white pillarbox bars at far left/right; crop None, not cropped."
+}

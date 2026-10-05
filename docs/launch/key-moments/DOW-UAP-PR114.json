@@ -1,0 +1,9 @@
+{"id": "DOW-UAP-PR114", "moments": [
+ {"start": 0.0, "end": 0.6, "text": "Infrared sensor view with corner brackets around the crosshair on a dark, shaded background. A white box right of centre slides off the right edge."},
+ {"start": 2.63, "end": 3.0, "text": "The image flashes bright and smeared for a few frames, then settles on an even grey surface; the corner brackets are gone."},
+ {"start": 3.13, "end": 12.0, "text": "Grey sea surface with a small square at the crosshair centre; the view drifts slowly."},
+ {"start": 12.42, "end": 15.3, "text": "A small dark ring appears right of the crosshair. A white box enters from the right edge, locks around it and carries it to the crosshair."},
+ {"start": 15.3, "end": 32.0, "text": "The white box holds the small dark spot at the crosshair centre for about 17 seconds."},
+ {"start": 32.0, "end": 37.85, "text": "The white box disappears; only the bare crosshair remains over the grey surface and the dark spot is no longer visible."},
+ {"start": 37.88, "end": 39.43, "text": "The crosshair vanishes and the background turns streaky. A tiny light spot sits near the right edge, just below centre, until the end."}
+], "notes": ""}

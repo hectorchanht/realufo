@@ -1,0 +1,66 @@
+{
+ "id": "DOW-UAP-PR097",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 33.5,
+   "text": "IR view of a mottled grey surface with faint streaks, a brighter patch at left; crosshair, corner marks and an N marker below centre."
+  },
+  {
+   "start": 33.5,
+   "end": 37.6,
+   "text": "A black frame at 33.5 s; from about 35 s a faint light speck shows low in the frame, drifting up and right."
+  },
+  {
+   "start": 37.6,
+   "end": 44.6,
+   "text": "The picture rotates: the N marker swings from lower right to upper right as the view turns and darkens."
+  },
+  {
+   "start": 44.6,
+   "end": 50.1,
+   "text": "Black and white flashes, then about 5 s of plain grey gradient with no detail."
+  },
+  {
+   "start": 50.1,
+   "end": 54.42,
+   "text": "Streaky surface view: a small white dot rises from below the crosshair onto it and stays close by."
+  },
+  {
+   "start": 54.55,
+   "end": 54.95,
+   "text": "A cluster of six or seven bright blobs sweeps from lower right up past the crosshair and out the top: 12 frames, use frame step."
+  },
+  {
+   "start": 60.2,
+   "end": 95.7,
+   "text": "Flashes and plain grey views; from 1:09 a grainy view with a soft bright patch and a box around the crosshair, a faint dot nearby."
+  },
+  {
+   "start": 96.2,
+   "end": 130.9,
+   "text": "Closer view under a dark smudge: a tight group of two or three bright dots rises from the bottom edge and wanders around the crosshair."
+  },
+  {
+   "start": 131.2,
+   "end": 186.6,
+   "text": "After a black frame, the dots, fainter, stay mostly below the crosshair; dark smears drift down the left side 2:19–2:32. Flashes at 3:01–3:04."
+  },
+  {
+   "start": 187.5,
+   "end": 195.0,
+   "text": "A large bright area with a curved edge rises from the bottom, fills the left side, then slides off the left edge by 3:15."
+  },
+  {
+   "start": 195.0,
+   "end": 220.6,
+   "text": "Grainy grey view with a box around the crosshair; small dark specks drift around it, upper left at 3:16, beside the box by 3:26."
+  },
+  {
+   "start": 220.6,
+   "end": 299.4,
+   "text": "Grey views with soft gradients and horizontal bands, a black frame at 4:09 and blocky digital noise at 4:39–4:41."
+  }
+ ],
+ "notes": ""
+}

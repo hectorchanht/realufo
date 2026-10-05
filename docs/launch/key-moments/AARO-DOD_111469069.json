@@ -1,0 +1,13 @@
+{"id": "AARO-DOD_111469069", "moments": [
+ {"start": 0.0, "end": 8.0, "text": "Infrared sensor view of a grey scene, brighter above and darker below, with faint ring-shaped blotches fixed on the picture."},
+ {"start": 8.0, "end": 12.5, "text": "A long bright streak sweeps right to left along the top of the view. A tiny white dot shows just right of the crosshair."},
+ {"start": 12.5, "end": 19.5, "text": "The tiny white dot drifts above the crosshair, first to its upper left, then its upper right."},
+ {"start": 20.0, "end": 28.5, "text": "More bright streaks slide right to left across the lower part of the view; the dot moves in from the upper right toward the crosshair."},
+ {"start": 29.6, "end": 37.3, "text": "The view jumps to a closer, flat grey picture with faint vertical bands; the dot, left of the crosshair, drifts further left and up."},
+ {"start": 37.5, "end": 58.6, "text": "The wider view with ring blotches returns; the dot sits upper left, then moves to just above the crosshair and stays near it."},
+ {"start": 58.7, "end": 68.8, "text": "The picture shifts to a smooth gradient, dark lower left and bright upper right; the dot is no longer visible."},
+ {"start": 68.9, "end": 70.0, "text": "The picture flashes white, then turns blocky grey."},
+ {"start": 70.0, "end": 105.8, "text": "A long stretch of plain gradient, bright at the top and darker lower left, with no object standing out."},
+ {"start": 105.9, "end": 115.1, "text": "A run of flashes and jumps: white, dark blocky frames, a bright textured view, then a dim grey one."},
+ {"start": 115.2, "end": 128.13, "text": "The bright-top gradient view returns, with a small redaction box below the crosshair, to the end."}
+], "notes": ""}

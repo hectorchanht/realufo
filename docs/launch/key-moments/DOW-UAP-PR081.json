@@ -1,0 +1,41 @@
+{
+ "id": "DOW-UAP-PR081",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 59.2,
+   "text": "Black-and-white infrared view looking down on scrubland: a curving road lined with bright rectangular shapes, buildings above it. The sensor drifts slowly."
+  },
+  {
+   "start": 59.27,
+   "end": 63.8,
+   "text": "A very faint small light spot crosses diagonally from near the top left corner toward the bottom right, fading out after about 4.5 s."
+  },
+  {
+   "start": 82.5,
+   "end": 88.6,
+   "text": "The sensor pans, then the view cuts to a ring-shaped site dotted with bright points under pale haze."
+  },
+  {
+   "start": 88.7,
+   "end": 109.0,
+   "text": "After a dark frame, a closer view of two large bright rectangular buildings on open ground."
+  },
+  {
+   "start": 109.5,
+   "end": 123.4,
+   "text": "The wide view of the curving road and its bright rectangles returns."
+  },
+  {
+   "start": 123.5,
+   "end": 136.0,
+   "text": "A pale patch of haze drifts in from the left, spreads across the frame and fades."
+  },
+  {
+   "start": 136.0,
+   "end": 299.3,
+   "text": "The view stays on the road and buildings to the end, slowly turning so the road curves up the right side."
+  }
+ ],
+ "notes": "4:3 picture with side bars (crop applied). The transit at 0:59 is only a few pixels and barely brighter than the ground; frame-difference needed to see it clearly."
+}

@@ -1,0 +1,36 @@
+{
+ "id": "DOW-UAP-PR045",
+ "moments": [
+  {
+   "start": 0.0,
+   "end": 2.4,
+   "text": "Infrared view with a large crosshair and red ring at centre over a grey, horizontally banded background; black masking blocks cover the edges."
+  },
+  {
+   "start": 2.4,
+   "end": 20.4,
+   "text": "The ring blinks off and a small box gate locks at the crosshair; inside it a faint light-grey speck slowly grows more distinct."
+  },
+  {
+   "start": 20.43,
+   "end": 22.9,
+   "text": "Two white flashes and dark frames as the sensor changes contrast; corner brackets show briefly and the red ring drops out, then returns."
+  },
+  {
+   "start": 29.55,
+   "end": 30.6,
+   "text": "The ring drops out for a second as the sensor zooms in; the speck returns larger and brighter inside the ring."
+  },
+  {
+   "start": 30.6,
+   "end": 55.9,
+   "text": "The object grows steadily inside the ring: two bright spots side by side by 34 s, a bright patch with darker marks by 50 s."
+  },
+  {
+   "start": 55.95,
+   "end": 58.47,
+   "text": "The object slips below the ring and slides lower right, a large white shape with dark curled marks, leaving at the bottom-right corner."
+  }
+ ],
+ "notes": ""
+}

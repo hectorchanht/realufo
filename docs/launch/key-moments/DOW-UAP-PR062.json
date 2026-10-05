@@ -1,0 +1,11 @@
+{"id": "DOW-UAP-PR062", "moments": [
+ {"start": 0.0, "end": 3.6, "text": "Colour sensor view with crosshair and north marker, redaction boxes at the edges. The opening seconds are a blurred, blue-tinted view sliding over the ground."},
+ {"start": 4.27, "end": 66.1, "text": "A small dark round spot appears right of the crosshair over pale ground; it wanders around the crosshair while blurred terrain rushes past."},
+ {"start": 66.13, "end": 70.0, "text": "The picture jumps to a different patch of ridged ground."},
+ {"start": 80.53, "end": 84.0, "text": "The view steps wider; the spot is now a small dark dot just left of the crosshair."},
+ {"start": 123.07, "end": 128.0, "text": "The view steps in from a sharp rocky ledge to a blurred close-up; the dark spot shows again, left of the crosshair."},
+ {"start": 228.8, "end": 237.6, "text": "Close look: the round dark spot wanders left, above and right of the crosshair as the sensor keeps re-centring on it."},
+ {"start": 248.1, "end": 255.3, "text": "The view steps out again; the spot shrinks to a tiny dark dot left of the crosshair."},
+ {"start": 255.43, "end": 255.8, "text": "The picture flickers: brown, black, then white for a few frames. Use frame step."},
+ {"start": 255.83, "end": 289.5, "text": "A wider, sharper purple-grey view of folded terrain follows; the spot can no longer be picked out."}
+], "notes": ""}
