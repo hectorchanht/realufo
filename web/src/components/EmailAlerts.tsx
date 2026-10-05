@@ -28,7 +28,7 @@ export default function EmailAlerts() {
   }
 
   return (
-    <section aria-labelledby="email-alerts" className="mt-6">
+    <section aria-labelledby="email-alerts" className="mb-6">
       <h2 id="email-alerts" className="mb-1 font-mono text-[11px] font-semibold tracking-[.4px] text-faint">
         EMAIL ALERTS
       </h2>

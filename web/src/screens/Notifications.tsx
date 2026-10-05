@@ -68,6 +68,8 @@ export default function Notifications() {
 
   return (
     <div data-screen="notifications" className="mx-auto max-w-[560px]">
+      <EmailAlerts />
+      <h2 className="mb-1 mt-6 font-mono text-[11px] font-semibold tracking-[.4px] text-faint">PUSH</h2>
       <label className={row}>
         Notifications on this device
         <input type="checkbox" role="switch" checked={enabled} onChange={toggleEnabled} />
@@ -99,7 +101,6 @@ export default function Notifications() {
           </li>
         ))}
       </ul>
-      <EmailAlerts />
     </div>
   );
 }
