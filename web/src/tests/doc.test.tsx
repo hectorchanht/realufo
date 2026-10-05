@@ -339,7 +339,7 @@ describe("Doc", () => {
     });
     renderDoc();
     const html = document.body.innerHTML;
-    const h1 = html.indexOf("<h1"), card = html.indexOf("Paperwork wins."), meter = html.indexOf('aria-label="WTF-meter"'), meta = html.indexOf("Incident");
+    const h1 = html.indexOf("<h1"), card = html.indexOf('aria-label="TL;DR"'), meter = html.indexOf('aria-label="WTF-meter"'), meta = html.indexOf("Incident");
     expect(h1).toBeLessThan(card);
     expect(card).toBeLessThan(meter);
     expect(meter).toBeLessThan(meta);

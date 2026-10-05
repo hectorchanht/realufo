@@ -5,7 +5,11 @@ import { TldrCard } from "../components/TldrCard";
 const toast = vi.fn();
 vi.mock("../overlays/OverlayProvider", () => ({ useOverlay: () => ({ toast }) }));
 
-const T = { bullets: ["Navy pilots film it", "Radar for two weeks", "Still unresolved"], oneLiner: "Even the redactions look nervous.", cardUrl: null };
+const T = {
+  bullets: ["CIA cable, July 2008, Harare, Zimbabwe, location unspecified.", "Airport staff watch a light hover 20 min", "No official conclusion in the file"],
+  oneLiner: "Even the redactions look nervous.",
+  cardUrl: null,
+};
 
 beforeEach(() => toast.mockReset());
 afterEach(() => {
@@ -19,15 +23,21 @@ describe("TldrCard", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("shows the one-liner and three bullets", () => {
+  it("facts become chips, the report is the headline, no joke", () => {
     render(<TldrCard tldr={T} title="t" onBoring={() => {}} />);
-    // one-liner in ink for contrast; only the curly quotes carry the signal colour
-    const p = screen.getByText("Even the redactions look nervous.");
-    expect(p).toHaveTextContent(/^“Even the redactions look nervous\.”$/);
-    expect(p).toHaveClass("text-ink");
-    expect(screen.getByText("“")).toHaveStyle({ color: "var(--signal)" });
-    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+    expect(["CIA cable", "July 2008", "Harare", "Zimbabwe"].map((t) => screen.getByText(t))).toHaveLength(4);
+    expect(screen.queryByText(/unspecified/)).toBeNull();
+    expect(screen.getByText("Airport staff watch a light hover 20 min")).toHaveClass("text-ink");
+    expect(screen.queryByText(/redactions/)).toBeNull();
+    expect(screen.getByText("No official conclusion")).toBeInTheDocument();
+    expect(screen.queryByRole("listitem")).toBeNull();
     expect(screen.getByText("AI-written with facts")).toBeInTheDocument();
+  });
+
+  it("a stated conclusion shows as the finding", () => {
+    render(<TldrCard tldr={{ ...T, bullets: [T.bullets[0], T.bullets[1], "Conclusion: AARO found no anomalous performance"] }} title="t" onBoring={() => {}} />);
+    expect(screen.getByText("Finding")).toBeInTheDocument();
+    expect(screen.getByText("AARO found no anomalous performance")).toBeInTheDocument();
   });
 
   it("share refused (not cancelled) falls back to copying the link", async () => {
@@ -45,7 +55,7 @@ describe("TldrCard", () => {
     (navigator as any).share = share;
     render(<TldrCard tldr={T} title="GIMBAL" onBoring={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: /share/i }));
-    await waitFor(() => expect(share).toHaveBeenCalledWith({ title: "GIMBAL", text: T.oneLiner, url: location.href }));
+    await waitFor(() => expect(share).toHaveBeenCalledWith({ title: "GIMBAL", text: T.bullets[1], url: location.href }));
   });
 
   it("stamps the card version on the shared link so chat apps re-fetch a re-rendered card", async () => {

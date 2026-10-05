@@ -1,12 +1,30 @@
 // Spec 7 TL;DR ("懶人包"): AI-written, fact-checked at ingest (crawler ingest.tldr).
 // Null → nothing, so files without one look exactly as before.
+// The 3 bullets have fixed roles (crawler/ingest/tldr.py SYSTEM): 1 = facts (who/when/where)
+// → small chips, 2 = what it reports → the headline, 3 = the file's conclusion → one quiet line.
+// The joke one-liner stays in the data (feed, og:description) but not here.
 import { Share2 } from "lucide-react";
 import type { Tldr } from "../api/types";
 import { useOverlay } from "../overlays/OverlayProvider";
 
+const NONE = /^no official conclusion/i;
+// "date unspecified", "location unknown": a chip that says nothing
+const EMPTY = /\b(unspecified|unknown|n\/a)\b/i;
+
+function tldrParts(t: Tldr) {
+  const [facts = "", report, conclusion = ""] = t.bullets;
+  return {
+    // ", " only: "1,000 ft" and "341_110677_Numerical_File,_5-2500" stay whole
+    tags: facts.replace(/\.$/, "").split(/,\s+/).map((x) => x.trim()).filter((x) => x && !EMPTY.test(x)),
+    headline: report || t.oneLiner,
+    conclusion: conclusion.replace(/^(conclusion|finding)s?:\s*/i, "").trim(),
+  };
+}
+
 export function TldrCard({ tldr, title, onBoring }: { tldr?: Tldr | null; title: string; onBoring: () => void }) {
   const { toast } = useOverlay();
   if (!tldr) return null;
+  const { tags, headline, conclusion } = tldrParts(tldr);
 
   const share = async () => {
     // ?v=<card hash>: WhatsApp & co cache a preview per URL, so a re-rendered card
@@ -17,7 +35,7 @@ export function TldrCard({ tldr, title, onBoring }: { tldr?: Tldr | null; title:
     const url = u.href;
     if (navigator.share) {
       try {
-        return await navigator.share({ title, text: tldr.oneLiner, url });
+        return await navigator.share({ title, text: headline, url });
       } catch (e) {
         // A cancelled share sheet rejects with AbortError: nothing to report.
         // Anything else (NotAllowedError, no share target) falls back to copying.
@@ -34,25 +52,35 @@ export function TldrCard({ tldr, title, onBoring }: { tldr?: Tldr | null; title:
 
   return (
     <section aria-label="TL;DR" className="mb-3 rounded-xl border border-line p-3">
-      <div className="mb-2 flex items-baseline justify-between gap-2 font-mono text-[11px] font-semibold tracking-[.4px]">
-        <span className="text-faint">TL;DR</span>
-        <span className="text-[9.5px] font-normal text-faint">AI-written with facts</span>
-      </div>
-      <p className="mb-2.5 text-[17px] font-bold leading-[1.35] text-ink">
-        <span style={{ color: "var(--signal)" }}>“</span>
-        {tldr.oneLiner}
-        <span style={{ color: "var(--signal)" }}>”</span>
-      </p>
-      <ul className="mb-3 list-disc space-y-1 pl-4 text-[13.5px] leading-[1.5] text-dim">
-        {tldr.bullets.map((b, i) => (
-          <li key={i}>{b}</li>
+      <div className="mb-2 flex flex-wrap items-center gap-1 font-mono text-[11px] font-semibold tracking-[.4px]">
+        <span className="mr-1 text-faint">TL;DR</span>
+        {tags.map((t, i) => (
+          <span key={i} className="rounded-[7px] bg-bg2 px-2 py-0.5 text-[10px] font-normal tracking-normal text-dim">
+            {t}
+          </span>
         ))}
-      </ul>
-      <div className="flex justify-between gap-2 font-mono text-[11px] font-semibold">
-        <button type="button" onClick={share} aria-label="Share" title="Share" className="min-h-[36px] rounded-[9px] border border-line2 px-3 text-ink active:scale-[.97]">
+        <span className="ml-auto pl-2 text-[9.5px] font-normal text-faint">AI-written with facts</span>
+      </div>
+      <p className="mb-2 text-[17px] font-bold leading-[1.35] text-ink">{headline}</p>
+      <div className="flex items-center gap-2 font-mono text-[11px] font-semibold">
+        <div className="min-w-0 flex-1">
+          {NONE.test(conclusion) ? (
+            <span className="inline-block rounded-[7px] border border-dashed border-line2 px-2 py-0.5 text-[10px] font-normal uppercase tracking-[.4px] text-faint">
+              No official conclusion
+            </span>
+          ) : (
+            conclusion && (
+              <p className="font-sans text-[13px] font-normal leading-[1.45] text-dim">
+                <span className="mr-1.5 font-mono text-[10px] uppercase tracking-[.4px] text-faint">Finding</span>
+                {conclusion}
+              </p>
+            )
+          )}
+        </div>
+        <button type="button" onClick={share} aria-label="Share" title="Share" className="min-h-[36px] flex-none rounded-[9px] border border-line2 px-3 text-ink active:scale-[.97]">
           <Share2 size={15} strokeWidth={1.75} aria-hidden="true" />
         </button>
-        <button type="button" onClick={onBoring} className="min-h-[36px] px-1 text-dim">
+        <button type="button" onClick={onBoring} className="min-h-[36px] flex-none px-1 text-dim">
           Boring version ↓
         </button>
       </div>

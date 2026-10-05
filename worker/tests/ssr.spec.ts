@@ -49,7 +49,7 @@ describe("docBody", () => {
   it("links back to the DVIDS / war.gov source next to the original file", () => {
     const out = docBody(doc({ kind: "video", archive: "wargov", source_url: "https://www.dvidshub.net/video/1007707" }));
     expect(out).toContain(
-      '<a href="/api/file/FBI-UAP-D002">Open original file</a> · <a href="https://www.dvidshub.net/video/1007707">DVIDS page</a> · <a href="https://www.war.gov/UFO/">WAR.GOV page</a>'
+      '<a href="/api/file/FBI-UAP-D002">Open original file</a> · <a href="https://www.dvidshub.net/video/1007707">DVIDS page</a> · <a href="https://www.war.gov/UFO/#FBI-UAP-D002-FD-1057-Unresolved-UAP-Report">WAR.GOV page</a>'
     );
     expect(docBody(doc({ archive: "nara", source_url: "https://assets.realufo.org/x.pdf" }))).not.toContain(" page</a>");
   });
@@ -65,9 +65,13 @@ describe("docBody", () => {
     expect(sourceLinks({ archive: "spain", source_url: "https://bibliotecavirtual.defensa.gob.es/r.do?id=1" }, 7)[0].href).toBe(
       "https://bibliotecavirtual.defensa.gob.es/r.do?id=1"
     );
-    expect(sourceLinks({ archive: "wargov", source_url: "https://www.war.gov/medialink/a.PDF" }, 3)[0].href).toBe(
-      "https://www.war.gov/medialink/a.PDF#page=3"
+  });
+  it("sourceLinks sends war.gov files to their card on war.gov/UFO, not the raw PDF", () => {
+    const t = "CIA-UAP-017, Placement on High Alert Due to Perceived  Aggressive Foreign Posturing ";
+    expect(sourceLinks({ archive: "wargov", title: t, source_url: "https://www.war.gov/medialink/a.PDF" }, 3)[0].href).toBe(
+      "https://www.war.gov/UFO/#CIA-UAP-017-Placement-on-High-Alert-Due-to-Perceived-Aggressive-Foreign-Posturing"
     );
+    expect(sourceLinks({ archive: "wargov", source_url: null })[0].href).toBe("https://www.war.gov/UFO/");
   });
   it("renders full text pages escaped, with continuation link only when truncated", () => {
     const ft = { pages: [{ n: 3, text: "Para one line\nline two\n\n\n\n<script>x</script>\n\n  \n" }], truncated: true, total_pages: 40 };
