@@ -8,7 +8,6 @@ import { bootstrap } from "./routes/bootstrap";
 import { feed } from "./routes/feed";
 import { shorts, likeShort } from "./routes/shorts";
 import { listRecords, getRecord, recordFacets } from "./routes/records";
-import { timeline } from "./routes/timeline";
 import { viewFile } from "./routes/file";
 import { viewUpload } from "./routes/upload";
 import { listComments, addComment, listCaseComments, addCaseComment } from "./routes/comments";
@@ -30,6 +29,7 @@ import { releasesApi } from "./routes/releases";
 import { tgWebhook } from "./routes/tg";
 import { jobRoute } from "./routes/job";
 import { gateOn, queue, sweepStuck } from "./lib/gate";
+import { contentTick } from "./lib/contentTick";
 import { stage, tick } from "./lib/xbot";
 import { nextCandidate } from "./lib/xpick";
 import { tick as socialTick } from "./lib/social/tick";
@@ -49,7 +49,6 @@ on("POST", "/api/ask/:id/public", setAskPublic);
 on("GET", "/api/asks/:id", getSharedAsk);
 on("GET", "/api/records", listRecords);
 on("GET", "/api/records/facets", recordFacets);
-on("GET", "/api/timeline", timeline);
 on("GET", "/api/hubs", hubsIndex);
 on("GET", "/api/hubs/:kind/:slug", getHub);
 on("GET", "/api/releases", releasesApi);
@@ -89,6 +88,7 @@ on("POST", "/api/follows/merge", mergeFollows);
 async function runTick(env: Env) {
   const logErr = (who: string) => (e: unknown) => console.log(JSON.stringify({ [who]: true, crashed: String(e).slice(0, 300) }));
   await sweepStuck(env).catch(logErr("gate")); // first, and independent of FEATURE_X
+  await contentTick(env).catch(logErr("contentGate")); // Telegram portal producers: staged records + one short/day
   await tick(env).catch(logErr("xbot"));
   await socialTick(env).catch(logErr("social"));
   await pollTick(env).catch(logErr("xpoll"));

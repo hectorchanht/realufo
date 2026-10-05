@@ -123,9 +123,18 @@ export async function approve(env: Env, job: Job, now = new Date()): Promise<str
       siteRows = true;
       line = `record ${job.ref} is live`;
     } else if (job.kind === "short") {
-      // Portal v2: the curated short is already rendered to R2 by the operator;
-      // approval publishes it (payload.sql flips its listing flag, or records the post).
-      const p = job.payload as { sql?: string[]; note?: string };
+      // Portal v2: the curated short was rendered to the staging prefix by the ingest
+      // clips step (invisible to the /shorts listing); approval promotes the R2 object
+      // to the live clips-v/ prefix — the object's existence is the publish flag.
+      const p = job.payload as { sql?: string[]; note?: string; r2move?: { from: string; to: string } };
+      if (p.r2move) {
+        if (!p.r2move.from.startsWith("clips-staging/") || !p.r2move.to.startsWith("clips-v/"))
+          throw new Error("r2move must be clips-staging/ -> clips-v/");
+        const obj = await env.MEDIA.get(p.r2move.from);
+        if (!obj) throw new Error(`staged short missing: ${p.r2move.from}`);
+        await env.MEDIA.put(p.r2move.to, obj.body, { httpMetadata: { contentType: "video/mp4" } });
+        await env.MEDIA.delete(p.r2move.from);
+      }
       if (p.sql?.length) await env.DB.batch(p.sql.map((s) => env.DB.prepare(s)));
       line = `short ${job.ref} posted${p.note ? ` (${p.note})` : ""}`;
     } else {

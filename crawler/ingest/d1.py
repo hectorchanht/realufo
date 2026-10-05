@@ -21,7 +21,11 @@ def emit_sql(cands, new_archives) -> str:
             f"{sql_q(c.title)},{sql_q(c.summary)},{sql_q(c.incident_date)},{sql_q(c.location)},"
             f"{sql_q(c.doc_date)},{sql_q(c.kind)},{int(c.redacted)},0,{sql_q(c.virin)},"
             f"{sql_q(getattr(c, '_source', '') or c.cdn_url)},{sql_q(c.archive)},"
-            f"{sql_q(getattr(c, '_license', '') or 'public-domain-usgov')},'live');")
+            f"{sql_q(getattr(c, '_license', '') or 'public-domain-usgov')},'pending');")
+        # 'pending': new records wait for the owner's tap in the Telegram admin portal
+        # (worker/lib/contentTick.ts queues them; approval flips them 'live').
+        # 'pending' is used because records.status has a CHECK constraint
+        # ('pending','fetched','processed','live','failed') — no migration needed.
         lines.append(
             "INSERT INTO assets(record_id,role,cdn_url,mime) "
             f"SELECT {sql_q(c.id)},'full',{sql_q(c.cdn_url)},{sql_q(c.mime)} "

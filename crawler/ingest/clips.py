@@ -12,9 +12,12 @@ start at 0, so green slate frames at either end of the window are trimmed off (s
 Idempotent: existing clips skipped unless --force (re-cut after a length change).
 
 --vertical writes the 9:16 twin for Reels/Shorts/TikTok (Spec 5 §7) to
-clips-v/<archive>/<id>.mp4: black pillar/letterbox bars cropped off (cropdetect), then the
+clips-staging/<archive>/<id>.mp4: black pillar/letterbox bars cropped off (cropdetect), then the
 video as big as it fits, on a blurred, cropped copy of itself (near-9:16 video fills the
 frame); record id + clean title in the top band and realufo.org in the bottom band.
+Staging is invisible to the /shorts listing (it reads clips-v/ directly): the Telegram
+admin portal (worker/lib/contentTick.ts) offers one staged clip per day, and approval
+promotes it to clips-v/<archive>/<id>.mp4 — one curated Short per day, no batch posting.
 Both need a TTF at $CLIP_FONT (default: DejaVu Sans Bold from apt fonts-dejavu-core); the path
 must not contain spaces, ':' or quotes (ffmpeg filtergraph syntax).
 """
@@ -33,7 +36,12 @@ def key(row) -> str:
     return f"clips/{row['archive']}/{row['id']}.mp4"
 
 def vkey(row) -> str:
+    # live 9:16 twin (what /shorts lists); vertical renders go to skey() staging first
     return f"clips-v/{row['archive']}/{row['id']}.mp4"
+
+def skey(row) -> str:
+    # staging for the Telegram gate: invisible until approval promotes it via vkey()
+    return f"clips-staging/{row['archive']}/{row['id']}.mp4"
 
 def clean_title(rid, title, n=40) -> str:
     """ponytail: minimal port of docTitleParts (id prefix + underscores only); the
@@ -176,7 +184,7 @@ def vertical_args(url, start, length, out, title_files, fontsize, font, audio=Tr
                 "-crf", "23", "-maxrate", "1500k", "-bufsize", "3000k",
                 "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-movflags", "+faststart", out]
 
-def todo(rows, exists=fetch.head_ok, limit=None, force=False, keyf=key):
+def todo(rows, exists=fetch.head_ok, limit=None, force=False, keyf=key, live_keyf=None):
     seen, out = set(), []
     for r in rows:
         if r["id"] in seen:
@@ -184,6 +192,8 @@ def todo(rows, exists=fetch.head_ok, limit=None, force=False, keyf=key):
         seen.add(r["id"])
         if not force and exists(f"{R2_BASE}/{keyf(r)}"):
             continue
+        if not force and live_keyf and exists(f"{R2_BASE}/{live_keyf(r)}"):
+            continue  # already promoted to the live prefix: nothing to stage
         out.append(r)
         if limit and len(out) >= limit:
             break
@@ -198,13 +208,14 @@ def main(argv=None):
     ap.add_argument("--only", nargs="+", metavar="ID", help="just these record ids (with --force: re-cut them)")
     ap.add_argument("--out", default=os.path.join(tempfile.gettempdir(), "realufo-clips"))
     args = ap.parse_args(argv)
-    keyf = vkey if args.vertical else key
+    keyf = skey if args.vertical else key
+    live_keyf = vkey if args.vertical else None
     if not os.path.exists(FONT):
         sys.exit(f"clips need a TTF font at CLIP_FONT (missing: {FONT})")
     rows = d1._d1_json(" ".join(SELECT.split()))
     if args.only:
         rows = [r for r in rows if r["id"] in args.only]
-    rows = todo(rows, limit=args.limit, force=args.force, keyf=keyf)
+    rows = todo(rows, limit=args.limit, force=args.force, keyf=keyf, live_keyf=live_keyf)
     os.makedirs(args.out, exist_ok=True)
     done = failed = 0
     for i, row in enumerate(rows, 1):
