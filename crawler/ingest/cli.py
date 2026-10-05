@@ -1,6 +1,6 @@
 import argparse, os, sys, tempfile
 from . import d1, r2
-from .sources import wargov, snapshot
+from .sources import wargov, snapshot, nsa
 
 HERE = os.path.dirname(__file__)
 DATA = os.path.join(HERE, "data")
@@ -20,6 +20,8 @@ def _load_source(slug, taken, work):
         # re-fetch live war.gov CSVs so new releases surface as new rows
         paths = wargov.refresh_csvs(work, CSV_PATHS) or CSV_PATHS
         return wargov.candidates(paths, _dvids_map(), taken), wargov.ARCHIVE_ROW
+    if slug == "nsa":
+        return nsa.candidates(taken), nsa.ARCHIVE_ROW
     return snapshot.candidates(slug, DATA, taken), snapshot.ARCHIVE_ROWS[slug]
 
 def build_plan(existing_ids, existing_urls, all_candidates):
@@ -57,7 +59,7 @@ def run(sources, dry_run=False, limit=None):
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--sources", default="wargov,aaro,nasa,nara,congress,dod,canada,nz,spain")
+    ap.add_argument("--sources", default="wargov,aaro,nasa,nara,congress,dod,canada,nz,spain,nsa")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--limit", type=int, default=None)
     args = ap.parse_args(argv)
