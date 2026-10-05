@@ -61,8 +61,11 @@ async function postFor(env: Env, p: Platform, a: Adapter, x: { text: string; med
   return { ...c, media: await mediaOf(env, x.media, a.vertical) };
 }
 
+// The platform can't take this post's media (IG/TikTok/YT video only): stored as a 'failed' row with one
+// of these reasons so the item is never retried, but it's a skip, not an error (/status lists them apart).
+export const SKIP_REASONS = ["no video", "no media"];
 const gate = (a: Adapter, post: SocialPost): string | null =>
-  a.needs === "video" && post.media?.kind !== "video" ? "no video" : a.needs === "media" && !post.media ? "no media" : null;
+  a.needs === "video" && post.media?.kind !== "video" ? SKIP_REASONS[0] : a.needs === "media" && !post.media ? SKIP_REASONS[1] : null;
 
 async function overCap(env: Env, p: Platform, now: Date): Promise<boolean> {
   if (p !== "yt") return false;

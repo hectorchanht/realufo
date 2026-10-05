@@ -4,7 +4,7 @@ import { getJob, openJobs, OPEN, setSetting } from "./jobs";
 import { queue, skip } from "./gate";
 import { stage } from "./xbot";
 import { costOf, monthSpend, nextCandidate, sqlTime, type Candidate } from "./xpick";
-import { tick as socialTick } from "./social/tick";
+import { SKIP_REASONS, tick as socialTick } from "./social/tick";
 import { getFile, sendMessage } from "./tg";
 
 // Owner commands in the private chat (spec: "Admin commands"). Every post still waits for ✅.
@@ -43,10 +43,16 @@ export async function command(env: Env, m: any) {
     case "/status": {
       const day = sqlTime(now);
       const x = await env.DB.prepare("SELECT status, count(*) n FROM x_posts WHERE date(created_at)=date(?) GROUP BY status").bind(day).all<{ status: string; n: number }>();
-      const f = await env.DB.prepare("SELECT platform, count(*) n FROM social_posts WHERE status='failed' AND deleted_at IS NULL AND created_at>=datetime(?,'-1 day') GROUP BY platform").bind(day).all<{ platform: string; n: number }>();
+      // failed rows of the last 24 h, split: real errors vs. "this platform can't take this media" skips
+      const f = await env.DB.prepare(
+        `SELECT platform, coalesce(error,'') IN (SELECT value FROM json_each(?2)) skip, count(*) n FROM social_posts
+         WHERE status='failed' AND deleted_at IS NULL AND created_at>=datetime(?1,'-1 day') GROUP BY platform, skip ORDER BY platform`
+      ).bind(day, JSON.stringify(SKIP_REASONS)).all<{ platform: string; skip: number; n: number }>();
+      const list = (skip: number) => f.results.filter((r) => r.skip === skip).map((r) => `${r.platform} ${r.n}`).join(", ");
       return say([
         `Today on X: ${x.results.map((r) => `${r.status} ${r.n}`).join(", ") || "nothing"}`,
-        `Failed last 24 h: ${f.results.map((r) => `${r.platform} ${r.n}`).join(", ") || "none"}`,
+        `Failed last 24 h: ${list(0) || "none"}`,
+        ...(list(1) ? [`Skipped (needs video) last 24 h: ${list(1)}`] : []),
         `Month spend: $${(await monthSpend(env, now)).toFixed(2)} of $${env.X_MONTHLY_USD_CAP ?? "10"}`,
       ].join("\n"));
     }

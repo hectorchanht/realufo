@@ -113,6 +113,15 @@ describe("admin commands", () => {
     expect(lastText()).toMatch(/today/i);
     expect(lastText()).toMatch(/\$/);
   });
+  it("/status keeps 'needs video' skips out of the failure count", async () => {
+    const x = await env.DB.prepare("INSERT INTO x_posts(stream,ref,text,ai,cost_usd,status) VALUES ('release','congress:2026-10-03','t',0,0.2,'posted') RETURNING id").first<{ id: number }>();
+    await env.DB.prepare(
+      "INSERT INTO social_posts(x_post_id,platform,status,error) VALUES (?1,'ig','failed','no video'), (?1,'tiktok','failed','no video'), (?1,'fb','failed','social 500: boom')"
+    ).bind(x!.id).run();
+    await say({ text: "/status" });
+    expect(lastText()).toContain("Failed last 24 h: fb 1");
+    expect(lastText()).toContain("Skipped (needs video) last 24 h: ig 1, tiktok 1");
+  });
   it("/drain runs the fan-out once without touching any platform", async () => {
     await say({ text: "/drain" });
     expect(lastText()).toMatch(/fan-out/i);
