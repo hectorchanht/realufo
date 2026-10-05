@@ -82,36 +82,48 @@ def tts(text):
     return out, _dur(out)
 
 def sfx(text, seconds, influence=0.6):
-    """ElevenLabs sound effect ("pen tick on a checkbox", "jet whoosh") → mp3 path, cached in showcase/.tts."""
-    out = os.path.join(HERE, ".tts", "sfx-" + hashlib.sha1(f"{text}|{seconds}|{influence}".encode()).hexdigest()[:16] + ".mp3")
+    """Local synthesized sound effect (no API): keyword-driven synthesis in
+    showcase/synth_sfx.py — 'tick'/'click' → crisp transient; 'whoosh'/'flyby'/'zoom'
+    → filtered-noise swell; 'impact'/'thud' → low thump; anything else → soft airy bed.
+    Cached in showcase/.tts as sfx-local-<hash>.wav. `influence` kept for signature compat."""
+    out = os.path.join(HERE, ".tts", "sfx-local-" + hashlib.sha1(f"{text}|{seconds}".encode()).hexdigest()[:16] + ".wav")
     if not os.path.exists(out):
-        key = os.environ.get("ELEVENLABS_API_KEY") or next((l.split("=", 1)[1].strip() for l in open(os.path.join(HERE, "..", ".env"))
-                                                          if l.startswith("ELEVENLABS_API_KEY=")), None)
-        req = urllib.request.Request("https://api.elevenlabs.io/v1/sound-generation",
-            data=json.dumps({"text": text, "duration_seconds": seconds, "prompt_influence": influence}).encode(),
-            headers={"xi-api-key": key, "Content-Type": "application/json", "Accept": "audio/mpeg"})
+        py = os.path.join(KOKORO_VENV, "bin", "python")
+        if not os.path.exists(py):
+            raise SystemExit(f"SFX venv python missing: {py} (override with KOKORO_VENV)")
         os.makedirs(os.path.dirname(out), exist_ok=True)
-        with urllib.request.urlopen(req) as r, open(out, "wb") as f:
-            f.write(r.read())
+        # Strip proxy vars: this VM's proxy config breaks httpx URL parsing inside
+        # huggingface_hub; synthesis needs no network anyway.
+        env = {k: v for k, v in os.environ.items() if k.lower() not in ("https_proxy", "http_proxy", "no_proxy")}
+        env["HF_HUB_OFFLINE"] = "1"
+        proc = subprocess.run([py, os.path.join(HERE, "synth_sfx.py"), "--out", out,
+                               "--seconds", str(seconds)],
+                              input=text, env=env, capture_output=True, text=True)
+        if proc.returncode != 0 or not os.path.exists(out):
+            raise SystemExit(f"SFX synth failed: {((proc.stderr or '') + (proc.stdout or ''))[-2000:]}")
     return out
 
 def words(mp3):
-    """Word timings [(text, start, end)] of a narration mp3 via ElevenLabs speech-to-text (scribe_v1),
-    cached next to it as .words.json. Drives subtitles()."""
+    """Word timings [(text, start, end)] of a narration wav via local faster-whisper
+    (base.en, word-level timestamps; showcase/whisper_words.py runs inside KOKORO_VENV),
+    cached next to it as .words.json. Drives subtitles().
+    Same return shape as the old ElevenLabs scribe version; no API key, no network."""
     out = mp3[:-4] + ".words.json"
     if not os.path.exists(out):
-        key = os.environ.get("ELEVENLABS_API_KEY") or next((l.split("=", 1)[1].strip() for l in open(os.path.join(HERE, "..", ".env"))
-                                                          if l.startswith("ELEVENLABS_API_KEY=")), None)
-        b = "realufo" + hashlib.sha1(mp3.encode()).hexdigest()[:12]
-        body = (f"--{b}\r\nContent-Disposition: form-data; name=\"model_id\"\r\n\r\nscribe_v1\r\n"
-                f"--{b}\r\nContent-Disposition: form-data; name=\"timestamps_granularity\"\r\n\r\nword\r\n"
-                f"--{b}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a.mp3\"\r\nContent-Type: audio/mpeg\r\n\r\n").encode() \
-               + open(mp3, "rb").read() + f"\r\n--{b}--\r\n".encode()
-        req = urllib.request.Request("https://api.elevenlabs.io/v1/speech-to-text", data=body,
-                                     headers={"xi-api-key": key, "Content-Type": f"multipart/form-data; boundary={b}"})
-        with urllib.request.urlopen(req) as r:
-            ws = [(w["text"], w["start"], w["end"]) for w in json.loads(r.read())["words"] if w.get("type") == "word"]
-        json.dump(ws, open(out, "w"))
+        py = os.path.join(KOKORO_VENV, "bin", "python")
+        if not os.path.exists(py):
+            raise SystemExit(f"Whisper venv python missing: {py} (override with KOKORO_VENV)")
+        # Strip proxy vars: this VM's proxy config breaks httpx URL parsing inside
+        # huggingface_hub, and the local model snapshot needs no network anyway.
+        env = {k: v for k, v in os.environ.items() if k.lower() not in ("https_proxy", "http_proxy", "no_proxy")}
+        env["HF_HUB_OFFLINE"] = "1"
+        if "WHISPER_MODEL" in os.environ:
+            env["WHISPER_MODEL"] = os.environ["WHISPER_MODEL"]
+        proc = subprocess.run([py, os.path.join(HERE, "whisper_words.py"), mp3],
+                              env=env, capture_output=True, text=True)
+        if proc.returncode != 0 or not proc.stdout.strip():
+            raise SystemExit(f"whisper words failed: {((proc.stderr or '') + (proc.stdout or ''))[-2000:]}")
+        json.dump(json.loads(proc.stdout), open(out, "w"))
     return [tuple(w) for w in json.load(open(out))]
 
 def _split(ws, maxch):
