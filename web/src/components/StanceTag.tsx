@@ -20,9 +20,10 @@ const STANCE_CLASS: Record<ResolvedStance, string> = {
 export interface StanceTagProps {
   stance: Stance;
   className?: string;
+  dotOnly?: boolean;
 }
 
-export function StanceTag({ stance, className = "" }: StanceTagProps) {
+export function StanceTag({ stance, className = "", dotOnly = false }: StanceTagProps) {
   const resolved: ResolvedStance =
     stance === "believer" || stance === "skeptic" || stance === "analyst" ? stance : "neutral";
 
@@ -32,7 +33,7 @@ export function StanceTag({ stance, className = "" }: StanceTagProps) {
       className={`inline-flex items-center gap-1 font-mono text-[10px] font-semibold ${STANCE_CLASS[resolved]} ${className}`}
     >
       <span aria-hidden="true">●</span>
-      {resolved}
+      {dotOnly ? '' : resolved}
     </span>
   );
 }

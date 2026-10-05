@@ -202,18 +202,18 @@ function PostRow({ post, sourceRecord, thread, nos, replies, onQuote }: PostRowP
           </span>
         )}
         {post.handleShow && <span className="font-mono text-[10px] text-cyan">{post.handleShow}</span>}
+        <span className="font-mono text-[9px] text-faint">ID:{post.id}</span>
+        <span className="ml-auto font-mono text-[9px] text-faint">
+          {post.ago} ago · No.{post.no}
         <span
           role="img"
           aria-label={post.stance ?? "neutral"}
           title={post.stance ?? "neutral"}
-          className="text-[12px] leading-none"
+          className="text-[12px] leading-none ml-2"
           style={{ color: stanceColor(post.stance) }}
         >
           ●
         </span>
-        <span className="font-mono text-[9px] text-faint">ID:{post.id}</span>
-        <span className="ml-auto font-mono text-[9px] text-faint">
-          {post.ago} · No.{post.no}
         </span>
       </div>
 
@@ -258,8 +258,8 @@ function PostRow({ post, sourceRecord, thread, nos, replies, onQuote }: PostRowP
         ) : (
           <VoteButton targetType="post" targetId={post.id} votes={post.votes} />
         )}
-        <span className="text-dim">credible</span>
-        <button type="button" onClick={() => onQuote(post.no)} aria-label={`Reply to No.${post.no}`} title="Reply" className="-m-2 grid size-8 place-items-center text-dim hover:text-signal">
+
+        <button type="button" onClick={() => onQuote(post.no)} aria-label={`Reply to No.${post.no}`} title="Reply" className="rounded-[10px] border border-line2 grid size-8 ml-auto place-items-center text-dim hover:text-signal">
           <Reply size={16} strokeWidth={1.75} aria-hidden="true" />
         </button>
       </div>

@@ -60,9 +60,9 @@ export function ThreadRow({ thread, voted }: ThreadRowProps) {
             <span className="font-mono text-[9.5px] font-bold" style={{ color: dataInk(thread.accent) }}>
               {thread.boardSlug}
             </span>
-            <span className="font-mono text-[8.5px] text-faint">No.{thread.no}</span>
             {!!thread.hot && <span className="font-mono text-[8.5px] font-bold text-amber">🔥 HOT</span>}
             <span className="font-mono text-[9px] text-faint">{thread.ago} ago</span>
+            <StanceTag stance={thread.stance} dotOnly={true} className="ml-auto"/>
           </div>
           <div className="line-clamp-2 text-[13.5px] font-semibold leading-[1.32] text-ink">{thread.title}</div>
           {thread.op_body && (
@@ -73,7 +73,7 @@ export function ThreadRow({ thread, voted }: ThreadRowProps) {
           <Link to={to} className="flex min-w-0 flex-1 items-center gap-[14px] font-mono text-[10px] text-dim">
             <span>💬 {thread.reply_count}</span>
             <span>🖼 {thread.img_count}</span>
-            <StanceTag stance={thread.stance} />
+            {/* <span className="font-mono text-[8.5px] text-faint">No.{thread.no}</span> */}
           </Link>
           <VoteButton row targetType="thread" targetId={thread.id} votes={thread.votes} voted={voted} />
         </div>
