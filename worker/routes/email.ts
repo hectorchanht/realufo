@@ -23,7 +23,9 @@ export async function emailSubscribe(req: Request, env: Env) {
   const url = `https://realufo.org/api/email/confirm?token=${token}`;
   const ok = await sendEmail(env, email, "Confirm your RealUFO alerts",
     shell("One more click", `<p style="font-size:14px">Click to confirm email alerts for new declassified files:</p><p><a href="${url}" style="display:inline-block;background:#4df0a6;color:#07080c;padding:10px 20px;text-decoration:none;font-weight:bold">CONFIRM ALERTS</a></p><p style="font-size:12px;color:#6b7280">Or paste: ${esc(url)}</p>`));
-  return json({ ok, sent: ok });
+  // ok=false means the row is saved but the confirm email couldn't send yet
+  // (e.g. domain still verifying) — frontend tells the user to wait/retry.
+  return json({ ok: true, sent: ok });
 }
 
 // GET /api/email/confirm?token= → confirms, shows a page.
