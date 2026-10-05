@@ -137,14 +137,14 @@ const PENTAGON_PAPERS = /^\/doc\/NARA-Pentagon-Papers-[^/]+(\/text)?$/;
 
 // nara-overview stays on release.realufo.org: it describes NARA UFO holdings this archive doesn't have.
 const MOVED_OVERVIEWS: Record<string, string> = { "aaro-overview": "aaro", "nasa-overview": "nasa" };
-const LEGACY_PATH = /^\/(aaro|about|argentina|brazil|canada|chile|foia|geipan|glossary|italy|nara|nasa|peru|search|spain|stories|timeline|uk|whatsnew)(\/|$)/;
+const LEGACY_PATH = /^\/(aaro|about|argentina|brazil|canada|chile|foia|geipan|glossary|italy|nara|nasa|peru|search|spain|stories|uk|whatsnew)(\/|$)/;
 
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
     if (url.hostname.startsWith("www.")) return Response.redirect(`https://${url.hostname.slice(4)}${url.pathname}${url.search}`, 301);
     // The old static site moved to release.realufo.org; its realufo.org URLs are
-    // still in search indexes. /map stays: this app has its own.
+    // still in search indexes. /map and /timeline stay: this app has its own.
     // Stories folded into case pages (spec 2026-10-03-realufo-case-stories-design):
     // straight to /case, no apex → subdomain → apex chain.
     const moved = /^\/stories\/([a-z0-9-]+)\/?$/.exec(url.pathname)?.[1];
