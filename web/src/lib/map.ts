@@ -27,6 +27,10 @@ export function dotSize(count: number): number {
   return 8 + Math.min(14, Math.log2(count) * 2.5);
 }
 
+// Deep-link slug for map places — single source of truth lives in
+// worker/lib/places.ts (same module the web app already imports MAP_INTRO from).
+export { placeSlug } from "../../../worker/lib/places";
+
 // Every on-map place whose dot sits under a tap at (px, py) in a w×h box,
 // biggest first. Many places are <1° apart (Colorado / Colorado Springs) and
 // overlap at any zoom, so a tap resolves to all of them, not the topmost.

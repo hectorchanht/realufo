@@ -16,6 +16,7 @@ import { PRIVACY_HTML } from "./privacy";
 import { TERMS_HTML } from "./terms";
 import { SOCIAL_PROFILES } from "./profiles";
 import { MAP_INTRO, RELEASES_DESCRIPTION, RELEASES_TITLE } from "./shared";
+import { PLACES, placeSlug } from "./places";
 import { trackerData } from "../routes/releases";
 import { agencyList, longDate } from "./releases";
 import { TOPIC_RULES, firstSentence } from "./topics";
@@ -151,6 +152,23 @@ const timelineYearPage: Loader = async (_env, g) => {
       type: "website" as const,
     },
     body: tabBody(`${y} Sightings`, `Declassified UAP files from ${y} — open the year on the timeline.`),
+  };
+};
+
+// /map/:place — one map place's panel. The slug resolves against PLACES (the
+// same list the web app slugifies); unknown slugs return null so serveWithMeta
+// serves index.html untouched (the SPA bounces to /map).
+const mapPlacePage: Loader = async (_env, g) => {
+  const slug = g.place ?? "";
+  const place = /^[a-z0-9-]{1,64}$/.test(slug) ? PLACES.find((p) => placeSlug(p.name) === slug) : undefined;
+  if (!place) return null;
+  return {
+    meta: {
+      title: `${place.name} UAP Sightings — Map`,
+      description: `Declassified UAP files from ${place.name}, on the RealUFO sighting map.`,
+      type: "website" as const,
+    },
+    body: tabBody(`${place.name} — Sighting Map`, `Declassified UAP files from ${place.name} — open the place on the map.`),
   };
 };
 
@@ -461,6 +479,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/archive" }), load: archivePage },
   { pattern: new URLPattern({ pathname: "/boards" }), load: boardsPage },
   { pattern: new URLPattern({ pathname: "/map" }), load: mapPage },
+  { pattern: new URLPattern({ pathname: "/map/:place" }), load: mapPlacePage },
   { pattern: new URLPattern({ pathname: "/timeline" }), load: timelinePage },
   { pattern: new URLPattern({ pathname: "/timeline/:year" }), load: timelineYearPage },
   { pattern: new URLPattern({ pathname: "/ask" }), load: askPage },

@@ -13,16 +13,17 @@
 // Map points: real places (bootstrap `places[]`, worker/lib/places.ts) —
 // one dot per spot, sized by its real file count, projected client-side with
 // `project()` (lib/map.ts). Off-world places (Moon, low Earth orbit) have no
-// lat/lng and sit in a corner chip instead. Tapping a place opens PlacePanel
-// (below the map on phones, a right column >=900px) listing its files via
-// `useRecords`, with "See all" to its location hub (or the filtered Archive).
-// Curated case pins (`sightings[]`, case rows only) are a separate diamond
-// marker that navigates to /case/:slug; their prototype counts were fake and
-// are gone.
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+// lat/lng and sit in a corner chip instead. Every dot and chip is a real link
+// to /map/:place — opening a place shows its panel (below the map on phones,
+// a right column >=900px) listing its files via `useRecords`, and the URL is
+// shareable/referenceable; "See all" goes to its location hub (or the
+// filtered Archive). Curated case pins (`sightings[]`, case rows only) are a
+// separate diamond marker that navigates to /case/:slug; their prototype
+// counts were fake and are gone.
+import { useEffect, useState } from "react";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useBootstrap, useRecords } from "../api/queries";
-import { dotSize, placesNear, project } from "../lib/map";
+import { dotSize, placeSlug, placesNear, project } from "../lib/map";
 import { MAP_INTRO } from "../../../worker/lib/shared";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { WorldMap } from "../components/WorldMap";
@@ -41,13 +42,14 @@ const STAT_TILES: Array<{ key: keyof Pick<Stats, "records" | "videos" | "threads
 
 const PANEL_FILES = 12;
 
-function PlacePanel({ place, onClose }: { place: MapPlace; onClose: () => void }) {
+function PlacePanel({ place }: { place: MapPlace }) {
   const { data, isLoading } = useRecords({ location: place.values, limit: PANEL_FILES });
   const seeAll = place.hub ? `/location/${place.hub}` : `/archive?${new URLSearchParams({ location: place.values[0] })}`;
   return (
     <section
+      id={`place-${placeSlug(place.name)}`}
       aria-label={place.name}
-      className="mb-[14px] rounded-2xl border border-line2 bg-surface p-[14px] min-[900px]:max-h-[640px] min-[900px]:overflow-y-auto"
+      className="mb-[14px] scroll-mt-[76px] rounded-2xl border border-line2 bg-surface p-[14px] min-[900px]:max-h-[640px] min-[900px]:overflow-y-auto"
       style={{ animation: "fadeup .25s ease both" }}
     >
       <div className="mb-3 flex items-start gap-2">
@@ -55,9 +57,13 @@ function PlacePanel({ place, onClose }: { place: MapPlace; onClose: () => void }
           <h2 className="text-[15px] font-semibold text-ink">{place.name}</h2>
           <div className="mt-1 font-mono text-[10px] uppercase tracking-[.6px] text-faint">{files(place.count)}</div>
         </div>
-        <button type="button" aria-label="Close" onClick={onClose} className="px-1 font-mono text-[14px] text-faint hover:text-ink">
+        <Link
+          to="/map"
+          aria-label="Close place panel"
+          className="px-1 font-mono text-[14px] text-faint hover:text-ink"
+        >
           ✕
-        </button>
+        </Link>
       </div>
       {isLoading ? (
         <Skeleton cards rows={4} />
@@ -109,18 +115,32 @@ function PlaceChooser({ places, onPick, onClose }: { places: MapPlace[]; onPick:
 
 export function MapScreen() {
   // AppBar title — prototype's `titles.map` (RealUFO.dc.html:566).
-  useSetPageTitle("SIGHTING MAP", "Where the files come from");
-
-  const { data } = useBootstrap();
+  const { place: placeParam } = useParams();
+  const { data, isFetched } = useBootstrap();
   const navigate = useNavigate();
-  const [selected, setSelected] = useState<string | null>(null);
+  // The selected place lives in the URL (/map/:place) so every dot and chip
+  // is a real, shareable link — same pattern as /timeline/:year. A malformed
+  // :place bounces back to /map once the bootstrap data has loaded.
+  const places = data?.places ?? [];
+  const selected = placeParam ? places.find((p) => placeSlug(p.name) === placeParam) ?? null : null;
   const [choices, setChoices] = useState<MapPlace[] | null>(null);
 
+  useSetPageTitle(
+    "SIGHTING MAP",
+    "Where the files come from",
+    selected ? `${selected.name} UAP sightings` : undefined
+  );
+
+  // Deep link (/map/roswell): bring the place's panel into view on arrival
+  // and when hopping between places.
+  useEffect(() => {
+    if (selected) document.getElementById(`place-${placeSlug(selected.name)}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [selected]);
+
   const cases = data?.sightings ?? [];
-  const places = data?.places ?? [];
   const onMap = places.filter((p) => p.lat !== null && p.lng !== null);
   const offWorld = places.filter((p) => p.lat === null || p.lng === null);
-  const place = places.find((p) => p.name === selected) ?? null;
+  const place = selected;
   // One link per hub (a hub can cover several map places); the biggest place names it.
   const hubPlaces = places
     .filter((p) => p.hub)
@@ -137,22 +157,26 @@ export function MapScreen() {
 
   const toggle = (name: string) => {
     setChoices(null);
-    setSelected((s) => (s === name ? null : name));
+    // Toggle: tapping the open place goes back to the bare map.
+    navigate(selected?.name === name ? "/map" : `/map/${placeSlug(name)}`);
   };
 
   // Pointer taps anywhere on the map hit-test every dot near the finger, so
   // overlapping dots and taps on a dot's glow still resolve. Keyboard
-  // activation (detail 0) is left to the focused dot's own onClick.
+  // activation (detail 0) is left to the focused dot's own link. Dot links
+  // stopPropagation so a tap on the dot itself doesn't double-fire this.
   const pick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.detail === 0) return;
     const box = e.currentTarget.getBoundingClientRect();
     const hits = placesNear(onMap, e.clientX - box.left, e.clientY - box.top, box.width, box.height);
     if (hits.length === 1) toggle(hits[0].name);
     else if (hits.length > 1) {
-      setSelected(null);
+      navigate("/map");
       setChoices(hits);
     }
   };
+
+  if (placeParam && isFetched && !selected) return <Navigate to="/map" replace />;
 
   return (
     <div data-screen="map" style={{ animation: "fadeup .35s ease both" }}>
@@ -180,14 +204,21 @@ export function MapScreen() {
           {onMap.map((p) => {
             const { x, y } = project(p.lat!, p.lng!);
             const size = dotSize(p.count);
-            const active = p.name === selected || !!choices?.some((c) => c.name === p.name);
+            const slug = placeSlug(p.name);
+            const active = p.name === selected?.name || !!choices?.some((c) => c.name === p.name);
             return (
-              <button
+              <Link
                 key={p.name}
-                type="button"
-                title={`${p.name} · ${files(p.count)}`}
-                aria-pressed={active}
-                onClick={(e) => e.detail === 0 && toggle(p.name)}
+                to={active && !choices ? "/map" : `/map/${slug}`}
+                title={`${p.name} · ${files(p.count)} — ${active && !choices ? "close" : "open"} place link`}
+                aria-label={`${p.name}: ${files(p.count)}`}
+                aria-current={active && !choices ? "page" : undefined}
+                // The dot itself navigates; stop the container's hit-test from double-firing
+                // and close the overlap chooser if it's open.
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setChoices(null);
+                }}
                 className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full hover:scale-150"
                 style={{
                   left: `${x * 100}%`,
@@ -220,22 +251,27 @@ export function MapScreen() {
           })}
           {offWorld.length > 0 && (
             <div className="absolute bottom-[30px] left-3 z-[3] flex flex-col items-start gap-1">
-              {offWorld.map((p) => (
-                <button
-                  key={p.name}
-                  type="button"
-                  aria-pressed={p.name === selected}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggle(p.name);
-                  }}
-                  className={`rounded-full border bg-surface px-2 py-[3px] font-mono text-[9px] hover:text-ink ${
-                    p.name === selected ? "border-signal text-signal" : "border-line2 text-dim"
-                  }`}
-                >
-                  ☾ {p.name} · {p.count}
-                </button>
-              ))}
+              {offWorld.map((p) => {
+                const slug = placeSlug(p.name);
+                const active = p.name === selected?.name;
+                return (
+                  <Link
+                    key={p.name}
+                    to={active ? "/map" : `/map/${slug}`}
+                    aria-label={`${p.name}: ${files(p.count)}`}
+                    aria-current={active ? "page" : undefined}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setChoices(null);
+                    }}
+                    className={`rounded-full border bg-surface px-2 py-[3px] font-mono text-[9px] hover:text-ink ${
+                      active ? "border-signal text-signal" : "border-line2 text-dim"
+                    }`}
+                  >
+                    ☾ {p.name} · {p.count}
+                  </Link>
+                );
+              })}
             </div>
           )}
           <div
@@ -245,7 +281,7 @@ export function MapScreen() {
             ◉ {places.length} PLACES · ◆ {cases.length} CASES · TAP A SIGNAL
           </div>
         </div>
-        {place && <PlacePanel place={place} onClose={() => setSelected(null)} />}
+        {place && <PlacePanel place={place} />}
         {choices && <PlaceChooser places={choices} onPick={toggle} onClose={() => setChoices(null)} />}
       </div>
       {!!data?.unmappedFiles && (

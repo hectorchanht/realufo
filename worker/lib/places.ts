@@ -12,6 +12,12 @@ export interface MapPlace extends Place { count: number; hub: string | null }
 
 const p = (name: string, lat: number | null, lng: number | null, values: string[] = [name]): Place => ({ name, lat, lng, values });
 
+/** URL slug for a place name ("Colorado Springs, Colorado" -> "colorado-springs-colorado").
+ *  Verified collision-free across PLACES (2026-10-05); shared with the web
+ *  app's /map/:place deep links. */
+export const placeSlug = (name: string): string =>
+  name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
 export const PLACES: Place[] = [
   // United States
   p("Western United States", 39.5, -116.5, ["Western United States", "Westen United States"]),
