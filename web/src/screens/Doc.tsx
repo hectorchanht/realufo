@@ -47,6 +47,8 @@ import { Articles } from "../components/Articles";
 import { VerdictBar } from "../components/VerdictBar";
 import { FollowBell } from "../components/FollowBell";
 import { TldrCard } from "../components/TldrCard";
+import GoDeeper from "../components/GoDeeper";
+import { picksForRecord } from "../../../worker/lib/affiliate";
 import { parseAiMoments, parseKeyMoments } from "../lib/keyMoments";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
@@ -859,6 +861,8 @@ export function Doc() {
       <p ref={summaryRef} className="mb-4 scroll-mt-16 text-[14.5px] leading-[1.65] text-dim" style={{ whiteSpace: "pre-line" }}>
         {media === "video" ? keyMoments.prose : record.summary || ""}
       </p>
+
+      <GoDeeper picks={picksForRecord(record.title, record.summary || "")} note="Directly related to this file." />
 
       {/* OPEN ORIGINAL — prototype line 367 */}
       <button

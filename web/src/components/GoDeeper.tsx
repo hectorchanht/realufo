@@ -1,7 +1,6 @@
-// "GO DEEPER" — highly relevant books for the topic you're browsing.
-// Rendered on topic hub pages. Blurbs explain WHY each book matters here;
-// that's what makes people willingly click.
-import { AMAZON_TAG, affiliateUrl, picksForTopic, type AffiliatePick } from "../../../worker/lib/affiliate";
+// "GO DEEPER" — highly relevant books for what you're reading.
+// Blurbs explain WHY each book matters here; that's what makes people click.
+import { AMAZON_TAG, affiliateUrl, type AffiliatePick } from "../../../worker/lib/affiliate";
 
 function Pick({ p }: { p: AffiliatePick }) {
   return (
@@ -19,15 +18,14 @@ function Pick({ p }: { p: AffiliatePick }) {
   );
 }
 
-export default function GoDeeper({ slug }: { slug: string }) {
-  const picks = picksForTopic(slug);
+export default function GoDeeper({ picks, note }: { picks: AffiliatePick[]; note?: string }) {
   if (picks.length === 0) return null;
   return (
     <section aria-labelledby="go-deeper" className="mb-6">
       <h2 id="go-deeper" className="mb-1 font-mono text-[11px] font-semibold tracking-[.5px] text-ink">
         GO DEEPER
       </h2>
-      <p className="mb-2 text-[12px] text-dim">The books the researchers behind these files actually read.</p>
+      <p className="mb-2 text-[12px] text-dim">{note ?? "The books the researchers behind these files actually read."}</p>
       <div className="grid gap-2 sm:grid-cols-2">
         {picks.map((p) => (
           <Pick key={p.title} p={p} />

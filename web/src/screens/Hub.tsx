@@ -7,6 +7,7 @@ import type { HubHighlights, HubKind, ReleaseBlock, TopicBlock } from "../api/ty
 import { Faq } from "../components/Faq";
 import { FollowBell } from "../components/FollowBell";
 import GoDeeper from "../components/GoDeeper";
+import { picksForTopic } from "../../../worker/lib/affiliate";
 import { docTitleParts } from "../lib/docTitle";
 import { DocCard } from "../components/DocCard";
 import { useSetPageTitle } from "../lib/pageTitle";
@@ -64,7 +65,7 @@ export default function Hub({ kind }: { kind: HubKind }) {
         ))}
       </div>
       {data.release && <Faq items={data.release.faq} />}
-      {kind === "topic" && <GoDeeper slug={slug} />}
+      {kind === "topic" && <GoDeeper picks={picksForTopic(slug)} />}
       {data.siblings.length > 0 && (
         <section aria-labelledby="hub-more">
           <h2 id="hub-more" className="mb-2 font-mono text-[11px] font-semibold tracking-[.5px] text-ink">
