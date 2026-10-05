@@ -73,7 +73,7 @@ export default function Hub({ kind }: { kind: HubKind }) {
               <Link
                 key={s.slug}
                 to={`/${s.kind}/${s.slug}`}
-                className="rounded-[7px] border border-line px-[9px] py-1 font-mono text-[10px] text-dim"
+                className="tag"
               >
                 {s.label} · {s.count}
               </Link>

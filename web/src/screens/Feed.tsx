@@ -66,7 +66,7 @@ function BrowseStrip() {
           <Link
             key={`${h.kind}/${h.slug}`}
             to={`/${h.kind}/${h.slug}`}
-            className="rounded-[7px] border border-line px-[9px] py-1 font-mono text-[10px] text-dim hover:text-signal"
+            className="tag"
           >
             {/* "Release 06 · 18 Sep 2026" → "Release 06": the date makes six release chips stack one per row on phones */}
             {h.kind === "release" ? h.label.split(" · ")[0] : h.label} · {h.count}
@@ -172,7 +172,7 @@ export function Feed() {
               <Link
                 key={c.slug}
                 to={`/case/${c.slug}`}
-                className="rounded-[7px] border border-line px-[9px] py-1 font-mono text-[10px] text-dim hover:text-signal"
+                className="tag"
               >
                 {c.name}
               </Link>

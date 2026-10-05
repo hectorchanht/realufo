@@ -38,7 +38,7 @@ export default function Browse() {
                 <Link
                   key={h.slug}
                   to={`/${h.kind}/${h.slug}`}
-                  className="rounded-[7px] border border-line px-[9px] py-1 font-mono text-[10px] text-dim"
+                  className="tag"
                 >
                   {h.label} · {h.count}
                 </Link>

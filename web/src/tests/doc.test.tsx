@@ -224,7 +224,7 @@ describe("Doc", () => {
     expect(screen.getByRole("link", { name: "AAWSAP & DIRDs" }).getAttribute("href")).toBe("/topic/aawsap");
   });
 
-  it("puts the file's hub links in the footer, not in the chip or meta values", () => {
+  it("links every chip to its hub (same .tag look) and lists the hubs in the footer; meta values stay text", () => {
     useRecordMock.mockReturnValue({
       data: { ...mockDetail, hubs: { agency: "cia", location: "roswell", release: "4", decade: "1970s" } },
       isLoading: false,
@@ -241,7 +241,11 @@ describe("Doc", () => {
         </FooterLinksProvider>
       </MemoryRouter>,
     );
-    expect(screen.queryByRole("link", { name: "Central Intelligence Agency" })).toBeNull();
+    const agency = screen.getByRole("link", { name: "Central Intelligence Agency" });
+    expect(agency).toHaveAttribute("href", "/agency/cia");
+    const release = screen.getByRole("link", { name: "RELEASE 04" });
+    expect(release).toHaveAttribute("href", "/release/4");
+    for (const chip of [agency, release]) expect(chip.className).toBe("tag");
     expect(screen.queryByRole("link", { name: "Roswell, NM" })).toBeNull();
     expect(screen.getByRole("heading", { name: "This file" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "More from Central Intelligence Agency" })).toHaveAttribute("href", "/agency/cia");
@@ -250,9 +254,10 @@ describe("Doc", () => {
     expect(screen.getByRole("link", { name: "More from the 1970s" })).toHaveAttribute("href", "/decade/1970s");
   });
 
-  it("keeps agency and meta values as plain text without hubs", () => {
+  it("without hubs, chips link to the filtered archive; meta values stay plain text", () => {
     renderDoc();
-    expect(screen.queryByRole("link", { name: "Central Intelligence Agency" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Central Intelligence Agency" })).toHaveAttribute("href", "/archive?agency=CIA");
+    expect(screen.getByRole("link", { name: "RELEASE 04" })).toHaveAttribute("href", "/archive?archive=wargov&release=4");
     expect(screen.queryByRole("link", { name: "Roswell, NM" })).toBeNull();
   });
   it("shows FULL TEXT one page at a time in a scroll box, continuation when truncated", () => {

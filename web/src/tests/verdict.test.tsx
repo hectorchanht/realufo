@@ -15,7 +15,9 @@ beforeEach(() => {
 describe("VerdictBar", () => {
   it("teases the meter before anybody voted", () => {
     render(<VerdictBar recordId="r1" state={{ mine: null, total: 0 }} />);
-    expect(screen.getByText("WTF-METER")).toBeTruthy();
+    // the visible "WTF-METER" title is hidden; the section keeps its accessible name
+    expect(screen.getByRole("region", { name: "WTF-meter" })).toBeTruthy();
+    expect(screen.queryByText("WTF-METER")).toBeNull();
     const tease = screen.getByText(/Judge it to reveal the crowd/);
     expect(tease).toHaveTextContent(/^\? \? \? Judge it to reveal the crowd$/);
     expect(screen.getByText("? ? ?").getAttribute("aria-hidden")).toBe("true");

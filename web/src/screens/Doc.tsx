@@ -798,25 +798,25 @@ export function Doc() {
 
       {/* chips row — prototype line 358 */}
       <div className="mb-[10px] flex flex-wrap gap-[7px]">
-        <Link key={record.agency_full || record.agency} to={`/topic/${record.agency_full || record.agency}`}
-          className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px] hover:border-signal hover:text-signal"
-          style={{ color: dataInk(accent) }}
-        >
+        {/* every chip is a .tag link: hub page when the file has one, else the archive filtered to it */}
+        <Link to={detail.hubs?.agency ? `/agency/${detail.hubs.agency}` : `/archive?agency=${encodeURIComponent(record.agency)}`} className="tag">
           {record.agency_full || record.agency}
         </Link>
-        {detail.topics && detail.topics.length > 0 && detail.topics.map((t) => (
-          <Link key={t.slug} to={`/topic/${t.slug}`} className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px] hover:border-signal hover:text-signal">
+        {detail.topics?.map((t) => (
+          <Link key={t.slug} to={`/topic/${t.slug}`} className="tag">
             {t.label}
           </Link>
         ))}
         {archiveLabel !== (record.agency_full || record.agency) && (
-          <Link key={archiveLabel} to={`/archive?q=${archiveLabel}`} className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px] hover:border-signal hover:text-signal">
+          <Link to={`/archive?archive=${encodeURIComponent(record.archive)}`} className="tag">
             {archiveLabel}
           </Link>
         )}
         {detail.release && (
-          <Link key={"RELEASE" + String(detail.release.no).padStart(2, "0")} to={`/archive?q=${"RELEASE" + String(detail.release.no).padStart(2, "0")}`}
-            className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px] hover:border-signal hover:text-signal"            title={`war.gov release ${detail.release.no} · ${detail.release.date}`}
+          <Link
+            to={detail.hubs?.release ? `/release/${detail.hubs.release}` : `/archive?archive=wargov&release=${detail.release.no}`}
+            className="tag"
+            title={`war.gov release ${detail.release.no} · ${detail.release.date}`}
           >
             RELEASE {String(detail.release.no).padStart(2, "0")}
           </Link>
@@ -850,7 +850,7 @@ export function Doc() {
         <div className="-mt-2 mb-4 flex flex-wrap items-center gap-[7px] font-mono text-[10px]">
           <span className="text-faint">CITED IN</span>
           {detail.citedIn.map((c) => (
-            <Link key={c.slug} to={`/case/${c.slug}`} className="rounded-[7px] border border-line px-[9px] py-1 text-dim hover:border-signal hover:text-signal">{c.title}</Link>
+            <Link key={c.slug} to={`/case/${c.slug}`} className="tag">{c.title}</Link>
           ))}
         </div>
       )}
