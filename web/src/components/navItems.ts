@@ -13,11 +13,11 @@
 // detail screen's actually-loaded data).
 
 import type { NavigateFunction } from "react-router-dom";
-import { Archive, Bell, Clapperboard, Compass, Ellipsis, FileSearch, House, ListChecks, MapPinned, MessagesSquare, Sparkles, type LucideIcon } from "lucide-react";
+import { Archive, Bell, Clapperboard, Compass, Ellipsis, FileSearch, History, House, ListChecks, MapPinned, MessagesSquare, Sparkles, type LucideIcon } from "lucide-react";
 import { useBootstrap } from "../api/queries";
 import { forgetScroll, scrollKey } from "../lib/useScrollMemory";
 
-export type NavTab = "feed" | "archive" | "shorts" | "boards" | "ask" | "map" | "cases" | "browse" | "releases" | "notifications";
+export type NavTab = "feed" | "archive" | "shorts" | "boards" | "ask" | "map" | "timeline" | "cases" | "browse" | "releases" | "notifications";
 
 export interface NavItem {
   tab: NavTab;
@@ -40,6 +40,7 @@ export const MORE_ICON = Ellipsis;
 export const MORE_ITEMS: NavItem[] = [
   { tab: "ask", icon: Sparkles, label: "Ask", path: "/ask" },
   { tab: "map", icon: MapPinned, label: "Map", path: "/map" },
+  { tab: "timeline", icon: History, label: "Timeline", path: "/timeline" },
   { tab: "cases", icon: FileSearch, label: "Cold cases", path: "/cases" },
   { tab: "browse", icon: Compass, label: "Browse", path: "/browse" },
   { tab: "releases", icon: ListChecks, label: "Releases", path: "/releases" },
@@ -103,6 +104,7 @@ export function activeTabForPath(pathname: string, search = ""): NavTab {
   if (pathname === "/boards" || pathname.startsWith("/boards/")) return "boards";
   if (pathname === "/cases" || pathname.startsWith("/case/")) return "cases";
   if (pathname.startsWith("/map")) return "map";
+  if (pathname.startsWith("/timeline")) return "timeline";
   if (pathname === "/notifications") return "notifications";
   return "feed"; // "/" and any unmatched path
 }

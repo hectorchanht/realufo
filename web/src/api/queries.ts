@@ -23,6 +23,7 @@ import type {
   Short,
   RecordDetail,
   RecordFacets,
+  TimelineResponse,
   RecordsListResponse,
   SharedAsk,
   Stance,
@@ -54,6 +55,8 @@ export interface RecordsParams {
   release?: string;
   agency?: string;
   decade?: string;
+  /** Four-digit incident year, e.g. "1947". */
+  year?: string;
   /** Several values = any of them (a map place's aliases). */
   location?: string | string[];
   limit?: number;
@@ -66,6 +69,7 @@ export const qk = {
   shorts: (q: string) => ["shorts", q] as const,
   records: (params: RecordsParams = {}) => ["records", params] as const,
   facets: ["recordFacets"] as const,
+  timeline: ["timeline"] as const,
   record: (id: string) => ["record", id] as const,
   hubs: ["hubs"] as const,
   hub: (kind: string, slug: string) => ["hub", kind, slug] as const,
@@ -87,7 +91,7 @@ export function recordsPath(params: RecordsParams): string {
   if (params.archive) usp.set("archive", params.archive);
   if (params.type) usp.set("type", params.type);
   if (params.q) usp.set("q", params.q);
-  for (const k of ["redacted", "has", "sort", "release", "agency", "decade"] as const) if (params[k]) usp.set(k, params[k]);
+  for (const k of ["redacted", "has", "sort", "release", "agency", "decade", "year"] as const) if (params[k]) usp.set(k, params[k]);
   for (const v of [params.location ?? []].flat()) if (v) usp.append("location", v);
   if (params.limit != null) usp.set("limit", String(params.limit));
   if (params.offset != null) usp.set("offset", String(params.offset));
@@ -152,6 +156,14 @@ export function useFacets() {
   return useQuery({
     queryKey: qk.facets,
     queryFn: () => api.get<RecordFacets>("/api/records/facets"),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useTimeline() {
+  return useQuery({
+    queryKey: qk.timeline,
+    queryFn: () => api.get<TimelineResponse>("/api/timeline"),
     staleTime: 5 * 60_000,
   });
 }

@@ -114,6 +114,13 @@ export async function listRecords(req: Request, env: Env) {
     where.push("r.incident_date IN (SELECT value FROM json_each(?))");
     bind.push(JSON.stringify(rows.results.map((r) => r.d).filter((d) => decadeOf(d) === decade)));
   }
+  const year = u.searchParams.get("year");
+  if (year && /^(19|20)\d{2}$/.test(year)) {
+    // Same free-text matching as the decade filter, narrowed to a single year.
+    const rows = await env.DB.prepare("SELECT DISTINCT incident_date d FROM records WHERE incident_date IS NOT NULL").all<{ d: string }>();
+    where.push("r.incident_date IN (SELECT value FROM json_each(?))");
+    bind.push(JSON.stringify(rows.results.map((r) => r.d).filter((d) => yearOf(d) === year)));
+  }
   const q = (u.searchParams.get("q") || "").trim();
   const meta = metaMatch(q);
   const fts = q ? ftsQuery(q) : null;

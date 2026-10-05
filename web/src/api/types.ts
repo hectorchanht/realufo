@@ -185,6 +185,18 @@ export interface RecordFacets {
   shorts?: number;
 }
 
+/** GET /api/timeline — sighting counts per incident year (from records.incident_date). */
+export interface TimelineResponse {
+  years: { year: number; count: number }[];
+  /** Records with a parseable incident year. */
+  dated: number;
+  /** Records without a parseable incident year. */
+  undated: number;
+  peak: { year: number; count: number } | null;
+  min: number | null;
+  max: number | null;
+}
+
 // ---------------------------------------------------------------------------
 // GET /api/records/:id — full record + assets + promoted threads
 // ---------------------------------------------------------------------------
