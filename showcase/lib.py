@@ -51,29 +51,34 @@ def ramp_lut(r, g, b):
 IRONBOW = ramp_lut("0 0.15 0.55 0.85 0.98 1 1", "0 0 0.02 0.2 0.5 0.8 1", "0 0.45 0.6 0.25 0.05 0.2 1")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-VOICE = os.environ.get("ELEVENLABS_VOICE", "nPczCjzI2devNBz1zQrb")  # "Brian": deep, calm narrator
+VOICE = os.environ.get("ELEVENLABS_VOICE", "nPczCjzI2devNBz1zQrb")  # "Brian": deep, calm narrator (legacy; tts now uses Kokoro)
+KOKORO_VENV = os.environ.get("KOKORO_VENV", os.path.expanduser("~/kokoro-venv"))
+KOKORO_VOICE = os.environ.get("KOKORO_VOICE", "af_heart")
+KOKORO_SPEED = float(os.environ.get("KOKORO_SPEED", "1.1"))
 
 def _dur(path):
     h, m, sec = subprocess.run([FFMPEG, "-i", path], capture_output=True, text=True).stderr.split("Duration: ")[1].split(",")[0].split(":")
     return int(h) * 3600 + int(m) * 60 + float(sec)
 
 def tts(text):
-    """ElevenLabs narration → (mp3 path, seconds), cached in showcase/.tts by text + voice.
-    Key: ELEVENLABS_API_KEY in the environment or the repo-root .env."""
-    settings = {"stability": 0.45, "similarity_boost": 0.8, "style": 0.35, "speed": 1.1}
-    out = os.path.join(HERE, ".tts", hashlib.sha1(f"{VOICE}|{settings}|{text}".encode()).hexdigest()[:16] + ".mp3")
+    """Kokoro local narration → (wav path, seconds), cached in showcase/.tts by text + voice.
+    Runs inside KOKORO_VENV (default ~/kokoro-venv) via showcase/kokoro_tts.py;
+    no API key, no network. Same (path, seconds) contract as the old ElevenLabs version."""
+    out = os.path.join(HERE, ".tts", "kokoro-" + hashlib.sha1(f"{KOKORO_VOICE}|{KOKORO_SPEED}|{text}".encode()).hexdigest()[:16] + ".wav")
     if not os.path.exists(out):
-        key = os.environ.get("ELEVENLABS_API_KEY") or next((l.split("=", 1)[1].strip() for l in open(os.path.join(HERE, "..", ".env"))
-                                                          if l.startswith("ELEVENLABS_API_KEY=")), None)
-        if not key:
-            raise SystemExit("ELEVENLABS_API_KEY missing (repo-root .env)")
-        req = urllib.request.Request(f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE}?output_format=mp3_44100_128",
-            data=json.dumps({"text": text, "model_id": "eleven_multilingual_v2",
-                             "voice_settings": settings}).encode(),
-            headers={"xi-api-key": key, "Content-Type": "application/json", "Accept": "audio/mpeg"})
+        py = os.path.join(KOKORO_VENV, "bin", "python")
+        if not os.path.exists(py):
+            raise SystemExit(f"Kokoro venv python missing: {py} (override with KOKORO_VENV)")
         os.makedirs(os.path.dirname(out), exist_ok=True)
-        with urllib.request.urlopen(req) as r, open(out, "wb") as f:
-            f.write(r.read())
+        # Strip proxy vars: this VM's proxy config breaks httpx URL parsing inside
+        # huggingface_hub, and the local snapshot needs no network anyway.
+        env = {k: v for k, v in os.environ.items() if k.lower() not in ("https_proxy", "http_proxy", "no_proxy")}
+        env["HF_HUB_OFFLINE"] = "1"
+        proc = subprocess.run([py, os.path.join(HERE, "kokoro_tts.py"), "--out", out,
+                               "--voice", KOKORO_VOICE, "--speed", str(KOKORO_SPEED)],
+                              input=text, env=env, capture_output=True, text=True)
+        if proc.returncode != 0 or not os.path.exists(out):
+            raise SystemExit(f"Kokoro TTS failed: {((proc.stderr or '') + (proc.stdout or ''))[-2000:]}")
     return out, _dur(out)
 
 def sfx(text, seconds, influence=0.6):
