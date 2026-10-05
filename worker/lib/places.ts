@@ -13,8 +13,9 @@ export interface MapPlace extends Place { count: number; hub: string | null }
 const p = (name: string, lat: number | null, lng: number | null, values: string[] = [name]): Place => ({ name, lat, lng, values });
 
 /** URL slug for a place name ("Colorado Springs, Colorado" -> "colorado-springs-colorado").
- *  Verified collision-free across PLACES (2026-10-05); shared with the web
- *  app's /map/:place deep links. */
+ *  Verified collision-free across PLACES (2026-10-05). NOTE: web/src/lib/map.ts
+ *  has its own identical copy — the web build can't import this module (it
+ *  pulls the worker type chain into web's tsc). Keep the two in sync. */
 export const placeSlug = (name: string): string =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 

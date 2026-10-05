@@ -27,9 +27,15 @@ export function dotSize(count: number): number {
   return 8 + Math.min(14, Math.log2(count) * 2.5);
 }
 
-// Deep-link slug for map places — single source of truth lives in
-// worker/lib/places.ts (same module the web app already imports MAP_INTRO from).
-export { placeSlug } from "../../../worker/lib/places";
+// URL slug for a map place name ("Colorado Springs, Colorado" ->
+// "colorado-springs-colorado"). Verified collision-free across the 70 places
+// in worker/lib/places.ts (2026-10-05). NOTE: worker/lib/places.ts has its own
+// identical copy — importing it from web/ pulls the whole worker type chain
+// (hubs -> env -> D1Database etc.) into the web tsc build, which breaks the
+// Cloudflare build (2026-10-05). Keep the two in sync; it's two lines.
+export function placeSlug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
 
 // Every on-map place whose dot sits under a tap at (px, py) in a w×h box,
 // biggest first. Many places are <1° apart (Colorado / Colorado Springs) and
