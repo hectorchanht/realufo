@@ -17,6 +17,7 @@ import { TERMS_HTML } from "./terms";
 import { SOCIAL_PROFILES } from "./profiles";
 import { MAP_INTRO, RELEASES_DESCRIPTION, RELEASES_TITLE } from "./shared";
 import { PLACES, placeSlug } from "./places";
+import { yearOf } from "./facets";
 import { trackerData } from "../routes/releases";
 import { agencyList, longDate } from "./releases";
 import { TOPIC_RULES, firstSentence } from "./topics";
@@ -142,33 +143,84 @@ const timelinePage: Loader = async () => ({
 
 // /timeline/:year — one year's slice of the timeline. A malformed year returns
 // null so serveWithMeta serves index.html untouched (the SPA bounces to /timeline).
-const timelineYearPage: Loader = async (_env, g) => {
+const timelineYearPage: Loader = async (env, g, url) => {
   const y = g.year ?? "";
   if (!/^\d{4}$/.test(y)) return null;
+  // Same yearOf() parsing the /api/timeline counts use, so the SSR file list
+  // matches what the chart shows. Cached per path by serveWithMeta.
+  const rows = await env.DB.prepare(
+    "SELECT id, title, kind, incident_date FROM records WHERE status='live' AND incident_date IS NOT NULL AND trim(incident_date) NOT IN ('','N/A')"
+  ).all<{ id: string; title: string; kind: string; incident_date: string }>();
+  const files = (rows.results ?? []).filter((r) => yearOf(r.incident_date) === y).slice(0, 30);
+  const links = docLinks(files);
   return {
     meta: {
       title: `${y} UAP Sightings — Timeline`,
       description: `Declassified UAP files from ${y}, on the RealUFO sightings timeline.`,
       type: "website" as const,
+      jsonLd: {
+        "@type": "CollectionPage",
+        name: `${y} UAP Sightings — Timeline`,
+        mainEntity: {
+          "@type": "ItemList",
+          numberOfItems: files.length,
+          itemListElement: files.map((r, i) => ({ "@type": "ListItem", position: i + 1, url: `${url.origin}${docHref(r.id)}`, name: docTitle(r.title, r.id, r.kind) })),
+        },
+      },
+      breadcrumbs: [
+        { name: "Home", href: "/" },
+        { name: "Timeline", href: "/timeline" },
+        { name: y, href: `/timeline/${y}` },
+      ],
     },
-    body: tabBody(`${y} Sightings`, `Declassified UAP files from ${y} — open the year on the timeline.`),
+    body: tabBody(
+      `${y} Sightings`,
+      `Declassified UAP files from ${y} — open the year on the timeline.`,
+      section(`Files from ${y}`, links)
+    ),
   };
 };
 
 // /map/:place — one map place's panel. The slug resolves against PLACES (the
 // same list the web app slugifies); unknown slugs return null so serveWithMeta
 // serves index.html untouched (the SPA bounces to /map).
-const mapPlacePage: Loader = async (_env, g) => {
+const mapPlacePage: Loader = async (env, g, url) => {
   const slug = g.place ?? "";
   const place = /^[a-z0-9-]{1,64}$/.test(slug) ? PLACES.find((p) => placeSlug(p.name) === slug) : undefined;
   if (!place) return null;
+  const inList = place.values.map(() => "?").join(",");
+  const rows = await env.DB.prepare(
+    `SELECT id, title, kind FROM records WHERE status='live' AND location IN (${inList}) LIMIT 30`
+  )
+    .bind(...place.values)
+    .all<{ id: string; title: string; kind: string }>();
+  const files = rows.results ?? [];
+  const links = docLinks(files);
   return {
     meta: {
       title: `${place.name} UAP Sightings — Map`,
       description: `Declassified UAP files from ${place.name}, on the RealUFO sighting map.`,
       type: "website" as const,
+      jsonLd: {
+        "@type": "CollectionPage",
+        name: `${place.name} UAP Sightings — Map`,
+        mainEntity: {
+          "@type": "ItemList",
+          numberOfItems: files.length,
+          itemListElement: files.map((r, i) => ({ "@type": "ListItem", position: i + 1, url: `${url.origin}${docHref(r.id)}`, name: docTitle(r.title, r.id, r.kind) })),
+        },
+      },
+      breadcrumbs: [
+        { name: "Home", href: "/" },
+        { name: "Sighting Map", href: "/map" },
+        { name: place.name, href: `/map/${slug}` },
+      ],
     },
-    body: tabBody(`${place.name} — Sighting Map`, `Declassified UAP files from ${place.name} — open the place on the map.`),
+    body: tabBody(
+      `${place.name} — Sighting Map`,
+      `Declassified UAP files from ${place.name} — open the place on the map.`,
+      section(`Files from ${place.name}`, links)
+    ),
   };
 };
 

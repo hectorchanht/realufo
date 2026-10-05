@@ -5,6 +5,8 @@ import { thumbSql, durationSql } from "../lib/db";
 import { docTitle, isoDate } from "../lib/pages";
 import { listHubsCached } from "./hubs";
 import { askHref } from "../lib/ask";
+import { timelineYears } from "./timeline";
+import { PLACES, placeSlug, mapPlaces } from "../lib/places";
 
 type Rec = {
   id: string; d: string; kind: string; title: string; summary: string | null; doc_date: string | null;
@@ -30,7 +32,7 @@ function media(r: Rec): string {
 // sitemap index once records approach the 50k-URL limit.
 export async function sitemap(req: Request, env: Env) {
   const origin = new URL(req.url).origin;
-  const [records, threads, boards, cases, hubs, asks] = await Promise.all([
+  const [records, threads, boards, cases, hubs, asks, years, locRows] = await Promise.all([
     env.DB.prepare(
       `SELECT r.id, date(r.created_at) d, r.kind, r.title, r.summary, r.doc_date, ${thumbSql("r.id")} thumb, ${durationSql("r.id")} dur,
          (SELECT cdn_url FROM assets a WHERE a.record_id=r.id AND a.role='full' LIMIT 1) file
@@ -47,12 +49,22 @@ export async function sitemap(req: Request, env: Env) {
     env.DB.prepare(
       "SELECT min(id) id, question, date(min(created_at)) d FROM ask_log WHERE public=1 AND answer IS NOT NULL GROUP BY lower(question)",
     ).all<{ id: number; question: string; d: string }>(),
+    // Timeline years: exactly the years the /timeline chart shows.
+    timelineYears(env),
+    // Map places with live files, for /map/:place deep links.
+    env.DB.prepare(
+      "SELECT location, count(*) n FROM records WHERE status='live' AND location IS NOT NULL AND trim(location)<>'' GROUP BY location",
+    ).all<{ location: string; n: number }>(),
   ]);
+  // mapPlaces filters to count > 0 and needs no live-hub set for the sitemap.
+  const { places } = mapPlaces(locRows.results ?? [], new Set());
   const loc = (path: string, d?: string, extra = "") =>
     `<url><loc>${origin}${path}</loc>${d ? `<lastmod>${d}</lastmod>` : ""}${extra}</url>`;
   const e = encodeURIComponent; // also encodes & < > so no XML escaping needed
   const urls = [
-    ...["/", "/archive", "/boards", "/cases", "/map", "/browse", "/releases", "/ask", "/privacy", "/terms"].map((p) => loc(p)),
+    ...["/", "/archive", "/boards", "/cases", "/map", "/timeline", "/browse", "/releases", "/ask", "/privacy", "/terms"].map((p) => loc(p)),
+    ...years.map((y) => loc(`/timeline/${y.year}`)),
+    ...places.map((p) => loc(`/map/${placeSlug(p.name)}`)),
     ...records.results.map((r) => loc(`/doc/${e(r.id)}`, r.d, media(r))),
     ...threads.results.map((t) => loc(`/thread/${e(t.id)}`, t.d)),
     ...boards.results.map((b) => loc(boardHref(b.id))), // slug is "/uap/"; the URL is /board/uap
