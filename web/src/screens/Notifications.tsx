@@ -8,6 +8,7 @@ import { useBootstrap } from "../api/queries";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { currentSub, disablePush, enablePush, ENABLE_MSG } from "../lib/push";
+import EmailAlerts from "../components/EmailAlerts";
 
 type Prefs = { replies: boolean; new_files: boolean; daily: boolean };
 type Follow = { kind: string; key: string; src: string; title: string; url: string };
@@ -98,6 +99,7 @@ export default function Notifications() {
           </li>
         ))}
       </ul>
+      <EmailAlerts />
     </div>
   );
 }

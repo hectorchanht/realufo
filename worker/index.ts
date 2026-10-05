@@ -35,6 +35,8 @@ import { tick as socialTick } from "./lib/social/tick";
 import { pollTick } from "./lib/xpoll";
 import { pushNewFiles, pushDaily } from "./lib/push";
 import { pushConfig, subscribe, setPrefs, unsubscribe, pushMe, getFollow, toggleFollow, mergeFollows } from "./routes/push";
+import { emailNewFiles } from "./lib/email";
+import { emailSubscribe, emailConfirm, emailUnsubscribe } from "./routes/email";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -73,6 +75,9 @@ on("POST", "/api/push/subscribe", subscribe);
 on("POST", "/api/push/prefs", setPrefs);
 on("POST", "/api/push/unsubscribe", unsubscribe);
 on("GET", "/api/push/me", pushMe);
+on("POST", "/api/email/subscribe", emailSubscribe);
+on("GET", "/api/email/confirm", emailConfirm);
+on("GET", "/api/email/unsubscribe", emailUnsubscribe);
 on("GET", "/api/follows", getFollow);
 on("POST", "/api/follows", toggleFollow);
 on("POST", "/api/follows/merge", mergeFollows);
@@ -87,6 +92,7 @@ async function runTick(env: Env) {
   await pollTick(env).catch(logErr("xpoll"));
   await pushNewFiles(env).catch(logErr("pushFiles"));
   await pushDaily(env).catch(logErr("pushDaily"));
+  await emailNewFiles(env).catch(logErr("emailFiles"));
 }
 
 // POST /__tick (Authorization: Bearer ADMIN_TOKEN): one cron tick on demand, for

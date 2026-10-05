@@ -59,4 +59,7 @@ export interface Env {
   TELEGRAM_BOT_TOKEN?: string; // secrets
   TELEGRAM_WEBHOOK_SECRET?: string;
   TELEGRAM_OWNER_ID?: string;
+  // Email alerts via Resend (spec: email alerts as notification)
+  RESEND_API_KEY?: string; // secrets
+  EMAIL_FROM?: string; // e.g. "RealUFO <alerts@realufo.org>"; default that
 }
