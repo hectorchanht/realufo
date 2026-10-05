@@ -46,14 +46,16 @@ def probe(path):
 
 
 def detect_bars(path, w0, h0, dur):
-    """crop=w:h:x:y when black bars cut >10% of the picture (sampled mid-video), else ''."""
+    """crop=w:h:x:y when centred black bars cut >10% of the picture (sampled mid-video), else ''.
+    Off-centre boxes are dark picture (night sky, ground), not bars, and would hide it from the reviewer."""
     p = subprocess.run(["ffmpeg", "-v", "info", "-ss", f"{dur * 0.4:.2f}", "-t", "4", "-i", path, "-an",
                         "-vf", "cropdetect=24:2:0", "-f", "null", "-"], capture_output=True, text=True)
     found = [l.split("crop=")[-1].strip() for l in p.stderr.splitlines() if "crop=" in l]
     if not found:
         return ""
     w, h, x, y = map(int, found[-1].split(":"))
-    return f"{w}:{h}:{x}:{y}" if w * h < 0.9 * w0 * h0 and w > 64 and h > 64 else ""
+    centred = abs(x - (w0 - w) / 2) <= 16 and abs(y - (h0 - h) / 2) <= 16
+    return f"{w}:{h}:{x}:{y}" if centred and w * h < 0.9 * w0 * h0 and w > 64 and h > 64 else ""
 
 
 def mmss(t):

@@ -14,3 +14,14 @@ def test_transients_find_a_fleeting_dot_and_ignore_camera_shake():
     hits = transients(f)
     assert [i for i, _ in hits] == [3, 4]
     assert len(group(hits)) == 1
+
+
+def test_detect_bars_keeps_only_symmetric_bars(monkeypatch):
+    import subprocess
+    from ingest import moment_sheets as M
+    def fake(log):
+        return lambda *a, **k: subprocess.CompletedProcess(a, 0, "", log)
+    monkeypatch.setattr(M.subprocess, "run", fake("[Parsed_cropdetect_0] crop=962:964:474:60"))
+    assert M.detect_bars("v", 1920, 1080, 30) == "962:964:474:60"      # pillarbox, centred
+    monkeypatch.setattr(M.subprocess, "run", fake("[Parsed_cropdetect_0] crop=608:508:0:572"))
+    assert M.detect_bars("v", 608, 1080, 30) == ""                      # dark night sky is picture, not a bar

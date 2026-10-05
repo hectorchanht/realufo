@@ -22,7 +22,7 @@ From `crawler/` (numpy + Pillow → `.venv-ocr`):
 - Count: 2–6 for clips under a minute, up to ~12 for long ones. No filler ("No visible change", "scene remains static"), no "frame 3 / top-left frame", no hedging, no feelings.
 - ≤ 25 words, plain English, present tense. Positions: upper/lower left/right, centre, near the crosshair. Directions: left→right, rising, toward the camera. Size relative to the frame.
 - **Never say what the object is** — no balloon, bird, drone, aircraft, missile, satellite, star, alien, craft, orb, UFO for it, even when the title says "Resolved as …". Call it object, light, bright spot, dark shape. The recording platform and scenery are fine when visible or stated by the source (cockpit canopy, sea, clouds, buildings, crosshair).
-- Overlay text only when it changes and you can read it.
+- Overlay text only when it changes and you can read it. Polarity: quote the overlay (`BLK` → `WHT`) or say "colours invert"; never guess "white-hot"/"black-hot" from looks (GOFAST's overlay says the opposite of what the picture suggests).
 - Official time-coded description in the summary (war.gov): read it for orientation, never copy it; the AI tab may be finer-grained but must not contradict what is on screen.
 
 ## Write
