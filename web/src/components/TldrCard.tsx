@@ -56,36 +56,30 @@ export function TldrCard({ tldr, title, onBoring }: { tldr?: Tldr | null; title:
       <span className="absolute top-0 right-2 font-mono text-[11px]" style={{color: "var(--signal)"}} >AI TL;DR</span>
 
       <p className="text-[17px] font-bold leading-[1.35] text-ink tracking-[.4px]">{headline}</p>
-
-      {/* <div className="flex items-center gap-2 font-mono text-[11px] font-semibold">
-        <div className="min-w-0 flex-1">
-          {NONE.test(conclusion) ? (
-            <span className="inline-block rounded-[7px] border border-dashed border-line2 px-2 py-0.5 text-[10px] font-normal uppercase tracking-[.4px] text-faint">
-              No official conclusion
-            </span>
-          ) : (
-            conclusion && (
-              <p className="font-sans text-[13px] font-normal leading-[1.45] text-dim">
-                <span className="mr-1.5 font-mono text-[10px] uppercase tracking-[.4px] text-faint">Finding</span>
-                {conclusion}
-              </p>
-            )
-          )}
-        </div>
-        <button type="button" onClick={share} aria-label="Share" title="Share" className="min-h-[36px] flex-none rounded-[9px] border border-line2 px-3 text-ink active:scale-[.97]">
-          <Share2 size={15} strokeWidth={1.75} aria-hidden="true" />
-        </button>
-      </div> */}
-
       {tags.map((t, i) => (
         <span key={i} className="rounded-[7px] bg-bg2 px-2 py-0.5 text-[10px] font-normal tracking-normal text-dim">
           {t}
         </span>
       ))}
-
-      <span className="absolute bottom-0 right-2 font-mono text-[11px]" style={{color: "var(--signal)"}} >
-        {NONE.test(conclusion) ? 'No official conclusion': conclusion }
-      </span>
+      <div className="flex items-center gap-2 font-mono text-[11px] font-semibold">
+        <div className="min-w-0 flex-1">
+          {NONE.test(conclusion) ? (
+            <span className="inline-block rounded-[7px] border border-dashed border-line2 px-2 py-0.5 text-[10px] font-normal uppercase tracking-[.4px] text-signal">
+              No official conclusion
+            </span>
+          ) : (
+            conclusion && (
+              <p className="font-sans text-[13px] font-normal leading-[1.45] text-signal">
+                {/* <span className="mr-1.5 font-mono text-[10px] uppercase tracking-[.4px] text-faint">Finding</span> */}
+                {conclusion}
+              </p>
+            )
+          )}
+        </div>
+        {/* <button type="button" onClick={share} aria-label="Share" title="Share" className="min-h-[36px] flex-none rounded-[9px] border border-line2 px-3 text-ink active:scale-[.97]">
+          <Share2 size={15} strokeWidth={1.75} aria-hidden="true" />
+        </button> */}
+      </div>
 
     </section>
   );
