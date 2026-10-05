@@ -43,7 +43,7 @@ export function VerdictBar({ recordId, state }: { recordId: string; state?: Verd
 
   return (
     <section aria-label="WTF-meter" className="mb-[22px] rounded-xl border border-line p-3">
-      <div className="mb-2 font-mono text-[11px] font-semibold tracking-[.4px] text-faint">WTF-METER</div>
+      {/* <div className="mb-2 font-mono text-[11px] font-semibold tracking-[.4px] text-faint">WTF-METER</div> */}
       {/* always mounted so the number is announced when it appears after a vote */}
       <div aria-live="polite">
         {tally && total >= MIN_CROWD && (

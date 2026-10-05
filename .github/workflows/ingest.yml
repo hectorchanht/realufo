@@ -18,7 +18,9 @@ jobs:
         with: { python-version: "3.11" }
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
-      - run: pip install -r crawler/ingest/requirements.txt pytest
+      # opencv-contrib-python = the cv2 Paddle installs in the ocr step (same package + version, so no
+      # second cv2 build); lets test_ocr's redaction-bar test run here instead of skipping.
+      - run: pip install -r crawler/ingest/requirements.txt pytest opencv-contrib-python==4.10.0.84
       - run: cd crawler && python -m pytest ingest/tests/ -q
       - run: npm i -g wrangler
       - name: ingest

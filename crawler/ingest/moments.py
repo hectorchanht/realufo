@@ -129,8 +129,11 @@ def merge(segments, results):
     return out
 
 
-def doc_json(moments, model, now):
-    return json.dumps({"model": model, "generated_at": now, "moments": moments}, ensure_ascii=False)
+def doc_json(moments, model, now, reviewed=False):
+    doc = {"model": model, "generated_at": now, "moments": moments}
+    if reviewed:  # written from frame-by-frame review (skill key-moments); the daily job never touches it
+        doc["reviewed"] = True
+    return json.dumps(doc, ensure_ascii=False)
 
 
 def update_sql(record_id, doc):
@@ -158,7 +161,8 @@ SCHEMA = {"type": "object", "additionalProperties": False, "required": ["text"],
 
 SELECT = """SELECT r.id, a.cdn_url, a.duration FROM records r
 JOIN assets a ON a.record_id=r.id AND a.role='full' AND a.mime LIKE 'video/%'
-WHERE r.status='live' {extra} ORDER BY random()"""  # stuck videos can't block the daily --limit
+WHERE r.status='live' AND instr(coalesce(r.ai_moments,''),'"reviewed": true')=0 {extra}
+ORDER BY random()"""  # stuck videos can't block the daily --limit
 
 
 class Skip(Exception):
@@ -276,8 +280,50 @@ def moments_for(row, describe_fn=describe, cuts_fn=scene_cuts, grid_fn=grid_jpeg
     return merge(segs, results), calls
 
 
+REVIEW_MAX_WORDS = 40
+
+
+def reviewed_sql(doc, reviewer, now):
+    """Reviewed doc {"id", "moments": [{start, end, text}]} -> UPDATE SQL; ValueError if unusable."""
+    rid, ms = doc.get("id"), doc.get("moments")
+    if not rid or not isinstance(ms, list) or not ms:
+        raise ValueError("needs id and a non-empty moments list")
+    out = []
+    for m in ms:
+        a, b, t = m.get("start"), m.get("end"), (m.get("text") or "").strip()
+        if not all(isinstance(x, (int, float)) and math.isfinite(x) for x in (a, b)) or not 0 <= a <= b:
+            raise ValueError(f"bad times {a}-{b}")
+        if not t or len(t.split()) > REVIEW_MAX_WORDS:
+            raise ValueError(f"bad text at {a}: {t[:40]!r}")
+        out.append({"start": round(float(a), 3), "end": round(float(b), 3), "text": t})
+    out.sort(key=lambda m: (m["start"], m["end"]))
+    return update_sql(rid, doc_json(out, reviewer, now, reviewed=True))
+
+
+def apply_reviewed(paths, reviewer, dry_run):
+    now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    sql, skipped = [], 0
+    for p in paths:
+        doc = {}
+        try:
+            doc = json.load(open(p))
+            sql.append(reviewed_sql(doc, reviewer, now))
+        except (ValueError, OSError, AttributeError) as e:
+            skipped += 1
+            print(f"SKIP {doc.get('id') if isinstance(doc, dict) and doc.get('id') else p}: {e}")
+    if dry_run:
+        print("\n".join(sql))
+    elif sql:
+        with tempfile.NamedTemporaryFile("w", suffix=".sql", delete=False) as f:
+            f.write("\n".join(sql) + "\n")
+        d1.apply_sql(f.name)
+    print(f"{'dry-run ' if dry_run else ''}reviewed moments: applied={len(sql)} skipped={skipped}")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
+    ap.add_argument("--apply", help="write reviewed moments: a JSON file or a folder of them (skill key-moments)")
+    ap.add_argument("--reviewer", default="claude-opus-5-5", help="stored as the doc's model for --apply")
     ap.add_argument("--dry-run", action="store_true", help="print moments; no D1 writes")
     ap.add_argument("--limit", type=int, default=None, help="max videos this run")
     ap.add_argument("--ids", default="", help="comma-separated record ids")
@@ -285,6 +331,10 @@ def main(argv=None):
     ap.add_argument("--plan-only", action="store_true",
                     help="print segment plans only: ffmpeg runs, no frames, no model calls, no writes")
     args = ap.parse_args(argv)
+    if args.apply:
+        p = args.apply
+        files = sorted(os.path.join(p, f) for f in os.listdir(p) if f.endswith(".json")) if os.path.isdir(p) else [p]
+        return apply_reviewed(files, args.reviewer, args.dry_run)
     extra = "" if args.force else "AND r.ai_moments IS NULL"
     if args.ids:
         extra += " AND r.id IN (" + ",".join(d1.sql_q(i.strip()) for i in args.ids.split(",") if i.strip()) + ")"

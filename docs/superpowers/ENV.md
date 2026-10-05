@@ -19,12 +19,12 @@ After that preamble: `node -v` → v22.22.0, `pnpm -v` → 8.15.5, `wrangler --v
   (NOT `pnpm@9.15.9` from the plan text — 9 is not installed and corepack auto-fetch adds friction).
   pnpm 8 runs this stack (Vite, Tailwind 3, wrangler, vitest) fine.
 - **wrangler:** available at the node-22 bin (invoke as `wrangler ...` or `npx wrangler ...`).
-- **gh:** authenticated as GitHub account `hectorchanht` (v2.94).
+- **gh:** active account is `frankchanflow` (Flow-only) — here use `GH_TOKEN=$(gh auth token --user hectorchanht) gh ...`.
 - Network access to the npm registry is available (installs work).
 
 ## Cloudflare
 
-- Deploy target account: Flow Account `280bedba354e1a13c921727f30686447`.
+- Deploy target account: `F147259@gmail.com's Account` `f1868a071996e836eae6da2b65f37929` (never the Flow Account).
 - R2 bucket `realufo` already exists on that account (live at `assets.realufo.org`).
 - D1 `realufo-db` is created during Task 25 (provisioning), not before.
 - Do NOT run any remote `wrangler` command (deploy, d1 --remote, d1 create) except in Task 25.

@@ -859,6 +859,25 @@ describe("Doc", () => {
     expect(screen.queryByRole("button", { name: "Official" })).toBeNull();
   });
 
+  it("moments in the same second get tenths so their labels differ", () => {
+    const close = JSON.stringify({ model: "m", generated_at: "t", moments: [
+      { start: 0, end: 8.2, text: "Canopy view." }, { start: 8.2, end: 8.9, text: "Camera swings up." },
+      { start: 8.96, end: 9.03, text: "Object streaks across." }] });
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "video", summary: "Clip.", ai_moments: close },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/clip.mp4", mime: "video/mp4", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    const box = screen.getByRole("region", { name: "Key moments" });
+    expect(box).toHaveTextContent("00:00.0");
+    expect(box).toHaveTextContent("00:08.2");
+    expect(box).toHaveTextContent("00:08.9");
+  });
+
   it("toggle still works when localStorage throws", () => {
     const get = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
     const set = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });

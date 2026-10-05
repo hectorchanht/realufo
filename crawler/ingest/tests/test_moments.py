@@ -297,3 +297,29 @@ def test_moments_for_accepts_a_long_answer_after_trimming():
     moments, n = moments_for({"id": "V", "cdn_url": "u", "duration": 10.0}, describe,
                              cuts_fn=lambda u, d: [], grid_fn=lambda u, t, o: open(o, "wb").write(b"j"), probe_fn=lambda u: "")
     assert n == 1 and len(moments) == 1 and len(moments[0]["text"].split()) <= 40
+
+
+def test_selection_never_picks_reviewed_moments_even_with_force():
+    from ingest.moments import SELECT, doc_json
+    reviewed = doc_json([{"start": 0.0, "end": 1.0, "text": "Pan."}], "claude", "t", reviewed=True)
+    assert '"reviewed": true' in reviewed
+    assert "instr(coalesce(r.ai_moments,''),'\"reviewed\": true')=0" in SELECT
+
+
+def test_apply_writes_reviewed_docs_and_rejects_bad_files(tmp_path, monkeypatch, capsys):
+    from ingest import d1, moments as M
+    good = {"id": "AARO-1", "moments": [{"start": 8.96, "end": 9.04, "text": "A small round object crosses."},
+                                        {"start": 0.0, "end": 8.3, "text": "Filmed through the canopy."}]}
+    bad = {"id": "AARO-2", "moments": [{"start": 5.0, "end": 4.0, "text": "Backwards."}]}
+    empty = {"id": "AARO-3", "moments": []}
+    for i, doc in enumerate((good, bad, empty)):
+        (tmp_path / f"{i}.json").write_text(json.dumps(doc))
+    monkeypatch.setattr(d1, "apply_sql", lambda p: (_ for _ in ()).throw(AssertionError("dry run must not write")))
+    M.main(["--apply", str(tmp_path), "--dry-run"])
+    out = capsys.readouterr().out
+    assert "SKIP AARO-2" in out and "SKIP AARO-3" in out and "applied=1 skipped=2" in out
+    sql = next(l for l in out.splitlines() if l.startswith("UPDATE records"))
+    assert "WHERE id='AARO-1'" in sql and "text_index" in sql
+    doc = json.loads(sql.split("ai_moments='", 1)[1].split("' WHERE id=", 1)[0].replace("''", "'"))
+    assert doc["reviewed"] is True and doc["model"] == "claude-opus-5-5"
+    assert [m["start"] for m in doc["moments"]] == [0.0, 8.96]   # sorted

@@ -798,24 +798,28 @@ export function Doc() {
 
       {/* chips row — prototype line 358 */}
       <div className="mb-[10px] flex flex-wrap gap-[7px]">
-        <span
-          className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px]"
+        <Link key={record.agency_full || record.agency} to={`/topic/${record.agency_full || record.agency}`}
+          className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px] hover:border-signal hover:text-signal"
           style={{ color: dataInk(accent) }}
         >
           {record.agency_full || record.agency}
-        </span>
+        </Link>
+        {detail.topics && detail.topics.length > 0 && detail.topics.map((t) => (
+          <Link key={t.slug} to={`/topic/${t.slug}`} className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px] hover:border-signal hover:text-signal">
+            {t.label}
+          </Link>
+        ))}
         {archiveLabel !== (record.agency_full || record.agency) && (
-          <span className="rounded-[7px] border border-line px-[9px] py-1 font-mono text-[10px] text-dim">
+          <Link key={archiveLabel} to={`/archive?q=${archiveLabel}`} className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px] hover:border-signal hover:text-signal">
             {archiveLabel}
-          </span>
+          </Link>
         )}
         {detail.release && (
-          <span
-            className="rounded-[7px] border border-red px-[9px] py-1 font-mono text-[10px] font-semibold text-red"
-            title={`war.gov release ${detail.release.no} · ${detail.release.date}`}
+          <Link key={"RELEASE" + String(detail.release.no).padStart(2, "0")} to={`/archive?q=${"RELEASE" + String(detail.release.no).padStart(2, "0")}`}
+            className="rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px] hover:border-signal hover:text-signal"            title={`war.gov release ${detail.release.no} · ${detail.release.date}`}
           >
             RELEASE {String(detail.release.no).padStart(2, "0")}
-          </span>
+          </Link>
         )}
       </div>
 
@@ -841,16 +845,7 @@ export function Doc() {
           ] as const
         ).map(([label, value]) => (value ? <MetaCell key={label} label={label} value={value} /> : null))}
       </div>
-      {detail.topics && detail.topics.length > 0 && (
-        <div className="-mt-2 mb-4 flex flex-wrap items-center gap-[7px] font-mono text-[10px]">
-          <span className="text-faint">TOPICS</span>
-          {detail.topics.map((t) => (
-            <Link key={t.slug} to={`/topic/${t.slug}`} className="rounded-[7px] border border-line px-[9px] py-1 text-dim hover:border-signal hover:text-signal">
-              {t.label}
-            </Link>
-          ))}
-        </div>
-      )}
+
       {detail.citedIn && detail.citedIn.length > 0 && (
         <div className="-mt-2 mb-4 flex flex-wrap items-center gap-[7px] font-mono text-[10px]">
           <span className="text-faint">CITED IN</span>

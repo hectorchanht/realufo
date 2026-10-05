@@ -6,7 +6,7 @@ import { BrandIcon } from "../components/SiteFooter";
 import { useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useBootstrap, useSharedAsk } from "../api/queries";
-import { AskCard, ShareNote, CARD, ACTION, ICON_ACTION } from "../components/AskCard";
+import { AskCard, ShareNote, CARD, ICON_ACTION } from "../components/AskCard";
 import { LoadError } from "../components/LoadError";
 import { addAskHistory } from "../lib/askHistory";
 import { askIdOf, shareLink, xIntent, type ShareResult } from "../lib/shareLink";
