@@ -1,32 +1,45 @@
-# React + TypeScript + Vite
+# RealUFO web app
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The React + Vite + Tailwind single-page app behind [realufo.org](https://realufo.org) —
+the searchable archive of declassified UAP/UFO government records.
 
-Currently, two official plugins are available:
+## Develop
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+pnpm install          # from repo root (also installs web deps)
+pnpm dev              # from repo root: builds web once, then runs Vite HMR (:5173) + wrangler dev (:8787) side by side
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open **http://localhost:5173** — Vite serves the frontend with hot reload and proxies
+`/api/*` to the worker at `:8787`. Editing `web/src` refreshes instantly; editing
+`worker/` reloads the worker automatically. One Ctrl+C stops both.
+
+Single commands (from repo root):
+
+```bash
+pnpm -C web dev       # Vite HMR only
+pnpm build:web        # production build to web/dist (tsc + vite build)
+pnpm -C web test       # vitest
+cd web && npx tsc -b --noEmit   # typecheck
+```
+
+## Structure
+
+- `src/screens/` — route screens, lazy-loaded via `src/router.tsx` (Feed and Doc ship in the
+  main bundle; everything else is its own chunk)
+- `src/components/` — shared UI (`AppShell`, `SiteFooter`, `DocCard`, …)
+- `src/api/` — API client, React Query hooks (`queries.ts`), shared types (`types.ts`)
+- `src/lib/`, `src/theme/` — helpers and design tokens
+
+The web app imports shared code from `worker/lib/` (profiles, affiliate, meta) — the
+single source of truth is in the worker tree, bundled at build time.
+
+## Style
+
+Dark theme by default (`#07080c` base, signal green `#4df0a6`), pixel/CRT accents.
+Keep type large and readable — the site is presented on TVs as well as phones.
+No emojis in UI; use SVG icons.
+
+## License
+
+[AGPLv3](../../LICENSE) — see the repo root.

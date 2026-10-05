@@ -78,3 +78,12 @@ Notes for AI coding agents are in [`CLAUDE.md`](CLAUDE.md).
   [Instagram](https://www.instagram.com/realufo_org/),
   [Threads](https://www.threads.com/@realufo_org) and
   [YouTube](https://www.youtube.com/@realufo_org).
+
+## License
+
+The source code in this repository is licensed under the
+[GNU Affero General Public License v3.0](LICENSE).
+
+The declassified government documents mirrored by this project are works of
+the U.S. federal government and are in the public domain (17 U.S.C. § 105).
+Files from other governments follow their publishers' terms, noted per record.
