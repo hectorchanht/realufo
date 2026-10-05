@@ -55,3 +55,10 @@ DROP TABLE social_posts;
 ALTER TABLE social_posts_new RENAME TO social_posts;
 CREATE UNIQUE INDEX social_posts_live ON social_posts(x_post_id, platform) WHERE deleted_at IS NULL;
 CREATE INDEX idx_social_posts_platform ON social_posts(platform, status);
+
+-- The Telegram channel starts fresh: posts already on X before the gate are not mirrored there
+-- (a live row of any status blocks the fan-out). Soft-delete a row to mirror that post after all.
+-- When clearing tg dry-run drafts before flipping FEATURE_SOCIAL_TG to "on", delete only rows with
+-- platform='tg' AND status='draft' AND error IS NULL — the seeded backlog rows carry an error note.
+INSERT INTO social_posts (x_post_id, platform, status, error)
+  SELECT id, 'tg', 'draft', 'pre-gate backlog: not mirrored to the Telegram channel' FROM x_posts WHERE status='posted';

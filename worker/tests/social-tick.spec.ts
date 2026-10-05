@@ -230,4 +230,37 @@ describe("social tick", () => {
     await tick(E({ FEATURE_SOCIAL_FB: "on", FEATURE_SOCIAL_THREADS: "on", FEATURE_SOCIAL_BSKY: "on" }), NOW, noSleep, A);
     expect(await rows()).toMatchObject([{ platform: "bsky", status: "posted" }]);
   });
+
+  it("tg 'draft' row for posted x_posts blocks fan-out; 0038 migration seeds backlog, new posts are published", async () => {
+    // Find the 0038_bot_jobs migration and extract the INSERT...SELECT for social_posts
+    const mig0038 = (env.TEST_MIGRATIONS as any).find((m: any) => m.name?.includes("0038"));
+    expect(mig0038).toBeDefined();
+    const seedQuery = mig0038.queries.find((q: string) => q.includes("INSERT INTO social_posts") && q.includes("SELECT id") && q.includes("'tg'"));
+    expect(seedQuery).toBeDefined();
+
+    // Insert an OLD posted x_post within SOCIAL_SINCE
+    const oldXid = await addX("ST-OLD", { created: "2026-10-10 13:00:00" });
+    // Run the migration's own seed statement to simulate what 0038 does
+    await env.DB.prepare(seedQuery!).run();
+
+    // Verify the old post has a seeded tg draft row
+    const oldTgRows = await env.DB.prepare("SELECT status, error FROM social_posts WHERE x_post_id=? AND platform='tg'").bind(oldXid).all<any>();
+    expect(oldTgRows.results).toHaveLength(1);
+    expect(oldTgRows.results[0]).toMatchObject({ status: "draft", error: expect.stringContaining("pre-gate backlog") });
+
+    // Insert a NEWER posted x_post; its tg row won't be seeded (seeding only happens on migration run)
+    const newXid = await addX("ST-NEW", { created: "2026-10-10 14:00:00", media: null });
+
+    // Run tick with tg "on"; it should pick only the new post (the old one has a live draft row)
+    await tick(E({ FEATURE_SOCIAL_TG: "on" }), NOW, noSleep, { tg: fake("tg") });
+
+    // Verify: old post's tg row stays 'draft', new post's tg row is 'posted', exactly one publish
+    const allRows = await rows();
+    const tgRows = allRows.filter((r) => r.platform === "tg");
+    expect(tgRows).toHaveLength(2); // old seeded draft, new published
+    expect(tgRows).toContainEqual(expect.objectContaining({ status: "draft", error: expect.stringContaining("pre-gate backlog") }));
+    expect(tgRows).toContainEqual(expect.objectContaining({ status: "posted", remote_id: "R-tg" }));
+    expect(seen).toHaveLength(1);
+    expect(seen[0].p.link).toContain("ST-NEW");
+  });
 });
