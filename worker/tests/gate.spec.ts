@@ -3,14 +3,16 @@ import { env } from "cloudflare:test";
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from "vitest";
 import { seedTestDB } from "./helpers";
 import { tick } from "../lib/xbot";
-import { setSetting } from "../lib/jobs";
+import { createJob, setSetting } from "../lib/jobs";
+import { preview } from "../lib/gate";
 
 beforeAll(() => seedTestDB(env.DB));
 
 const NOW = new Date("2026-10-10T15:00:00Z");
 const SECRETS = { X_API_KEY: "k", X_API_SECRET: "s", X_ACCESS_TOKEN: "t", X_ACCESS_SECRET: "ts" };
 const TG = { TELEGRAM_BOT_TOKEN: "T0K", TELEGRAM_OWNER_ID: "777", FEATURE_GATE: "on" };
-const AI = { run: async () => ({ response: "Clip GT-V1 from the Gulf. #UAP" }) };
+let aiCalls = 0;
+const AI = { run: async () => (aiCalls++, { response: "Clip GT-V1 from the Gulf. #UAP" }) };
 const BOT = { X_PICK_HOURS: "14", X_DAILY_MAX: "3", X_MONTHLY_USD_CAP: "10" };
 const E = (extra: Record<string, unknown> = {}) => ({ ...env, ...BOT, ...SECRETS, ...TG, AI, FEATURE_X: "on", X_SINCE: "", ...extra }) as any;
 
@@ -26,7 +28,7 @@ beforeEach(async () => {
   await env.MEDIA.put("clips/wargov/GT-V1.mp4", new Uint8Array(100), { httpMetadata: { contentType: "video/mp4" } });
   await env.MEDIA.put("clips/wargov/GT-V2.mp4", new Uint8Array(100), { httpMetadata: { contentType: "video/mp4" } });
   await setSetting(env as any, "paused_picks", "0");
-  tg = []; xCalls = []; failMedia = false; failMessage = false;
+  tg = []; xCalls = []; failMedia = false; failMessage = false; aiCalls = 0;
   vi.spyOn(globalThis, "fetch").mockImplementation(async (u: any, init?: any) => {
     const url = String(u);
     if (url.startsWith("https://api.telegram.org/")) {
@@ -89,6 +91,21 @@ describe("gated tick", () => {
     const all = await jobs();
     expect(all).toHaveLength(2);
     expect(all[1]).toMatchObject({ stream: "manual", ref: first, status: "post_wait" });
+  });
+  it("a waiting pick job: the next tick neither drafts nor previews another pick (stream skipped)", async () => {
+    await createJob(E(), { kind: "post", stream: "pick", ref: "GT-V1", status: "post_wait", caption: "t", media: null, payload: { x: {} } });
+    await tick(E(), NOW);
+    expect(aiCalls).toBe(0);
+    expect(tg).toEqual([]);
+    expect(await jobs()).toHaveLength(1);
+  });
+  it("preview cuts a long caption on a whole character, never half an emoji", async () => {
+    const j = (await createJob(E(), { kind: "post", stream: "manual", ref: "GT-V1", status: "post_wait", caption: "a".repeat(3499) + "😀😀", media: null, payload: { x: {} } }))!;
+    await preview(E(), j);
+    const text: string = tg[0].body.text;
+    // booleans, not the string: a lone surrogate in a failure message breaks the test pool's websocket
+    expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(text)).toBe(false);
+    expect(text.includes("a".repeat(3499) + "😀…")).toBe(true);
   });
   it("paused picks: no pick job", async () => {
     await setSetting(env as any, "paused_picks", "1");

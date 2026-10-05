@@ -18,8 +18,18 @@ export async function tgWebhook(req: Request, env: Env): Promise<Response> {
   const from = u.callback_query?.from?.id ?? u.message?.from?.id;
   const chat = u.callback_query ? u.callback_query.message?.chat?.id : u.message?.chat?.id; // the owner's private chat only, not a group
   if (!from || String(from) !== String(env.TELEGRAM_OWNER_ID) || String(chat) !== String(env.TELEGRAM_OWNER_ID)) return json({ ok: true });
-  if (u.callback_query) await onButton(env, u.callback_query);
-  else if (u.message) await onMessage(env, u.message);
+  try {
+    if (u.callback_query) await onButton(env, u.callback_query);
+    else if (u.message) await onMessage(env, u.message);
+  } catch (e) {
+    // a 500 makes Telegram re-send this update (re-running uploads / AI drafts) and queue later ones behind it
+    const token = env.TELEGRAM_BOT_TOKEN;
+    let reason = e instanceof Error ? e.message : String(e);
+    if (token) reason = reason.split(token).join("…"); // TgError bodies can echo the bot URL
+    reason = reason.slice(0, 300);
+    console.log(JSON.stringify({ tg: true, failed: reason }));
+    await sendMessage(env, env.TELEGRAM_OWNER_ID!, `⚠️ failed: ${reason}`).catch(() => {});
+  }
   return json({ ok: true });
 }
 
@@ -48,7 +58,8 @@ async function onButton(env: Env, q: any) {
 
 async function onMessage(env: Env, m: any) {
   const chat = env.TELEGRAM_OWNER_ID!;
-  if (m.reply_to_message && typeof m.text === "string") {
+  // a reply that starts with "/" is a command, not a new caption
+  if (m.reply_to_message && typeof m.text === "string" && !m.text.trimStart().startsWith("/")) {
     const job = await jobByMessage(env, m.reply_to_message.message_id);
     if (!job) return sendMessage(env, chat, "That preview is out of date (or not a job). Reply to the newest preview.", undefined, m.message_id);
     if (job.kind !== "post" && job.kind !== "showcase") return sendMessage(env, chat, `#${job.id} is a ${job.kind} job; edit it at its source and re-send.`);

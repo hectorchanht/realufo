@@ -2,7 +2,7 @@ import { docTitle } from "./ssr";
 import type { Env } from "../env";
 import { wargovReleases } from "../routes/records";
 import { THREAD_SEP } from "./x";
-import { NO_JOB, getSetting } from "./jobs";
+import { NO_JOB, OPEN, getSetting } from "./jobs";
 
 // What the bot posts next (Spec 4 §4.2–4.4) and whether it can afford it.
 
@@ -205,13 +205,20 @@ async function pickDue(env: Env, now: Date): Promise<boolean> {
   return (r?.n ?? 0) < reached;
 }
 
+// Bot streams with an open job (gate on): skipped, so a waiting preview neither burns an AI draft
+// every tick nor blocks the streams after it (createJob would refuse a second job anyway).
+const busyStreams = async (env: Env) =>
+  new Set((await env.DB.prepare("SELECT DISTINCT stream FROM bot_jobs WHERE deleted_at IS NULL AND status IN (SELECT value FROM json_each(?))")
+    .bind(JSON.stringify(OPEN)).all<{ stream: string }>()).results.map((r) => r.stream));
+
 export async function nextCandidate(env: Env, now: Date): Promise<Candidate | null> {
   const h = now.getUTCHours();
   // operator call: only the item the user approved, never a fallback to the bot's own picks
   if (env.X_FORCE_SHOWCASE || env.X_FORCE_PICK) return (await showcaseCandidate(env)) ?? (await forcedCandidate(env));
+  const busy = env.FEATURE_GATE === "on" ? await busyStreams(env) : new Set<string>(); // = gate.ts gateOn (gate imports xpick)
   return (
-    (await releaseCandidate(env, now)) ??
-    ((await pickDue(env, now)) && (await getSetting(env, "paused_picks")) !== "1" ? await pickCandidate(env) : null) ??
-    (h >= 20 && !(await postedToday(env, "highlight", now)) ? await highlightCandidate(env, now) : null)
+    (!busy.has("release") ? await releaseCandidate(env, now) : null) ??
+    (!busy.has("pick") && (await pickDue(env, now)) && (await getSetting(env, "paused_picks")) !== "1" ? await pickCandidate(env) : null) ??
+    (!busy.has("highlight") && h >= 20 && !(await postedToday(env, "highlight", now)) ? await highlightCandidate(env, now) : null)
   );
 }

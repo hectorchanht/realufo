@@ -18,19 +18,21 @@ const say = (msg: Record<string, unknown>) =>
 
 let tg: { method: string; body: any }[] = [];
 let downloads: string[] = [];
+let failGetFile = false;
 beforeEach(async () => {
   for (const t of ["bot_job_versions", "bot_jobs", "social_posts", "x_posts"]) await env.DB.prepare(`DELETE FROM ${t}`).run();
   await env.DB.prepare("DELETE FROM records WHERE id LIKE 'CM-%'").run();
   await env.DB.prepare("INSERT INTO records(id,archive,kind,title,status) VALUES ('CM-1','wargov','video','Cmd object','live')").run();
   await env.MEDIA.put("clips/wargov/CM-1.mp4", new Uint8Array(100), { httpMetadata: { contentType: "video/mp4" } });
   for (const o of (await env.MEDIA.list({ prefix: "showcase/wargov/CM-" })).objects) await env.MEDIA.delete(o.key);
-  tg = []; downloads = [];
+  tg = []; downloads = []; failGetFile = false;
   vi.spyOn(globalThis, "fetch").mockImplementation(async (u: any, init?: any) => {
     const url = String(u);
     if (url.includes("/file/botT0K/")) { downloads.push(url); return new Response(new Uint8Array(64)); }
     if (!url.startsWith("https://api.telegram.org/")) throw new Error("unexpected fetch " + url);
     const method = url.split("/").pop()!;
     tg.push({ method, body: init?.body instanceof FormData ? Object.fromEntries(init.body as any) : init?.body ? JSON.parse(init.body) : {} });
+    if (method === "getFile" && failGetFile) return new Response(JSON.stringify({ ok: false, description: "Bad Request: file is too big for botT0K" }), { status: 400 });
     if (method === "getFile") return new Response(JSON.stringify({ ok: true, result: { file_path: "videos/f.mp4" } }));
     return new Response(JSON.stringify({ ok: true, result: { message_id: 400 + tg.length } }));
   });
@@ -72,6 +74,23 @@ describe("admin commands", () => {
   it("/skip of a missing job says so", async () => {
     await say({ text: "/skip 999999" });
     expect(lastText()).toMatch(/not found or already closed/);
+  });
+  it("/skip #<id> works as typed in /queue; a non-number gets the usage line", async () => {
+    await say({ text: "/post CM-1" });
+    const id = (await env.DB.prepare("SELECT id FROM bot_jobs").first<any>()).id;
+    await say({ text: `/skip #${id}` });
+    expect((await jobs())[0].status).toBe("skipped");
+    for (const bad of ["/skip", "/skip abc", "/skip #", "/skip 0", "/skip 1.5"]) {
+      await say({ text: bad });
+      expect(lastText()).toBe("Usage: /skip <job number>");
+    }
+  });
+  it("a command that throws still answers 200 (no Telegram re-send loop) and tells the owner, without the bot token", async () => {
+    failGetFile = true;
+    const res = await say({ caption: "CM-1 Watch frame 12", video: { file_id: "F1", file_size: 64, mime_type: "video/mp4" } });
+    expect(res.status).toBe(200);
+    expect(lastText()).toMatch(/^⚠️ failed: telegram 400/);
+    expect(lastText()).not.toContain("T0K");
   });
   it("/status reports today's posts and the month's spend", async () => {
     await say({ text: "/status" });

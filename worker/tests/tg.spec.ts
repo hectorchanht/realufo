@@ -31,6 +31,14 @@ describe("tg client", () => {
     expect(f.get("caption")).toBe("cap");
     expect(f.get("video")).toBeInstanceOf(Blob);
   });
+  it("sendMedia sends an .mp4 stored with a missing or generic content type as video/mp4", async () => {
+    await env.MEDIA.put("tgtest/c.mp4", new Uint8Array(10), { httpMetadata: { contentType: "application/octet-stream" } });
+    await env.MEDIA.put("tgtest/d.mp4", new Uint8Array(10), { httpMetadata: { contentType: "binary/octet-stream" } });
+    await env.MEDIA.put("tgtest/e.mp4", new Uint8Array(10));
+    for (const k of ["c", "d", "e"]) await sendMedia(E, 7, `tgtest/${k}.mp4`);
+    expect(calls.map((c) => c.url.split("/").pop())).toEqual(["sendVideo", "sendVideo", "sendVideo"]);
+    expect(calls.map((c) => ((c.init.body as FormData).get("video") as Blob).type)).toEqual(["video/mp4", "video/mp4", "video/mp4"]);
+  });
   it("sendMedia throws 404 for a missing key and 413 over 50 MB, without calling Telegram", async () => {
     await expect(sendMedia(E, 7, "tgtest/none.mp4")).rejects.toMatchObject({ status: 404 });
     await env.MEDIA.put("tgtest/big.mp4", new Uint8Array(50 * 1024 * 1024 + 1), { httpMetadata: { contentType: "video/mp4" } });

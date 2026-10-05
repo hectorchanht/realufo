@@ -54,8 +54,10 @@ export async function command(env: Env, m: any) {
     case "/resume": await setSetting(env, "paused_picks", "0"); return say("Bot picks on (each still waits for your ✅).");
     case "/drain": await socialTick(env, now); return say("Fan-out ran once; /status for failures.");
     case "/skip": {
-      const j = await getJob(env, Number(arg));
-      return say(j && (await skip(env, j)) ? `#${j.id} skipped.` : `#${arg}: not found or already closed.`);
+      const n = Number(arg.replace(/^#/, "")); // "#12" as /queue prints it
+      if (!Number.isInteger(n) || n <= 0) return say("Usage: /skip <job number>");
+      const j = await getJob(env, n);
+      return say(j && (await skip(env, j)) ? `#${j.id} skipped.` : `#${n}: not found or already closed.`);
     }
     default: return say(HELP);
   }

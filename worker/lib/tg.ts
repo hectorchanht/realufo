@@ -36,7 +36,8 @@ export async function sendMedia(env: Env, chat: string | number, key: string, ca
   const o = await env.MEDIA.get(key);
   if (!o) throw new TgError(404, `media missing in R2: ${key}`);
   if (o.size > UPLOAD_MAX) { await o.body.cancel(); throw new TgError(413, `${key} is ${o.size} bytes (> 50 MB)`); }
-  const type = o.httpMetadata?.contentType ?? (key.endsWith(".mp4") ? "video/mp4" : "image/jpeg");
+  const ct = o.httpMetadata?.contentType;
+  const type = key.endsWith(".mp4") && (!ct || /octet-stream/.test(ct)) ? "video/mp4" : ct ?? "image/jpeg"; // generic type on an mp4 = video
   const video = type.startsWith("video/");
   const f = new FormData();
   f.set("chat_id", String(chat));

@@ -3,8 +3,9 @@ import { env } from "cloudflare:test";
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from "vitest";
 import { seedTestDB } from "./helpers";
 import worker from "../index";
-import { createJob, move, setMessages } from "../lib/jobs";
+import { createJob, move, revise, setMessages } from "../lib/jobs";
 import { approve, sweepStuck } from "../lib/gate";
+import { tick as socialTick } from "../lib/social/tick";
 
 beforeAll(() => seedTestDB(env.DB));
 
@@ -29,11 +30,17 @@ beforeEach(async () => {
   await env.DB.prepare("DELETE FROM bot_settings WHERE key='t_article'").run();
   await env.DB.prepare("DELETE FROM records WHERE id LIKE 'WH-%'").run();
   await env.MEDIA.delete("showcase/wargov/WH-S3.mp4");
+  await env.MEDIA.delete("clips/wargov/WH-M.mp4");
   tg = []; pings = []; xStatus = 201; xBody = { title: "err" };
   vi.spyOn(globalThis, "fetch").mockImplementation(async (u: any, init?: any) => {
     const url = String(u);
     if (url === "https://api.x.com/2/tweets") return new Response(JSON.stringify(xStatus < 300 ? { data: { id: "T1" } } : xBody), { status: xStatus });
     if (url === "https://api.indexnow.org/indexnow") { pings.push(JSON.parse(init.body)); return new Response(null, { status: 200 }); }
+    if (url.startsWith("https://api.x.com/2/media/upload/")) {
+      // X still encoding after the upload: asks to check again in 15 s
+      const step = url.split("/").pop();
+      return new Response(JSON.stringify(step === "initialize" ? { data: { id: "M1" } } : step === "finalize" ? { data: { processing_info: { state: "pending", check_after_secs: 15 } } } : {}));
+    }
     if (!url.startsWith("https://api.telegram.org/")) throw new Error("unexpected fetch " + url);
     tg.push({ method: url.split("/").pop()!, body: init.body instanceof FormData ? Object.fromEntries(init.body as any) : JSON.parse(init.body) });
     return new Response(JSON.stringify({ ok: true, result: { message_id: 300 + tg.length } }));
@@ -120,6 +127,12 @@ describe("POST /__tg", () => {
     const row = await env.DB.prepare("SELECT version, caption FROM bot_jobs WHERE id=?").bind(j.id).first<any>();
     expect(row).toEqual({ version: 2, caption: `New head\n${link}\n---\nSecond tweet\n---\nThird tweet` });
   });
+  it("a reply that is a command runs the command and leaves the preview alone", async () => {
+    const j = await mkJob();
+    await hook(E(), reply("/queue", 102));
+    expect(await env.DB.prepare("SELECT version, caption FROM bot_jobs WHERE id=?").bind(j.id).first()).toEqual({ version: 1, caption: draft.text });
+    expect(lastText()).toBe(`#${j.id} v1 · post · pick · WH-1 · post_wait`);
+  });
   it("a reply whose head is over 280 for X is refused and changes nothing", async () => {
     const j = await mkJob();
     await hook(E(), reply("x".repeat(300), 102));
@@ -194,23 +207,24 @@ describe("POST /__tg", () => {
     expect(await status(j2.id)).toEqual({ status: "failed", error: "earlier failure" });
     expect(lastText()).toMatch(/failed.*earlier failure/);
   });
-  it("the social fan-out starts only after the job is final (never holds it in approved)", async () => {
-    let jobAtFanout: Promise<any> | null = null;
-    const DB = new Proxy(env.DB, {
-      get: (t, k) => {
-        const v = (t as any)[k];
-        return k === "prepare"
-          ? (sql: string) => {
-              if (sql.includes("FROM x_posts x") && !jobAtFanout) jobAtFanout = t.prepare("SELECT status FROM bot_jobs ORDER BY id DESC LIMIT 1").first();
-              return t.prepare(sql);
-            }
-          : typeof v === "function" ? v.bind(t) : v;
-      },
-    });
+  it("✅ never runs the fan-out inline: the result line says the cron does it, and the cron's social tick picks it up", async () => {
     const j = await mkJob();
-    await hook(E({ DB, FEATURE_X: "on", FEATURE_SOCIAL_BSKY: "dry", SOCIAL_SINCE: "2020-01-01" }), tap(`ok:${j.id}:1`));
-    expect(await jobAtFanout).toEqual({ status: "posted" });
+    const e = E({ FEATURE_X: "on", FEATURE_SOCIAL_BSKY: "dry", SOCIAL_SINCE: "2020-01-01" });
+    await hook(e, tap(`ok:${j.id}:1`));
+    expect((await status(j.id)).status).toBe("posted");
+    expect(lastText()).toMatch(/fan-out on the next cron tick/);
+    expect((await env.DB.prepare("SELECT platform FROM social_posts").all()).results).toEqual([]);
+    await socialTick(e);
     expect((await env.DB.prepare("SELECT platform, status FROM social_posts").all<any>()).results).toEqual([{ platform: "bsky", status: "draft" }]);
+  });
+  it("✅ waits only briefly for X's video processing: slow media lands as 'processing' for the cron to finish", async () => {
+    const media = { key: "clips/wargov/WH-M.mp4", mime: "video/mp4", size: 100 };
+    await env.MEDIA.put(media.key, new Uint8Array(100), { httpMetadata: { contentType: "video/mp4" } });
+    const j = (await createJob(E(), { kind: "post", stream: "pick", ref: "WH-M", status: "post_wait", caption: "t", media, payload: { x: { ...draft, ref: "WH-M", media } } }))!;
+    await hook(E({ FEATURE_X: "on" }), tap(`ok:${j.id}:1`)); // the default 120 s wait would sleep 15 s here and time out
+    expect(await xposts()).toEqual([{ stream: "pick", ref: "WH-M", text: "t", status: "processing" }]);
+    expect((await status(j.id)).status).toBe("posted");
+    expect(lastText()).toMatch(/\(processing\)/);
   });
   it("sweep: a job stuck in approved for 15+ minutes fails and the owner is told; fresh ones and gate-off are left alone", async () => {
     const stuck = await mkJob();
@@ -225,6 +239,29 @@ describe("POST /__tg", () => {
     expect(lastText()).toMatch(new RegExp(`#${stuck.id} approve was interrupted; check X before re-posting`));
     tg = [];
     await sweepStuck(E()); // nothing left to do: no second message
+    expect(tg).toEqual([]);
+  });
+  it("sweep: a waiting job whose preview never got its buttons (15+ min) fails and the owner is told; delivered and re-sent ones stay", async () => {
+    const old = (id: number) => env.DB.prepare("UPDATE bot_jobs SET updated_at=datetime('now','-20 minutes') WHERE id=?").bind(id).run();
+    const cut = (await createJob(E(), { kind: "post", stream: "pick", ref: "WH-C1", status: "post_wait", caption: "t", media: null, payload: { x: draft } }))!;
+    const empty = (await createJob(E(), { kind: "post", stream: "manual", ref: "WH-C2", status: "post_wait", caption: "t", media: null, payload: { x: draft } }))!;
+    await setMessages(E(), empty.id, []);
+    const shown = (await createJob(E(), { kind: "post", stream: "manual", ref: "WH-C3", status: "post_wait", caption: "t", media: null, payload: { x: draft } }))!;
+    await setMessages(E(), shown.id, [601, 602]);
+    const edited = (await createJob(E(), { kind: "post", stream: "manual", ref: "WH-C4", status: "post_wait", caption: "t", media: null, payload: { x: draft } }))!;
+    await setMessages(E(), edited.id, [701]);
+    for (const j of [cut, empty, shown, edited]) await old(j.id);
+    await revise(E(), edited.id, 1, "t2", "owner edit"); // a revision is fresh again (its new preview is on the way)
+    await sweepStuck(E());
+    expect(await status(cut.id)).toEqual({ status: "failed", error: "preview interrupted" });
+    expect(await status(empty.id)).toEqual({ status: "failed", error: "preview interrupted" });
+    expect((await status(shown.id)).status).toBe("post_wait");
+    expect((await status(edited.id)).status).toBe("post_wait");
+    const sent = tg.filter((t) => t.method === "sendMessage").map((t) => t.body.text as string);
+    expect(sent).toHaveLength(2);
+    expect(sent[0]).toMatch(new RegExp(`#${cut.id} .*WH-C1.*preview`));
+    tg = [];
+    await sweepStuck(E());
     expect(tg).toEqual([]);
   });
   it("the cron sweeps stuck jobs on every tick, even with FEATURE_X off", async () => {
@@ -261,6 +298,16 @@ describe("POST /__tg", () => {
     expect(await status(j.id)).toMatchObject({ status: "failed", error: expect.stringMatching(/showcase video missing/) });
     expect(await env.DB.prepare("SELECT value FROM bot_settings WHERE key='t_article'").first()).toBeNull();
     expect(pings).toEqual([]);
+  });
+  it("article approval whose showcase post fails after the site rows: the owner is told the rows were written", async () => {
+    await env.DB.prepare("INSERT INTO records(id,archive,kind,title,status) VALUES ('WH-S3','wargov','video','Showcase test','live')").run();
+    await env.MEDIA.put("showcase/wargov/WH-S3.mp4", new Uint8Array(100), { httpMetadata: { contentType: "video/mp4" } });
+    const j = (await createJob(E(), { kind: "article", stream: "article", ref: "art-5", status: "post_wait", caption: "Story", media: null,
+      payload: { sql: ["INSERT INTO bot_settings(key, value) VALUES ('t_article', '1')"], urls: ["https://realufo.org/a/v"], showcase: { record: "WH-S3", text: "Watch this" } } }))!;
+    await hook(E({ FEATURE_X: "off" }), tap(`ok:${j.id}:1`));
+    expect((await status(j.id)).status).toBe("failed");
+    expect(await env.DB.prepare("SELECT value FROM bot_settings WHERE key='t_article'").first()).toEqual({ value: "1" });
+    expect(lastText()).toBe(`⚠️ #${j.id} failed after the site rows were written: FEATURE_X is off`);
   });
   it("article approval with a showcase: site rows, then the staged showcase post", async () => {
     await env.DB.prepare("INSERT INTO records(id,archive,kind,title,status) VALUES ('WH-S3','wargov','video','Showcase test','live')").run();

@@ -73,6 +73,22 @@ describe("release candidates", () => {
   });
 });
 
+describe("gate on: a bot stream with an open job is skipped", () => {
+  it("offers the next stream instead of re-drafting the busy one; gate off unchanged", async () => {
+    const clear = async () => { await env.DB.prepare("DELETE FROM bot_job_versions").run(); await env.DB.prepare("DELETE FROM bot_jobs").run(); };
+    await clear();
+    await rec("XT-A3", "pdf", { archive: "aaro", created: "2026-10-10 06:00:00" });
+    await rec("XT-V3", "video");
+    await clip("XT-V3");
+    await env.DB.prepare("INSERT INTO bot_jobs(kind,stream,ref,status,payload) VALUES ('post','release','aaro:2026-10-09','post_wait','{}')").run();
+    expect((await nextCandidate(E(), NOW))?.stream).toBe("release"); // gate off: as before
+    expect(await nextCandidate(E({ FEATURE_GATE: "on" }), NOW)).toMatchObject({ stream: "pick", ref: "XT-V3" });
+    await env.DB.prepare("UPDATE bot_jobs SET status='skipped'").run(); // closed: the stream is free again
+    expect((await nextCandidate(E({ FEATURE_GATE: "on" }), NOW))?.stream).toBe("release");
+    await clear();
+  });
+});
+
 describe("showcase (X_FORCE_SHOWCASE)", () => {
   it("posts the operator video + text for a live record, once, only if the video exists", async () => {
     await rec("XT-S1", "video");

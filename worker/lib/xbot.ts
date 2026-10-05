@@ -79,10 +79,10 @@ async function resume(env: Env, s: XSecrets, now: Date) {
   }
 }
 
-async function upload(env: Env, s: XSecrets, rowId: number, media: Media, sleep?: (ms: number) => Promise<void>) {
+async function upload(env: Env, s: XSecrets, rowId: number, media: Media, sleep?: (ms: number) => Promise<void>, maxWaitMs?: number) {
   if (!media) return { ids: [] as string[], processing: false };
   try {
-    const up = await uploadMedia(s, r2Source(env, media.key, media.size), media.mime, { sleep });
+    const up = await uploadMedia(s, r2Source(env, media.key, media.size), media.mime, { sleep, maxWaitMs });
     await env.DB.prepare("UPDATE x_posts SET media_id=? WHERE id=?").bind(up.mediaId, rowId).run();
     return { ids: up.ready ? [up.mediaId] : [], processing: !up.ready };
   } catch (e) {
@@ -113,7 +113,8 @@ export async function stage(env: Env, c: Candidate, now: Date): Promise<Draft | 
 }
 
 // Write the x_posts row and post it (the pre-gate path, unchanged). Returns the row id (null = duplicate).
-export async function publishDraft(env: Env, d: Draft, now = new Date(), sleep?: (ms: number) => Promise<void>): Promise<number | null> {
+// maxWaitMs caps the wait for X's media processing (default uploadMedia's); past it the row stays 'processing' for resume().
+export async function publishDraft(env: Env, d: Draft, now = new Date(), sleep?: (ms: number) => Promise<void>, maxWaitMs?: number): Promise<number | null> {
   const mode = env.FEATURE_X ?? "off";
   if (mode !== "dry" && mode !== "on") throw new Error("FEATURE_X is off");
   const s = secretsOf(env);
@@ -126,7 +127,7 @@ export async function publishDraft(env: Env, d: Draft, now = new Date(), sleep?:
   if (!ins) { log({ duplicate: d.stream, ref: d.ref }); return null; }
   log({ stream: d.stream, ref: d.ref, mode, ai: d.ai, media, cost: d.cost });
   if (mode === "dry" || !s) return ins.id;
-  const up = await upload(env, s, ins.id, d.media, sleep);
+  const up = await upload(env, s, ins.id, d.media, sleep, maxWaitMs);
   if (up.processing) {
     await env.DB.prepare("UPDATE x_posts SET status='processing' WHERE id=?").bind(ins.id).run();
     return ins.id;
