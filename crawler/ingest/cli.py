@@ -1,6 +1,6 @@
 import argparse, os, sys, tempfile
 from . import d1, r2
-from .sources import wargov, snapshot, nsa
+from .sources import wargov, snapshot, nsa, nara_api
 
 HERE = os.path.dirname(__file__)
 DATA = os.path.join(HERE, "data")
@@ -22,6 +22,12 @@ def _load_source(slug, taken, work):
         return wargov.candidates(paths, _dvids_map(), taken), wargov.ARCHIVE_ROW
     if slug == "nsa":
         return nsa.candidates(taken), nsa.ARCHIVE_ROW
+    if slug == "nara":
+        # Live NARA Catalog API first; snapshot JSON fallback when the API is blocked
+        cands = nara_api.candidates(taken)
+        if cands:
+            return cands, nara_api.ARCHIVE_ROW
+        return snapshot.candidates(slug, DATA, taken), snapshot.ARCHIVE_ROWS[slug]
     return snapshot.candidates(slug, DATA, taken), snapshot.ARCHIVE_ROWS[slug]
 
 def build_plan(existing_ids, existing_urls, all_candidates):
