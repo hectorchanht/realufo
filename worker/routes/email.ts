@@ -7,7 +7,7 @@ import { sendEmail, shell, esc, EMAIL_RE, emailOn } from "../lib/email";
 // POST /api/email/subscribe {email} → sends the confirm email.
 export async function emailSubscribe(req: Request, env: Env) {
   if (!emailOn(env)) return error(503, "email off");
-  if (!(await allowWrite(req, env))) return error(429, "slow down");
+  if (!(await allowWrite(env, req, "email"))) return error(429, "slow down");
   let b: any;
   try { b = await req.json(); } catch { b = {}; }
   const email = String(b?.email ?? "").trim().toLowerCase();
