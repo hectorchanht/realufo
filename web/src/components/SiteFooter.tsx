@@ -79,6 +79,8 @@ export default function SiteFooter() {
           ...[...tabs, ...more].map((i) => (
             <li key={i.path}><Link className={linkCls} to={i.path}>{i.label}</Link></li>
           )),
+          // Wishing pool: anonymous content-request form (Google Forms).
+          <li key="wishing-pool"><a className="text-signal hover:underline" href="https://docs.google.com/forms/d/e/1FAIpQLSesgIQPmSYoGsR4n2nkKMp18enYripao1yezoO62kHtKPIqJw/viewform" target="_blank" rel="noopener">Request a file 🛸</a></li>,
         ])}
         {GROUPS.map(([kind, title]) => {
           const group = hubs.filter((h) => h.kind === kind);
