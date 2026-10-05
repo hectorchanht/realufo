@@ -12,9 +12,9 @@ const AI = { run: async () => ({ response: "A clip. #UAP" }) };
 const QUIET = { FEATURE_SOCIAL_FB: "off", FEATURE_SOCIAL_IG: "off", FEATURE_SOCIAL_THREADS: "off", FEATURE_SOCIAL_BSKY: "off", FEATURE_SOCIAL_YT: "off", FEATURE_SOCIAL_TIKTOK: "off", FEATURE_SOCIAL_TG: "off", FEATURE_PUSH: "off", X_POLLS: "" };
 const E = () => ({ ...env, ...QUIET, ...SECRETS, AI, FEATURE_X: "dry", FEATURE_GATE: "on", X_MONTHLY_USD_CAP: "10", X_DAILY_MAX: "3",
   TELEGRAM_BOT_TOKEN: "T0K", TELEGRAM_OWNER_ID: "777", TELEGRAM_WEBHOOK_SECRET: "hook" }) as any;
-const say = (msg: Record<string, unknown>) =>
+const say = (msg: Record<string, unknown>, extra: Record<string, unknown> = {}) =>
   worker.fetch(new Request("https://realufo.org/__tg", { method: "POST", headers: { "x-telegram-bot-api-secret-token": "hook" },
-    body: JSON.stringify({ update_id: 9, message: { message_id: 50, from: { id: 777 }, chat: { id: 777 }, ...msg } }) }), E(), {} as any);
+    body: JSON.stringify({ update_id: 9, message: { message_id: 50, from: { id: 777 }, chat: { id: 777 }, ...msg } }) }), { ...E(), ...extra }, {} as any);
 
 let tg: { method: string; body: any }[] = [];
 let downloads: string[] = [];
@@ -53,9 +53,25 @@ describe("admin commands", () => {
     expect(await jobs()).toEqual([expect.objectContaining({ kind: "post", stream: "manual", ref: "CM-1", status: "post_wait" })]);
     expect(tg.map((t) => t.method)).toContain("sendVideo");
   });
-  it("/post of an unknown or already-posted record explains why", async () => {
+  it("/post says the exact reason when no preview is made", async () => {
+    await say({ text: "/post" });
+    expect(lastText()).toBe("Usage: /post <record ID>");
     await say({ text: "/post NOPE-1" });
-    expect(lastText()).toMatch(/not live|already posted|over budget/);
+    expect(lastText()).toBe("NOPE-1: no record with that ID.");
+    await env.DB.prepare("INSERT INTO records(id,archive,kind,title,status) VALUES ('CM-2','wargov','video','Not yet','pending'), ('CM-3','wargov','pdf','Doc (original title not published)','live')").run();
+    await say({ text: "/post CM-2" });
+    expect(lastText()).toBe("CM-2: record is pending, not live.");
+    await say({ text: "/post CM-3" });
+    expect(lastText()).toBe("CM-3: its title isn't published yet (placeholder), so it isn't offered.");
+    await say({ text: "/post CM-1" }, { X_MONTHLY_USD_CAP: "0" });
+    expect(lastText()).toMatch(/^CM-1: over the monthly X budget \(\$0\.00 spent \+ \$0\.\d\d for this post > \$0\)\.$/);
+    await env.DB.prepare("INSERT INTO x_posts(stream,ref,text,ai,cost_usd,status,created_at) VALUES ('pick','CM-1','t',0,0,'posted','2026-10-03 08:38:57')").run();
+    await say({ text: "/post CM-1" });
+    expect(lastText()).toBe("CM-1: already posted on X on 2026-10-03.");
+    await env.DB.prepare("UPDATE x_posts SET status='failed' WHERE ref='CM-1'").run();
+    await say({ text: "/post CM-1" });
+    expect(lastText()).toBe("CM-1: an earlier X post failed on 2026-10-03; that row blocks a re-post.");
+    expect(await jobs()).toEqual([]);
   });
   it("/pause and /resume flip paused_picks", async () => {
     await say({ text: "/resume" });

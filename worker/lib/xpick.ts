@@ -36,15 +36,19 @@ export const costOf = (c: Candidate) => ("link" in c ? 0.2 : 0.015) + (c.media ?
 // Operator posts (POST /__tick?showcase= / ?force=) skip the daily count; the monthly $ cap always applies.
 export const isManual = (c: Candidate) => c.stream === "showcase" || (c.stream === "pick" && !!c.manual);
 
-// Rows that may have cost money: everything but failed (x_posts + story polls).
-export async function withinBudget(env: Env, cost: number, now: Date, manual = false): Promise<boolean> {
-  const t = sqlTime(now);
+// This month's X spend: rows that may have cost money, everything but failed (x_posts + story polls).
+export async function monthSpend(env: Env, now: Date): Promise<number> {
   const r = await env.DB.prepare(
-    `SELECT sum(date(created_at)=date(?1)) today, coalesce(sum(CASE WHEN strftime('%Y-%m',created_at)=strftime('%Y-%m',?1) THEN cost_usd END),0)
-       + (SELECT coalesce(sum(cost_usd),0) FROM poll_social WHERE status!='failed' AND strftime('%Y-%m',created_at)=strftime('%Y-%m',?1)) month
-     FROM x_posts WHERE status!='failed'`
-  ).bind(t).first<{ today: number | null; month: number }>();
-  return (manual || (r?.today ?? 0) < Number(env.X_DAILY_MAX ?? 3)) && (r?.month ?? 0) + cost <= Number(env.X_MONTHLY_USD_CAP ?? 10) + 1e-9;
+    `SELECT (SELECT coalesce(sum(cost_usd),0) FROM x_posts WHERE status!='failed' AND strftime('%Y-%m',created_at)=strftime('%Y-%m',?1))
+       + (SELECT coalesce(sum(cost_usd),0) FROM poll_social WHERE status!='failed' AND strftime('%Y-%m',created_at)=strftime('%Y-%m',?1)) usd`
+  ).bind(sqlTime(now)).first<{ usd: number }>();
+  return r?.usd ?? 0;
+}
+
+export async function withinBudget(env: Env, cost: number, now: Date, manual = false): Promise<boolean> {
+  const today = manual ? 0 : (await env.DB.prepare("SELECT count(*) n FROM x_posts WHERE status!='failed' AND date(created_at)=date(?)")
+    .bind(sqlTime(now)).first<{ n: number }>())?.n ?? 0;
+  return today < Number(env.X_DAILY_MAX ?? 3) && (await monthSpend(env, now)) + cost <= Number(env.X_MONTHLY_USD_CAP ?? 10) + 1e-9;
 }
 
 export async function mediaFor(env: Env, rec: { id: string; archive: string; kind: string }): Promise<Media> {

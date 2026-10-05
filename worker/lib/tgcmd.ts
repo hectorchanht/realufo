@@ -3,7 +3,7 @@ import type { Env } from "../env";
 import { getJob, openJobs, OPEN, setSetting } from "./jobs";
 import { queue, skip } from "./gate";
 import { stage } from "./xbot";
-import { nextCandidate, sqlTime } from "./xpick";
+import { costOf, monthSpend, nextCandidate, sqlTime, type Candidate } from "./xpick";
 import { tick as socialTick } from "./social/tick";
 import { getFile, sendMessage } from "./tg";
 
@@ -29,9 +29,10 @@ export async function command(env: Env, m: any) {
   const now = new Date();
   switch (cmd) {
     case "/post": {
-      const c = arg && (await nextCandidate({ ...env, X_FORCE_PICK: arg }, now));
+      if (!arg) return say("Usage: /post <record ID>");
+      const c = await nextCandidate({ ...env, X_FORCE_PICK: arg }, now);
       const d = c && (await stage(env, c, now));
-      if (!c || !d) return say(`${arg || "?"}: not live, already posted, or over budget.`);
+      if (!c || !d) return say(await whyNot(env, arg, c, now));
       const j = await queue(env, c, d);
       return j ? undefined : say(`${arg} already has an open job.`);
     }
@@ -43,11 +44,10 @@ export async function command(env: Env, m: any) {
       const day = sqlTime(now);
       const x = await env.DB.prepare("SELECT status, count(*) n FROM x_posts WHERE date(created_at)=date(?) GROUP BY status").bind(day).all<{ status: string; n: number }>();
       const f = await env.DB.prepare("SELECT platform, count(*) n FROM social_posts WHERE status='failed' AND deleted_at IS NULL AND created_at>=datetime(?,'-1 day') GROUP BY platform").bind(day).all<{ platform: string; n: number }>();
-      const m$ = await env.DB.prepare("SELECT coalesce(sum(cost_usd),0) usd FROM x_posts WHERE status!='failed' AND strftime('%Y-%m',created_at)=strftime('%Y-%m',?)").bind(day).first<{ usd: number }>();
       return say([
         `Today on X: ${x.results.map((r) => `${r.status} ${r.n}`).join(", ") || "nothing"}`,
         `Failed last 24 h: ${f.results.map((r) => `${r.platform} ${r.n}`).join(", ") || "none"}`,
-        `Month spend: $${(m$?.usd ?? 0).toFixed(2)} of $${env.X_MONTHLY_USD_CAP ?? "10"}`,
+        `Month spend: $${(await monthSpend(env, now)).toFixed(2)} of $${env.X_MONTHLY_USD_CAP ?? "10"}`,
       ].join("\n"));
     }
     case "/pause": await setSetting(env, "paused_picks", "1"); return say("Bot picks paused.");
@@ -61,6 +61,25 @@ export async function command(env: Env, m: any) {
     }
     default: return say(HELP);
   }
+}
+
+// The one reason a /post <ID> got no preview. c = forced candidate (null: the record itself was refused).
+async function whyNot(env: Env, id: string, c: Candidate | null, now: Date): Promise<string> {
+  if (c) {
+    // record is fine; stage refused it, and for a forced pick only the monthly cap can (no daily count)
+    return `${id}: over the monthly X budget ($${(await monthSpend(env, now)).toFixed(2)} spent + $${costOf(c).toFixed(2)} for this post > $${env.X_MONTHLY_USD_CAP ?? "10"}).`;
+  }
+  const r = await env.DB.prepare("SELECT status, title FROM records WHERE id=?").bind(id).first<{ status: string; title: string | null }>();
+  if (!r) return `${id}: no record with that ID.`;
+  if (r.status !== "live") return `${id}: record is ${r.status}, not live.`;
+  if ((r.title ?? "").includes("original title not published")) return `${id}: its title isn't published yet (placeholder), so it isn't offered.`;
+  const p = await env.DB.prepare("SELECT status, created_at FROM x_posts WHERE stream='pick' AND ref=? ORDER BY id DESC LIMIT 1")
+    .bind(id).first<{ status: string; created_at: string }>();
+  if (p) {
+    const day = p.created_at.slice(0, 10);
+    return p.status === "failed" ? `${id}: an earlier X post failed on ${day}; that row blocks a re-post.` : `${id}: already posted on X on ${day}.`;
+  }
+  return `${id}: not offered (no reason found; check the logs).`;
 }
 
 async function upload(env: Env, m: any, say: (t: string) => Promise<number>) {
