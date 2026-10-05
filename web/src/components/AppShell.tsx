@@ -40,7 +40,6 @@ import { OverlayHost } from "../overlays/OverlayProvider";
 import { TopNav } from "./TopNav";
 import { AppBar } from "./AppBar";
 import { BottomTab } from "./BottomTab";
-import { TextSizeBadge } from "./TextSizer";
 import { activeTabForPath, canBackForPath, goBack, rememberTabUrl } from "./navItems";
 
 export function AppShell() {
@@ -144,8 +143,6 @@ export function AppShell() {
             </main>
 
             {!isDesktop && <BottomTab ref={bnavRef} activeTab={activeTab} hidden={navHidden} />}
-            {/* Desktop: a floating text-size button bottom-right (phones have it on the tab bar). */}
-            {isDesktop && <TextSizeBadge up size={40} style={{ left: "calc(100% - 44px)", top: "calc(100% - 44px)" }} />}
           </div>
 
           {/* Overlays (Composer/MediaViewer/Toast) mount INSIDE the
