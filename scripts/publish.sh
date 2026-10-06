@@ -90,6 +90,26 @@ PY
     echo "== uploading $FILE -> showcase/$arch/$ID.mp4"
     npx wrangler r2 object put "realufo/showcase/$arch/$ID.mp4" --file "$FILE" --content-type video/mp4 \
       --cache-control "public, max-age=2592000" --remote --env-file /dev/null >/dev/null
+    # motion score for the feed's motion-first ordering (db/migrations/0042);
+    # best-effort: skipped silently when ffmpeg/numpy is missing
+    sql=$(python3 - "$ROOT" "$FILE" "$ID" <<'PY' 2>/dev/null || true
+import sys
+sys.path.insert(0, f"{sys.argv[1]}/crawler")
+try:
+    import time
+    from ingest.motion import score_frames
+    motion, n = score_frames(sys.argv[2])
+    rid = sys.argv[3].replace("'", "''")
+    print(f"INSERT INTO short_motion (record_id, kind, motion, frames, computed_at) VALUES "
+          f"('{rid}', 'showcase', {motion}, {n}, {int(time.time())}) "
+          f"ON CONFLICT(record_id, kind) DO UPDATE SET motion=excluded.motion, "
+          f"frames=excluded.frames, computed_at=excluded.computed_at;")
+    print(f"motion {motion} (frames={n})", file=sys.stderr)
+except Exception:
+    pass
+PY
+)
+    [ -n "$sql" ] && q "$sql" >/dev/null || true
   else
     QS="force=$ID"
   fi

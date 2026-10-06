@@ -21,7 +21,7 @@ promotes it to clips-v/<archive>/<id>.mp4 — one curated Short per day, no batc
 Both need a TTF at $CLIP_FONT (default: DejaVu Sans Bold from apt fonts-dejavu-core); the path
 must not contain spaces, ':' or quotes (ffmpeg filtergraph syntax).
 """
-import argparse, os, re, subprocess, sys, tempfile
+import argparse, os, re, subprocess, sys, tempfile, time
 from . import d1, fetch, r2
 from .models import R2_BASE
 
@@ -199,6 +199,23 @@ def todo(rows, exists=fetch.head_ok, limit=None, force=False, keyf=key, live_key
             break
     return out
 
+def record_motion(rid, kind, path):
+    """Best-effort: score the rendered clip's first frames into short_motion
+    (db/migrations/0042) so the feed's motion-first ordering picks it up.
+    Never raises — a missing table (migration not yet applied), missing numpy
+    or an ffmpeg hiccup must not fail a render."""
+    try:
+        from .motion import score_frames
+        motion, n = score_frames(path)
+        d1.execute(
+            "INSERT INTO short_motion (record_id, kind, motion, frames, computed_at) VALUES "
+            f"({d1.sql_q(rid)}, '{kind}', {motion}, {n}, {int(time.time())}) "
+            "ON CONFLICT(record_id, kind) DO UPDATE SET motion=excluded.motion, "
+            "frames=excluded.frames, computed_at=excluded.computed_at")
+        print(f"motion {rid}: {motion}")
+    except Exception as e:  # noqa: BLE001 - scoring is advisory
+        print(f"motion SKIP {rid}: {str(e)[:120]}")
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="encode to --out only; no R2 upload")
@@ -251,6 +268,10 @@ def main(argv=None):
             continue
         if not args.dry_run:
             r2.put(keyf(row), out, "video/mp4")
+        if args.vertical and not args.dry_run:
+            # the 9:16 twin is what the feed's Shorts listing serves: score its
+            # first frames so the motion-first ordering picks it up (0042)
+            record_motion(row["id"], "twin", out)
         done += 1
         print(f"[{i}/{len(rows)}] ok   {row['id']} {start:.0f}s+{length:.0f}s {os.path.getsize(out) // 1024} KB -> {keyf(row)}")
     print(f"{'dry-run ' if args.dry_run else ''}clips={done} failed={failed} out={args.out}")

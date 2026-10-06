@@ -38,7 +38,9 @@ export async function feed(_req: Request, env: Env) {
   const now = Date.now();
   return json({
     featured: featured.results,
-    clips: await listShorts(env, { limit: 20 }),
+    // Motion-first: the carousel autoplays each card while it's on screen, so
+    // clips whose first few frames actually move come first (db/0042).
+    clips: await listShorts(env, { limit: 20, orderMotion: true }),
     hot: hot.results
       .map((t: any) => withThreadThumb(env, t))
       .map((t: any) => ({ t, score: trendScore(t, now) }))
