@@ -123,16 +123,17 @@ describe("listShorts", () => {
     expect(ids((await get("/api/feed")).clips).slice(0, 2)).toEqual(["SH-6", "SH-5"]);
   });
 
-  it("orderMotion: moving first-frames first; showcase row wins for the served kind; unscored last", async () => {
+  it("orderMotion: hand-made showcase first, then moving first-frames; showcase row wins for the served kind; unscored last", async () => {
     await env.DB.prepare(
       `INSERT INTO short_motion(record_id, kind, motion, frames, computed_at) VALUES
        ('SH-1','showcase',0.5,16,1), ('SH-1','twin',99.0,16,1),
        ('SH-2','twin',40.0,16,1), ('SH-5','showcase',10.0,16,1)`
     ).run();
-    // SH-1 serves the showcase file (0.5), not its twin row (99): 40 > 10 > 0.5,
-    // then the unscored SH-6/SH 7 in classic order (posted showcase, then unposted).
+    // Showcase outranks twins; within showcase motion DESC (SH-1 serves the
+    // showcase file (0.5), not its twin row (99)); unscored SH-6/SH 7 tie at
+    // -1 and fall back to posted order.
     const s = ids(await listShorts(env as any, { orderMotion: true }));
-    expect(s).toEqual(["SH-2", "SH-5", "SH-1", "SH-6", "SH 7"]);
+    expect(s).toEqual(["SH-5", "SH-1", "SH-6", "SH 7", "SH-2"]);
     // The classic order is untouched without the flag.
     expect(ids(await listShorts(env as any)).slice(0, 2)).toEqual(["SH-6", "SH-5"]);
   });

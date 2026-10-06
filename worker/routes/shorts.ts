@@ -49,8 +49,10 @@ export const clearShortsMemo = () => {
 // page text) or, for showcase Shorts, every word in the posted text.
 // total = every match, not just this page (0 for an offset past the end).
 // orderMotion = the feed's "Short clips" carousel: it autoplays each card
-// muted + looping while on screen, so clips whose FIRST FEW FRAMES move come
-// first (short_motion.motion, db/migrations/0042). Missing scores sort last.
+// muted + looping while on screen. Hand-made showcase Shorts rank first
+// (the operator's curated cuts), then everything by first-frames motion so
+// clips that open moving come before static title cards
+// (short_motion.motion, db/migrations/0042). Missing scores sort last.
 // The sqlite_master guard keeps an auto-deploy that races ahead of the manual
 // dashboard migration from emptying the feed instead of just ignoring motion.
 // Never throws: an R2/D1 error is logged and an empty list (the feed must not fail).
@@ -62,6 +64,7 @@ export async function queryShorts(env: Env, { q = "", limit = MAX, offset = 0, a
     if (!showcase.length && !twins.length) return { shorts: [], total: 0 };
     // Motion of the file actually served for each record (showcase wins, same
     // as the clip URL below); unscored records sort after every scored one.
+    // Ranked AFTER showcase: hand-made showcase Shorts always outrank twins.
     let motionOrder = "";
     if (orderMotion) {
       const has = await env.DB.prepare(
@@ -92,7 +95,7 @@ export async function queryShorts(env: Env, { q = "", limit = MAX, offset = 0, a
          (SELECT CAST(substr(a.crop, 1, instr(a.crop, ':') - 1) AS INT) < CAST(substr(a.crop, instr(a.crop, ':') + 1) AS INT)
             FROM assets a WHERE a.record_id=r.id AND a.role='full') portrait
        FROM records r WHERE ${where.join(" AND ")}
-       ORDER BY ${motionOrder}showcase DESC, posted DESC, portrait DESC, r.created_at DESC, r.id DESC LIMIT ? OFFSET ?`
+       ORDER BY showcase DESC, ${motionOrder}posted DESC, portrait DESC, r.created_at DESC, r.id DESC LIMIT ? OFFSET ?`
     ).bind(...bind, Math.min(MAX, Math.max(1, Math.floor(limit) || MAX)), Math.max(0, Math.floor(offset) || 0))
       .all<{ id: string; archive: string; title: string | null; thumb: string | null; showcase: number; total: number; likes: number; liked: number; comments: number }>();
     const shorts = results.map(({ id, archive, title, thumb, showcase, likes, liked, comments }) => ({
