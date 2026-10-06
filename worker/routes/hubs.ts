@@ -213,7 +213,7 @@ export async function loadHub(
   // past the first page's slice still resolves on page 1.
   const pickIds = firstPage ? highlightPickIds(hlRow) : [];
   const pickRows = pickIds.length
-    ? (await env.DB.prepare(`SELECT ${CARD_COLS} FROM records WHERE id IN (SELECT value FROM json_each(?)) AND status='live'`)
+    ? (await env.DB.prepare(`SELECT ${CARD_COLS} FROM records r WHERE r.id IN (SELECT value FROM json_each(?)) AND r.status='live'`)
         .bind(JSON.stringify(pickIds))
         .all<CardRow>()).results
     : [];
