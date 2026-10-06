@@ -105,6 +105,7 @@ export default function SiteFooter() {
           // SDK packages (proper nouns — no translation needed)
           <li key="npm"><a className={linkCls} href="https://www.npmjs.com/package/realufo" target="_blank" rel="noopener">npm package ↗</a></li>,
           <li key="pypi"><a className={linkCls} href="https://pypi.org/project/realufo/" target="_blank" rel="noopener">PyPI package ↗</a></li>,
+          <li key="mcp"><a className={linkCls} href="https://www.npmjs.com/package/realufo-mcp" target="_blank" rel="noopener">MCP server ↗</a></li>,
           ...FILES.map(([text, href]) => (
             <li key={href}><a className={linkCls} href={href}>{text === "Open dataset" ? t("footer.openDataset") : text}</a></li>
           )),

@@ -4,7 +4,13 @@ MCP (Model Context Protocol) server for the [RealUFO Public API](https://realufo
 
 Zero dependencies. Plain Node 18+.
 
+`REALUFO_BASE_URL` is optional (defaults to `https://realufo.org`); point it at a local worker when developing.
+
 ## Use
+
+```bash
+npx -y realufo-mcp
+```
 
 Claude Desktop config (`claude_desktop_config.json`):
 
@@ -12,15 +18,26 @@ Claude Desktop config (`claude_desktop_config.json`):
 {
   "mcpServers": {
     "realufo": {
-      "command": "node",
-      "args": ["/path/to/realufo/mcp/server.mjs"],
+      "command": "npx",
+      "args": ["-y", "realufo-mcp"],
       "env": { "REALUFO_BASE_URL": "https://realufo.org" }
     }
   }
 }
 ```
 
-`REALUFO_BASE_URL` is optional (defaults to `https://realufo.org`); point it at a local worker when developing.
+Or run from a local checkout:
+
+```json
+{
+  "mcpServers": {
+    "realufo": {
+      "command": "node",
+      "args": ["/path/to/realufo/mcp/server.mjs"]
+    }
+  }
+}
+```
 
 ## Tools
 

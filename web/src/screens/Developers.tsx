@@ -245,16 +245,17 @@ page = RealUFO().records(q="tic tac")`}</Code>
 
       <H2>MCP server</H2>
       <p className="mb-2 max-w-[680px] text-[14px] leading-[1.6] text-dim">
-        Query the archive from Claude Desktop, Claude Code and other MCP clients. Zero dependencies, plain Node 18+.
-        Source in the{" "}
+        Query the archive from Claude Desktop, Claude Code and other MCP clients. Zero dependencies, plain Node 18+.{" "}
+        <a className="text-signal hover:underline" href="https://www.npmjs.com/package/realufo-mcp">npm: realufo-mcp</a>{" "}
+        — source in the{" "}
         <a className="text-signal hover:underline" href="https://github.com/hectorchanht/realufo/tree/main/mcp">mcp/</a>{" "}
         directory of the repo.
       </p>
       <Code>{`{
   "mcpServers": {
     "realufo": {
-      "command": "node",
-      "args": ["/path/to/realufo/mcp/server.mjs"]
+      "command": "npx",
+      "args": ["-y", "realufo-mcp"]
     }
   }
 }`}</Code>
