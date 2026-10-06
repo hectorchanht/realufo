@@ -144,7 +144,12 @@ describe("Feed", () => {
     expect(video).toHaveAttribute("src", "https://assets.realufo.org/clips-v/wargov/vid1.mp4");
     expect(video).toHaveAttribute("poster", "https://assets.realufo.org/thumbs/wargov/vid1.jpg");
     expect(video.muted).toBe(true);
-    expect(screen.getByRole("link", { name: /all videos/i })).toHaveAttribute("href", "/archive?type=video");
+    // Two "all videos ›" links on the feed now: Short clips → the Archive's
+    // Shorts tab, Hot right now → the video records filter.
+    const allVideos = screen.getAllByRole("link", { name: /all videos/i });
+    expect(allVideos).toHaveLength(2);
+    expect(allVideos[0]).toHaveAttribute("href", "/archive?type=shorts");
+    expect(allVideos[1]).toHaveAttribute("href", "/archive?type=video");
   });
 
   it("plays clips on screen even under prefers-reduced-motion (Android animation scale 0)", async () => {

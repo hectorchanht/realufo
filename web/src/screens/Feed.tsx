@@ -79,7 +79,9 @@ function BrowseStrip() {
 
 // "Short clips" row: the 9:16 Shorts we post to social (showcase Shorts first,
 // title already burned in), muted + looping, each playing only while ≥60% on
-// screen; a tap opens the Shorts player. Hidden once the feed has answered with no clips.
+// screen; a tap opens the Shorts player. "all videos ›" goes to the Archive's
+// Shorts tab (/archive?type=shorts — "shorts" isn't a record kind, it swaps the
+// grid for the Shorts grid). Hidden once the feed has answered with no clips.
 function ClipCarousel({ clips, loading }: { clips: Short[]; loading: boolean }) {
   if (!loading && !clips.length) return null;
   return (
@@ -88,7 +90,7 @@ function ClipCarousel({ clips, loading }: { clips: Short[]; loading: boolean }) 
         <h2 id="feed-clips" className="font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
           ◆ Short clips
         </h2>
-        <Link to="/archive?type=video" className="font-mono text-[11px] text-signal">
+        <Link to="/archive?type=shorts" className="font-mono text-[11px] text-signal">
           all videos ›
         </Link>
       </div>
@@ -113,29 +115,38 @@ export function Feed() {
     <div data-screen="feed" className="animate-[fadeup_.4s_ease_both]">
       {feedFailed ? null : <ClipCarousel clips={feed?.clips ?? []} loading={feedLoading} />}
 
-      <div className="mx-0.5 mb-3 font-pixel text-[9px] uppercase tracking-[1px] text-faint">◆ Hot right now</div>
-      <div
-        data-grid
-        aria-busy={feedLoading}
-        className="mb-[26px] grid grid-flow-row-dense grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]"
-      >
-        {feedLoading
-          ? // Card-sized placeholders (the feed returns 6): reserving the grid's height
-            // keeps everything below it from jumping when /api/feed lands (was CLS 0.47).
-            Array.from({ length: 6 }, (_, i) => (
-              <div key={i} aria-hidden="true" className="overflow-hidden rounded-[15px] border border-line bg-surface motion-safe:animate-pulse">
-                <div className="aspect-[4/3] border-b border-line bg-bg2" />
-                <div className="h-[100px]" />
-              </div>
-            ))
-          : feedFailed
-          ? <div className="col-span-full"><LoadError error={error} onRetry={() => void refetch()} /></div>
-          : featured.map((record) => (
-              // All six fit in about one phone screen and any of them can be the LCP
-              // image (PageSpeed picked card 5 when only the first four were eager).
-              <DocCard key={record.id} record={record} variant="feed" priority />
-            ))}
-      </div>
+      <section aria-labelledby="feed-hot" className="mb-[26px]">
+        <div className="mx-0.5 mb-3 flex items-baseline justify-between">
+          <h2 id="feed-hot" className="font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
+            ◆ Hot right now
+          </h2>
+          <Link to="/archive?type=video" className="font-mono text-[11px] text-signal">
+            all videos ›
+          </Link>
+        </div>
+        <div
+          data-grid
+          aria-busy={feedLoading}
+          className="grid grid-flow-row-dense grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]"
+        >
+          {feedLoading
+            ? // Card-sized placeholders (the feed returns 6): reserving the grid's height
+              // keeps everything below it from jumping when /api/feed lands (was CLS 0.47).
+              Array.from({ length: 6 }, (_, i) => (
+                <div key={i} aria-hidden="true" className="overflow-hidden rounded-[15px] border border-line bg-surface motion-safe:animate-pulse">
+                  <div className="aspect-[4/3] border-b border-line bg-bg2" />
+                  <div className="h-[100px]" />
+                </div>
+              ))
+            : feedFailed
+            ? <div className="col-span-full"><LoadError error={error} onRetry={() => void refetch()} /></div>
+            : featured.map((record) => (
+                // All six fit in about one phone screen and any of them can be the LCP
+                // image (PageSpeed picked card 5 when only the first four were eager).
+                <DocCard key={record.id} record={record} variant="feed" priority />
+              ))}
+        </div>
+      </section>
 
       <div className="mx-0.5 mb-3 flex items-baseline justify-between">
         <div className="font-pixel text-[9px] uppercase tracking-[1px] text-faint">◆ Trending threads</div>
