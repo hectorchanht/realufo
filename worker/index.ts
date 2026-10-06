@@ -141,6 +141,37 @@ const LEGACY_PATH = /^\/(aaro|about|argentina|brazil|canada|chile|foia|geipan|gl
 
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    try {
+      return await handleFetch(req, env, ctx);
+    } catch (e) {
+      // Transient D1 overload (e.g. "D1 DB is overloaded. Requests queued for too
+      // long."): retry once after a short backoff instead of surfacing an uncaught
+      // exception. Only safe for GET/HEAD — request bodies can't be replayed.
+      if (isD1Overload(e) && (req.method === "GET" || req.method === "HEAD")) {
+        await new Promise((r) => setTimeout(r, 800));
+        try {
+          return await handleFetch(req, env, ctx);
+        } catch {
+          // fall through to the 500 below
+        }
+      }
+      console.error("fetch uncaught", e instanceof Error ? e.message : e);
+      return error(500, "internal error");
+    }
+  },
+  async scheduled(_c: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(runTick(env));
+  },
+} satisfies ExportedHandler<Env>;
+
+// D1 overload signatures worth one retry: the database was momentarily saturated,
+// not a query bug. Matches "D1 DB is overloaded. Requests queued for too long."
+const isD1Overload = (e: unknown): boolean => {
+  const m = e instanceof Error ? e.message : String(e);
+  return /D1.*overload|overload.*D1|D1_ERROR/i.test(m);
+};
+
+async function handleFetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
     if (url.hostname.startsWith("www.")) return Response.redirect(`https://${url.hostname.slice(4)}${url.pathname}${url.search}`, 301);
     // The old static site moved to release.realufo.org; its realufo.org URLs are
@@ -178,8 +209,4 @@ export default {
     const docText = url.pathname.match(/^\/doc\/([^/]+)\/text$/);
     if (docText) return recordText(req, env, { id: decodeURIComponent(docText[1]) });
     return serveWithMeta(req, env); // SPA + assets, with per-route meta/OG injection for deep links
-  },
-  async scheduled(_c: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
-    ctx.waitUntil(runTick(env));
-  },
-} satisfies ExportedHandler<Env>;
+}
