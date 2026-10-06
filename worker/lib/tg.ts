@@ -52,6 +52,21 @@ export const answerCallback = async (env: Env, id: string, text?: string) => {
   await call(env, "answerCallbackQuery", { callback_query_id: id, ...(text ? { text } : {}) });
 };
 
+// Chat "typing… / uploading video…" indicator. Best effort: never fails the caller.
+export const sendAction = (env: Env, chat: string | number, action: "typing" | "upload_video" | "upload_photo") =>
+  call(env, "sendChatAction", { chat_id: chat, action }).catch(() => {});
+
+export const deleteMessage = (env: Env, chat: string | number, messageId: number) =>
+  call(env, "deleteMessage", { chat_id: chat, message_id: messageId });
+
+// "⏳ doing…" placeholder for slow ops (staging, uploading, publishing).
+// Returns a cleanup that deletes it — call it in a finally.
+export async function progress(env: Env, chat: string | number, text: string): Promise<() => Promise<void>> {
+  let id = 0;
+  try { id = await sendMessage(env, chat, `⏳ ${text}`); } catch { /* non-fatal */ }
+  return async () => { if (id) await deleteMessage(env, chat, id).catch(() => {}); };
+}
+
 // Re-render a bot message in place (queue list refresh after an approve/skip tap).
 export const editMessage = async (env: Env, chat: string | number, messageId: number, text: string, keyboard?: Keyboard) => {
   await call(env, "editMessageText", {

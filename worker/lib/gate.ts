@@ -3,7 +3,7 @@ import type { Env } from "../env";
 import { ARCHIVE_NAME, CDN, SITE, nextCandidate, sqlTime, withinBudget, thumbFor, evidenceText, type Candidate, type Media } from "./xpick";
 import { publishDraft, stage, type Draft } from "./xbot"; // xbot imports gate back: only used inside functions, never at load
 import { createJob, move, setMessages, streamPaused, type Job, type JobKind } from "./jobs";
-import { sendMedia, sendMessage, TgError, type Keyboard } from "./tg";
+import { sendAction, sendMedia, sendMessage, TgError, type Keyboard } from "./tg";
 import { indexNow } from "./indexnow";
 
 // The Telegram gate (spec 2026-10-04-realufo-telegram-gate-design): nothing is posted
@@ -94,6 +94,7 @@ export async function sendJobMedia(env: Env, job: Job): Promise<{ msgs: number[]
   const tag = `#${job.id} · ${job.ref}`;
   const sendOne = async (key: string, caption?: string) => {
     try {
+      await sendAction(env, chat, key.endsWith(".mp4") ? "upload_video" : "upload_photo");
       msgs.push(await sendMedia(env, chat, key, caption));
     } catch (e) {
       // too big / missing / any send error: the text + buttons still go out, with the CDN link

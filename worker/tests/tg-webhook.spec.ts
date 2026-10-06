@@ -337,6 +337,9 @@ describe("POST /__tg", () => {
     const edits = tg.filter((t) => t.method === "editMessageText");
     expect(edits.length).toBe(1);
     expect(edits[0].body.text).toContain("empty");
+    // a ⏳ posting… placeholder was shown and cleaned up
+    expect(tg.filter((t) => t.method === "sendMessage").map((t) => t.body.text as string).filter((t) => t.startsWith("⏳")).length).toBe(1);
+    expect(tg.filter((t) => t.method === "deleteMessage").length).toBe(1);
   });
   it("queue card: q re-renders the queue into the message", async () => {
     const j = await mkJob();
@@ -358,5 +361,10 @@ describe("POST /__tg", () => {
     const videos = tg.filter((t) => t.method === "sendVideo");
     expect(videos.length).toBe(1);
     expect(String(videos[0].body.caption)).toContain(`#${j.id} · WH-M`);
+    // loading state: chat action + a ⏳ placeholder that gets deleted afterwards
+    expect(tg.some((t) => t.method === "sendChatAction" && t.body.action === "upload_video")).toBe(true);
+    const prog = tg.filter((t) => t.method === "sendMessage").map((t) => t.body.text as string).filter((t) => t.startsWith("⏳"));
+    expect(prog.length).toBe(1);
+    expect(tg.filter((t) => t.method === "deleteMessage").length).toBe(1);
   });
 });

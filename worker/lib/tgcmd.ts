@@ -5,7 +5,7 @@ import { queue, skip } from "./gate";
 import { stage } from "./xbot";
 import { costOf, monthSpend, nextCandidate, sqlTime, type Candidate } from "./xpick";
 import { SKIP_REASONS, tick as socialTick } from "./social/tick";
-import { editMessage, getFile, sendMessage, setCommands, type Keyboard } from "./tg";
+import { editMessage, getFile, progress, sendAction, sendMessage, setCommands, type Keyboard } from "./tg";
 import { PORTAL_STREAMS } from "./tg-nlu";
 
 // Owner commands in the private chat (spec: "Admin commands"). Every post still waits for ✅.
@@ -73,8 +73,12 @@ export async function command(env: Env, m: any) {
       const c = await nextCandidate({ ...env, X_FORCE_PICK: arg }, now);
       const d = c && (await stage(env, c, now));
       if (!c || !d) return say(await whyNot(env, arg, c, now));
-      const j = await queue(env, c, d);
-      return j ? undefined : say(`${arg} already has an open job.`);
+      const done = await progress(env, chat, "preparing preview…");
+      try {
+        const j = await queue(env, c, d);
+        if (!j) await say(`${arg} already has an open job.`);
+      } finally { await done(); }
+      return;
     }
     case "/queue": {
       const card = await queueCard(env);
