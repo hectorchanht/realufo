@@ -113,7 +113,7 @@ curl -X DELETE https://realufo.org/api/v1/webhooks/wh_… \\
       <p className="mb-2 max-w-[680px] text-[14px] leading-[1.6] text-dim">
         Thin clients, zero dependencies. Source in the{" "}
         <a className="text-signal hover:underline" href="https://github.com/hectorchanht/realufo/tree/main/sdk">sdk/</a>{" "}
-        directory of the repo (npm / PyPI publishing is on the way).
+        directory of the repo.
       </p>
       <Code>{`npm install realufo        # JavaScript / TypeScript
 pip install realufo        # Python
