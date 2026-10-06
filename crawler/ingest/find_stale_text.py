@@ -15,13 +15,10 @@ Prints shell-safe assignments for the reindex workflow:
 import json
 import re
 import sys
-import urllib.parse
-import urllib.request
 
-from . import d1
+from . import d1, r2
 from .fulltext import select_pages
 
-TEXT_BASE = "https://assets.realufo.org/text/"
 BATCH = 100  # ids per D1 IN-query (pages column is wide)
 
 
@@ -38,57 +35,27 @@ def page_fresh(stored_text: str, expected_text: str) -> bool:
     return ns[:200] == ne[:200] and ns[-200:] == ne[-200:]
 
 
-UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"}
-
-
-def http_json(url: str):
-    req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.load(r)
-
-
-def wrangler_r2_get(key: str):
-    """Authenticated R2 read (slow, certain): same token the D1 queries use."""
+def fetch_r2(rid: str):
+    """Authoritative R2 read via wrangler. Never over HTTPS: the
+    assets.realufo.org edge cache (1-month Cache Rule) silently serves stale
+    copies after re-OCR rewrites (2026-10-06 FBI-UAP-D002) — comparing against
+    those would both miss real staleness and bless it as fresh. None only when
+    the read fails; the caller fails loudly on mass failure, never reports
+    'nothing stale' from unread data."""
     import os
-    import subprocess
     import tempfile
     fd, path = tempfile.mkstemp(suffix=".json")
     os.close(fd)
     try:
-        subprocess.run(["wrangler", "r2", "object", "get", f"realufo/{key}",
-                        "--file", path, "--remote"],
-                       capture_output=True, text=True, check=True, timeout=120)
+        r2.get(f"text/{rid}.json", path)
         with open(path, encoding="utf-8") as f:
             return json.load(f)
+    except Exception as e:
+        print(f"  WARN {rid}: R2 text unreadable: {e}", file=sys.stderr)
+        return None
     finally:
         if os.path.exists(path):
             os.remove(path)
-
-
-def fetch_r2(rid: str):
-    """R2 text/<id>.json via (1) the R2 custom domain, (2) the worker's /text
-    route (reads R2 server-side), (3) authenticated wrangler. None only when
-    all three fail — the caller must fail loudly on mass failure, never report
-    'nothing stale' from unread data."""
-    err1 = err2 = None
-    try:
-        return http_json(TEXT_BASE + urllib.parse.quote(rid, safe="") + ".json")
-    except Exception as e:
-        err1 = e
-    try:
-        doc = http_json(f"https://realufo.org/doc/{urllib.parse.quote(rid, safe='')}/text?format=json")
-        if doc.get("pages"):
-            return doc["pages"]
-        err2 = RuntimeError("worker text JSON has no pages")
-    except Exception as e:
-        err2 = e
-    try:
-        return wrangler_r2_get(f"text/{rid}.json")
-    except Exception as e3:
-        print(f"  WARN {rid}: R2 text unreadable (direct: {err1}; worker: {err2}; wrangler: {e3})",
-              file=sys.stderr)
-        return None
 
 
 def main() -> int:

@@ -10,8 +10,8 @@ reindex_sql, so the next run re-embeds it over the same vector ids. Progress is 
 vectors, so a crash means a retry. `failed` records are cleaned up (vectors
 deleted, row removed) at the start of the next live run and retried.
 """
-import argparse, json, os, subprocess, sys, tempfile, urllib.parse
-from . import cfapi, chunking, d1, fetch
+import argparse, json, os, subprocess, sys, tempfile
+from . import cfapi, chunking, d1, fetch, r2
 
 SELECT = """SELECT r.id, r.kind, r.title, r.agency, r.incident_date, r.location, r.summary,
   r.ai_moments, (SELECT ai_summary FROM record_text t WHERE t.record_id=r.id) AS ai_summary,
@@ -24,13 +24,15 @@ ORDER BY r.created_at DESC, r.id"""
 FAILED = "SELECT record_id, chunks FROM text_index WHERE status='failed'"
 FLUSH_EVERY = 25
 
-TEXT_BASE = "https://assets.realufo.org/text/"
-
 def pdf_pages(url: str, work: str, ocr_id: str | None = None) -> list[str]:
     if ocr_id:  # re-OCR'd by ingest.ocr: its R2 file is the canonical per-page text
+        # Authoritative R2 read (r2.get): never over HTTPS — the
+        # assets.realufo.org edge cache (1-month Cache Rule) can serve a stale
+        # copy after a re-OCR rewrite, and ingesting that silently writes old
+        # text back into D1 (hit 2026-10-06 on FBI-UAP-D002).
         path = os.path.join(work, "text.json")
         try:
-            fetch.download(TEXT_BASE + urllib.parse.quote(ocr_id, safe="") + ".json", path)
+            r2.get(f"text/{ocr_id}.json", path)
             with open(path, encoding="utf-8") as f:
                 return [p["text"] for p in json.load(f)]
         finally:

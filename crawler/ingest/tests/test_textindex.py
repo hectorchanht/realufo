@@ -98,15 +98,17 @@ def test_ocrd_rows_read_their_r2_text(world):
 def test_select_flags_records_with_an_ocr_marker():
     assert "record_ocr" in textindex.SELECT and "AS ocr" in textindex.SELECT
 
-def test_pdf_pages_with_ocr_id_reads_percent_encoded_r2_json(monkeypatch, tmp_path):
+def test_pdf_pages_with_ocr_id_reads_r2_authoritatively(monkeypatch, tmp_path):
+    # Never over HTTPS: the assets.realufo.org edge cache can serve a stale
+    # copy after a re-OCR rewrite (2026-10-06 FBI-UAP-D002).
     seen = []
-    def download(url, dest):
-        seen.append(url)
+    def r2get(key, dest):
+        seen.append(key)
         with open(dest, "w", encoding="utf-8") as f:
             json.dump([{"n": 1, "text": "one", "src": "pdf"}, {"n": 2, "text": "", "src": "ocr", "conf": 0.0}], f)
-    monkeypatch.setattr(textindex.fetch, "download", download)
+    monkeypatch.setattr(textindex.r2, "get", r2get)
     assert textindex.pdf_pages("https://cdn/x.pdf", str(tmp_path), "O'Hare 1.pdf") == ["one", ""]
-    assert seen == ["https://assets.realufo.org/text/O%27Hare%201.pdf.json"]
+    assert seen == ["text/O'Hare 1.pdf.json"]
 
 def test_partial_runs_leave_other_failed_records_vectors_alone(world):
     # summaries marks many records failed; a --limit/--kind pilot must not strip all of them from Ask

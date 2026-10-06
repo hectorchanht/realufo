@@ -79,7 +79,9 @@ jobs:
             python -m ingest.fulltext
             python -m ingest.summaries --ids $IDS
             python -m ingest.textindex
-            python -m ingest.tldr --ids $IDS
+            # tldr's check() rejects some records (they keep their old TL;DRs):
+            # never let that block cards + indexnow for the rest.
+            python -m ingest.tldr --ids $IDS || echo "tldr: some records failed check(), kept old TL;DRs (see log)"
             python -m ingest.cards --ids $IDS
             for id in $IDS; do
               python3 indexnow.py "https://realufo.org/doc/$id" "https://realufo.org/doc/$id/text"
