@@ -96,15 +96,53 @@ const homePage: Loader = async (env, _g, url) => ({
   body: homeBody(await latest(env)),
 });
 
-const archivePage: Loader = async (env) => {
-  const [agencies, recent] = await Promise.all([
+const archivePage: Loader = async (env, _g, url) => {
+  const [agencies, recent, total] = await Promise.all([
     env.DB.prepare(
       "SELECT agency name, count(*) count FROM records WHERE status='live' AND agency IS NOT NULL AND trim(agency)<>'' GROUP BY agency ORDER BY count DESC, name"
     ).all<{ name: string; count: number }>(),
     latest(env),
+    env.DB.prepare("SELECT count(*) c FROM records WHERE status='live'").first<{ c: number }>(),
   ]);
   const t = TAB.archive;
-  return { meta: t, body: tabBody(t.title, t.description, countList("Agencies", agencies.results), section("Latest files", docLinks(recent))) };
+  const origin = url?.origin ?? "https://realufo.org";
+  const count = total?.c ?? 0;
+  // schema.org/Dataset for Google Dataset Search. serveWithMeta adds
+  // @context/url/image; license points at the terms page (mirrored
+  // US-federal fields are public domain, site-generated text is the
+  // site's own — the terms page governs reuse).
+  const datasetLd = {
+    "@type": "Dataset",
+    name: "RealUFO Declassified UAP Archive",
+    description:
+      `${count} declassified UAP records mirrored from the Pentagon's UAP disclosure library ` +
+      `(war.gov), AARO, NARA, NASA and DoD FOIA releases — PDFs, video and images with OCR full text, ` +
+      `AI summaries and source files. Queryable via a free keyless JSON API.`,
+    keywords: ["UAP", "UFO", "declassified", "DoD", "AARO", "FOIA", "Pentagon"],
+    license: `${origin}/terms`,
+    isAccessibleForFree: true,
+    creator: { "@type": "Organization", name: "RealUFO", url: origin },
+    distribution: [
+      {
+        "@type": "DataDownload",
+        name: "RealUFO Public API v1",
+        contentUrl: `${origin}/api/v1/openapi.json`,
+        encodingFormat: "application/json",
+        description: "Keyless, CORS-open JSON API over every record, case story, release and hub.",
+      },
+      {
+        "@type": "DataDownload",
+        name: "Open dataset (Hugging Face)",
+        contentUrl: "https://huggingface.co/datasets/realufo/realufo-uap-archive",
+        encodingFormat: "application/json",
+        description: "Record metadata and page text as JSONL.",
+      },
+    ],
+  };
+  return {
+    meta: { ...t, jsonLd: datasetLd },
+    body: tabBody(t.title, t.description, countList("Agencies", agencies.results), section("Latest files", docLinks(recent))),
+  };
 };
 
 const boardsPage: Loader = async (env) => {

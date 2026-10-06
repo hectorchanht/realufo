@@ -1,12 +1,13 @@
-// Cite button on doc pages: one-click copy of a citation in APA / Chicago / BibTeX,
-// so researchers and journalists link back to the archive (SEO + attribution).
-// Icon-only (Quote), opens a small modal with format tabs + copy button.
+// Cite button on doc pages: one-click copy of a citation in APA / Chicago /
+// BibTeX / RIS, so researchers and journalists link back to the archive
+// (SEO + attribution). Icon-only (Quote), opens a small modal with format
+// tabs + copy button.
 import { useState } from "react";
 import { Quote, X, Copy, Check } from "lucide-react";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { buildCitations, type CiteRecord } from "../lib/cite";
 
-const FORMATS = ["APA", "Chicago", "BibTeX"] as const;
+const FORMATS = ["APA", "Chicago", "BibTeX", "RIS"] as const;
 
 export default function CiteButton({ record }: { record: CiteRecord | undefined }) {
   const { toast } = useOverlay();

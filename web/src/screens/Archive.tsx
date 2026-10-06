@@ -41,7 +41,8 @@
 // exact page (Doc.tsx crosses into neighbour pages at the edges).
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Dices } from "lucide-react";
 import { useBootstrap, useFacets, useHubs, useRecords, useShorts } from "../api/queries";
 import { hubForFilters } from "../lib/hubLink";
 import { useSetFooterLinks } from "../lib/footerLinks";
@@ -268,6 +269,42 @@ const SORTS = [
   { value: "az", label: "Title A–Z" },
 ];
 
+// "Surprise me" dice: picks a random live record via the public v1 API
+// (total → random page → first card) and opens its doc page.
+function RandomButton() {
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const surprise = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const t = await (await fetch("/api/v1/records?per_page=1")).json();
+      const total = Number(t?.meta?.total) || 0;
+      if (!total) return;
+      const page = 1 + Math.floor(Math.random() * total);
+      const r = await (await fetch(`/api/v1/records?per_page=1&page=${page}`)).json();
+      const id = r?.data?.[0]?.id;
+      if (id) navigate(`/doc/${encodeURIComponent(id)}`);
+    } catch {
+      /* offline: stay put */
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={() => void surprise()}
+      disabled={busy}
+      aria-label="Open a random record"
+      title="Surprise me — open a random record"
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-dim transition hover:bg-panel hover:text-ink disabled:opacity-50"
+    >
+      <Dices size={18} />
+    </button>
+  );
+}
+
 export function Archive() {
   const { data: boot } = useBootstrap();
   // mouse + keyboard: Doc flips with ← →; "swipe" is touch wording
@@ -442,6 +479,7 @@ export function Archive() {
           }
           className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[12.5px] text-ink outline-none placeholder:text-faint"
         />
+        <RandomButton />
       </form>
 
       {!showShorts && (

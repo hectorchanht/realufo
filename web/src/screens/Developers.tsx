@@ -237,6 +237,22 @@ const { data } = await new RealUFO().records({ q: "tic tac" });
 from realufo import RealUFO
 page = RealUFO().records(q="tic tac")`}</Code>
 
+      <H2>MCP server</H2>
+      <p className="mb-2 max-w-[680px] text-[14px] leading-[1.6] text-dim">
+        Query the archive from Claude Desktop, Claude Code and other MCP clients. Zero dependencies, plain Node 18+.
+        Source in the{" "}
+        <a className="text-signal hover:underline" href="https://github.com/hectorchanht/realufo/tree/main/mcp">mcp/</a>{" "}
+        directory of the repo.
+      </p>
+      <Code>{`{
+  "mcpServers": {
+    "realufo": {
+      "command": "node",
+      "args": ["/path/to/realufo/mcp/server.mjs"]
+    }
+  }
+}`}</Code>
+
       <H2>Terms</H2>
       <p className="max-w-[680px] text-[14px] leading-[1.6] text-dim">
         The records are declassified public documents; the archive mirrors official sources verbatim. If you re-present

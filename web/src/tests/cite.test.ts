@@ -33,4 +33,20 @@ describe("buildCitations", () => {
     const c = buildCitations({ ...rec, doc_date: "2026-05-08" }, "https://realufo.org");
     expect(c.Chicago).toContain("May 8, 2026.");
   });
+  it("RIS: TY/AU/TI/DA/PY/PB/UR/ER lines for Zotero import", () => {
+    const c = buildCitations(rec, "https://realufo.org");
+    const lines = c.RIS.split("\n");
+    expect(lines[0]).toBe("TY  - ELEC");
+    expect(lines).toContain("TI  - UAP Report PR057a");
+    expect(lines).toContain("AU  - Department of War");
+    expect(lines).toContain("DA  - 2026/07/10/");
+    expect(lines).toContain("PY  - 2026");
+    expect(lines).toContain("PB  - RealUFO Declassified UAP Archive");
+    expect(lines).toContain("UR  - https://realufo.org/doc/DOW-UAP-PR057a");
+    expect(lines[lines.length - 1]).toBe("ER  - ");
+  });
+  it("RIS falls back to year-only date", () => {
+    const c = buildCitations({ id: "X-1", doc_date: "circa 1947" }, "https://realufo.org");
+    expect(c.RIS.split("\n")).toContain("DA  - 1947///");
+  });
 });
