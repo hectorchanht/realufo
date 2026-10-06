@@ -183,6 +183,22 @@ curl "https://realufo.org/api/v1/records/DOE-UAP-D004/text"`}</Code>
 "thumb": "https://assets.realufo.org/pdf-thumbs/aaro/…"}],
 "meta": {"total": 2, "page": 1, "per_page": 1}}`}</Code>
 
+      <H2>Recipes</H2>
+      <p className="mb-2 max-w-[680px] text-[14px] leading-[1.6] text-dim">
+        Copy-paste starters for the common jobs.
+      </p>
+      <Code>{`# a random record (never cached — bots, "surprise me" buttons)
+curl "https://realufo.org/api/v1/records?sort=random&per_page=1"
+
+# every video AARO published
+curl "https://realufo.org/api/v1/records?agency=AARO&type=video&per_page=100"
+
+# a case story with its source documents
+curl "https://realufo.org/api/v1/cases/roswell"
+
+# OCR text of a record (page by page)
+curl "https://realufo.org/api/v1/records/DOE-UAP-D004/text"`}</Code>
+
       <H2>Limits</H2>
       <p className="max-w-[680px] text-[14px] leading-[1.6] text-dim">
         600 requests per 60 seconds per IP (<code className="font-mono text-[12px] text-ink">429</code> +{" "}
@@ -238,10 +254,16 @@ curl -X DELETE https://realufo.org/api/v1/webhooks/wh_… \\
 pip install realufo        # Python
 
 import { RealUFO } from "realufo";
-const { data } = await new RealUFO().records({ q: "tic tac" });
+const api = new RealUFO();
+const { data } = await api.records({ q: "tic tac" });
+const full = await api.record("DOW-UAP-PR057a");  // detail + summary + related
+const pages = await api.text("DOE-UAP-D004");     // OCR pages
 
 from realufo import RealUFO
-page = RealUFO().records(q="tic tac")`}</Code>
+api = RealUFO()
+page = api.records(q="tic tac")
+full = api.record("DOW-UAP-PR057a")
+pages = api.text("DOE-UAP-D004")`}</Code>
 
       <H2>MCP server</H2>
       <p className="mb-2 max-w-[680px] text-[14px] leading-[1.6] text-dim">
