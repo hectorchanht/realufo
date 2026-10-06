@@ -415,5 +415,17 @@ export const v1OpenAPI = v1guarded("GET /api/v1/openapi.json", async (req) => {
       },
     },
   };
-  return v1json(spec, { version: API_VERSION }, "public, max-age=3600, s-maxage=86400");
+  // Raw spec at the document root (no { data, meta } envelope): standard
+  // OpenAPI tooling expects openapi/info/paths at the top level. CORS,
+  // cache and rate-limit headers are still applied (v1guarded wrapper).
+  return new Response(JSON.stringify(spec), {
+    headers: {
+      "content-type": "application/json",
+      "cache-control": "public, max-age=3600, s-maxage=86400",
+      "access-control-allow-origin": "*",
+      "access-control-allow-methods": "GET, HEAD, OPTIONS",
+      "access-control-allow-headers": "Content-Type",
+      vary: "Origin",
+    },
+  });
 });

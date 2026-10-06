@@ -81,12 +81,16 @@ describe("public API v1", () => {
       expect(d).toHaveProperty("meta");
     }
   });
-  it("openapi.json describes the records path and servers", async () => {
-    const d: any = await (await ipg("/api/v1/openapi.json")).json();
-    expect(d.data.openapi).toBe("3.0.0");
-    expect(d.data.paths).toHaveProperty("/records");
-    expect(d.data.paths).toHaveProperty("/records/{id}");
-    expect(d.data.servers[0].url).toContain("/api/v1");
+  it("openapi.json serves the raw spec at the document root (no envelope)", async () => {
+    const res = await ipg("/api/v1/openapi.json");
+    expect(res.status).toBe(200);
+    const d: any = await res.json();
+    expect(d.openapi).toBe("3.0.0"); // standard tools expect this at root
+    expect(d).not.toHaveProperty("data");
+    expect(d.paths).toHaveProperty("/records");
+    expect(d.paths).toHaveProperty("/records/{id}");
+    expect(d.paths).toHaveProperty("/usage");
+    expect(d.servers[0].url).toContain("/api/v1");
   });
   it("case detail resolves; unknown slug 404s", async () => {
     const res = await ipg("/api/v1/cases/roswell");
