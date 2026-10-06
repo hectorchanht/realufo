@@ -79,7 +79,7 @@ function BrowseStrip() {
 
 // "Short clips" row: the 9:16 Shorts we post to social (showcase Shorts first,
 // title already burned in), muted + looping, each playing only while ≥60% on
-// screen; a tap opens the Shorts player. "all videos ›" goes to the Archive's
+// screen; a tap opens the Shorts player. "all clips ›" goes to the Archive's
 // Shorts tab (/archive?type=shorts — "shorts" isn't a record kind, it swaps the
 // grid for the Shorts grid). Hidden once the feed has answered with no clips.
 function ClipCarousel({ clips, loading }: { clips: Short[]; loading: boolean }) {
@@ -91,7 +91,7 @@ function ClipCarousel({ clips, loading }: { clips: Short[]; loading: boolean }) 
           ◆ Short clips
         </h2>
         <Link to="/archive?type=shorts" className="font-mono text-[11px] text-signal">
-          all videos ›
+          all clips ›
         </Link>
       </div>
       <ShortsRow shorts={clips} loading={loading} href={(s) => shortHref(s)} />
