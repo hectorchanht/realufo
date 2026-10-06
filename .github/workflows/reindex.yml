@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       ids:
-        description: "Space-separated record ids to reindex (e.g. 'FBI-UAP-D002'); ignored when detect_stale is true"
+        description: "Space-separated record ids to reindex (e.g. 'FBI-UAP-D002'); unioned with auto-detected ids when detect_stale is true, so an explicit request is never dropped"
         required: true
         default: "FBI-UAP-D002"
       detect_stale:
@@ -47,13 +47,16 @@ jobs:
           case "${{ github.event.inputs.detect_stale }}" in
             true|True|TRUE) DETECT=1;; *) DETECT=0;;
           esac
+          INPUT_IDS="$IDS"
           if [ "$DETECT" = "1" ]; then
             # Every live PDF with a record_ocr marker whose stored record_text
             # differs from what the R2 OCR text selects today, plus markers
-            # that never got a record_text row at all.
+            # that never got a record_text row at all. Unioned with the
+            # explicit ids input: a direct reindex request is never discarded
+            # by a failed detection pass.
             DETECT_OUT="$(python -m ingest.find_stale_text)" || { echo "stale detection failed"; exit 1; }
             eval "$DETECT_OUT"
-            IDS="$STALE_IDS $MISSING_IDS"
+            IDS="$INPUT_IDS $STALE_IDS $MISSING_IDS"
             echo "auto-detected stale: $STALE_IDS"
             echo "auto-detected missing: $MISSING_IDS"
           fi
@@ -61,7 +64,7 @@ jobs:
           if [ -z "$IDS" ]; then echo "nothing to reindex"; exit 0; fi
           python3 - "$IDS" <<'EOF'
           import sys
-          ids = sys.argv[1].split()
+          ids = list(dict.fromkeys(sys.argv[1].split()))  # de-dupe the union
           assert ids, "no ids given"
           assert all(i and all(c.isalnum() or c in "-_." for c in i) for i in ids), f"bad ids: {ids}"
           def q(v): return "'" + v.replace("'", "''") + "'"

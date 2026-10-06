@@ -38,13 +38,56 @@ def page_fresh(stored_text: str, expected_text: str) -> bool:
     return ns[:200] == ne[:200] and ns[-200:] == ne[-200:]
 
 
-def fetch_r2(rid: str):
-    url = TEXT_BASE + urllib.parse.quote(rid, safe="") + ".json"
+UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"}
+
+
+def http_json(url: str):
+    req = urllib.request.Request(url, headers=UA)
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.load(r)
+
+
+def wrangler_r2_get(key: str):
+    """Authenticated R2 read (slow, certain): same token the D1 queries use."""
+    import os
+    import subprocess
+    import tempfile
+    fd, path = tempfile.mkstemp(suffix=".json")
+    os.close(fd)
     try:
-        with urllib.request.urlopen(url, timeout=30) as r:
-            return json.load(r)
+        subprocess.run(["wrangler", "r2", "object", "get", f"realufo/{key}",
+                        "--file", path, "--remote"],
+                       capture_output=True, text=True, check=True, timeout=120)
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def fetch_r2(rid: str):
+    """R2 text/<id>.json via (1) the R2 custom domain, (2) the worker's /text
+    route (reads R2 server-side), (3) authenticated wrangler. None only when
+    all three fail — the caller must fail loudly on mass failure, never report
+    'nothing stale' from unread data."""
+    err1 = err2 = None
+    try:
+        return http_json(TEXT_BASE + urllib.parse.quote(rid, safe="") + ".json")
     except Exception as e:
-        print(f"  WARN {rid}: R2 text JSON unreadable: {e}", file=sys.stderr)
+        err1 = e
+    try:
+        doc = http_json(f"https://realufo.org/doc/{urllib.parse.quote(rid, safe='')}/text?format=json")
+        if doc.get("pages"):
+            return doc["pages"]
+        err2 = RuntimeError("worker text JSON has no pages")
+    except Exception as e:
+        err2 = e
+    try:
+        return wrangler_r2_get(f"text/{rid}.json")
+    except Exception as e3:
+        print(f"  WARN {rid}: R2 text unreadable (direct: {err1}; worker: {err2}; wrangler: {e3})",
+              file=sys.stderr)
         return None
 
 
@@ -62,10 +105,11 @@ def main() -> int:
             stored[r["id"]] = r["pages"]
     safe = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.~-]*$")
     ids = [i for i in ids if safe.match(i)]  # keep eval() in the workflow safe
-    stale, missing = [], []
+    stale, missing, failed = [], [], 0
     for n, rid in enumerate(ids, 1):
         pages = fetch_r2(rid)
-        if not pages:
+        if pages is None:
+            failed += 1
             continue
         expected, _ = select_pages([p.get("text", "") for p in pages])
         raw = stored.get(rid)
@@ -87,7 +131,11 @@ def main() -> int:
             print(f"  ...{n}/{len(ids)} checked", file=sys.stderr)
     print(f"STALE_IDS=\"{' '.join(stale)}\"")
     print(f"MISSING_IDS=\"{' '.join(missing)}\"")
-    print(f"stale={len(stale)} missing={len(missing)}", file=sys.stderr)
+    print(f"stale={len(stale)} missing={len(missing)} failed={failed}", file=sys.stderr)
+    if failed > max(3, len(ids) // 10):
+        print(f"ABORT: {failed}/{len(ids)} R2 fetches failed — refusing to report 'nothing stale' "
+              f"from unread data", file=sys.stderr)
+        return 2
     return 0
 
 
