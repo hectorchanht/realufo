@@ -78,10 +78,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm pkg set version="$VERSION"
-          # stdio smoke test: initialize → tools/list → one live search call
-          printf '%s\n' \
-            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' \
-            '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
-            '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search_records","arguments":{"q":"roswell","per_page":1}}}' \
-            | node server.mjs | grep -q '"total"'
+          # stdio smoke test against a loopback stub (the live site's bot
+          # mitigation blocks GitHub Actions IPs, so no live calls in CI)
+          node smoke-test.mjs
           npm publish --access public

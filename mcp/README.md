@@ -38,6 +38,10 @@ Output is compact JSON, truncated at 12k chars per call so a big OCR dump can't 
 ## Test
 
 ```bash
+node smoke-test.mjs   # loopback stub: initialize → tools/list → tools/call
+```
+
+Or drive it manually over stdio:
 printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
