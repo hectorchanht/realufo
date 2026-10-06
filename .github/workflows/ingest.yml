@@ -80,7 +80,7 @@ jobs:
         run: |
           set -o pipefail
           if [ "$LIVE" = "true" ]; then
-            python -m ingest.clips $FORCE | tee -a ingest-summary.txt
+            python -m ingest.clips $FORCE $ONLY | tee -a ingest-summary.txt
             python -m ingest.clips --vertical --voice $FORCE $ONLY | tee -a ingest-summary.txt
           else
             python -m ingest.clips --dry-run --limit 1 | tee -a ingest-summary.txt

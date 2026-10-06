@@ -1,13 +1,22 @@
-import os, posixpath, subprocess
+import os, posixpath, subprocess, time
 from . import fetch
 
-def put(key: str, path: str, content_type: str) -> None:
-    subprocess.run(
-        ["wrangler", "r2", "object", "put", f"realufo/{key}",
-         "--file", path, "--content-type", content_type,
-         # 30d, not immutable: thumbs.py can re-render a thumb under the same key.
-         "--cache-control", "public, max-age=2592000", "--remote"],
-        check=True)
+def put(key: str, path: str, content_type: str, retries: int = 3) -> None:
+    cmd = ["wrangler", "r2", "object", "put", f"realufo/{key}",
+           "--file", path, "--content-type", content_type,
+           # 30d, not immutable: thumbs.py can re-render a thumb under the same key.
+           "--cache-control", "public, max-age=2592000", "--remote"]
+    for attempt in range(retries):
+        p = subprocess.run(cmd, capture_output=True, text=True)
+        if p.returncode == 0:
+            return
+        # transient Cloudflare 5xx (e.g. code 10001 "please try again", hit 2026-10-06):
+        # back off and retry instead of killing the whole ingest step
+        transient = any(s in (p.stderr + p.stdout) for s in ("500", "502", "503", "10001"))
+        if transient and attempt < retries - 1:
+            time.sleep(5 * (attempt + 1))
+            continue
+        raise subprocess.CalledProcessError(p.returncode, cmd, p.stdout, p.stderr)
 
 def get(key: str, path: str) -> None:
     """Authoritative R2 read. Never fetch text/<id>.json over HTTPS: the
