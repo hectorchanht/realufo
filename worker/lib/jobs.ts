@@ -21,8 +21,13 @@ const COLS = "id, kind, stream, ref, status, version, caption, media, payload, t
 export const NO_JOB = (refExpr: string) => `NOT EXISTS (SELECT 1 FROM bot_jobs j WHERE j.ref=${refExpr} AND j.deleted_at IS NULL AND j.status != 'failed')`;
 
 type Row = Omit<Job, "media" | "payload" | "tg_msgs"> & { media: string | null; payload: string; tg_msgs: string | null };
+// A corrupt JSON cell (seen once: two objects concatenated in media) must never
+// take down the webhook — fall back to empty and let the job be handled/closed.
+const safeJson = (s: string | null, fallback: any) => {
+  try { return s ? JSON.parse(s) : fallback; } catch { return fallback; }
+};
 const parse = (r: Row | null): Job | null =>
-  r && { ...r, media: r.media ? JSON.parse(r.media) : null, payload: JSON.parse(r.payload), tg_msgs: r.tg_msgs ? JSON.parse(r.tg_msgs) : [] };
+  r && { ...r, media: safeJson(r.media, null), payload: safeJson(r.payload, {}), tg_msgs: safeJson(r.tg_msgs, []) };
 
 export async function createJob(env: Env, j: { kind: JobKind; stream: string; ref: string; status: JobStatus; caption: string | null; media: Media; payload: unknown }): Promise<Job | null> {
   const exclusive = BOT_STREAMS.includes(j.stream) ? 1 : 0;

@@ -67,6 +67,10 @@ describe("admin commands", () => {
     expect(methods).toContain("sendVideo");
     expect(methods).toContain("sendPhoto"); // money-shot still after the clip
     expect(methods.indexOf("sendPhoto")).toBeGreaterThan(methods.indexOf("sendVideo"));
+    // every media message is tagged with its job, so a bare video is never orphaned
+    const caps = tg.filter((t) => t.method === "sendVideo" || t.method === "sendPhoto").map((t) => String(t.body.caption ?? ""));
+    expect(caps[0]).toMatch(/#\d+ · CM-1$/);
+    expect(caps[1]).toMatch(/#\d+ · CM-1 · money shot$/);
     expect(lastText()).toContain("🔍 Key moments");
     expect(lastText()).toContain("0:00–0:04 · Infrared view:");
   });

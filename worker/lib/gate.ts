@@ -72,16 +72,19 @@ export async function preview(env: Env, job: Job): Promise<void> {
   const chat = env.TELEGRAM_OWNER_ID!;
   const msgs: number[] = [];
   let note = "";
-  const sendOne = async (key: string) => {
+  // Every media message carries the job tag: a bare video/photo arriving before
+  // (or after) the text is otherwise impossible to match to its preview.
+  const tag = `#${job.id} · ${job.ref}`;
+  const sendOne = async (key: string, caption?: string) => {
     try {
-      msgs.push(await sendMedia(env, chat, key));
+      msgs.push(await sendMedia(env, chat, key, caption));
     } catch (e) {
       // too big / missing / any send error: the text + buttons still go out, with the CDN link
       note += `\n⚠️ media not attached (${e instanceof TgError ? e.status : errMsg(e)}): ${CDN}${key}`;
     }
   };
-  if (job.media) await sendOne(job.media.key);
-  for (const m of (job.payload?.preview_extra as { key: string }[] | undefined) ?? []) await sendOne(m.key);
+  if (job.media) await sendOne(job.media.key, tag);
+  for (const m of (job.payload?.preview_extra as { key: string }[] | undefined) ?? []) await sendOne(m.key, `${tag} · money shot`);
   const chars = Array.from(job.caption ?? ""); // code points: never cut an emoji in half
   const caption = chars.length > TEXT_MAX ? `${chars.slice(0, TEXT_MAX).join("")}…` : chars.join("");
   const evidence = typeof job.payload?.evidence === "string" && job.payload.evidence ? `\n\n🔍 Key moments\n${job.payload.evidence}` : "";
