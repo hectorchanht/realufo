@@ -138,6 +138,9 @@ export default function Developers() {
       </p>
       <ApiPulse />
 
+      <H2>Try it live</H2>
+      <Playground />
+
       <H2>Quickstart</H2>
       <Code>{`# search the archive
 curl "https://realufo.org/api/v1/records?q=roswell&per_page=5"
@@ -179,9 +182,6 @@ curl "https://realufo.org/api/v1/records/DOE-UAP-D004/text"`}</Code>
 "kind": "pdf", "incident_date": null,
 "thumb": "https://assets.realufo.org/pdf-thumbs/aaro/…"}],
 "meta": {"total": 2, "page": 1, "per_page": 1}}`}</Code>
-
-      <H2>Try it live</H2>
-      <Playground />
 
       <H2>Limits</H2>
       <p className="max-w-[680px] text-[14px] leading-[1.6] text-dim">
