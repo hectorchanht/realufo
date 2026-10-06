@@ -16,6 +16,7 @@ import { VoteButton } from "../components/VoteButton";
 import { LoadError } from "../components/LoadError";
 import { FollowBell } from "../components/FollowBell";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { useLang } from "../lib/lang";
 import { promoteCommentOpts } from "../lib/promoteComment";
 import type { Stance } from "../api/types";
 import { Skeleton } from "../components/Skeleton";
@@ -47,6 +48,8 @@ export function Case() {
 
   const caseDetail = data?.case;
   const story = data?.story ?? null;
+  const { lang, t } = useLang();
+  const storyTitle = lang === "zh-Hant" && story?.titleZh ? story.titleZh : story?.title;
   const relatedThread = data?.relatedThread ?? null;
   const threads = data?.threads ?? (relatedThread ? [relatedThread] : []);
   const comments = commentsData?.comments ?? [];
@@ -54,7 +57,7 @@ export function Case() {
   // AppBar title — prototype's case branch (RealUFO.dc.html:571):
   // `ht='COLD CASE'; hs=c?c.name:''`. Called unconditionally (before the
   // loading/not-found returns below) so hook order never varies.
-  useSetPageTitle("COLD CASE", caseDetail?.name || "");
+  useSetPageTitle(t("nav.cases").toUpperCase(), caseDetail?.name || "");
 
   if (isLoading) {
     return (
@@ -82,7 +85,7 @@ export function Case() {
       {/* name — prototype line 292 */}
       <div className="flex items-start gap-2">
         <h1 className="mb-[6px] min-w-0 flex-1 text-[27px] font-bold leading-[1.12] text-ink" style={{ letterSpacing: "-.01em" }}>
-          {story?.title ?? caseDetail.name}
+          {storyTitle ?? caseDetail.name}
         </h1>
         <FollowBell kind="case" id={slug} />
       </div>
@@ -243,7 +246,7 @@ export function Case() {
 
       {otherCases.length > 0 && (
         <nav aria-label="More cold cases" className="mt-8">
-          <h2 className="mx-0.5 mb-3 font-pixel text-[9px] tracking-[1px] text-faint">◆ More cold cases</h2>
+          <h2 className="mx-0.5 mb-3 font-pixel text-[9px] tracking-[1px] text-faint">◆ {lang === "zh-Hant" ? "更多懸案" : "More cold cases"}</h2>
           <ul className="flex flex-wrap gap-2">
             {otherCases.map((c) => (
               <li key={c.slug}>
@@ -251,7 +254,7 @@ export function Case() {
                   to={`/case/${c.slug}`}
                   className="inline-block rounded-full border border-line2 px-[11px] py-[5px] font-mono text-[10px] text-dim hover:border-signal hover:text-signal"
                 >
-                  {c.name}
+                  {lang === "zh-Hant" && c.name_zh ? c.name_zh : c.name}
                 </Link>
               </li>
             ))}

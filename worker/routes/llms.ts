@@ -46,6 +46,7 @@ export async function llms(req: Request, env: Env) {
     link("Sitemap", "/sitemap.xml", "every file page"),
     link("Full text of every file", "/llms-full.txt", "llms-full.txt, about 6 MB of Markdown"),
     `- [Open dataset](${DATASET_URL}): record metadata and page text as JSONL on Hugging Face`,
+    link("Public API v1", "/api/v1/openapi.json", "read-only JSON API for developers; docs at /developers"),
     "",
     ...KINDS.flatMap(([k, heading]) => {
       const hs = hubs.filter((h) => h.kind === k);

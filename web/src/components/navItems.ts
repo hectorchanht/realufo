@@ -15,6 +15,7 @@
 import type { NavigateFunction } from "react-router-dom";
 import { Archive, Bell, Clapperboard, Compass, Ellipsis, FileSearch, History, House, ListChecks, MapPinned, MessagesSquare, Sparkles, type LucideIcon } from "lucide-react";
 import { useBootstrap } from "../api/queries";
+import { useLang, type StringKey } from "../lib/lang";
 import { forgetScroll, scrollKey } from "../lib/useScrollMemory";
 
 export type NavTab = "feed" | "archive" | "shorts" | "boards" | "ask" | "map" | "timeline" | "cases" | "browse" | "releases" | "notifications";
@@ -27,30 +28,46 @@ export interface NavItem {
 }
 
 // Four tabs (icon-only but the active one, on both TopNav and BottomTab)…
-export const NAV_ITEMS: NavItem[] = [
-  { tab: "feed", icon: House, label: "Home", path: "/" },
-  { tab: "archive", icon: Archive, label: "Archive", path: "/archive" },
+const NAV_DEFS: { tab: NavTab; icon: LucideIcon; key: StringKey; path: string }[] = [
+  { tab: "feed", icon: House, key: "nav.feed", path: "/" },
+  { tab: "archive", icon: Archive, key: "nav.archive", path: "/archive" },
   // The Archive's Shorts grid (its "Shorts" type chip), as a tab of its own.
-  { tab: "shorts", icon: Clapperboard, label: "Shorts", path: "/archive?type=shorts" },
-  { tab: "boards", icon: MessagesSquare, label: "Boards", path: "/boards" },
+  { tab: "shorts", icon: Clapperboard, key: "nav.shorts", path: "/archive?type=shorts" },
+  { tab: "boards", icon: MessagesSquare, key: "nav.boards", path: "/boards" },
 ];
 
 // …and the rest behind a fifth "More" tab (MoreMenu: sheet on phones, dropdown on desktop).
 export const MORE_ICON = Ellipsis;
-export const MORE_ITEMS: NavItem[] = [
-  { tab: "ask", icon: Sparkles, label: "Ask", path: "/ask" },
-  { tab: "map", icon: MapPinned, label: "Map", path: "/map" },
-  { tab: "timeline", icon: History, label: "Timeline", path: "/timeline" },
-  { tab: "cases", icon: FileSearch, label: "Cold cases", path: "/cases" },
-  { tab: "browse", icon: Compass, label: "Browse", path: "/browse" },
-  { tab: "releases", icon: ListChecks, label: "Releases", path: "/releases" },
-  { tab: "notifications", icon: Bell, label: "Notifications", path: "/notifications" },
+const MORE_DEFS: { tab: NavTab; icon: LucideIcon; key: StringKey; path: string }[] = [
+  { tab: "ask", icon: Sparkles, key: "nav.ask", path: "/ask" },
+  { tab: "map", icon: MapPinned, key: "nav.map", path: "/map" },
+  { tab: "timeline", icon: History, key: "nav.timeline", path: "/timeline" },
+  { tab: "cases", icon: FileSearch, key: "nav.cases", path: "/cases" },
+  { tab: "browse", icon: Compass, key: "nav.browse", path: "/browse" },
+  { tab: "releases", icon: ListChecks, key: "nav.releases", path: "/releases" },
+  { tab: "notifications", icon: Bell, key: "nav.notifications", path: "/notifications" },
 ];
 
+// Legacy export kept for non-hook call sites (route->tab mapping doesn't need labels).
+export const NAV_ITEMS: NavItem[] = NAV_DEFS.map((d) => ({ tab: d.tab, icon: d.icon, label: d.key, path: d.path }));
+export const MORE_ITEMS: NavItem[] = MORE_DEFS.map((d) => ({ tab: d.tab, icon: d.icon, label: d.key, path: d.path }));
+
 // Ask and Notifications only show while the server's ask / push flags are on.
+// Labels are translated here (the one hook every nav surface uses); the
+// module-level NAV_ITEMS/MORE_ITEMS keep English labels for tests and
+// non-rendered call sites.
 export function useNavItems(): { tabs: NavItem[]; more: NavItem[] } {
   const f = useBootstrap().data?.features;
-  return { tabs: NAV_ITEMS, more: MORE_ITEMS.filter((i) => (i.tab !== "ask" || f?.ask) && (i.tab !== "notifications" || f?.push)) };
+  const { t } = useLang();
+  const tr = (items: NavItem[], defs: { key: StringKey }[]) =>
+    items.map((item, i) => ({ ...item, label: t(defs[i].key) }));
+  return {
+    tabs: tr(NAV_ITEMS, NAV_DEFS),
+    more: tr(
+      MORE_ITEMS.filter((i) => (i.tab !== "ask" || f?.ask) && (i.tab !== "notifications" || f?.push)),
+      MORE_DEFS.filter((d) => (d.tab !== "ask" || f?.ask) && (d.tab !== "notifications" || f?.push))
+    ),
+  };
 }
 
 export const isMoreTab = (tab: NavTab) => MORE_ITEMS.some((i) => i.tab === tab);

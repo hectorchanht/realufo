@@ -39,6 +39,10 @@ import { pushNewFiles, pushDaily } from "./lib/push";
 import { pushConfig, subscribe, setPrefs, unsubscribe, pushMe, getFollow, toggleFollow, mergeFollows } from "./routes/push";
 import { emailNewFiles } from "./lib/email";
 import { emailSubscribe, emailConfirm, emailUnsubscribe } from "./routes/email";
+import { v1ListRecords, v1GetRecord, v1RecordText, v1Archives, v1Releases, v1Cases, v1GetCase, v1Shorts, v1Hubs, v1GetHub, v1OpenAPI, v1Preflight } from "./routes/v1";
+import { createWebhookRoute, getWebhookRoute, deleteWebhookRoute } from "./routes/webhooks";
+import { webhookTick } from "./lib/webhooks";
+import { badge } from "./routes/embed";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -85,6 +89,22 @@ on("GET", "/api/follows", getFollow);
 on("POST", "/api/follows", toggleFollow);
 on("POST", "/api/follows/merge", mergeFollows);
 
+// Public Developer API v1 (read-only, keyless, CORS-open). See worker/routes/v1.ts.
+on("GET", "/api/v1/openapi.json", v1OpenAPI);
+on("GET", "/api/v1/records", v1ListRecords);
+on("GET", "/api/v1/records/:id", v1GetRecord);
+on("GET", "/api/v1/records/:id/text", v1RecordText);
+on("GET", "/api/v1/archives", v1Archives);
+on("GET", "/api/v1/releases", v1Releases);
+on("GET", "/api/v1/cases", v1Cases);
+on("GET", "/api/v1/cases/:slug", v1GetCase);
+on("GET", "/api/v1/shorts", v1Shorts);
+on("GET", "/api/v1/hubs", v1Hubs);
+on("GET", "/api/v1/hubs/:kind/:slug", v1GetHub);
+on("POST", "/api/v1/webhooks", createWebhookRoute);
+on("GET", "/api/v1/webhooks/:id", getWebhookRoute);
+on("DELETE", "/api/v1/webhooks/:id", deleteWebhookRoute);
+
 // X bot first (Spec 4; FEATURE_X gates it), then mirror to other platforms (Spec 5;
 // FEATURE_SOCIAL_* gate it). Social failing never affects X.
 async function runTick(env: Env) {
@@ -96,6 +116,7 @@ async function runTick(env: Env) {
   await pollTick(env).catch(logErr("xpoll"));
   await pushNewFiles(env).catch(logErr("pushFiles"));
   await pushDaily(env).catch(logErr("pushDaily"));
+  await webhookTick(env).catch(logErr("webhooks")); // public API v1 event fan-out
   await emailNewFiles(env).catch(logErr("emailFiles"));
 }
 
@@ -195,6 +216,7 @@ async function handleFetch(req: Request, env: Env, ctx: ExecutionContext): Promi
       return Response.redirect(`${url.origin}/archive?${url.searchParams}`, 301);
     }
     if (PENTAGON_PAPERS.test(url.pathname)) return Response.redirect("https://www.archives.gov/research/pentagon-papers", 301);
+    if (url.pathname.startsWith("/api/v1/") && req.method === "OPTIONS") return v1Preflight();
     if (url.pathname.startsWith("/api/")) {
       const res = await dispatch(req, env, ctx);
       return res ?? error(404, "not found");
@@ -206,6 +228,8 @@ async function handleFetch(req: Request, env: Env, ctx: ExecutionContext): Promi
     if (/^\/(rss(\.xml)?|feed(\.xml)?)$/.test(url.pathname)) return rss(req, env);
     if (url.pathname === "/llms.txt") return llms(req, env);
     if (url.pathname === "/llms-full.txt") return llmsFull(req, env);
+    // Embeddable badge (framable by design).
+    if (url.pathname === "/embed/badge") return badge(req, env);
     const docText = url.pathname.match(/^\/doc\/([^/]+)\/text$/);
     if (docText) return recordText(req, env, { id: decodeURIComponent(docText[1]) });
     return serveWithMeta(req, env); // SPA + assets, with per-route meta/OG injection for deep links

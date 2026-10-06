@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "realufo"
+version = "1.0.0"
+description = "Python client for the RealUFO Public API — the declassified UAP archive"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "RealUFO" }]
+keywords = ["ufo", "uap", "declassified", "archive", "api"]
+requires-python = ">=3.9"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+]
+
+[project.urls]
+Homepage = "https://realufo.org/developers"
+Repository = "https://github.com/hectorchanht/realufo"

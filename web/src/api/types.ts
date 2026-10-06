@@ -84,6 +84,8 @@ export interface MapPlace {
 export interface CaseLite {
   slug: string;
   name: string;
+  /** Traditional Chinese title; null when untranslated. */
+  name_zh?: string | null;
   accent: string;
   coord: string;
   lede?: string;

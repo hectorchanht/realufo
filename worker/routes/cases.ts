@@ -2,6 +2,7 @@ import type { Env } from "../env";
 import { json, error } from "../lib/json";
 import { relAgo } from "../lib/db";
 import { CASE_STORY_TEXT } from "../lib/caseStoryText";
+import { CASE_TITLE_ZH } from "../lib/caseStoryZh";
 import type { StoryView } from "../lib/caseStories";
 import { docHref, docTitle } from "../lib/ssr";
 
@@ -18,6 +19,7 @@ export async function storyView(env: Env, slug: string): Promise<StoryView | nul
   const byId = new Map(results.map((r) => [r.id, r]));
   return {
     ...s,
+    titleZh: CASE_TITLE_ZH[slug] ?? null,
     sources: s.sources.map((x, i) => {
       const page = x.page ? ` — p. ${x.page}` : "";
       if (x.url) {

@@ -27,7 +27,7 @@
 // Loading/not-found: `record` is undefined both while `useRecord` hasn't
 // settled and if the id doesn't resolve to a real record — both cases render
 // the same simple safe states (no attempt to index into `undefined`).
-import { Expand } from "lucide-react";
+import { Expand, GitCompare } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -46,6 +46,7 @@ import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools"
 import { Articles } from "../components/Articles";
 import { VerdictBar } from "../components/VerdictBar";
 import { FollowBell } from "../components/FollowBell";
+import CiteButton from "../components/CiteButton";
 import { TldrCard } from "../components/TldrCard";
 import GoDeeper from "../components/GoDeeper";
 import { picksForRecord } from "../../../worker/lib/affiliate";
@@ -542,7 +543,19 @@ export function Doc() {
           )}
           {title}
         </h1>
-        <FollowBell kind="record" id={id} />
+        <div className="flex shrink-0 items-center">
+          <CiteButton record={record} />
+          <button
+            type="button"
+            onClick={() => navigate(`/compare?a=${encodeURIComponent(id)}`)}
+            aria-label="Compare with another record"
+            title="Compare with another record"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-dim transition hover:bg-panel hover:text-ink"
+          >
+            <GitCompare size={20} />
+          </button>
+          <FollowBell kind="record" id={id} />
+        </div>
       </div>
     </>
   );

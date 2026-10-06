@@ -1,0 +1,37 @@
+// Traditional Chinese titles for the case stories (worker-side, so the API
+// and the pre-render can serve them). Full story bodies stay English —
+// machine-translating 50k+ words of fact-checked prose without review would
+// betray the archive's accuracy rule. Bodies are queued as a follow-up.
+export const CASE_TITLE_ZH: Record<string, string> = {
+  "roswell": "羅斯威爾 1947：牧場、「飛碟」與氣球計劃",
+  "kaikoura": "凱庫拉 1978：紐西蘭空軍與 DSIR 檔案的結論",
+  "jal-1628": "日航 1628 號班機 1986：機長口述與 FAA 雷達覆核",
+  "tehran": "德黑蘭 1976：美國武官電報中的兩次 F-4 攔截",
+  "socorro": "索科羅 1964：一名警員、四個印記、身份不明的飛行器",
+  "travis-walton": "崔維斯·華頓 1975：測謊記錄能證明與不能證明的事",
+  "shag-harbour": "沙格港 1967：水面燈光、潛水員搜索、一無所獲",
+  "ohare-2006": "奧黑爾 2006：塔台錄音、塔台日誌與雷達看不見的圓盤",
+  "stephenville": "史蒂芬維爾 2008：目擊報告、空軍更正與雷達研究",
+  "trans-en-provence": "普羅旺斯的特朗斯 1981：GEPAN 無法解釋的地面痕跡",
+  "manises": "馬尼塞斯 1979：西班牙空軍檔案的記載",
+  "falcon-lake": "獵鷹湖 1967：燒傷、鐳與一宗無法解釋的降落報告",
+  "belgian-wave": "比利時波 1990：雷達鎖定、無目視接觸、身份不明",
+  "cash-landrum": "卡什–蘭德拉姆 1980：受傷索賠、宣誓否認與被駁回的訴訟",
+  "coyne": "科因直升機 1973：陸軍驚險報告、爬升與不明光點",
+  "phoenix-lights": "鳳凰城光點 1997：照明彈投放、不明編隊、沒有聯邦檔案",
+  "tic-tac": "尼米茲「Tic Tac」2004：一段影片、一份外洩摘要與無人保存的記錄",
+  "operacao-prato": "普拉托行動 1977：130 宗燈光記錄、不確鑿的照片與官方「視覺錯覺」",
+  "trindade": "特林達德島 1958：巴西海軍不願背書的四張照片",
+  "varginha": "瓦爾任阿 1996：陸軍調查、消防日誌與「穆迪尼奧」",
+  "el-bosque": "埃爾博斯克 2010：航空展、兩段影片與 CEFAA 懸而未決的案件",
+  "valensole": "瓦朗索爾 1965：憲兵寫下了什麼、何時寫下",
+  "chiles-whitted": "奇爾斯–惠特德 1948：兩名民航機師、燃燒的「火箭船」與很可能的流星",
+  "condon-committee": "康登委員會 1966：空軍委託的研究，以及其未解的案件",
+  "levelland": "萊弗蘭 1957：熄火的引擎、六名目擊者與有爭議的球狀閃電結論",
+  "lubbock-lights": "拉伯克光點 1951：測量到的光點、未經證實的照片、未結案的檔案",
+  "mantell": "曼特爾 1948：致命爬升、最後無線電通話的三個版本與無法追查的氣球",
+  "mcminnville": "麥克明維爾 1950：兩張照片、一條電線與從未排除模型的結論",
+  "robertson-panel": "羅伯遜小組 1953：未發現威脅，以及去除 UFO 神秘色彩的呼籲",
+  "cosford": "科斯福德 1993：重返大氣層的火箭，以及 90 分鐘後肖伯里的一宗目擊",
+  "rendlesham": "倫德爾舍姆森林 1980：一份備忘錄、輻射查詢與「無國防意義」",
+};

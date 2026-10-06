@@ -7,12 +7,14 @@ import { Link } from "react-router-dom";
 import { useHubs } from "../api/queries";
 import type { HubKind } from "../api/types";
 import { useNavItems } from "./navItems";
+import { useLang } from "../lib/lang";
 import { useFooterLinks } from "../lib/footerLinks";
 import { AppearanceSwitcher } from "./AppearanceSwitcher";
+import LangToggle from "./LangToggle";
 import { Saucer } from "./Saucer";
 import { DATASET_URL, SOCIAL_PROFILES } from "../../../worker/lib/profiles";
 
-const GROUPS: [HubKind, string][] = [["topic", "Topics"], ["release", "Releases"], ["agency", "Agencies"], ["decade", "Decades"]];
+const GROUPS: [HubKind, "footer.topics" | "footer.releases" | "footer.agencies" | "footer.decades"][] = [["topic", "footer.topics"], ["release", "footer.releases"], ["agency", "footer.agencies"], ["decade", "footer.decades"]];
 // Plain <a>: served by the Worker, not SPA routes.
 const FILES = [
   ["llms.txt", "/llms.txt"],
@@ -40,6 +42,7 @@ const headCls = "mb-2 font-semibold tracking-[.5px] text-ink";
 export default function SiteFooter() {
   const hubs = useHubs().data?.hubs ?? [];
   const { tabs, more } = useNavItems();
+  const { t } = useLang();
   const page = useFooterLinks();
   const col = (title: string, items: ReactNode[]) => (
     <div key={title}>
@@ -56,7 +59,7 @@ export default function SiteFooter() {
             <Saucer />
             <span className="font-pixel text-[11px] text-ink">REAL<span className="text-signal">UFO</span></span>
           </Link>
-          <p className="mt-2 text-faint">Public-domain U.S. government records, mirrored verbatim.</p>
+          <p className="mt-2 text-faint">{t("footer.tagline")}</p>
         </div>
         <ul aria-label="Follow RealUFO" className="flex flex-wrap gap-4">
           {/* GitHub is a personal account's repo, not a RealUFO profile: no rel=me / sameAs. */}
@@ -75,30 +78,30 @@ export default function SiteFooter() {
               <li key={l.to}><Link className="text-signal hover:underline" to={l.to}>{l.text}</Link></li>
             )))
           : null}
-        {col("Explore", [
+        {col(t("footer.explore"), [
           ...[...tabs, ...more].map((i) => (
             <li key={i.path}><Link className={linkCls} to={i.path}>{i.label}</Link></li>
           )),
           // Wishing pool: anonymous content-request form (Google Forms).
-          <li key="wishing-pool"><a className="text-signal hover:underline" href="https://docs.google.com/forms/d/e/1FAIpQLSesgIQPmSYoGsR4n2nkKMp18enYripao1yezoO62kHtKPIqJw/viewform" target="_blank" rel="noopener">Request a file 🛸</a></li>,
+          <li key="wishing-pool"><a className="text-signal hover:underline" href="https://docs.google.com/forms/d/e/1FAIpQLSesgIQPmSYoGsR4n2nkKMp18enYripao1yezoO62kHtKPIqJw/viewform" target="_blank" rel="noopener">{t("footer.request")}</a></li>,
         ])}
-        {GROUPS.map(([kind, title]) => {
+        {GROUPS.map(([kind, key]) => {
           const group = hubs.filter((h) => h.kind === kind);
           return group.length
-            ? col(title, [
+            ? col(t(key), [
                 ...group.map((h) => (
                   // "Release 01 · 8 May 2026" → "01 · 8 May 2026": the column heading says Releases.
                   <li key={h.slug}><Link className={linkCls} to={`/${h.kind}/${h.slug}`}>{kind === "release" ? h.label.replace(/^Release /, "") : h.label}</Link></li>
                 )),
-                kind === "release" && <li key="tracker"><Link className={linkCls} to="/releases">Tracker</Link></li>,
+                kind === "release" && <li key="tracker"><Link className={linkCls} to="/releases">{t("footer.tracker")}</Link></li>,
               ])
             : null;
         })}
-        {col("Resources", [
+        {col(t("footer.resources"), [
           // static predecessor archive (war-gov-ufo-release repo)
-          <li key="release"><a className={linkCls} href="https://release.realufo.org/" target="_blank" rel="noopener">Original archive ↗</a></li>,
+          <li key="release"><a className={linkCls} href="https://release.realufo.org/" target="_blank" rel="noopener">{t("footer.original")}</a></li>,
           ...FILES.map(([text, href]) => (
-            <li key={href}><a className={linkCls} href={href}>{text}</a></li>
+            <li key={href}><a className={linkCls} href={href}>{text === "Open dataset" ? t("footer.openDataset") : text}</a></li>
           )),
         ])}
       </nav>
@@ -106,10 +109,14 @@ export default function SiteFooter() {
       <div className="mt-8 flex flex-wrap items-start justify-between gap-4 border-t border-line pt-4">
         <ul className="flex flex-wrap gap-x-4 gap-y-1">
           <li><a className={linkCls} href="mailto:hello@realufo.org">hello@realufo.org</a></li>
-          <li><Link className={linkCls} to="/privacy">Privacy</Link></li>
-          <li><Link className={linkCls} to="/terms">Terms</Link></li>
+          <li><Link className={linkCls} to="/developers">{t("footer.developers")}</Link></li>
+          <li><Link className={linkCls} to="/privacy">{t("footer.privacy")}</Link></li>
+          <li><Link className={linkCls} to="/terms">{t("footer.terms")}</Link></li>
         </ul>
-        <div aria-label="Appearance" role="group"><AppearanceSwitcher /></div>
+        <div className="flex items-center gap-2" role="group" aria-label="Display preferences">
+          <LangToggle />
+          <div aria-label="Appearance" role="group"><AppearanceSwitcher /></div>
+        </div>
       </div>
     </footer>
   );

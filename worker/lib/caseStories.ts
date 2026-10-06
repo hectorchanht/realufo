@@ -14,6 +14,8 @@ export interface CaseStory {
 // What the page renders: sources resolved to links (null href = record gone).
 export interface StoryView extends Omit<CaseStory, "sources"> {
   sources: { n: number; href: string | null; label: string; note: string; external: boolean }[];
+  /** Traditional Chinese title (lib/caseStoryZh.ts); null when untranslated. */
+  titleZh: string | null;
 }
 
 export const CASE_SLUGS = [

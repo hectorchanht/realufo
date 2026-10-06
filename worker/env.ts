@@ -6,6 +6,8 @@ export interface Env {
   ADMIN_TOKEN?: string; // secret; enables POST /__tick (scripts/publish.sh)
   RATE_MAX?: string;
   RATE_WINDOW_SEC?: string;
+  API_RATE_MAX?: string; // public API v1: requests per window per IP (default 600)
+  API_RATE_WINDOW_SEC?: string; // public API v1: window seconds (default 60)
   UPLOAD_BASE?: string; // public URL prefix for uploads/<name>; default same-origin /api/u/
   FILE_CDN_FALLBACK?: string; // local dev only (.dev.vars): R2 miss in /api/file redirects to the CDN copy
   AI: Ai;

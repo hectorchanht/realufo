@@ -13,6 +13,7 @@ import '@fontsource/space-grotesk/700.css'
 import './theme/theme.css'
 import './index.css'
 import { ThemeProvider } from './theme/ThemeProvider'
+import { LangProvider } from './lib/lang'
 import App from './App.tsx'
 import { startOutbox } from './lib/outbox'
 import { sendRaw } from './api/client'
@@ -35,7 +36,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <App />
+        <LangProvider>
+          <App />
+        </LangProvider>
       </ThemeProvider>
     </QueryClientProvider>
   </StrictMode>,
