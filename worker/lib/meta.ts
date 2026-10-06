@@ -100,13 +100,15 @@ const PAGE_TTL = 3600;
 // once per path per colo per hour. Data, not HTML: the current index.html is
 // re-read every request, so a deploy's new bundle hash is never stale.
 // Pathname-only key so query strings can't bust it; misses aren't cached.
+// Routes that vary the render on a query param (hub ?page=N) pass a
+// cacheSuffix so each variant gets its own memo entry.
 // ponytail: crawlers may see up to 1h-old related lists / replies; humans get
 // fresh data from the SPA's API calls. Purge or shorten PAGE_TTL if that matters.
-async function cachedPage(url: URL, load: () => Promise<Page | null>): Promise<Page | null> {
+async function cachedPage(url: URL, load: () => Promise<Page | null>, cacheSuffix = ""): Promise<Page | null> {
   // A noStore page (degraded fallback) goes out but isn't cached: returning null
   // from the memo's loader skips the store.
   let fallback: Page | null = null;
-  const page = await cachedJson(`${url.origin}/__page${url.pathname}`, async () => {
+  const page = await cachedJson(`${url.origin}/__page${url.pathname}${cacheSuffix}`, async () => {
     const p = await load();
     if (p?.noStore) {
       fallback = p;
@@ -138,7 +140,7 @@ export async function serveWithMeta(req: Request, env: Env): Promise<Response> {
       const html = await shell(env, url);
       let page: Page | null = null;
       try {
-        page = await cachedPage(url, () => r.load(env, params, url));
+        page = await cachedPage(url, () => r.load(env, params, url), r.cacheKey ? `?${r.cacheKey(url)}` : "");
       } catch (e) {
         // D1 trouble must not take the SPA shell down; the SPA shows its own errors.
         console.error("pre-render failed", url.pathname, e);

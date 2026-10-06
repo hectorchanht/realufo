@@ -301,6 +301,11 @@ export interface Hub {
   release?: import("../../../worker/lib/releases").ReleaseBlock | null;
   /** Topics only: background, sources, related stories (worker/routes/hubs.ts). */
   topic?: import("../../../worker/lib/topics").TopicBlock | null;
+  /** Pagination: records is the current page's slice of total files. */
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 export type { FaqItem, NextWindow, ReleaseBlock, ReleaseInfo, TrackerData } from "../../../worker/lib/releases";
 /** Hub slugs this record's facts link to (only hubs that exist). */

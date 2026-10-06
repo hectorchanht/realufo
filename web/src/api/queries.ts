@@ -587,10 +587,10 @@ export function useReleases() {
   return useQuery({ queryKey: qk.releases, queryFn: () => api.get<TrackerData>("/api/releases") });
 }
 
-export function useHub(kind: string, slug: string) {
+export function useHub(kind: string, slug: string, page = 1) {
   return useQuery({
-    queryKey: qk.hub(kind, slug),
-    queryFn: () => api.get<Hub>(`/api/hubs/${kind}/${encodeURIComponent(slug)}`),
+    queryKey: [...qk.hub(kind, slug), page],
+    queryFn: () => api.get<Hub>(`/api/hubs/${kind}/${encodeURIComponent(slug)}${page > 1 ? `?page=${page}` : ""}`),
     enabled: !!slug,
     retry: false,
   });

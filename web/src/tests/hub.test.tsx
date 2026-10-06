@@ -9,7 +9,7 @@ import { activeTabForPath } from "../components/navItems";
 const useHubMock = vi.fn();
 const useHubsMock = vi.fn();
 vi.mock("../api/queries", () => ({
-  useHub: (kind: string, slug: string) => useHubMock(kind, slug),
+  useHub: (kind: string, slug: string, page = 1) => useHubMock(kind, slug, page),
   useHubs: () => useHubsMock(),
   // DocCard reads bootstrap (archive labels); not under test here.
   useBootstrap: () => ({ data: undefined, isLoading: false }),
@@ -24,6 +24,7 @@ const fbi: HubData = {
     kind: "pdf", redacted: 0, thumb: null, location: null, incident_date: "2022", doc_date: null,
   }],
   siblings: [{ kind: "agency", slug: "cia", label: "CIA", count: 22 }],
+  total: 5, page: 1, pageSize: 48, totalPages: 1,
 };
 const hubs: HubSummary[] = [
   { kind: "release", slug: "6", label: "Release 06 · 18 Sep 2026", count: 74 },
@@ -52,7 +53,7 @@ describe("Hub", () => {
   it("renders title, intro, file cards and sibling hubs", () => {
     useHubMock.mockReturnValue({ data: fbi, isLoading: false });
     const { container } = renderAt("/agency/fbi");
-    expect(useHubMock).toHaveBeenCalledWith("agency", "fbi");
+    expect(useHubMock).toHaveBeenCalledWith("agency", "fbi", 1);
     expect(screen.getByRole("heading", { level: 1, name: "FBI UAP files" })).toBeInTheDocument();
     expect(screen.getByText(fbi.intro)).toBeInTheDocument();
     expect(container.querySelector('a[href^="/doc/FBI-UAP-D002"]')).not.toBeNull();
@@ -70,6 +71,21 @@ describe("Hub", () => {
     useHubMock.mockReturnValue({ data: undefined, isLoading: false });
     renderAt("/agency/nope");
     expect(screen.getByText("hub not found.")).toBeInTheDocument();
+  });
+
+  it("paginates: ?page=N reaches the query and renders the pager", () => {
+    useHubMock.mockReturnValue({ data: { ...fbi, total: 100, page: 2, totalPages: 3 }, isLoading: false });
+    renderAt("/agency/fbi?page=2");
+    expect(useHubMock).toHaveBeenCalledWith("agency", "fbi", 2);
+    expect(screen.getByRole("navigation", { name: "Pages" })).toHaveTextContent("Page 2 of 3 · 100 files");
+    expect(screen.getByRole("link", { name: "← Prev" })).toHaveAttribute("href", "/agency/fbi?page=1");
+    expect(screen.getByRole("link", { name: "Next →" })).toHaveAttribute("href", "/agency/fbi?page=3");
+  });
+
+  it("hides the pager on a single page", () => {
+    useHubMock.mockReturnValue({ data: fbi, isLoading: false });
+    renderAt("/agency/fbi");
+    expect(screen.queryByRole("navigation", { name: "Pages" })).toBeNull();
   });
 });
 
@@ -128,6 +144,7 @@ const release6: HubData = {
   intro: "74 declassified UAP files the Department of War published on 18 September 2026 (Release 06): 4 PDFs, 70 videos.",
   stats: { files: 74, pdf: 4, video: 70, image: 0, from: "1950", to: "2025" },
   records: [], siblings: [], prev: "5", next: null, highlights: null,
+  total: 74, page: 1, pageSize: 48, totalPages: 2,
   release: {
     info: { no: 6, date: "2026-09-18", weekday: "Friday", files: 74, gap: 42,
       agencies: [{ label: "Department of War", slug: "department-of-war", count: 70 }, { label: "Local law enforcement", slug: "local-law-enforcement", count: 4 }],
@@ -164,6 +181,7 @@ const aawsap: HubData = {
   intro: "44 declassified UAP files on this topic: 44 PDFs. Incidents span 2009–2010.",
   stats: { files: 44, pdf: 44, video: 0, image: 0, from: "2009", to: "2010" },
   records: [], siblings: [], highlights: null,
+  total: 44, page: 1, pageSize: 48, totalPages: 1,
   topic: {
     background: "AAWSAP was a Defense Intelligence Agency program.",
     lore: "Popular accounts call it a crash-retrieval program.",

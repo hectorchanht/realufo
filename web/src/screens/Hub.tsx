@@ -1,7 +1,8 @@
 // Hub landing page (spec 2026-10-02-realufo-hub-pages): every file for one
 // release / agency / location / decade, with a data-written intro. The
 // Worker pre-renders the same content for crawlers (worker/lib/ssr.ts hubBody).
-import { Link, useParams } from "react-router-dom";
+// File lists paginate (48/page) via ?page=N, in step with the pre-render.
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useHub } from "../api/queries";
 import type { HubHighlights, HubKind, ReleaseBlock, TopicBlock } from "../api/types";
 import { Faq } from "../components/Faq";
@@ -12,14 +13,21 @@ import { docTitleParts } from "../lib/docTitle";
 import { DocCard } from "../components/DocCard";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { Skeleton } from "../components/Skeleton";
+import { useEffect } from "react";
 
 export const KIND_LABEL: Record<HubKind, string> = { release: "RELEASE", topic: "TOPIC", agency: "AGENCY", location: "LOCATION", decade: "DECADE" };
 export const KIND_PLURAL: Record<HubKind, string> = { release: "RELEASES", topic: "TOPICS", agency: "AGENCIES", location: "LOCATIONS", decade: "DECADES" };
 
 export default function Hub({ kind }: { kind: HubKind }) {
   const { slug = "" } = useParams();
-  const { data, isLoading } = useHub(kind, slug);
+  const [searchParams] = useSearchParams();
+  const rawPage = parseInt(searchParams.get("page") || "1", 10);
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
+  const { data, isLoading } = useHub(kind, slug, page);
   useSetPageTitle(KIND_LABEL[kind], data?.title ?? "", data?.title);
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [page]);
 
   if (isLoading) {
     return (
@@ -64,6 +72,23 @@ export default function Hub({ kind }: { kind: HubKind }) {
           <DocCard key={r.id} record={r} variant="grid" />
         ))}
       </div>
+      {data.totalPages > 1 && (
+        <nav aria-label="Pages" className="mb-6 flex items-center justify-center gap-4 font-mono text-[12px] text-dim">
+          {data.page > 1 ? (
+            <Link to={`?page=${data.page - 1}`} className="hover:text-signal">← Prev</Link>
+          ) : (
+            <span className="invisible">← Prev</span>
+          )}
+          <span>
+            Page {data.page} of {data.totalPages} · {data.total} files
+          </span>
+          {data.page < data.totalPages ? (
+            <Link to={`?page=${data.page + 1}`} className="hover:text-signal">Next →</Link>
+          ) : (
+            <span className="invisible">Next →</span>
+          )}
+        </nav>
+      )}
       {data.release && <Faq items={data.release.faq} />}
       {kind === "topic" && <GoDeeper picks={picksForTopic(slug)} />}
       {data.siblings.length > 0 && (

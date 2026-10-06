@@ -180,9 +180,10 @@ describe("threadBody / caseBody / homeBody", () => {
 
 describe("hub pre-render", () => {
   const hub = {
-    kind: "location" as const, title: "UAP files: Washington, D.C. & <Area>", intro: "2 declassified UAP files about incidents in Washington, D.C.: 2 PDFs.",
+    kind: "location" as const, slug: "washington-dc", title: "UAP files: Washington, D.C. & <Area>", intro: "2 declassified UAP files about incidents in Washington, D.C.: 2 PDFs.",
     records: [{ id: "A B#1", title: "First" }, { id: "X-2", title: "Second" }],
     siblings: [{ kind: "location" as const, slug: "moon", label: "The Moon", count: 8 }],
+    total: 2, page: 1, pageSize: 48, totalPages: 1,
   };
   it("renders escaped title, intro, file links and sibling hubs", () => {
     const out = hubBody(hub);
@@ -214,6 +215,16 @@ describe("hub pre-render", () => {
   it("release hubs get prev/next links", () => {
     const out = hubBody({ ...hub, kind: "release", prev: "5", next: null });
     expect(out).toContain('<a href="/release/5">← Release 05</a>');
+  });
+  it("paginates the file list with prev/next page links", () => {
+    const out = hubBody({ ...hub, total: 100, page: 2, totalPages: 3 });
+    expect(out).toContain("<h2>Files (100)</h2>");
+    expect(out).toContain("Page 2 of 3");
+    expect(out).toContain('<a href="/location/washington-dc" rel="prev">← Prev</a>');
+    expect(out).toContain('<a href="/location/washington-dc?page=3" rel="next">Next →</a>');
+  });
+  it("no pager on a single page", () => {
+    expect(hubBody(hub)).not.toContain('aria-label="Pages"');
   });
   it("browse groups hubs by kind with counts", () => {
     const out = browseBody([

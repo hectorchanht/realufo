@@ -4,7 +4,7 @@ import type { MetaInput } from "./meta";
 import { thumbSql } from "./db";
 import { uploadUrl } from "./upload";
 import { loadRecord } from "../routes/records";
-import { loadHub, listHubsCached } from "../routes/hubs";
+import { loadHub, listHubsCached, pageOf } from "../routes/hubs";
 import type { HubKind } from "./hubs";
 import {
   DEFAULT_DESCRIPTION, type DocData, type Link, docBody, docFooter, threadBody, boardBody, caseBody, homeBody, tabBody,
@@ -30,6 +30,8 @@ import { TOPIC_RULES, firstSentence } from "./topics";
 // noStore: a degraded fallback — served, but never memoized (meta.ts cachedPage).
 export type Page = { meta: Omit<MetaInput, "url">; body: string; footer?: Link[]; canonicalPath?: string; noStore?: boolean };
 export type Loader = (env: Env, groups: Record<string, string>, url: URL) => Promise<Page | null>;
+// cacheKey: extra page-HTML memo key derived from the URL. Hub routes paginate
+// via ?page=N, so each page gets its own cached render.
 
 // records.doc_date is "M/D/YY" (war.gov) or a bare year (AARO) → ISO 8601 date.
 export const isoDate = (d: string | null | undefined) => {
@@ -426,11 +428,13 @@ const threadPage: Loader = async (env, g) => {
 const hubPage =
   (kind: HubKind): Loader =>
   async (env, g, url) => {
-    const h = await loadHub(env, kind, g.slug, url.origin);
+    const page = pageOf(url);
+    const h = await loadHub(env, kind, g.slug, url.origin, page);
     if (!h) return null;
+    const offset = (h.page - 1) * h.pageSize;
     return {
       meta: {
-        title: h.title,
+        title: h.page > 1 ? `${h.title} — page ${h.page}` : h.title,
         description: h.topic
           ? `${firstSentence(h.topic.background)} ${h.intro}`.trim()
           : h.release ? `${h.intro} Agencies: ${agencyList(h.release.info, 3)}.` : h.intro,
@@ -443,8 +447,8 @@ const hubPage =
           ...(h.topic ? { about: { "@type": "Thing", name: TOPIC_RULES.find((t) => t.slug === h.slug)?.label ?? h.title } } : {}),
           mainEntity: {
             "@type": "ItemList",
-            numberOfItems: h.records.length,
-            itemListElement: h.records.map((r, i) => ({ "@type": "ListItem", position: i + 1, url: `${url.origin}${docHref(r.id)}`, name: docTitle(r.title, r.id, r.kind) })),
+            numberOfItems: h.total,
+            itemListElement: h.records.map((r, i) => ({ "@type": "ListItem", position: offset + i + 1, url: `${url.origin}${docHref(r.id)}`, name: docTitle(r.title, r.id, r.kind) })),
           },
         },
         breadcrumbs: [
@@ -455,6 +459,8 @@ const hubPage =
         faq: h.release?.faq,
       },
       body: hubBody(h),
+      // Paginated pages canonicalise to themselves (?page=N); page 1 keeps the bare path.
+      ...(h.page > 1 ? { canonicalPath: `${hubHref(kind, h.slug)}?page=${h.page}` } : {}),
     };
   };
 
@@ -536,7 +542,7 @@ const shortPage: Loader = async (env, g, url) => {
   return p && { ...p, canonicalPath: docHref(g.id) };
 };
 
-export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
+export const ROUTES: { pattern: URLPattern; load: Loader; cacheKey?: (url: URL) => string }[] = [
   { pattern: new URLPattern({ pathname: "/" }), load: homePage },
   { pattern: new URLPattern({ pathname: "/archive" }), load: archivePage },
   { pattern: new URLPattern({ pathname: "/boards" }), load: boardsPage },
@@ -553,11 +559,11 @@ export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/notifications" }), load: notificationsPage },
   { pattern: new URLPattern({ pathname: "/developers" }), load: developersPage },
   { pattern: new URLPattern({ pathname: "/compare" }), load: comparePage },
-  { pattern: new URLPattern({ pathname: "/release/:slug" }), load: hubPage("release") },
-  { pattern: new URLPattern({ pathname: "/topic/:slug" }), load: hubPage("topic") },
-  { pattern: new URLPattern({ pathname: "/agency/:slug" }), load: hubPage("agency") },
-  { pattern: new URLPattern({ pathname: "/location/:slug" }), load: hubPage("location") },
-  { pattern: new URLPattern({ pathname: "/decade/:slug" }), load: hubPage("decade") },
+  { pattern: new URLPattern({ pathname: "/release/:slug" }), load: hubPage("release"), cacheKey: (url) => `page=${pageOf(url)}` },
+  { pattern: new URLPattern({ pathname: "/topic/:slug" }), load: hubPage("topic"), cacheKey: (url) => `page=${pageOf(url)}` },
+  { pattern: new URLPattern({ pathname: "/agency/:slug" }), load: hubPage("agency"), cacheKey: (url) => `page=${pageOf(url)}` },
+  { pattern: new URLPattern({ pathname: "/location/:slug" }), load: hubPage("location"), cacheKey: (url) => `page=${pageOf(url)}` },
+  { pattern: new URLPattern({ pathname: "/decade/:slug" }), load: hubPage("decade"), cacheKey: (url) => `page=${pageOf(url)}` },
   { pattern: new URLPattern({ pathname: "/doc/:id" }), load: docPage },
   { pattern: new URLPattern({ pathname: "/shorts/:id" }), load: shortPage },
   { pattern: new URLPattern({ pathname: "/cases" }), load: casesPage },

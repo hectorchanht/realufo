@@ -23,7 +23,13 @@ export interface Hub {
   highlights: Highlights | null;
   release?: ReleaseBlock | null;
   topic?: TopicBlock;
+  /** Pagination: records is the current page's slice. */
+  total: number; page: number; pageSize: number; totalPages: number;
 }
+
+// Files per hub page (agency/location/topic/release/decade). The v1 API
+// passes pageSize 0 to keep returning the whole list for SDK consumers.
+export const HUB_PAGE_SIZE = 48;
 
 // AI picks (crawler ingest.highlights) re-checked against the hub's current
 // files: a pick that left the hub is dropped; < 2 left hides the section.
@@ -151,30 +157,69 @@ async function hubFilter(env: Env, h: HubSummary, origin: string) {
   return { where: `r.${h.kind} IN (SELECT value FROM json_each(?))`, bind: [JSON.stringify(reg.values)], release: null };
 }
 
-export async function loadHub(env: Env, kind: string, slug: string, origin: string): Promise<Hub | null> {
+// Pick ids referenced by a highlights row, so page 1 can resolve them even
+// when they fall outside the first page's record slice.
+function highlightPickIds(row: { picks: string } | null): string[] {
+  if (!row) return [];
+  try {
+    const raw: unknown = JSON.parse(row.picks);
+    return (Array.isArray(raw) ? raw : []).map((p: any) => p?.id).filter((id): id is string => typeof id === "string");
+  } catch {
+    return [];
+  }
+}
+
+export async function loadHub(
+  env: Env, kind: string, slug: string, origin: string, page = 1, pageSize = HUB_PAGE_SIZE
+): Promise<Hub | null> {
   const hubs = await listHubsCached(env, origin);
   const me = hubs.find((h) => h.kind === kind && h.slug === slug);
   if (!me) return null;
   const sel = await hubFilter(env, me, origin);
   if (!sel) return null;
+  const p = Math.max(1, Math.floor(page) || 1);
+  const total = (await env.DB.prepare(`SELECT COUNT(*) c FROM records r WHERE ${sel.where} AND r.status='live'`)
+    .bind(...sel.bind)
+    .first<{ c: number }>())?.c ?? 0;
+  if (total < MIN_HUB_FILES) return null;
+  // pageSize <= 0 (the v1 API) means "the whole list as one page".
+  const size = pageSize > 0 ? pageSize : total;
+  const totalPages = Math.max(1, Math.ceil(total / size));
+  if (p > totalPages) return null;
   const { results: records } = await env.DB.prepare(
     `SELECT ${CARD_COLS} FROM records r WHERE ${sel.where} AND r.status='live'
-     ORDER BY r.featured DESC, r.created_at DESC, r.id`
+     ORDER BY r.featured DESC, r.created_at DESC, r.id LIMIT ? OFFSET ?`
+  )
+    .bind(...sel.bind, size, (p - 1) * size)
+    .all<CardRow>();
+  // Stats describe the whole hub, not just this page's slice.
+  const { results: statRows } = await env.DB.prepare(
+    `SELECT r.kind, r.incident_date FROM records r WHERE ${sel.where} AND r.status='live'`
   )
     .bind(...sel.bind)
-    .all<CardRow>();
-  if (records.length < MIN_HUB_FILES) return null;
-  const stats = hubStats(records);
-  const hlRow = await env.DB.prepare("SELECT lede,picks FROM hub_highlights WHERE kind=? AND slug=?")
-    .bind(me.kind, me.slug)
-    .first<{ lede: string; picks: string }>()
-    .catch((e) => {
-      console.error("hub highlights failed", e);
-      return null;
-    });
+    .all<{ kind: string; incident_date: string | null }>();
+  const stats = hubStats(statRows);
+  const firstPage = p === 1;
+  const hlRow = firstPage
+    ? await env.DB.prepare("SELECT lede,picks FROM hub_highlights WHERE kind=? AND slug=?")
+        .bind(me.kind, me.slug)
+        .first<{ lede: string; picks: string }>()
+        .catch((e) => {
+          console.error("hub highlights failed", e);
+          return null;
+        })
+    : null;
+  // Highlights are re-checked against the pick records themselves, so a pick
+  // past the first page's slice still resolves on page 1.
+  const pickIds = firstPage ? highlightPickIds(hlRow) : [];
+  const pickRows = pickIds.length
+    ? (await env.DB.prepare(`SELECT ${CARD_COLS} FROM records WHERE id IN (SELECT value FROM json_each(?)) AND status='live'`)
+        .bind(JSON.stringify(pickIds))
+        .all<CardRow>()).results
+    : [];
   const same = hubs.filter((h) => h.kind === me.kind);
   const i = same.indexOf(me);
-  const highlights = highlightsOf(hlRow, records);
+  const highlights = firstPage ? highlightsOf(hlRow, [...pickRows, ...records]) : null;
   const release =
     me.kind === "release"
       ? await releaseBlock(env, origin, Number(me.slug), (highlights?.picks ?? []).map((p) => ({ id: p.id, title: docTitle(p.title, p.id, p.kind) }))).catch(
@@ -185,14 +230,26 @@ export async function loadHub(env: Env, kind: string, slug: string, origin: stri
           }
         )
       : undefined;
+  // Editorial garnish (topic background, sources, related stories) lives on
+  // page 1; deeper pages are pure file listings.
+  const topic =
+    firstPage && me.kind === "topic"
+      ? await topicBlock(env, TOPIC_TEXT[me.slug], (sel as { members: string[] }).members)
+      : firstPage && me.kind === "agency" && Object.hasOwn(AGENCY_TEXT, me.slug)
+        ? await topicBlock(
+            env,
+            AGENCY_TEXT[me.slug],
+            (await env.DB.prepare(`SELECT r.id id FROM records r WHERE ${sel.where} AND r.status='live'`)
+              .bind(...sel.bind)
+              .all<{ id: string }>()).results.map((r) => r.id)
+          )
+        : undefined;
   return {
     kind: me.kind, slug: me.slug, title: hubTitle(me), intro: hubIntro(me, sel.release, stats), stats, records, highlights,
+    total, page: p, pageSize: size, totalPages,
     siblings: same.filter((h) => h !== me),
     ...(me.kind === "release" ? { prev: same[i - 1]?.slug ?? null, next: same[i + 1]?.slug ?? null, release } : {}),
-    ...(me.kind === "topic" ? { topic: await topicBlock(env, TOPIC_TEXT[me.slug], (sel as { members: string[] }).members) } : {}),
-    ...(me.kind === "agency" && Object.hasOwn(AGENCY_TEXT, me.slug)
-      ? { topic: await topicBlock(env, AGENCY_TEXT[me.slug], records.map((r) => r.id as string)) }
-      : {}),
+    ...(topic ? { topic } : {}),
   };
 }
 
@@ -203,6 +260,14 @@ export async function hubsIndex(req: Request, env: Env) {
 }
 
 export async function getHub(req: Request, env: Env, p: Record<string, string>) {
-  const h = await loadHub(env, p.kind, p.slug, new URL(req.url).origin);
+  const url = new URL(req.url);
+  const h = await loadHub(env, p.kind, p.slug, url.origin, pageOf(url));
   return h ? json(h, PUBLIC) : error(404, "hub not found");
+}
+
+// ?page=N → 1-based page number, clamped to ≥ 1. Shared by the JSON API, the
+// pre-render loader and the page-HTML cache key.
+export function pageOf(url: URL): number {
+  const n = parseInt(url.searchParams.get("page") || "1", 10);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 1;
 }

@@ -104,11 +104,13 @@ type HubLinkData = { kind: string; slug: string; label: string; count: number };
 const hubLinks = (hs: HubLinkData[]) => hs.map((s) => ({ href: hubHref(s.kind, s.slug), text: `${s.label} (${s.count})` }));
 
 export type HubPageData = {
-  kind: string; title: string; intro: string; records: RecordLink[]; siblings: HubLinkData[];
+  kind: string; slug: string; title: string; intro: string; records: RecordLink[]; siblings: HubLinkData[];
   prev?: string | null; next?: string | null;
   highlights?: { lede: string; picks: { id: string; why: string; title: string; kind?: string }[] } | null;
   release?: ReleaseBlock | null;
   topic?: TopicBlock | null;
+  /** Pagination: records is the current page's slice of total files. */
+  total: number; page: number; pageSize: number; totalPages: number;
 };
 
 const highlightsHtml = (h: HubPageData["highlights"]) =>
@@ -197,11 +199,22 @@ export function hubBody(h: HubPageData): string {
     h.topic ? storiesHtml(h.topic) : "",
     nav.length ? `<p>${nav.join(" · ")}</p>` : "",
     h.release ? `<p>${a({ href: "/releases", text: "All releases & next-release estimate" })}</p>` : "",
-    section(`Files (${h.records.length})`, docLinks(h.records)),
+    section(`Files (${h.total})`, docLinks(h.records)),
+    hubPager(h),
     h.release ? faqHtml(h.release.faq) : "",
     section(`More ${(KIND_HEADING[h.kind] ?? "hubs").toLowerCase()}`, hubLinks(h.siblings)),
   ].join("");
 }
+
+// Prev / page N of M / next under the file list. Page 1 links back to the
+// bare hub URL so there is exactly one canonical URL per page.
+const hubPager = (h: HubPageData): string => {
+  if (h.totalPages < 2) return "";
+  const href = (p: number) => `${hubHref(h.kind, h.slug)}${p > 1 ? `?page=${p}` : ""}`;
+  const prev = h.page > 1 ? `<a href="${esc(href(h.page - 1))}" rel="prev">← Prev</a>` : "";
+  const next = h.page < h.totalPages ? `<a href="${esc(href(h.page + 1))}" rel="next">Next →</a>` : "";
+  return `<nav aria-label="Pages"><p>${[prev, `Page ${h.page} of ${h.totalPages}`, next].filter(Boolean).join(" · ")}</p></nav>`;
+};
 
 export const browseBody = (hubs: HubLinkData[]) =>
   tabBody(
