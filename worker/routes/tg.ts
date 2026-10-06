@@ -2,10 +2,10 @@
 import type { Env } from "../env";
 import { error, json } from "../lib/json";
 import { sameSecret } from "../lib/secret";
-import { getJob, jobByMessage, move, openJobs, patchPayload, pendingByStream, revise, setJobMedia, setMessages, setStreamPaused, streamPaused } from "../lib/jobs";
-import { approve, preview, sendJobMedia, skip } from "../lib/gate";
-import { queueCard, refreshQueueCard } from "../lib/tgcmd";
-import { answerCallback, clearButtons, getFile, progress, sendAction, sendMessage } from "../lib/tg";
+import { getJob, jobByMessage, move, openJobs, patchPayload, pendingByStream, revise, setJobMedia, setStreamPaused, streamPaused } from "../lib/jobs";
+import { approve, preview, skip } from "../lib/gate";
+import { queueCard, refreshQueueCard, showJob } from "../lib/tgcmd";
+import { answerCallback, clearButtons, getFile, progress, sendMessage } from "../lib/tg";
 import { command } from "../lib/tgcmd";
 import { classifyIntent, PORTAL_STREAMS, T, zh, type NluIntent } from "../lib/tg-nlu";
 import { THREAD_SEP } from "../lib/x";
@@ -140,16 +140,7 @@ async function runIntent(env: Env, m: any, chat: number, job: any, intent: NluIn
     }
     case "show": {
       // "Show me video preview" — re-send the job's media, never touch the caption.
-      const hasVideo = job.media?.mime?.startsWith("video/");
-      await sendAction(env, chat, hasVideo ? "upload_video" : "upload_photo");
-      const done = await progress(env, chat, hasVideo ? "sending the clip…" : "sending…");
-      try {
-        const { msgs, note } = await sendJobMedia(env, job);
-        await setMessages(env, job.id, [...(job.tg_msgs ?? []), ...msgs]);
-        if (!msgs.length) {
-          await say(cjk ? `📭 #${job.id} 冇 media 可以 show${note ? ` (${note.trim().split("\n").pop()})` : ""}` : `📭 #${job.id} has no media to show`);
-        }
-      } finally { await done(); }
+      await showJob(env, job, cjk);
       return true;
     }
     case "edit": {
@@ -190,11 +181,7 @@ async function runIntent(env: Env, m: any, chat: number, job: any, intent: NluIn
       return true;
     }
     case "help": {
-      await say(
-        cjk
-          ? "指令:\nok / 好 — 批\n唔要 — skip\ntitle 改做 X — 改\nshow video — 重睇 preview 條片/圖\npause shorts / resume all — 停/開\nstatus — 睇 queue"
-          : "Commands:\nok — approve\nskip — drop\ntitle 改做 X — edit\nshow video — re-send the preview media\npause shorts / resume all\nstatus — queue"
-      );
+      await say(cjk ? "打 /help 睇晒所有指令 👍" : "Type /help for all commands 👍");
       return true;
     }
     default:

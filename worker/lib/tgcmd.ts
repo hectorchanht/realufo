@@ -1,7 +1,7 @@
 // worker/lib/tgcmd.ts
 import type { Env } from "../env";
-import { getJob, openJobs, OPEN, pendingByStream, setSetting, setStreamPaused, streamPaused, type Job } from "./jobs";
-import { queue, skip } from "./gate";
+import { getJob, move, openJobs, OPEN, pendingByStream, setMessages, setSetting, setStreamPaused, streamPaused, type Job } from "./jobs";
+import { approve, queue, sendJobMedia, skip } from "./gate";
 import { stage } from "./xbot";
 import { costOf, monthSpend, nextCandidate, sqlTime, type Candidate } from "./xpick";
 import { SKIP_REASONS, tick as socialTick } from "./social/tick";
@@ -12,14 +12,24 @@ import { PORTAL_STREAMS } from "./tg-nlu";
 const DOWNLOAD_MAX = 20 * 1024 * 1024; // Telegram bots can download ≤20 MB
 
 const HELP = [
-  "/post <ID> · preview a record post (video clip or image)",
-  "send an mp4 with caption \"<ID> text\" · your own video as a showcase post (≤20 MB; bigger: scripts/publish.sh)",
-  "/queue · open jobs",
-  "/status · posts today, waiting jobs per stream, paused streams, failures, spend",
-  "/pause [stream] · /resume [stream] · stream = record|short|article|social|poll|all (no arg = bot picks, as before)",
-  "/drain · re-run the fan-out for missed platforms",
-  "/skip <job # or record ID> · drop a job",
-  "Reply to a preview: ok / 唔要 / show video / title 改做 X / pause shorts / status — natural text works too.",
+  "批 / 唔要:",
+  "  ok / 好 — 批 (覆 preview, 或 /ok 5)",
+  "  唔要 — skip (或 /skip 5)",
+  "",
+  "Preview 睇嘢:",
+  "  /post DOW-UAP-PR133 — 開個 preview",
+  "  /show [5] — 重 send 條片/圖出嚟睇 (唔使碌返上去)",
+  "  /info 5 — 睇晒成單嘢 (media, caption, 狀態)",
+  "",
+  "Queue:",
+  "  /queue — interactive list, 每單撳 ✅/❌",
+  "  /status — 今日出咗幾多, 等緊幾多, 使咗幾多",
+  "",
+  "控制:",
+  "  /pause shorts · /resume all — 停/開 stream",
+  "  /drain — 重跑 fan-out",
+  "",
+  "打字都得: 「show me video preview」「title 改做 X」「換張圖」",
 ].join("\n");
 
 // ---- Interactive queue card ----
@@ -55,6 +65,30 @@ export async function queueCard(env: Env): Promise<{ text: string; keyboard?: Ke
   return { text: lines.join("\n").trimEnd(), keyboard };
 }
 
+// Re-send a job's media (the "show me video preview" action). Shared by the /show
+// command and the natural-language "show" intent. Never touches the caption.
+export async function showJob(env: Env, job: Job, cjk = true): Promise<void> {
+  const chat = env.TELEGRAM_OWNER_ID!;
+  const say = (t: string) => sendMessage(env, chat, t);
+  const hasVideo = !!job.media?.mime?.startsWith("video/");
+  await sendAction(env, chat, hasVideo ? "upload_video" : "upload_photo");
+  const done = await progress(env, chat, hasVideo ? "sending the clip…" : "sending…");
+  try {
+    const { msgs, note } = await sendJobMedia(env, job);
+    await setMessages(env, job.id, [...(job.tg_msgs ?? []), ...msgs]);
+    if (!msgs.length) await say(cjk ? `📭 #${job.id} 冇 media 可以 show` : `📭 #${job.id} has no media to show`);
+  } finally { await done(); }
+}
+
+// Find an open job by "#12" / "12" / record ref. No arg → the newest open job.
+async function findJob(env: Env, raw: string): Promise<Job | null> {
+  const arg = raw.replace(/^#/, "");
+  const n = Number(arg);
+  if (Number.isInteger(n) && n > 0) return getJob(env, n);
+  const js = await openJobs(env);
+  if (!arg) return js[0] ?? null;
+  return js.find((x) => x.ref === arg) ?? null;
+}
 // Re-render a queue card message after a qok/qskip tap (routes/tg.ts).
 export async function refreshQueueCard(env: Env, chat: string | number, messageId: number): Promise<void> {
   const card = await queueCard(env);
@@ -117,14 +151,40 @@ export async function command(env: Env, m: any) {
     case "/drain": await socialTick(env, now); return say("Fan-out ran once; /status for failures.");
     case "/help": setCommands(env); return say(HELP);
     case "/skip": {
-      const raw = arg.replace(/^#/, "");
-      const n = Number(raw);
-      // "#12" / "12" as /queue prints it, or the ref (record/release ID) from the same line
-      const j = Number.isInteger(n) && n > 0
-        ? await getJob(env, n)
-        : raw ? (await openJobs(env)).find((x) => x.ref === raw) ?? null : null;
-      if (!j) return say(raw ? `${arg}: not found or already closed.` : "Usage: /skip <job number | record ID>");
+      const j = await findJob(env, arg);
+      if (!j) return say(arg ? `${arg}: not found or already closed.` : "Usage: /skip <job number | record ID>");
       return say((await skip(env, j)) ? `#${j.id} skipped.` : `#${j.id}: already closed.`);
+    }
+    case "/show": {
+      const j = await findJob(env, arg);
+      if (!j) return say(arg ? `${arg}: not found or already closed.` : "No open jobs to show.");
+      await showJob(env, j, true);
+      return;
+    }
+    case "/ok": {
+      const j = await findJob(env, arg);
+      if (!j || j.status !== "post_wait") return say(arg ? `#${arg}: not waiting for approval.` : "Usage: /ok <job number> (see /queue)");
+      if (!(await move(env, j.id, j.version, ["post_wait"], "approved"))) return say(`#${j.id}: already handled.`);
+      const done = await progress(env, chat, "posting…");
+      try { await say(await approve(env, j)); } finally { await done(); }
+      return;
+    }
+    case "/info": {
+      const j = await findJob(env, arg);
+      if (!j) return say(arg ? `${arg}: not found.` : "Usage: /info <job number | record ID>");
+      const meta = typeof j.payload?.meta === "string" && j.payload.meta ? j.payload.meta : null;
+      const moments = typeof j.payload?.evidence === "string" && j.payload.evidence
+        ? `${j.payload.evidence.split("\n").filter((l: string) => /^\d/.test(l.trim())).length} key moments` : null;
+      return say([
+        `#${j.id} v${j.version} · ${j.kind} · ${j.stream} · ${j.status}`,
+        `ref: ${j.ref}`,
+        j.media ? `media: ${j.media.mime} ${sizeStr(j.media.size)} · ${j.media.key}` : "media: none",
+        meta,
+        moments,
+        `created: ${j.created_at} · updated: ${j.updated_at}`,
+        j.error ? `error: ${j.error.slice(0, 200)}` : null,
+        `caption: ${(j.caption ?? "").split("\n")[0].slice(0, 120)}`,
+      ].filter(Boolean).join("\n"));
     }
     default: return say(HELP);
   }

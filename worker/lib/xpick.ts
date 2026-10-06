@@ -52,11 +52,12 @@ export async function withinBudget(env: Env, cost: number, now: Date, manual = f
 }
 
 export async function mediaFor(env: Env, rec: { id: string; archive: string; kind: string }): Promise<Media> {
-  if (rec.kind === "video") {
-    const key = `clips/${rec.archive}/${rec.id}.mp4`;
-    const o = await env.MEDIA.head(key);
-    if (o) return { key, mime: "video/mp4", size: o.size };
-  }
+  // Every post should have a video: video records get their cut clip, pdf/image
+  // records get a Ken Burns clip generated from the thumb (ingest.pdf_clips).
+  // Same key shape for both; existence is the signal.
+  const key = `clips/${rec.archive}/${rec.id}.mp4`;
+  const o = await env.MEDIA.head(key);
+  if (o) return { key, mime: "video/mp4", size: o.size };
   return thumbFor(env, rec);
 }
 

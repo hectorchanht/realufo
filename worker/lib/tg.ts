@@ -80,7 +80,10 @@ export const editMessage = async (env: Env, chat: string | number, messageId: nu
 export const setCommands = (env: Env) =>
   call(env, "setMyCommands", {
     commands: [
-      { command: "post", description: "Preview a record post: /post <record ID>" },
+      { command: "post", description: "Preview a record: /post <record ID>" },
+      { command: "show", description: "Re-send a job's video/images: /show [job #]" },
+      { command: "ok", description: "Approve a job by number: /ok <job #>" },
+      { command: "info", description: "Full job details: /info <job #>" },
       { command: "queue", description: "Open jobs — approve/skip inline" },
       { command: "status", description: "Today's posts, waiting jobs, spend" },
       { command: "skip", description: "Drop a job: /skip <job # or record ID>" },

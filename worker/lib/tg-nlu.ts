@@ -122,8 +122,8 @@ export const T = {
   stale: (cjk: boolean) => (cjk ? "呢個 preview 過期喇,覆返最新嗰個" : "That preview is out of date — reply to the newest one"),
   multi: (cjk: boolean) => (cjk ? "有幾單等緊,覆返指定嗰個 preview" : "Several jobs are waiting — reply to a specific preview"),
   clarify: (cjk: boolean) =>
-    cjk ? "唔明你講咩 😅 試下:「好」批 / 「唔要」skip / 「title 改做 X」改 / 「換張圖」換圖 / 「show video」重睇條片 / 「pause shorts」停 / 「status」睇 queue"
-        : "Didn't catch that 😅 Try: \"ok\" to approve / \"skip\" / \"title 改做 X\" to edit / \"換張圖\" for a new image / \"show video\" to re-watch / \"pause shorts\" / \"status\"",
+    cjk ? "唔明你講咩 😅 打 /help 睇指令, 或者試:「好」批 / 「唔要」skip / 「show video」重睇條片"
+        : "Didn't catch that 😅 Type /help for commands, or try: \"ok\" to approve / \"skip\" / \"show video\" to re-watch",
   paused: (s: string, cjk: boolean) => (cjk ? `⏸️ ${s} 停咗,唔會再有新 job` : `⏸️ ${s} paused — no new jobs will queue`),
   resumed: (s: string, cjk: boolean) => (cjk ? `▶️ ${s} 開返` : `▶️ ${s} resumed`),
   edited: (id: number, cjk: boolean) => (cjk ? `✏️ #${id} 改好,睇下新 preview` : `✏️ #${id} updated — here's the new preview`),

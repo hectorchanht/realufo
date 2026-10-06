@@ -44,9 +44,35 @@ const jobs = async () => (await env.DB.prepare("SELECT kind, stream, ref, status
 describe("admin commands", () => {
   it("/help lists the commands; unknown text gets help", async () => {
     await say({ text: "/help" });
-    expect(lastText()).toContain("/post <ID>");
+    expect(lastText()).toContain("/post");
+    expect(lastText()).toContain("/show");
+    expect(lastText()).toContain("/queue");
     await say({ text: "hello" });
     expect(lastText()).toContain("/queue");
+  });
+  it("/show re-sends the job's video; /info shows full details; /ok approves by number", async () => {
+    await say({ text: "/post CM-1" });
+    const id = (await env.DB.prepare("SELECT id FROM bot_jobs").first<any>()).id;
+    // /show: re-sends the clip with its job tag, plus a ⏳ that gets cleaned up
+    tg = [];
+    await say({ text: `/show ${id}` });
+    const videos = tg.filter((t) => t.method === "sendVideo");
+    expect(videos.length).toBe(1);
+    expect(String(videos[0].body.caption)).toContain(`#${id} · CM-1`);
+    expect(tg.some((t) => t.method === "sendChatAction" && t.body.action === "upload_video")).toBe(true);
+    expect(tg.filter((t) => t.method === "deleteMessage").length).toBe(1);
+    // /info: full job details
+    await say({ text: `/info ${id}` });
+    expect(lastText()).toContain(`#${id} v1 · post · manual · post_wait`);
+    expect(lastText()).toContain("media: video/mp4");
+    expect(lastText()).toContain("clips/wargov/CM-1.mp4");
+    // /ok: approves by number
+    await say({ text: `/ok ${id}` });
+    expect((await jobs())[0].status).toBe("posted");
+    await say({ text: "/ok 999999" });
+    expect(lastText()).toMatch(/not waiting for approval/);
+    await say({ text: "/show 999999" });
+    expect(lastText()).toMatch(/not found or already closed/);
   });
   it("/post <ID> queues an operator job with a preview", async () => {
     await say({ text: "/post CM-1" });
