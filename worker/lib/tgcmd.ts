@@ -18,7 +18,7 @@ const HELP = [
   "/status · posts today, waiting jobs per stream, paused streams, failures, spend",
   "/pause [stream] · /resume [stream] · stream = record|short|article|social|poll|all (no arg = bot picks, as before)",
   "/drain · re-run the fan-out for missed platforms",
-  "/skip <job> · drop a job",
+  "/skip <job # or record ID> · drop a job",
   "Reply to a preview: ok / 唔要 / title 改做 X / pause shorts / status — natural text works too.",
 ].join("\n");
 
@@ -73,10 +73,14 @@ export async function command(env: Env, m: any) {
     }
     case "/drain": await socialTick(env, now); return say("Fan-out ran once; /status for failures.");
     case "/skip": {
-      const n = Number(arg.replace(/^#/, "")); // "#12" as /queue prints it
-      if (!Number.isInteger(n) || n <= 0) return say("Usage: /skip <job number>");
-      const j = await getJob(env, n);
-      return say(j && (await skip(env, j)) ? `#${j.id} skipped.` : `#${n}: not found or already closed.`);
+      const raw = arg.replace(/^#/, "");
+      const n = Number(raw);
+      // "#12" / "12" as /queue prints it, or the ref (record/release ID) from the same line
+      const j = Number.isInteger(n) && n > 0
+        ? await getJob(env, n)
+        : raw ? (await openJobs(env)).find((x) => x.ref === raw) ?? null : null;
+      if (!j) return say(raw ? `${arg}: not found or already closed.` : "Usage: /skip <job number | record ID>");
+      return say((await skip(env, j)) ? `#${j.id} skipped.` : `#${j.id}: already closed.`);
     }
     default: return say(HELP);
   }

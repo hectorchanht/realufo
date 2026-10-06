@@ -1,6 +1,6 @@
 // worker/lib/gate.ts
 import type { Env } from "../env";
-import { CDN, nextCandidate, sqlTime, withinBudget, type Candidate } from "./xpick";
+import { CDN, nextCandidate, sqlTime, withinBudget, thumbFor, evidenceText, type Candidate, type Media } from "./xpick";
 import { publishDraft, stage, type Draft } from "./xbot"; // xbot imports gate back: only used inside functions, never at load
 import { createJob, move, setMessages, streamPaused, type Job, type JobKind } from "./jobs";
 import { sendMedia, sendMessage, TgError } from "./tg";
@@ -28,12 +28,28 @@ export const targets = (env: Env) => ["X", ...PLATFORM_FLAGS.filter(([, f]) => e
 const jobStream = (c: Candidate) => (c.stream === "showcase" ? "showcase" : c.stream === "pick" && c.manual ? "manual" : c.stream);
 
 export async function queue(env: Env, c: Candidate, d: Draft): Promise<Job | null> {
+  const extras = await previewExtras(env, c, d.media);
   const job = await createJob(env, {
     kind: c.stream === "showcase" ? "showcase" : "post", stream: jobStream(c), ref: c.ref,
-    status: "post_wait", caption: d.text, media: d.media, payload: { x: d },
+    status: "post_wait", caption: d.text, media: d.media,
+    payload: { x: d, preview_extra: extras.media, evidence: extras.evidence },
   });
   if (job) await preview(env, job);
   return job;
+}
+
+// What the gate preview shows beyond the post media: for a video record, the
+// money-shot still (the AI-picked thumb) plus the key moments as evidence text.
+// Stored on the job payload so re-previews (edits) show the same set.
+async function previewExtras(env: Env, c: Candidate, primary: Media): Promise<{ media: { key: string; mime: string; size: number }[]; evidence: string | null }> {
+  const rec = "record" in c ? c.record : null;
+  if (!rec || !primary?.mime.startsWith("video/")) return { media: [], evidence: null };
+  const media: { key: string; mime: string; size: number }[] = [];
+  // money-shot still: the AI-picked representative frame (thumb). The primary is the
+  // clip here, so this is always a different image when it exists.
+  const thumb = await thumbFor(env, rec);
+  if (thumb && thumb.key !== primary.key) media.push(thumb);
+  return { media, evidence: evidenceText(rec.ai_moments) };
 }
 
 // Portal v2: the universal content gate. EVERY content addition (record, short, article,
@@ -56,20 +72,25 @@ export async function preview(env: Env, job: Job): Promise<void> {
   const chat = env.TELEGRAM_OWNER_ID!;
   const msgs: number[] = [];
   let note = "";
-  if (job.media) {
+  const sendOne = async (key: string) => {
     try {
-      msgs.push(await sendMedia(env, chat, job.media.key));
+      msgs.push(await sendMedia(env, chat, key));
     } catch (e) {
       // too big / missing / any send error: the text + buttons still go out, with the CDN link
-      note = `\n⚠️ media not attached (${e instanceof TgError ? e.status : errMsg(e)}): ${CDN}${job.media.key}`;
+      note += `\n⚠️ media not attached (${e instanceof TgError ? e.status : errMsg(e)}): ${CDN}${key}`;
     }
-  }
+  };
+  if (job.media) await sendOne(job.media.key);
+  for (const m of (job.payload?.preview_extra as { key: string }[] | undefined) ?? []) await sendOne(m.key);
   const chars = Array.from(job.caption ?? ""); // code points: never cut an emoji in half
   const caption = chars.length > TEXT_MAX ? `${chars.slice(0, TEXT_MAX).join("")}…` : chars.join("");
+  const evidence = typeof job.payload?.evidence === "string" && job.payload.evidence ? `\n\n🔍 Key moments\n${job.payload.evidence}` : "";
   const goLabel = job.kind === "record" ? "✅ Publish" : job.kind === "short" ? "✅ Post short" : "✅ Post";
-  const text = `#${job.id} v${job.version} · ${job.kind} · ${job.stream} · ${job.ref}${note}\n\n${caption}\n\n→ ${targets(env)}\nReply: ok / 唔要 / title 改做 X / pause ${job.stream} / status`;
+  const text = `#${job.id} v${job.version} · ${job.kind} · ${job.stream} · ${job.ref}${note}\n\n${caption}${evidence}\n\n→ ${targets(env)}\nReply: ok / 唔要 / title 改做 X / pause ${job.stream} / status`;
+  const tChars = Array.from(text); // caption + evidence can jointly pass the Bot API's 4096
+  const finalText = tChars.length > 4000 ? `${tChars.slice(0, 4000).join("")}…` : text;
   try {
-    msgs.push(await sendMessage(env, chat, text, [[
+    msgs.push(await sendMessage(env, chat, finalText, [[
       { text: goLabel, callback_data: `ok:${job.id}:${job.version}` },
       { text: "❌ Skip", callback_data: `skip:${job.id}:${job.version}` },
     ]]));

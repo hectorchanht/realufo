@@ -53,6 +53,23 @@ describe("admin commands", () => {
     expect(await jobs()).toEqual([expect.objectContaining({ kind: "post", stream: "manual", ref: "CM-1", status: "post_wait" })]);
     expect(tg.map((t) => t.method)).toContain("sendVideo");
   });
+  it("/post preview for a video also sends the money-shot still and key moments", async () => {
+    await env.DB.prepare("UPDATE records SET ai_moments=? WHERE id='CM-1'").bind(JSON.stringify({
+      moments: [
+        { start: 0, end: 4.5, text: "Infrared view: a small bright spot sits below-right of the crosshair." },
+        { start: 4.5, end: 51.7, text: "The view widens: pale streaky bands drift past below." },
+      ],
+    })).run();
+    await env.DB.prepare("INSERT INTO assets(record_id, role, cdn_url, mime) VALUES ('CM-1','thumb','https://assets.realufo.org/thumbs/wargov/CM-1.jpg','image/jpeg')").run();
+    await env.MEDIA.put("thumbs/wargov/CM-1.jpg", new Uint8Array(50), { httpMetadata: { contentType: "image/jpeg" } });
+    await say({ text: "/post CM-1" });
+    const methods = tg.map((t) => t.method);
+    expect(methods).toContain("sendVideo");
+    expect(methods).toContain("sendPhoto"); // money-shot still after the clip
+    expect(methods.indexOf("sendPhoto")).toBeGreaterThan(methods.indexOf("sendVideo"));
+    expect(lastText()).toContain("🔍 Key moments");
+    expect(lastText()).toContain("0:00–0:04 · Infrared view:");
+  });
   it("/post says the exact reason when no preview is made", async () => {
     await say({ text: "/post" });
     expect(lastText()).toBe("Usage: /post <record ID>");
@@ -91,15 +108,23 @@ describe("admin commands", () => {
     await say({ text: "/skip 999999" });
     expect(lastText()).toMatch(/not found or already closed/);
   });
-  it("/skip #<id> works as typed in /queue; a non-number gets the usage line", async () => {
+  it("/skip #<id> works as typed in /queue; /skip <ref> skips by record ID", async () => {
     await say({ text: "/post CM-1" });
     const id = (await env.DB.prepare("SELECT id FROM bot_jobs").first<any>()).id;
     await say({ text: `/skip #${id}` });
     expect((await jobs())[0].status).toBe("skipped");
-    for (const bad of ["/skip", "/skip abc", "/skip #", "/skip 0", "/skip 1.5"]) {
+    for (const bad of ["/skip", "/skip #"]) {
       await say({ text: bad });
-      expect(lastText()).toBe("Usage: /skip <job number>");
+      expect(lastText()).toBe("Usage: /skip <job number | record ID>");
     }
+    for (const bad of ["/skip abc", "/skip 0", "/skip 1.5"]) {
+      await say({ text: bad });
+      expect(lastText()).toMatch(/not found or already closed/);
+    }
+    await say({ text: "/post CM-1" });
+    await say({ text: "/skip CM-1" });
+    expect(lastText()).toMatch(/#\d+ skipped\./);
+    expect((await jobs())[1].status).toBe("skipped");
   });
   it("a command that throws still answers 200 (no Telegram re-send loop) and tells the owner, without the bot token", async () => {
     failGetFile = true;

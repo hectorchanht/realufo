@@ -10,7 +10,7 @@ export type Media = { key: string; mime: string; size: number } | null;
 export type PickRecord = {
   id: string; archive: string; kind: string; title: string | null; agency: string | null;
   incident_date: string | null; location: string | null; summary: string | null; duration: number | null;
-  tldr_bullets?: string | null; tldr_joke?: string | null;
+  tldr_bullets?: string | null; tldr_joke?: string | null; ai_moments?: string | null;
 };
 export type Candidate =
   | { stream: "release"; ref: string; label: string; link: string; kinds: Record<string, number>; titles: string[]; media: Media }
@@ -57,12 +57,34 @@ export async function mediaFor(env: Env, rec: { id: string; archive: string; kin
     const o = await env.MEDIA.head(key);
     if (o) return { key, mime: "video/mp4", size: o.size };
   }
+  return thumbFor(env, rec);
+}
+
+// The AI-picked representative frame: the money-shot still for a video record's
+// gate preview (mediaFor already prefers the clip, so this is the second image).
+export async function thumbFor(env: Env, rec: { id: string }): Promise<Media> {
   const t = await env.DB.prepare("SELECT cdn_url, mime FROM assets WHERE record_id=? AND role='thumb' LIMIT 1")
     .bind(rec.id).first<{ cdn_url: string; mime: string | null }>();
   if (!t?.cdn_url.startsWith(CDN)) return null;
   const key = t.cdn_url.slice(CDN.length);
   const o = await env.MEDIA.head(key);
   return o && o.size <= IMAGE_MAX ? { key, mime: t.mime ?? "image/jpeg", size: o.size } : null;
+}
+
+// Compact "evidence" block for a gate preview: the AI key moments (records.ai_moments)
+// as timestamped one-liners. Null when there are none.
+export function evidenceText(aiMoments: string | null | undefined): string | null {
+  if (!aiMoments) return null;
+  let doc: any;
+  try { doc = JSON.parse(aiMoments); } catch { return null; }
+  const ms = Array.isArray(doc?.moments) ? doc.moments : [];
+  if (!ms.length) return null;
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  const lines = ms.slice(0, 6).map((m: any) => {
+    const t = String(m?.text ?? "").replace(/\s+/g, " ").trim().slice(0, 140);
+    return `${fmt(Number(m?.start) || 0)}–${fmt(Number(m?.end) || Number(m?.start) || 0)} · ${t}`;
+  }).filter((l: string) => l.length > 6);
+  return lines.length ? lines.join("\n") : null;
 }
 
 const postedToday = async (env: Env, stream: string, now: Date) =>
@@ -119,6 +141,7 @@ async function releaseCandidate(env: Env, now: Date): Promise<Candidate | null> 
 }
 
 const PICK_COLS = `r.id, r.archive, r.kind, r.title, r.agency, r.incident_date, r.location, r.summary,
+  r.ai_moments,
   (SELECT duration FROM assets d WHERE d.record_id=r.id AND d.role='full' AND d.duration IS NOT NULL LIMIT 1) duration,
   (SELECT bullets FROM record_tldr x WHERE x.record_id=r.id AND x.lang='en') tldr_bullets,
   (SELECT one_liner FROM record_tldr x WHERE x.record_id=r.id AND x.lang='en') tldr_joke`;
