@@ -2,17 +2,17 @@
 // Cold cases, Browse, Releases). Phone (`sheet`) = a bottom sheet, portaled to
 // <body> because BottomTab's slide-away transform would trap a fixed child;
 // desktop = a dropdown under the button. Closes on Escape, a tap outside, or
-// picking a place. Also holds the site-wide text size (TextSizer), which an
-// "Aa" badge nested in an Apple-logo bite opens directly (desktop: out of the More
-// icon; phone: out of BottomTab's corner). Lit (like a tab) while on one of its pages.
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+// picking a place. Also holds the site-wide text size (TextSizer row) inside
+// the menu — no floating badge on the nav bar. Lit (like a tab) while on one
+// of its pages.
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
 import { Download, Share, Upload } from "lucide-react";
 import { promptInstall, useInstallMode } from "../lib/install";
 import { MORE_ICON as MoreIcon, tabHref, type NavItem, type NavTab } from "./navItems";
 import { downloadIdentity, importIdentity } from "../lib/identity";
-import { TextSizeBadge, TextSizer, biteMask } from "./TextSizer";
+import { TextSizer } from "./TextSizer";
 import { useDismiss } from "../lib/useDismiss";
 
 const itemCls = (sheet: boolean) =>
@@ -23,7 +23,6 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
   const { pathname } = useLocation();
   const btn = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLElement>(null);
-  const icon = useRef<SVGSVGElement>(null);
   const id = useId();
   const file = useRef<HTMLInputElement>(null);
   const lit = open || items.some((i) => i.tab === activeTab);
@@ -42,24 +41,6 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
 
   useEffect(() => setOpen(false), [pathname]);
   useDismiss(open, () => setOpen(false), btn, panel);
-  // Desktop badge spot: the icon's measured top-right (the lit "More" label and
-  // text size move it).
-  const [at, setAt] = useState<{ left: number; top: number } | null>(null);
-  useLayoutEffect(() => {
-    const el = icon.current;
-    const box = el?.parentElement?.parentElement; // svg -> More button -> wrapper
-    if (sheet || !el || !box) return;
-    const place = () => {
-      const i = el.getBoundingClientRect();
-      const b = box.getBoundingClientRect();
-      setAt({ left: i.right - b.left + BITE_X, top: i.top - b.top + i.height * BITE_Y });
-    };
-    place();
-    if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(place);
-    ro.observe(box);
-    return () => ro.disconnect();
-  }, [sheet]);
 
   const list = (
     <nav
@@ -135,7 +116,7 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
         }
         style={{ color: lit ? "var(--signal)" : "var(--dim)", background: !sheet && lit ? "var(--signal-dim)" : undefined }}
       >
-        <MoreIcon ref={icon} size={sheet ? 22 : 18} aria-hidden="true" style={sheet ? undefined : BITTEN} />
+        <MoreIcon size={sheet ? 22 : 18} aria-hidden="true" />
         <span className={lit ? (sheet ? "font-mono text-[9px] font-medium tracking-[.3px]" : "") : "sr-only"}>More</span>
       </button>
       {open &&
@@ -148,16 +129,9 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
               document.body
             )
           : list)}
-      {at && <TextSizeBadge style={at} />}
     </div>
   );
 }
-
-// Desktop: the bite comes out of the More icon's top-right (Apple logo), its edge
-// running through the last dot. Phone: BottomTab bites its own top-right corner.
-const BITE_X = 4; // bite centre, px right of the icon
-const BITE_Y = 0.23; // bite centre, fraction of icon height
-const BITTEN = biteMask(`calc(100% + ${BITE_X}px)`, `${BITE_Y * 100}%`);
 
 function InstallItem({ sheet, close }: { sheet: boolean; close: () => void }) {
   const mode = useInstallMode();

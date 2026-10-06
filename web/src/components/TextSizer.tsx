@@ -1,7 +1,7 @@
-// Site-wide text size: the A-/A+ row (More menu, badge popover) and the "Aa"
-// badge that sits in an Apple-logo bite (phone: BottomTab's top-right corner,
-// desktop: the More icon). Sets html font-size % (ThemeProvider textScale);
-// every CSS font-size is rem (postcss.config.js pxToRem), so all text follows.
+// Site-wide text size: the A-/A+ row inside the More menu. Sets html font-size
+// % (ThemeProvider textScale); every CSS font-size is rem (postcss.config.js
+// pxToRem), so all text follows. TextSizeBadge (the floating "Aa" popover
+// trigger) is currently unused in the nav — kept for tests only.
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
