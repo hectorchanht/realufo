@@ -24,7 +24,7 @@ const Endpoint = ({ method, path, desc }: { method: string; path: string; desc: 
 const PRESETS = [
   { label: "Search records", path: "/api/v1/records?q=roswell&per_page=3" },
   { label: "One record", path: "/api/v1/records/DOW-UAP-PR057a" },
-  { label: "Record OCR text", path: "/api/v1/records/DOW-UAP-PR057a/text" },
+  { label: "Record OCR text", path: "/api/v1/records/DOE-UAP-D004/text" },
   { label: "Archives (facets)", path: "/api/v1/archives" },
   { label: "Releases", path: "/api/v1/releases" },
   { label: "Case stories", path: "/api/v1/cases" },
@@ -146,7 +146,7 @@ curl "https://realufo.org/api/v1/records?q=roswell&per_page=5"
 curl "https://realufo.org/api/v1/records/DOW-UAP-PR057a"
 
 # OCR full text of a record
-curl "https://realufo.org/api/v1/records/DOW-UAP-PR057a/text"`}</Code>
+curl "https://realufo.org/api/v1/records/DOE-UAP-D004/text"`}</Code>
 
       <H2>Envelope</H2>
       <p className="mb-2 max-w-[680px] text-[14px] leading-[1.6] text-dim">
