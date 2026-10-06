@@ -45,8 +45,12 @@ export default function SiteFooter() {
   const { tabs, more } = useNavItems();
   const { t } = useLang();
   const page = useFooterLinks();
+  // Each column sizes to its own content (never squeezed to a fixed grid
+  // track): wide columns keep long labels on one line, narrow ones like
+  // Decades stay narrow. Whole columns wrap to the next row when space runs
+  // out; max-w-full caps them on very small screens so nothing overflows.
   const col = (title: string, items: ReactNode[]) => (
-    <div key={title}>
+    <div key={title} className="max-w-full">
       <h2 className={headCls}>{title}</h2>
       <ul className="space-y-1">{items}</ul>
     </div>
@@ -73,7 +77,7 @@ export default function SiteFooter() {
           ))}
         </ul>
       </div>
-      <nav aria-label="Site" className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] sm:gap-x-8">
+      <nav aria-label="Site" className="flex flex-wrap gap-x-8 gap-y-6 sm:gap-x-10">
         {page?.links.length
           ? col(page.title, page.links.map((l) => (
               <li key={l.to}><Link className="text-signal hover:underline" to={l.to}>{l.text}</Link></li>
