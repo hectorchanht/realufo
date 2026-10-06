@@ -43,7 +43,7 @@ import { v1ListRecords, v1GetRecord, v1RecordText, v1Archives, v1Releases, v1Cas
 import { createWebhookRoute, getWebhookRoute, deleteWebhookRoute } from "./routes/webhooks";
 import { webhookTick } from "./lib/webhooks";
 import { badge, card } from "./routes/embed";
-import { hashAssets } from "./routes/hashbackfill";
+import { hashAssets, hashBackfillTick } from "./routes/hashbackfill";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -120,6 +120,7 @@ async function runTick(env: Env) {
   await pushDaily(env).catch(logErr("pushDaily"));
   await webhookTick(env).catch(logErr("webhooks")); // public API v1 event fan-out
   await emailNewFiles(env).catch(logErr("emailFiles"));
+  await hashBackfillTick(env).catch(logErr("hashbackfill")); // SHA-256 backfill: self-terminates at 0 remaining
 }
 
 // POST /__tick (Authorization: Bearer ADMIN_TOKEN): one cron tick on demand, for
