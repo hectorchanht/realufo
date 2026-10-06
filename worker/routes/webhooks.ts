@@ -5,7 +5,7 @@ import { v1json, v1error, v1guarded } from "./v1";
 import { WEBHOOK_EVENTS, createWebhook, getWebhookStatus, deleteWebhook } from "../lib/webhooks";
 
 // POST /api/v1/webhooks { url, events? } → 201 { id, url, events, secret }
-export const createWebhookRoute = v1guarded(async (req, env) => {
+export const createWebhookRoute = v1guarded("POST /api/v1/webhooks", async (req, env) => {
   let body: { url?: string; events?: string[] };
   try {
     body = (await req.json()) as { url?: string; events?: string[] };
@@ -31,14 +31,14 @@ export const createWebhookRoute = v1guarded(async (req, env) => {
 const secretOf = (req: Request) => req.headers.get("x-webhook-secret") ?? "";
 
 // GET /api/v1/webhooks/:id (X-Webhook-Secret) → status without the secret
-export const getWebhookRoute = v1guarded(async (_req, env, p) => {
+export const getWebhookRoute = v1guarded("GET /api/v1/webhooks/:id", async (_req, env, p) => {
   const s = await getWebhookStatus(env, p.id, secretOf(_req));
   if (!s) return v1error(404, "webhook not found or wrong secret");
   return v1json(s, { events_available: WEBHOOK_EVENTS }, "no-store");
 });
 
 // DELETE /api/v1/webhooks/:id (X-Webhook-Secret)
-export const deleteWebhookRoute = v1guarded(async (req, env, p) => {
+export const deleteWebhookRoute = v1guarded("DELETE /api/v1/webhooks/:id", async (req, env, p) => {
   const ok = await deleteWebhook(env, p.id, secretOf(req));
   if (!ok) return v1error(404, "webhook not found or wrong secret");
   return v1json({ deleted: true, id: p.id }, {}, "no-store");

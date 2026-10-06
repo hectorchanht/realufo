@@ -82,6 +82,8 @@ export default function SiteFooter() {
           ...[...tabs, ...more].map((i) => (
             <li key={i.path}><Link className={linkCls} to={i.path}>{i.label}</Link></li>
           )),
+          // Record comparison tool (not a nav tab, but a site feature).
+          <li key="compare"><Link className={linkCls} to="/compare">{t("footer.compare")}</Link></li>,
           // Wishing pool: anonymous content-request form (Google Forms).
           <li key="wishing-pool"><a className="text-signal hover:underline" href="https://docs.google.com/forms/d/e/1FAIpQLSesgIQPmSYoGsR4n2nkKMp18enYripao1yezoO62kHtKPIqJw/viewform" target="_blank" rel="noopener">{t("footer.request")}</a></li>,
         ])}
@@ -100,6 +102,9 @@ export default function SiteFooter() {
         {col(t("footer.resources"), [
           // static predecessor archive (war-gov-ufo-release repo)
           <li key="release"><a className={linkCls} href="https://release.realufo.org/" target="_blank" rel="noopener">{t("footer.original")}</a></li>,
+          // SDK packages (proper nouns — no translation needed)
+          <li key="npm"><a className={linkCls} href="https://www.npmjs.com/package/realufo" target="_blank" rel="noopener">npm package ↗</a></li>,
+          <li key="pypi"><a className={linkCls} href="https://pypi.org/project/realufo/" target="_blank" rel="noopener">PyPI package ↗</a></li>,
           ...FILES.map(([text, href]) => (
             <li key={href}><a className={linkCls} href={href}>{text === "Open dataset" ? t("footer.openDataset") : text}</a></li>
           )),

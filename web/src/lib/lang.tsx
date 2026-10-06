@@ -34,6 +34,7 @@ const STRINGS = {
   "footer.privacy": ["Privacy", "私隱"],
   "footer.terms": ["Terms", "條款"],
   "footer.tracker": ["Tracker", "追蹤器"],
+  "footer.compare": ["Compare", "比較"],
   "footer.openDataset": ["Open dataset", "開放數據集"],
   "footer.original": ["Original archive ↗", "舊版檔案庫 ↗"],
   "lang.label": ["繁", "EN"],

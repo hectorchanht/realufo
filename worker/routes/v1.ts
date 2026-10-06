@@ -66,12 +66,29 @@ function allowRead(req: Request, env: Env): { ok: boolean; remaining: number; li
   return { ok, remaining: Math.max(0, max - hits.length), limit: max };
 }
 
-// Wraps a v1 handler with rate limiting + shared headers.
-export function v1guarded(fn: (req: Request, env: Env, p: Record<string, string>) => Promise<Response>) {
-  return async (req: Request, env: Env, p: Record<string, string>) => {
+// ---- usage analytics ----------------------------------------------------
+// Privacy-preserving: per-day, per-route-template hit counts. No IPs, no
+// user agents, no query strings. Written fire-and-forget via ctx.waitUntil()
+// so it never adds latency to the API response. Fails soft if the 0044
+// migration hasn't been applied yet (same pattern as webhooks).
+function logApiHit(env: Env, endpoint: string): Promise<unknown> {
+  const day = new Date().toISOString().slice(0, 10); // UTC
+  return env.DB.prepare(
+    "INSERT INTO api_usage (day, endpoint, hits) VALUES (?, ?, 1) " +
+    "ON CONFLICT(day, endpoint) DO UPDATE SET hits = hits + 1"
+  ).bind(day, endpoint).run().catch(() => {});
+}
+
+// Wraps a v1 handler with rate limiting + usage logging + shared headers.
+export function v1guarded(
+  endpoint: string,
+  fn: (req: Request, env: Env, p: Record<string, string>) => Promise<Response>,
+) {
+  return async (req: Request, env: Env, p: Record<string, string>, ctx?: ExecutionContext) => {
     const rl = allowRead(req, env);
     if (!rl.ok) return v1error(429, "rate limit exceeded — slow down and retry", Number(env.API_RATE_WINDOW_SEC) || 60);
     const res = await fn(req, env, p);
+    if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(logApiHit(env, endpoint));
     res.headers.set("x-ratelimit-limit", String(rl.limit));
     res.headers.set("x-ratelimit-remaining", String(rl.remaining));
     res.headers.set("x-api-version", API_VERSION);
@@ -99,7 +116,7 @@ const card = (r: Record<string, any>) => ({
 // ---- endpoints ----------------------------------------------------------
 
 // GET /api/v1/records?q=&archive=&type=&agency=&location=&year=&decade=&release=&sort=&has=&page=&per_page=
-export const v1ListRecords = v1guarded(async (req, env) => {
+export const v1ListRecords = v1guarded("GET /api/v1/records", async (req, env) => {
   const url = new URL(req.url);
   const { page, perPage, limit, offset } = pageParams(url);
   url.searchParams.set("limit", String(limit));
@@ -114,7 +131,7 @@ export const v1ListRecords = v1guarded(async (req, env) => {
 });
 
 // GET /api/v1/records/:id
-export const v1GetRecord = v1guarded(async (req, env, p) => {
+export const v1GetRecord = v1guarded("GET /api/v1/records/:id", async (req, env, p) => {
   const d = await loadRecord(env, p.id, new URL(req.url).origin);
   if (!d) return v1error(404, "record not found");
   const r = d.record as unknown as Record<string, any>;
@@ -151,7 +168,7 @@ export const v1GetRecord = v1guarded(async (req, env, p) => {
 });
 
 // GET /api/v1/records/:id/text — raw OCR pages, JSON only.
-export const v1RecordText = v1guarded(async (req, env, p) => {
+export const v1RecordText = v1guarded("GET /api/v1/records/:id/text", async (req, env, p) => {
   const url = new URL(req.url);
   url.searchParams.set("format", "json");
   const res = await recordText(new Request(url, req), env, p);
@@ -164,7 +181,7 @@ export const v1RecordText = v1guarded(async (req, env, p) => {
 });
 
 // GET /api/v1/archives
-export const v1Archives = v1guarded(async (_req, env) => {
+export const v1Archives = v1guarded("GET /api/v1/archives", async (_req, env) => {
   const f = await facetCounts(env);
   return v1json(
     {
@@ -177,7 +194,7 @@ export const v1Archives = v1guarded(async (_req, env) => {
 });
 
 // GET /api/v1/releases
-export const v1Releases = v1guarded(async (_req, env) => {
+export const v1Releases = v1guarded("GET /api/v1/releases", async (_req, env) => {
   const rels = await wargovReleases(env);
   return v1json(
     rels.map((r) => ({ no: r.no, date: r.date, file_count: r.raw.length, doc_dates: r.raw })),
@@ -187,20 +204,20 @@ export const v1Releases = v1guarded(async (_req, env) => {
 });
 
 // GET /api/v1/cases
-export const v1Cases = v1guarded(async (_req) => {
+export const v1Cases = v1guarded("GET /api/v1/cases", async (_req) => {
   const data = Object.entries(CASE_STORY_TEXT).map(([slug, s]) => ({ slug, title: s.title, title_zh: CASE_TITLE_ZH[slug] ?? null, updated: s.updated }));
   return v1json(data, { total: data.length }, "public, max-age=300, s-maxage=3600");
 });
 
 // GET /api/v1/cases/:slug
-export const v1GetCase = v1guarded(async (_req, env, p) => {
+export const v1GetCase = v1guarded("GET /api/v1/cases/:slug", async (_req, env, p) => {
   const s = await storyView(env, p.slug);
   if (!s) return v1error(404, "case not found");
   return v1json({ slug: p.slug, title: s.title, title_zh: s.titleZh, updated: s.updated, timeline: s.timeline, sources: s.sources }, { version: API_VERSION }, "public, max-age=300, s-maxage=3600");
 });
 
 // GET /api/v1/shorts?q=&page=&per_page=
-export const v1Shorts = v1guarded(async (req, env) => {
+export const v1Shorts = v1guarded("GET /api/v1/shorts", async (req, env) => {
   const url = new URL(req.url);
   const { page, perPage, limit, offset } = pageParams(url);
   const { shorts, total } = await queryShorts(env, { q: url.searchParams.get("q") ?? "", limit, offset });
@@ -212,14 +229,15 @@ export const v1Shorts = v1guarded(async (req, env) => {
 });
 
 // GET /api/v1/hubs
-export const v1Hubs = v1guarded(async (req, env) => {
+export const v1Hubs = v1guarded("GET /api/v1/hubs", async (req, env) => {
   const hubs = await listHubs(env, new URL(req.url).origin);
   return v1json(hubs, { total: hubs.length }, "public, max-age=300, s-maxage=3600");
 });
 
-// GET /api/v1/hubs/:kind/:slug
-export const v1GetHub = v1guarded(async (req, env, p) => {
-  const h = await loadHub(env, p.kind, p.slug, new URL(req.url).origin);
+// GET /api/v1/hubs/:kind/:slug — the public API always returns the hub's full
+// file list (pageSize 0); the website's own pages paginate instead.
+export const v1GetHub = v1guarded("GET /api/v1/hubs/:kind/:slug", async (req, env, p) => {
+  const h = await loadHub(env, p.kind, p.slug, new URL(req.url).origin, 1, 0);
   if (!h) return v1error(404, "hub not found");
   return v1json(
     {
@@ -235,7 +253,23 @@ export const v1GetHub = v1guarded(async (req, env, p) => {
 // ---- OpenAPI ------------------------------------------------------------
 
 // GET /api/v1/openapi.json
-export const v1OpenAPI = v1guarded(async (req) => {
+// Aggregate API usage: last 30 days of per-day, per-endpoint hit counts.
+// Public and privacy-safe (no IPs, no user agents, no query strings) —
+// doubles as a liveness signal for developers evaluating the API.
+export const v1Usage = v1guarded("GET /api/v1/usage", async (_req, env) => {
+  const cutoff = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
+  let rows: { day: string; endpoint: string; hits: number }[] = [];
+  try {
+    const { results } = await env.DB.prepare(
+      "SELECT day, endpoint, hits FROM api_usage WHERE day >= ? ORDER BY day DESC, hits DESC"
+    ).bind(cutoff).all<{ day: string; endpoint: string; hits: number }>();
+    rows = results ?? [];
+  } catch { /* migration not applied yet: empty, not an error */ }
+  const total = rows.reduce((n, r) => n + r.hits, 0);
+  return v1json(rows, { total, days: 30, note: "aggregate counts only — no IPs or user agents are logged" }, "public, max-age=300");
+});
+
+export const v1OpenAPI = v1guarded("GET /api/v1/openapi.json", async (req) => {
   const origin = new URL(req.url).origin;
   const base = `${origin}/api/v1`;
   const cardSchema = {
@@ -326,6 +360,13 @@ export const v1OpenAPI = v1guarded(async (req) => {
             { name: "slug", in: "path", required: true, schema: { type: "string" } },
           ],
           responses: { "200": { description: "ok" }, "404": { description: "hub not found" } },
+        },
+      },
+      "/usage": {
+        get: {
+          summary: "Aggregate API usage (last 30 days, per endpoint)",
+          description: "Privacy-safe liveness signal: day + endpoint + hit counts only. No IPs, user agents or query strings are logged.",
+          responses: { "200": { description: "ok" } },
         },
       },
       "/webhooks": {

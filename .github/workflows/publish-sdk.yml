@@ -1,0 +1,59 @@
+# Publish the RealUFO SDKs to npm + PyPI.
+#
+# Trigger: push a tag like `sdk-v1.0.1`
+#   git tag sdk-v1.0.1 && git push origin sdk-v1.0.1
+# The version comes from the tag — no manual version bumps needed.
+#
+# One-time setup:
+#   1. npm: repo Settings → Secrets → Actions → add NPM_TOKEN (an npm
+#      automation token with publish rights on the `realufo` package).
+#   2. PyPI: pypi.org/project/realufo → Settings → Trusted publishers →
+#      add GitHub (owner hectorchanht, repo realufo, workflow
+#      publish-sdk.yml, environment optional). No token needed — OIDC.
+name: publish-sdk
+on:
+  push:
+    tags: ["sdk-v*"]
+permissions:
+  contents: read
+  id-token: write   # PyPI trusted publishing (OIDC)
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version from tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/sdk-v}" >> "$GITHUB_ENV"
+
+      # --- JavaScript / npm ---
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+      - name: Build + test + publish JS SDK
+        working-directory: sdk/js
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm pkg set version="$VERSION"
+          npm install --no-audit --no-fund
+          npm run build
+          npm test
+          npm publish --access public
+
+      # --- Python / PyPI ---
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build Python SDK
+        working-directory: sdk/python
+        run: |
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+          grep '^version = ' pyproject.toml
+          python -m pip install --upgrade build
+          python -m pytest tests/ -q
+          python -m build
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: sdk/python/dist/

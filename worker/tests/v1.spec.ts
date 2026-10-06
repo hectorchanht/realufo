@@ -135,4 +135,13 @@ describe("public API v1", () => {
     expect(third.headers.get("retry-after")).toBeTruthy();
     expect(((await third.json()) as any).error).toMatch(/rate limit/i);
   });
+  it("GET /api/v1/usage returns the aggregate envelope (empty before any waitUntil hits)", async () => {
+    const res = await ipg("/api/v1/usage");
+    expect(res.status).toBe(200);
+    const d: any = await res.json();
+    expect(Object.keys(d).sort()).toEqual(["data", "meta"]);
+    expect(d.meta).toMatchObject({ days: 30 });
+    expect(Array.isArray(d.data)).toBe(true);
+    expect(d.meta.total).toBe(d.data.reduce((n: number, r: any) => n + r.hits, 0));
+  });
 });

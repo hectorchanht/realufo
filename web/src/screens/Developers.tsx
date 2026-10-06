@@ -1,5 +1,6 @@
 // /developers — public API v1 documentation for third-party developers.
 // Read-only, keyless, CORS-open. Code samples are copy-pasteable curl.
+import { useEffect, useState } from "react";
 import { useSetPageTitle } from "../lib/pageTitle";
 
 const Code = ({ children }: { children: string }) => (
@@ -20,6 +21,111 @@ const Endpoint = ({ method, path, desc }: { method: string; path: string; desc: 
   </li>
 );
 
+const PRESETS = [
+  { label: "Search records", path: "/api/v1/records?q=roswell&per_page=3" },
+  { label: "One record", path: "/api/v1/records/DOW-UAP-PR057a" },
+  { label: "Record OCR text", path: "/api/v1/records/DOW-UAP-PR057a/text" },
+  { label: "Archives (facets)", path: "/api/v1/archives" },
+  { label: "Releases", path: "/api/v1/releases" },
+  { label: "Case stories", path: "/api/v1/cases" },
+  { label: "Hubs", path: "/api/v1/hubs" },
+];
+
+// Live API console: runs real GET requests against the production API and
+// pretty-prints the JSON. Relative URLs so it works on realufo.org as served.
+function Playground() {
+  const [path, setPath] = useState(PRESETS[0].path);
+  const [out, setOut] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    setBusy(true);
+    setErr(null);
+    setOut(null);
+    try {
+      const res = await fetch(path);
+      const text = await res.text();
+      let pretty = text;
+      try {
+        pretty = JSON.stringify(JSON.parse(text), null, 2);
+      } catch { /* non-JSON: show raw */ }
+      if (pretty.length > 6000) pretty = pretty.slice(0, 6000) + "\n… (truncated)";
+      setOut(`HTTP ${res.status}\n\n${pretty}`);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Request failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="max-w-[680px] rounded border border-line bg-panel p-3">
+      <div className="mb-2 flex flex-wrap gap-2">
+        <select
+          aria-label="Example request"
+          className="rounded border border-line bg-canvas px-2 py-1 font-mono text-[12px] text-ink"
+          value={path}
+          onChange={(e) => setPath(e.target.value)}
+        >
+          {PRESETS.map((p) => (
+            <option key={p.path} value={p.path}>{p.label}</option>
+          ))}
+        </select>
+        <button
+          onClick={run}
+          disabled={busy}
+          className="rounded border border-line bg-signal px-3 py-1 font-mono text-[12px] font-bold text-canvas disabled:opacity-50"
+        >
+          {busy ? "…" : "Run ▶"}
+        </button>
+      </div>
+      <input
+        aria-label="Request path"
+        className="mb-2 w-full rounded border border-line bg-canvas px-2 py-1 font-mono text-[12px] text-ink"
+        value={path}
+        onChange={(e) => setPath(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") run(); }}
+        spellCheck={false}
+      />
+      {err && <p className="font-mono text-[12px] text-red-400">Error: {err}</p>}
+      {out && (
+        <pre className="max-h-[320px] overflow-auto rounded border border-line bg-canvas p-3 font-mono text-[12px] leading-[1.5] text-ink">
+          <code>{out}</code>
+        </pre>
+      )}
+      {!out && !err && <p className="text-[12px] text-faint">Pick a preset or type any GET path, then Run. Responses are truncated at 6 KB.</p>}
+    </div>
+  );
+}
+
+// Liveness signal: total API calls in the last 7 days, from /api/v1/usage.
+// Silent on failure (fresh deploy before the 0044 migration, offline, …).
+function ApiPulse() {
+  const [text, setText] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/v1/usage");
+        if (!res.ok) return;
+        const { data } = await res.json();
+        const cutoff = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+        const total = (data as { day: string; hits: number }[])
+          .filter((r) => r.day >= cutoff)
+          .reduce((n, r) => n + r.hits, 0);
+        if (live && total > 0) setText(`${total.toLocaleString()} API calls in the last 7 days`);
+      } catch { /* silent */ }
+    })();
+    return () => { live = false; };
+  }, []);
+  if (!text) return null;
+  return (
+    <p className="mt-3 inline-flex items-center gap-2 rounded border border-line bg-panel px-3 py-1.5 font-mono text-[12px] text-dim">
+      <span className="inline-block h-2 w-2 rounded-full bg-green-500" aria-hidden="true" />
+      {text}
+    </p>
+  );
+}
+
 export default function Developers() {
   useSetPageTitle("DEVELOPERS", "", "Developers");
   return (
@@ -30,6 +136,7 @@ export default function Developers() {
         release and hub the site renders. No API keys, no signup.{" "}
         <a className="text-signal hover:underline" href="/api/v1/openapi.json">OpenAPI spec</a>
       </p>
+      <ApiPulse />
 
       <H2>Quickstart</H2>
       <Code>{`# search the archive
@@ -61,14 +168,20 @@ curl "https://realufo.org/api/v1/records/DOW-UAP-PR057a/text"`}</Code>
         <Endpoint method="GET" path="/api/v1/shorts" desc="Short clips. Params: q, page, per_page" />
         <Endpoint method="GET" path="/api/v1/hubs" desc="Curated hubs: agency, location, release, decade, topic" />
         <Endpoint method="GET" path="/api/v1/hubs/:kind/:slug" desc="One hub with its records" />
+        <Endpoint method="GET" path="/api/v1/usage" desc="Aggregate API usage, last 30 days (no IPs or user agents logged)" />
       </ul>
 
       <H2>Example</H2>
-      <Code>{`$ curl "https://realufo.org/api/v1/records?q=tictac&per_page=2" | head -c 400
-{"data":[{"id":"DOW-UAP-PR086","archive":"wargov","agency":"DoD",
-"title":"Nimitz Carrier Strike Group Encounter","kind":"video",
-"incident_date":"2004-11-14","thumb":"https://assets.realufo.org/…",
-…}],"meta":{"total":12,"page":1,"per_page":2}}`}</Code>
+      <Code>{`$ curl "https://realufo.org/api/v1/records?q=tictac&per_page=1"
+{"data": [{"id": "AARO-SASC_AARO_Open_Hearing_Case_Slides_19Nov2024",
+"archive": "aaro", "agency": "AARO",
+"title": "SASC AARO Open Hearing Case Slides 19Nov2024",
+"kind": "pdf", "incident_date": null,
+"thumb": "https://assets.realufo.org/pdf-thumbs/aaro/…"}],
+"meta": {"total": 2, "page": 1, "per_page": 1}}`}</Code>
+
+      <H2>Try it live</H2>
+      <Playground />
 
       <H2>Limits</H2>
       <p className="max-w-[680px] text-[14px] leading-[1.6] text-dim">
