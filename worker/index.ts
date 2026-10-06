@@ -42,7 +42,7 @@ import { emailSubscribe, emailConfirm, emailUnsubscribe } from "./routes/email";
 import { v1ListRecords, v1GetRecord, v1RecordText, v1Archives, v1Releases, v1Cases, v1GetCase, v1Shorts, v1Hubs, v1GetHub, v1Usage, v1OpenAPI, v1Preflight } from "./routes/v1";
 import { createWebhookRoute, getWebhookRoute, deleteWebhookRoute } from "./routes/webhooks";
 import { webhookTick } from "./lib/webhooks";
-import { badge } from "./routes/embed";
+import { badge, card } from "./routes/embed";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -229,8 +229,10 @@ async function handleFetch(req: Request, env: Env, ctx: ExecutionContext): Promi
     if (/^\/(rss(\.xml)?|feed(\.xml)?)$/.test(url.pathname)) return rss(req, env);
     if (url.pathname === "/llms.txt") return llms(req, env);
     if (url.pathname === "/llms-full.txt") return llmsFull(req, env);
-    // Embeddable badge (framable by design).
+    // Embeddable badge + record card (framable by design).
     if (url.pathname === "/embed/badge") return badge(req, env);
+    const embedCard = url.pathname.match(/^\/embed\/card\/([^/]+)$/);
+    if (embedCard) return card(req, env, { id: decodeURIComponent(embedCard[1]) });
     const docText = url.pathname.match(/^\/doc\/([^/]+)\/text$/);
     if (docText) return recordText(req, env, { id: decodeURIComponent(docText[1]) });
     return serveWithMeta(req, env); // SPA + assets, with per-route meta/OG injection for deep links

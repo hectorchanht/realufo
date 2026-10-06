@@ -148,4 +148,13 @@ describe("public API v1", () => {
     expect(Array.isArray(d.data)).toBe(true);
     expect(d.meta.total).toBe(d.data.reduce((n: number, r: any) => n + r.hits, 0));
   });
+  it("sort=random returns one record and is never cached", async () => {
+    const res = await ipg("/api/v1/records?sort=random&per_page=1");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toContain("no-store");
+    const d: any = await res.json();
+    expect(d.meta.total).toBeGreaterThan(0);
+    expect(d.data.length).toBe(1);
+    expect(d.data[0].id).toEqual(expect.any(String));
+  });
 });

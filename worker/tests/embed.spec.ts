@@ -21,3 +21,21 @@ describe("embed badge", () => {
     expect(html).toContain("#ffffff");
   });
 });
+
+describe("embed record card", () => {
+  it("GET /embed/card/:id returns a framable HTML card linking to the doc", async () => {
+    const res = await worker.fetch(new Request("https://x/embed/card/FBI-UAP-D002"), env as any, {} as any);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/html");
+    expect(res.headers.get("x-frame-options")).toBeNull(); // framable by design
+    const html = await res.text();
+    expect(html).toContain("REALUFO");
+    expect(html).toContain("https://realufo.org/doc/FBI-UAP-D002");
+  });
+  it("?theme=light renders the light variant; unknown id 404s", async () => {
+    const light = await worker.fetch(new Request("https://x/embed/card/FBI-UAP-D002?theme=light"), env as any, {} as any);
+    expect((await light.text())).toContain("#ffffff");
+    const missing = await worker.fetch(new Request("https://x/embed/card/NOPE-NOT-REAL"), env as any, {} as any);
+    expect(missing.status).toBe(404);
+  });
+});

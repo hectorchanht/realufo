@@ -123,10 +123,12 @@ export const v1ListRecords = v1guarded("GET /api/v1/records", async (req, env) =
   url.searchParams.set("offset", String(offset));
   const res = await listRecords(new Request(url, req), env);
   const body = (await res.json()) as { count: number; records: Record<string, any>[] };
+  // sort=random must never be cached: a cached "random" response isn't random.
+  const cache = url.searchParams.get("sort") === "random" ? "no-store" : "public, max-age=60, s-maxage=300";
   return v1json(
     body.records.map((r) => ({ ...card(r), match: r.match ?? null })),
     { total: body.count, page, per_page: perPage },
-    "public, max-age=60, s-maxage=300"
+    cache
   );
 });
 
@@ -308,7 +310,7 @@ export const v1OpenAPI = v1guarded("GET /api/v1/openapi.json", async (req) => {
             { name: "year", in: "query", schema: { type: "string" }, description: "e.g. 1947" },
             { name: "decade", in: "query", schema: { type: "string" }, description: "e.g. 1940" },
             { name: "release", in: "query", schema: { type: "string" }, description: "war.gov release number" },
-            { name: "sort", in: "query", schema: { type: "string", enum: ["new", "az", "release", "old", "recent"] } },
+            { name: "sort", in: "query", schema: { type: "string", enum: ["new", "az", "release", "old", "recent", "random"] }, description: "random: shuffled, never cached" },
             { name: "has", in: "query", schema: { type: "string" }, description: "comma list: text, ai, moments, featured" },
             { name: "page", in: "query", schema: { type: "integer", default: 1 } },
             { name: "per_page", in: "query", schema: { type: "integer", default: 20, maximum: 100 } },

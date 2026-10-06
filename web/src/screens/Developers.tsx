@@ -158,7 +158,7 @@ curl "https://realufo.org/api/v1/records/DOW-UAP-PR057a/text"`}</Code>
 
       <H2>Endpoints</H2>
       <ul className="max-w-[680px] divide-y divide-line text-[14px]">
-        <Endpoint method="GET" path="/api/v1/records" desc="Search + filter. Params: q, archive, type, agency, location, year, decade, release, sort, has (text,ai,moments,featured), page, per_page (max 100)" />
+        <Endpoint method="GET" path="/api/v1/records" desc="Search + filter. Params: q, archive, type, agency, location, year, decade, release, sort (new, az, release, old, recent, random), has (text,ai,moments,featured), page, per_page (max 100)" />
         <Endpoint method="GET" path="/api/v1/records/:id" desc="Full detail: assets, release, series, related, AI summary, TL;DR, topics, hubs" />
         <Endpoint method="GET" path="/api/v1/records/:id/text" desc="OCR pages of a record" />
         <Endpoint method="GET" path="/api/v1/archives" desc="Filter facets: releases, kinds, agencies, decades, locations" />
@@ -221,6 +221,12 @@ curl -X DELETE https://realufo.org/api/v1/webhooks/wh_… \\
   width="320" height="96" style="border:0"
   loading="lazy" title="Latest RealUFO release"></iframe>
 <!-- ?theme=light for light pages -->`}</Code>
+      <p className="mb-2 mt-3 max-w-[680px] text-[14px] leading-[1.6] text-dim">
+        Or embed a single record card — thumbnail, title, agency and date, linking to its doc page:
+      </p>
+      <Code>{`<iframe src="https://realufo.org/embed/card/DOW-UAP-PR057a"
+  width="360" height="180" style="border:0"
+  loading="lazy" title="RealUFO record"></iframe>`}</Code>
 
       <H2>SDKs</H2>
       <p className="mb-2 max-w-[680px] text-[14px] leading-[1.6] text-dim">

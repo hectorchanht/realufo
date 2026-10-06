@@ -1,24 +1,27 @@
-# Publish the RealUFO SDKs to npm + PyPI.
+# Publish the RealUFO SDKs to npm + PyPI, and the MCP server to npm.
 #
-# Trigger: push a tag like `sdk-v1.0.1`
-#   git tag sdk-v1.0.1 && git push origin sdk-v1.0.1
+# Triggers:
+#   git tag sdk-v1.0.1 && git push origin sdk-v1.0.1   # JS + Python SDKs
+#   git tag mcp-v1.0.0 && git push origin mcp-v1.0.0   # MCP server (npm only)
 # The version comes from the tag — no manual version bumps needed.
 #
 # One-time setup:
 #   1. npm: repo Settings → Secrets → Actions → add NPM_TOKEN (an npm
-#      automation token with publish rights on the `realufo` package).
+#      automation token with publish rights on the `realufo` and
+#      `realufo-mcp` packages).
 #   2. PyPI: pypi.org/project/realufo → Settings → Trusted publishers →
 #      add GitHub (owner hectorchanht, repo realufo, workflow
 #      publish-sdk.yml, environment optional). No token needed — OIDC.
 name: publish-sdk
 on:
   push:
-    tags: ["sdk-v*"]
+    tags: ["sdk-v*", "mcp-v*"]
 permissions:
   contents: read
   id-token: write   # PyPI trusted publishing (OIDC)
 jobs:
-  publish:
+  publish-sdk:
+    if: startsWith(github.ref, 'refs/tags/sdk-v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,3 +60,28 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: sdk/python/dist/
+
+  publish-mcp:
+    if: startsWith(github.ref, 'refs/tags/mcp-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version from tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/mcp-v}" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+      - name: Smoke-test + publish MCP server
+        working-directory: mcp
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm pkg set version="$VERSION"
+          # stdio smoke test: initialize → tools/list → one live search call
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+            '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search_records","arguments":{"q":"roswell","per_page":1}}}' \
+            | node server.mjs | grep -q '"total"'
+          npm publish --access public

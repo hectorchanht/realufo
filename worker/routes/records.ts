@@ -158,6 +158,7 @@ export async function listRecords(req: Request, env: Env) {
   }
   if (sort === "new") order = "r.created_at DESC";
   else if (sort === "az") order = "lower(r.title), r.id";
+  else if (sort === "random") order = "RANDOM()";
   else if (sort === "release") {
     // Newest war.gov release first ({doc_date: release no}); other archives last.
     join = "LEFT JOIN json_each(?) rl ON r.archive = 'wargov' AND rl.key = r.doc_date";

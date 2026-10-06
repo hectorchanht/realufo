@@ -269,8 +269,8 @@ const SORTS = [
   { value: "az", label: "Title A–Z" },
 ];
 
-// "Surprise me" dice: picks a random live record via the public v1 API
-// (total → random page → first card) and opens its doc page.
+// "Surprise me" dice: one random live record via sort=random (never cached
+// server-side) and open its doc page.
 function RandomButton() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
@@ -278,11 +278,7 @@ function RandomButton() {
     if (busy) return;
     setBusy(true);
     try {
-      const t = await (await fetch("/api/v1/records?per_page=1")).json();
-      const total = Number(t?.meta?.total) || 0;
-      if (!total) return;
-      const page = 1 + Math.floor(Math.random() * total);
-      const r = await (await fetch(`/api/v1/records?per_page=1&page=${page}`)).json();
+      const r = await (await fetch("/api/v1/records?sort=random&per_page=1")).json();
       const id = r?.data?.[0]?.id;
       if (id) navigate(`/doc/${encodeURIComponent(id)}`);
     } catch {
