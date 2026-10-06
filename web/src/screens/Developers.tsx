@@ -9,9 +9,63 @@ const Code = ({ children }: { children: string }) => (
   </pre>
 );
 
-const H2 = ({ children }: { children: React.ReactNode }) => (
-  <h2 className="mb-2 mt-8 font-mono text-[11px] font-semibold uppercase tracking-[.5px] text-ink">{children}</h2>
+const H2 = ({ id, children }: { id: string; children: React.ReactNode }) => (
+  <h2 id={id} className="mb-2 mt-8 scroll-mt-24 font-mono text-[11px] font-semibold uppercase tracking-[.5px] text-ink">{children}</h2>
 );
+
+// Section jumper: horizontal chip row on mobile, floating rail on desktop.
+// Active section highlighted via IntersectionObserver.
+const SECTIONS = [
+  { id: "try-it-live", label: "Try it live" },
+  { id: "quickstart", label: "Quickstart" },
+  { id: "envelope", label: "Envelope" },
+  { id: "endpoints", label: "Endpoints" },
+  { id: "example", label: "Example" },
+  { id: "recipes", label: "Recipes" },
+  { id: "limits", label: "Limits" },
+  { id: "webhooks", label: "Webhooks" },
+  { id: "embed", label: "Embed" },
+  { id: "sdks", label: "SDKs" },
+  { id: "mcp-server", label: "MCP" },
+  { id: "terms", label: "Terms" },
+];
+
+function Jumper() {
+  const [active, setActive] = useState(SECTIONS[0].id);
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (es) => { for (const e of es) if (e.isIntersecting) setActive(e.target.id); },
+      { rootMargin: "-25% 0px -65% 0px" }
+    );
+    SECTIONS.forEach(({ id }) => { const el = document.getElementById(id); if (el) obs.observe(el); });
+    return () => obs.disconnect();
+  }, []);
+  const chip = "flex-none rounded-full px-3 py-1.5 font-mono text-[11px] transition";
+  const on = "bg-signal text-bg";
+  const off = "text-dim hover:bg-panel hover:text-ink";
+  return (
+    <>
+      <nav aria-label="Page sections" className="mb-2 flex gap-1.5 overflow-x-auto pb-2 lg:hidden">
+        {SECTIONS.map((s) => (
+          <a key={s.id} href={`#${s.id}`} className={`${chip} ${active === s.id ? on : off}`}>{s.label}</a>
+        ))}
+      </nav>
+      <nav aria-label="Page sections" className="fixed right-6 top-[30%] z-10 hidden w-36 flex-col gap-0.5 lg:flex">
+        {SECTIONS.map((s) => (
+          <a
+            key={s.id}
+            href={`#${s.id}`}
+            className={`rounded px-2 py-1 font-mono text-[11px] transition ${
+              active === s.id ? "bg-panel font-semibold text-signal" : "text-faint hover:text-ink"
+            }`}
+          >
+            {s.label}
+          </a>
+        ))}
+      </nav>
+    </>
+  );
+}
 
 const Endpoint = ({ method, path, desc }: { method: string; path: string; desc: string }) => (
   <li className="flex flex-wrap items-baseline gap-x-3 py-1.5">
@@ -21,23 +75,56 @@ const Endpoint = ({ method, path, desc }: { method: string; path: string; desc: 
   </li>
 );
 
-const PRESETS = [
-  { label: "Search records", path: "/api/v1/records?q=roswell&per_page=3" },
-  { label: "One record", path: "/api/v1/records/DOW-UAP-PR057a" },
-  { label: "Record OCR text", path: "/api/v1/records/DOE-UAP-D004/text" },
-  { label: "Archives (facets)", path: "/api/v1/archives" },
-  { label: "Releases", path: "/api/v1/releases" },
-  { label: "Case stories", path: "/api/v1/cases" },
-  { label: "Hubs", path: "/api/v1/hubs" },
+const PRESET_GROUPS: { label: string; items: { label: string; path: string; desc: string }[] }[] = [
+  {
+    label: "Records",
+    items: [
+      { label: "Search records", path: "/api/v1/records?q=roswell&per_page=3", desc: "Full-text search over titles, summaries and OCR page text" },
+      { label: "Random record", path: "/api/v1/records?sort=random&per_page=1", desc: "Shuffled — a different record every call, never cached" },
+      { label: "Filter: AARO videos", path: "/api/v1/records?agency=AARO&type=video&per_page=3", desc: "Faceted filter: agency + file type" },
+      { label: "One record (full detail)", path: "/api/v1/records/DOW-UAP-PR057a", desc: "Assets, release, series, related, AI summary, TL;DR, topics" },
+      { label: "Record OCR text", path: "/api/v1/records/DOE-UAP-D004/text", desc: "Page-by-page OCR text of a PDF" },
+    ],
+  },
+  {
+    label: "Cases",
+    items: [
+      { label: "Case stories", path: "/api/v1/cases", desc: "Slug + title list (Roswell, Tic Tac, …)" },
+      { label: "One case + sources", path: "/api/v1/cases/roswell", desc: "Timeline and resolved source documents" },
+    ],
+  },
+  {
+    label: "Hubs",
+    items: [
+      { label: "All hubs", path: "/api/v1/hubs", desc: "Curated hubs: agency, location, release, decade, topic" },
+      { label: "One hub", path: "/api/v1/hubs/release/1", desc: "A hub with its records" },
+    ],
+  },
+  {
+    label: "Releases & archives",
+    items: [
+      { label: "Releases", path: "/api/v1/releases", desc: "war.gov release list with file counts" },
+      { label: "Archives (facets)", path: "/api/v1/archives", desc: "Filter facets: releases, kinds, agencies, decades, locations" },
+    ],
+  },
+  {
+    label: "More",
+    items: [
+      { label: "Short clips", path: "/api/v1/shorts?per_page=3", desc: "Declassified video clips" },
+      { label: "API usage", path: "/api/v1/usage", desc: "Aggregate usage, last 30 days (no IPs logged)" },
+    ],
+  },
 ];
+const FLAT_PRESETS = PRESET_GROUPS.flatMap((g) => g.items);
 
 // Live API console: runs real GET requests against the production API and
 // pretty-prints the JSON. Relative URLs so it works on realufo.org as served.
 function Playground() {
-  const [path, setPath] = useState(PRESETS[0].path);
+  const [path, setPath] = useState(FLAT_PRESETS[0].path);
   const [out, setOut] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const active = FLAT_PRESETS.find((p) => p.path === path);
   const run = async () => {
     setBusy(true);
     setErr(null);
@@ -62,12 +149,16 @@ function Playground() {
       <div className="mb-2 flex flex-wrap gap-2">
         <select
           aria-label="Example request"
-          className="rounded border border-line bg-canvas px-2 py-1 font-mono text-[12px] text-ink"
+          className="max-w-full rounded border border-line bg-canvas px-2 py-1 font-mono text-[12px] text-ink"
           value={path}
           onChange={(e) => setPath(e.target.value)}
         >
-          {PRESETS.map((p) => (
-            <option key={p.path} value={p.path}>{p.label}</option>
+          {PRESET_GROUPS.map((g) => (
+            <optgroup key={g.label} label={g.label}>
+              {g.items.map((p) => (
+                <option key={p.path} value={p.path}>{p.label}</option>
+              ))}
+            </optgroup>
           ))}
         </select>
         <button
@@ -78,6 +169,7 @@ function Playground() {
           {busy ? "…" : "Run ▶"}
         </button>
       </div>
+      {active && <p className="mb-2 font-mono text-[11px] text-faint">{active.desc}</p>}
       <input
         aria-label="Request path"
         className="mb-2 w-full rounded border border-line bg-canvas px-2 py-1 font-mono text-[12px] text-ink"
