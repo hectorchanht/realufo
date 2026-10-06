@@ -11,4 +11,5 @@ export const SOCIAL_PROFILES: [name: string, url: string][] = [
 ];
 
 // Open dataset (records + page text) exported by scripts/export_dataset.py.
-export const DATASET_URL = "https://huggingface.co/datasets/tung00/realufo-uap-archive";
+// NOTE: the old tung00 namespace 301s here — link the final URL directly.
+export const DATASET_URL = "https://huggingface.co/datasets/realufo/realufo-uap-archive";
