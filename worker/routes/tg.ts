@@ -2,8 +2,9 @@
 import type { Env } from "../env";
 import { error, json } from "../lib/json";
 import { sameSecret } from "../lib/secret";
-import { getJob, jobByMessage, move, openJobs, patchPayload, pendingByStream, revise, setJobMedia, setStreamPaused, streamPaused } from "../lib/jobs";
-import { approve, preview, skip } from "../lib/gate";
+import { getJob, jobByMessage, move, openJobs, patchPayload, pendingByStream, revise, setJobMedia, setMessages, setStreamPaused, streamPaused } from "../lib/jobs";
+import { approve, preview, sendJobMedia, skip } from "../lib/gate";
+import { queueCard, refreshQueueCard } from "../lib/tgcmd";
 import { answerCallback, clearButtons, getFile, sendMessage } from "../lib/tg";
 import { command } from "../lib/tgcmd";
 import { classifyIntent, PORTAL_STREAMS, T, zh, type NluIntent } from "../lib/tg-nlu";
@@ -39,8 +40,31 @@ const ack = (env: Env, id: string, text?: string) => answerCallback(env, id, tex
 
 async function onButton(env: Env, q: any) {
   const [action, id, v] = String(q.data ?? "").split(":");
-  const job = await getJob(env, Number(id));
   const chat = env.TELEGRAM_OWNER_ID!;
+  // Queue card buttons (from /queue or /status): approve/skip, then re-render the card in place.
+  if (action === "qok" || action === "qskip") {
+    const job = await getJob(env, Number(id));
+    if (!job) { await refreshQueueCard(env, chat, q.message.message_id); return ack(env, q.id, "job not found"); }
+    const jv = job.version === Number(v) ? job : { ...job, version: -1 };
+    if (action === "qok") {
+      if (await move(env, job.id, Number(v), ["post_wait"], "approved")) {
+        await ack(env, q.id, "posting…");
+        // same as the preview ✅ path, minus the preview message's buttons
+        const line = await approve(env, { ...job, version: Number(v) });
+        await sendMessage(env, chat, line).catch((e) => console.log(JSON.stringify({ tg: true, resultNotSent: job.id, error: String(e).slice(0, 200) })));
+      } else await ack(env, q.id, "already handled or out of date");
+    } else {
+      const done = await skip(env, jv);
+      await ack(env, q.id, done ? "skipped" : "already handled");
+    }
+    await refreshQueueCard(env, chat, q.message.message_id);
+    return;
+  }
+  if (action === "q") {
+    await refreshQueueCard(env, chat, q.message.message_id);
+    return ack(env, q.id);
+  }
+  const job = await getJob(env, Number(id));
   if (!job) return ack(env, q.id, "job not found");
   if (action === "skip") {
     const ok = await skip(env, job.version === Number(v) ? job : { ...job, version: -1 });
@@ -107,6 +131,15 @@ async function runIntent(env: Env, m: any, chat: number, job: any, intent: NluIn
       await say(ok ? T.skipped(job.id, cjk) : T.stale(cjk));
       return true;
     }
+    case "show": {
+      // "Show me video preview" — re-send the job's media, never touch the caption.
+      const { msgs, note } = await sendJobMedia(env, job);
+      await setMessages(env, job.id, [...(job.tg_msgs ?? []), ...msgs]);
+      if (!msgs.length) {
+        await say(cjk ? `📭 #${job.id} 冇 media 可以 show${note ? ` (${note.trim().split("\n").pop()})` : ""}` : `📭 #${job.id} has no media to show`);
+      }
+      return true;
+    }
     case "edit": {
       if (job.status !== "post_wait") { await say(cjk ? `#${job.id} 而家係 ${job.status},改唔到` : `#${job.id} is ${job.status}, can't edit`); return true; }
       if (intent.field === "image") {
@@ -147,8 +180,8 @@ async function runIntent(env: Env, m: any, chat: number, job: any, intent: NluIn
     case "help": {
       await say(
         cjk
-          ? "指令:\nok / 好 — 批\n唔要 — skip\ntitle 改做 X — 改\npause shorts / resume all — 停/開\nstatus — 睇 queue"
-          : "Commands:\nok — approve\nskip — drop\ntitle 改做 X — edit\npause shorts / resume all\nstatus — queue"
+          ? "指令:\nok / 好 — 批\n唔要 — skip\ntitle 改做 X — 改\nshow video — 重睇 preview 條片/圖\npause shorts / resume all — 停/開\nstatus — 睇 queue"
+          : "Commands:\nok — approve\nskip — drop\ntitle 改做 X — edit\nshow video — re-send the preview media\npause shorts / resume all\nstatus — queue"
       );
       return true;
     }

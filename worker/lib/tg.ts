@@ -9,7 +9,8 @@ export class TgError extends Error {
     super(`telegram ${status}: ${body.slice(0, 300)}`);
   }
 }
-export type Keyboard = { text: string; callback_data: string }[][];
+export type KeyboardButton = { text: string; callback_data?: string; url?: string };
+export type Keyboard = KeyboardButton[][];
 
 async function call(env: Env, method: string, body: FormData | Record<string, unknown>): Promise<any> {
   const init: RequestInit = body instanceof FormData
@@ -50,6 +51,30 @@ export async function sendMedia(env: Env, chat: string | number, key: string, ca
 export const answerCallback = async (env: Env, id: string, text?: string) => {
   await call(env, "answerCallbackQuery", { callback_query_id: id, ...(text ? { text } : {}) });
 };
+
+// Re-render a bot message in place (queue list refresh after an approve/skip tap).
+export const editMessage = async (env: Env, chat: string | number, messageId: number, text: string, keyboard?: Keyboard) => {
+  await call(env, "editMessageText", {
+    chat_id: chat, message_id: messageId, text,
+    link_preview_options: { is_disabled: true },
+    ...(keyboard ? { reply_markup: { inline_keyboard: keyboard } } : {}),
+  });
+};
+
+// Owner command menu in the Telegram "/" popup. Idempotent; called on /help.
+export const setCommands = (env: Env) =>
+  call(env, "setMyCommands", {
+    commands: [
+      { command: "post", description: "Preview a record post: /post <record ID>" },
+      { command: "queue", description: "Open jobs — approve/skip inline" },
+      { command: "status", description: "Today's posts, waiting jobs, spend" },
+      { command: "skip", description: "Drop a job: /skip <job # or record ID>" },
+      { command: "pause", description: "Pause a stream: /pause <stream|all>" },
+      { command: "resume", description: "Resume a stream: /resume <stream|all>" },
+      { command: "drain", description: "Re-run the social fan-out once" },
+      { command: "help", description: "All commands" },
+    ],
+  }).catch(() => {});
 
 export const clearButtons = async (env: Env, chat: string | number, messageId: number) => {
   await call(env, "editMessageReplyMarkup", { chat_id: chat, message_id: messageId, reply_markup: { inline_keyboard: [] } });

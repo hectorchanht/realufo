@@ -1,11 +1,11 @@
 // worker/lib/tgcmd.ts
 import type { Env } from "../env";
-import { getJob, openJobs, OPEN, pendingByStream, setSetting, setStreamPaused, streamPaused } from "./jobs";
+import { getJob, openJobs, OPEN, pendingByStream, setSetting, setStreamPaused, streamPaused, type Job } from "./jobs";
 import { queue, skip } from "./gate";
 import { stage } from "./xbot";
 import { costOf, monthSpend, nextCandidate, sqlTime, type Candidate } from "./xpick";
 import { SKIP_REASONS, tick as socialTick } from "./social/tick";
-import { getFile, sendMessage } from "./tg";
+import { editMessage, getFile, sendMessage, setCommands, type Keyboard } from "./tg";
 import { PORTAL_STREAMS } from "./tg-nlu";
 
 // Owner commands in the private chat (spec: "Admin commands"). Every post still waits for ✅.
@@ -19,8 +19,47 @@ const HELP = [
   "/pause [stream] · /resume [stream] · stream = record|short|article|social|poll|all (no arg = bot picks, as before)",
   "/drain · re-run the fan-out for missed platforms",
   "/skip <job # or record ID> · drop a job",
-  "Reply to a preview: ok / 唔要 / title 改做 X / pause shorts / status — natural text works too.",
+  "Reply to a preview: ok / 唔要 / show video / title 改做 X / pause shorts / status — natural text works too.",
 ].join("\n");
+
+// ---- Interactive queue card ----
+// One message lists every open job with per-job ✅/❌ buttons, so the owner can
+// triage without scrolling back to each preview. Callbacks (qok/qskip) are handled
+// in routes/tg.ts and re-render this card in place via editMessage.
+const mediaEmoji = (m: Job["media"]) => (!m ? "📝" : m.mime.startsWith("video/") ? "🎬" : "🖼️");
+const sizeStr = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)}MB` : `${Math.max(1, Math.round(n / 1024))}KB`);
+const ageStr = (createdAt: string) => {
+  const mins = Math.max(0, Math.round((Date.now() - new Date(createdAt.replace(" ", "T") + "Z").getTime()) / 60000));
+  if (mins < 60) return `${mins}m`;
+  if (mins < 1440) return `${Math.floor(mins / 60)}h`;
+  return `${Math.floor(mins / 1440)}d`;
+};
+const snippet = (t: string | null) => {
+  const s = (t ?? "").split("\n")[0].replace(/\s+/g, " ").trim().slice(0, 80);
+  return s ? ` · “${s}${(t ?? "").length > 80 ? "…" : ""}”` : "";
+};
+
+export async function queueCard(env: Env): Promise<{ text: string; keyboard?: Keyboard }> {
+  const js = await openJobs(env);
+  if (!js.length) return { text: "📋 Queue — empty, nothing waiting." };
+  const lines = [`📋 Queue (${js.length})`, ""];
+  const keyboard: Keyboard = [];
+  for (const j of js) {
+    const media = j.media ? `${mediaEmoji(j.media)} ${sizeStr(j.media.size)}` : `${mediaEmoji(null)} text only`;
+    lines.push(`#${j.id} · ${j.stream} · ${j.ref} · ${ageStr(j.created_at)}`, `${media}${snippet(j.caption)}`, "");
+    keyboard.push([
+      { text: `✅ #${j.id}`, callback_data: `qok:${j.id}:${j.version}` },
+      { text: `❌ #${j.id}`, callback_data: `qskip:${j.id}:${j.version}` },
+    ]);
+  }
+  return { text: lines.join("\n").trimEnd(), keyboard };
+}
+
+// Re-render a queue card message after a qok/qskip tap (routes/tg.ts).
+export async function refreshQueueCard(env: Env, chat: string | number, messageId: number): Promise<void> {
+  const card = await queueCard(env);
+  await editMessage(env, chat, messageId, card.text, card.keyboard).catch(() => {});
+}
 
 export async function command(env: Env, m: any) {
   const chat = env.TELEGRAM_OWNER_ID!;
@@ -38,8 +77,8 @@ export async function command(env: Env, m: any) {
       return j ? undefined : say(`${arg} already has an open job.`);
     }
     case "/queue": {
-      const js = await openJobs(env);
-      return say(js.length ? js.map((j) => `#${j.id} v${j.version} · ${j.kind} · ${j.stream} · ${j.ref} · ${j.status}`).join("\n") : "No open jobs.");
+      const card = await queueCard(env);
+      return sendMessage(env, chat, card.text, card.keyboard);
     }
     case "/status": {
       const day = sqlTime(now);
@@ -53,14 +92,14 @@ export async function command(env: Env, m: any) {
       // Portal v2: waiting jobs per stream + paused streams
       const pending = await pendingByStream(env);
       const paused = (await Promise.all([...PORTAL_STREAMS].map(async (s) => ((await streamPaused(env, s)) ? s : null)))).filter(Boolean);
-      return say([
+      return sendMessage(env, chat, [
         `Today on X: ${x.results.map((r) => `${r.status} ${r.n}`).join(", ") || "nothing"}`,
         `Waiting: ${pending.length ? pending.map((p) => `${p.stream} ${p.n}`).join(", ") : "none"}`,
         ...(paused.length ? [`Paused: ${paused.join(", ")}`] : []),
         `Failed last 24 h: ${list(0) || "none"}`,
         ...(list(1) ? [`Skipped (needs video) last 24 h: ${list(1)}`] : []),
         `Month spend: $${(await monthSpend(env, now)).toFixed(2)} of $${env.X_MONTHLY_USD_CAP ?? "10"}`,
-      ].join("\n"));
+      ].join("\n"), [[{ text: "📋 Queue", callback_data: "q" }]]);
     }
     case "/pause": {
       // no arg = legacy: the bot's own daily picks. With arg: portal stream(s).
@@ -72,6 +111,7 @@ export async function command(env: Env, m: any) {
       return say(await setPause(env, arg, false));
     }
     case "/drain": await socialTick(env, now); return say("Fan-out ran once; /status for failures.");
+    case "/help": setCommands(env); return say(HELP);
     case "/skip": {
       const raw = arg.replace(/^#/, "");
       const n = Number(raw);

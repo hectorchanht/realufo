@@ -319,4 +319,44 @@ describe("POST /__tg", () => {
     expect(await env.DB.prepare("SELECT value FROM bot_settings WHERE key='t_article'").first()).toEqual({ value: "1" });
     expect((await xposts()).map((r) => [r.stream, r.ref, r.status])).toEqual([["showcase", "WH-S3", "draft"]]);
   });
+  it("queue card: qskip skips and re-renders the card in place", async () => {
+    const j = await mkJob();
+    await hook(E(), tap(`qskip:${j.id}:1`));
+    expect((await status(j.id)).status).toBe("skipped");
+    expect(tg.filter((t) => t.method === "answerCallbackQuery").map((t) => t.body.text)).toContain("skipped");
+    const edits = tg.filter((t) => t.method === "editMessageText");
+    expect(edits.length).toBe(1);
+    expect(edits[0].body.text).toContain("empty"); // queue is now clear
+    expect(edits[0].body.reply_markup).toBeUndefined(); // no buttons left
+  });
+  it("queue card: qok approves like the preview button, then refreshes", async () => {
+    const j = await mkJob();
+    await hook(E(), tap(`qok:${j.id}:1`));
+    expect((await status(j.id)).status).toBe("posted");
+    expect(await xposts()).toEqual([{ stream: "pick", ref: "WH-1", text: draft.text, status: "draft" }]);
+    const edits = tg.filter((t) => t.method === "editMessageText");
+    expect(edits.length).toBe(1);
+    expect(edits[0].body.text).toContain("empty");
+  });
+  it("queue card: q re-renders the queue into the message", async () => {
+    const j = await mkJob();
+    await hook(E(), tap("q"));
+    const edits = tg.filter((t) => t.method === "editMessageText");
+    expect(edits.length).toBe(1);
+    expect(edits[0].body.text).toContain(`#${j.id}`);
+    expect(JSON.stringify(edits[0].body.reply_markup)).toContain(`qskip:${j.id}:1`);
+  });
+  it("\"show me video preview\" re-sends the media instead of editing the caption", async () => {
+    await env.MEDIA.put("clips/wargov/WH-M.mp4", new Uint8Array(100), { httpMetadata: { contentType: "video/mp4" } });
+    const j = (await createJob(E(), { kind: "post", stream: "manual", ref: "WH-M", status: "post_wait", caption: "Clip", media: { key: "clips/wargov/WH-M.mp4", mime: "video/mp4", size: 100 }, payload: { x: draft } }))!;
+    await setMessages(E(), j.id, [101]);
+    const showAI = { run: async () => ({ response: '{"intent":"show","confidence":0.95}' }) };
+    await hook(E({ AI: showAI }), reply("Show me video preview", 101));
+    // caption untouched, still v1
+    expect((await env.DB.prepare("SELECT caption, version FROM bot_jobs WHERE id=?").bind(j.id).first<any>())).toEqual({ caption: "Clip", version: 1 });
+    // the clip was re-sent with its job tag
+    const videos = tg.filter((t) => t.method === "sendVideo");
+    expect(videos.length).toBe(1);
+    expect(String(videos[0].body.caption)).toContain(`#${j.id} · WH-M`);
+  });
 });

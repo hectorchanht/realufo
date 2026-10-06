@@ -73,6 +73,10 @@ describe("admin commands", () => {
     expect(caps[1]).toMatch(/#\d+ · CM-1 · money shot$/);
     expect(lastText()).toContain("🔍 Key moments");
     expect(lastText()).toContain("0:00–0:04 · Infrared view:");
+    // metadata line (archive · date · place) and a doc URL button
+    expect(lastText()).toContain("Dept. of War");
+    const kb = JSON.parse(tg.filter((t) => t.method === "sendMessage").at(-1)!.body.reply_markup).inline_keyboard as { text: string; url?: string }[][];
+    expect(kb[1][0]).toEqual({ text: "📄 Open doc", url: "https://realufo.org/doc/CM-1" });
   });
   it("/post says the exact reason when no preview is made", async () => {
     await say({ text: "/post" });
@@ -100,11 +104,15 @@ describe("admin commands", () => {
     await say({ text: "/pause" });
     expect(await getSetting(E(), "paused_picks")).toBe("1");
   });
-  it("/queue lists open jobs; /skip <id> skips one", async () => {
+  it("/queue lists open jobs with per-job approve/skip buttons; /skip <id> skips one", async () => {
     await say({ text: "/post CM-1" });
     const id = (await env.DB.prepare("SELECT id FROM bot_jobs").first<any>()).id;
     await say({ text: "/queue" });
     expect(lastText()).toContain(`#${id}`);
+    expect(lastText()).toContain("CM-1");
+    const kb = JSON.parse(tg.filter((t) => t.method === "sendMessage").at(-1)!.body.reply_markup).inline_keyboard as { text: string; callback_data: string }[][];
+    expect(kb[0][0]).toEqual({ text: `✅ #${id}`, callback_data: `qok:${id}:1` });
+    expect(kb[0][1]).toEqual({ text: `❌ #${id}`, callback_data: `qskip:${id}:1` });
     await say({ text: `/skip ${id}` });
     expect((await jobs())[0].status).toBe("skipped");
   });

@@ -9,12 +9,13 @@ export type JobStatus = "prep" | "media" | "brief_wait" | "making" | "video_wait
 export type Job = {
   id: number; kind: JobKind; stream: string; ref: string; status: JobStatus; version: number;
   caption: string | null; media: Media; payload: any; tg_msgs: number[]; error: string | null;
+  created_at: string; updated_at: string;
 };
 
 export const OPEN: JobStatus[] = ["prep", "media", "brief_wait", "making", "video_wait", "post_wait", "handmade", "approved"];
 export const BOT_STREAMS = ["pick", "release", "highlight", "poll"];
 const OPEN_SQL = OPEN.map((s) => `'${s}'`).join(",");
-const COLS = "id, kind, stream, ref, status, version, caption, media, payload, tg_msgs, error";
+const COLS = "id, kind, stream, ref, status, version, caption, media, payload, tg_msgs, error, created_at, updated_at";
 
 // Candidate queries use this to skip anything that already has a job (open, posted or skipped).
 // Ignores failed jobs so they can be retried on the next tick.

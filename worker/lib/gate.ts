@@ -1,9 +1,9 @@
 // worker/lib/gate.ts
 import type { Env } from "../env";
-import { CDN, nextCandidate, sqlTime, withinBudget, thumbFor, evidenceText, type Candidate, type Media } from "./xpick";
+import { ARCHIVE_NAME, CDN, SITE, nextCandidate, sqlTime, withinBudget, thumbFor, evidenceText, type Candidate, type Media } from "./xpick";
 import { publishDraft, stage, type Draft } from "./xbot"; // xbot imports gate back: only used inside functions, never at load
 import { createJob, move, setMessages, streamPaused, type Job, type JobKind } from "./jobs";
-import { sendMedia, sendMessage, TgError } from "./tg";
+import { sendMedia, sendMessage, TgError, type Keyboard } from "./tg";
 import { indexNow } from "./indexnow";
 
 // The Telegram gate (spec 2026-10-04-realufo-telegram-gate-design): nothing is posted
@@ -32,24 +32,40 @@ export async function queue(env: Env, c: Candidate, d: Draft): Promise<Job | nul
   const job = await createJob(env, {
     kind: c.stream === "showcase" ? "showcase" : "post", stream: jobStream(c), ref: c.ref,
     status: "post_wait", caption: d.text, media: d.media,
-    payload: { x: d, preview_extra: extras.media, evidence: extras.evidence },
+    payload: { x: d, preview_extra: extras.media, evidence: extras.evidence, meta: extras.meta },
   });
   if (job) await preview(env, job);
   return job;
 }
 
+const fmtDur = (s: number) => {
+  s = Math.round(s);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+  return h ? `${h}:${String(m).padStart(2, "0")}:${String(ss).padStart(2, "0")}` : `${m}:${String(ss).padStart(2, "0")}`;
+};
+
 // What the gate preview shows beyond the post media: for a video record, the
 // money-shot still (the AI-picked thumb) plus the key moments as evidence text.
+// Every single-record job also gets a metadata line (archive · date · place).
 // Stored on the job payload so re-previews (edits) show the same set.
-async function previewExtras(env: Env, c: Candidate, primary: Media): Promise<{ media: { key: string; mime: string; size: number }[]; evidence: string | null }> {
+async function previewExtras(env: Env, c: Candidate, primary: Media): Promise<{
+  media: { key: string; mime: string; size: number }[]; evidence: string | null; meta: string | null;
+}> {
   const rec = "record" in c ? c.record : null;
-  if (!rec || !primary?.mime.startsWith("video/")) return { media: [], evidence: null };
+  if (!rec) return { media: [], evidence: null, meta: null };
+  const meta = [
+    ARCHIVE_NAME[rec.archive] ?? rec.archive,
+    rec.incident_date,
+    rec.location,
+    rec.duration ? fmtDur(rec.duration) : null,
+  ].filter(Boolean).join(" · ") || null;
+  if (!primary?.mime.startsWith("video/")) return { media: [], evidence: null, meta };
   const media: { key: string; mime: string; size: number }[] = [];
   // money-shot still: the AI-picked representative frame (thumb). The primary is the
   // clip here, so this is always a different image when it exists.
   const thumb = await thumbFor(env, rec);
   if (thumb && thumb.key !== primary.key) media.push(thumb);
-  return { media, evidence: evidenceText(rec.ai_moments) };
+  return { media, evidence: evidenceText(rec.ai_moments), meta };
 }
 
 // Portal v2: the universal content gate. EVERY content addition (record, short, article,
@@ -68,12 +84,13 @@ export async function queueContent(env: Env, j: {
   return job;
 }
 
-export async function preview(env: Env, job: Job): Promise<void> {
+// Sends a job's media (primary + money-shot extra) as tagged messages. Used by
+// preview() and by the "show me the video" intent — a bare video/photo arriving
+// before (or after) the text is otherwise impossible to match to its preview.
+export async function sendJobMedia(env: Env, job: Job): Promise<{ msgs: number[]; note: string }> {
   const chat = env.TELEGRAM_OWNER_ID!;
   const msgs: number[] = [];
   let note = "";
-  // Every media message carries the job tag: a bare video/photo arriving before
-  // (or after) the text is otherwise impossible to match to its preview.
   const tag = `#${job.id} · ${job.ref}`;
   const sendOne = async (key: string, caption?: string) => {
     try {
@@ -85,18 +102,32 @@ export async function preview(env: Env, job: Job): Promise<void> {
   };
   if (job.media) await sendOne(job.media.key, tag);
   for (const m of (job.payload?.preview_extra as { key: string }[] | undefined) ?? []) await sendOne(m.key, `${tag} · money shot`);
+  return { msgs, note };
+}
+
+export async function preview(env: Env, job: Job): Promise<void> {
+  const chat = env.TELEGRAM_OWNER_ID!;
+  const { msgs, note } = await sendJobMedia(env, job);
   const chars = Array.from(job.caption ?? ""); // code points: never cut an emoji in half
   const caption = chars.length > TEXT_MAX ? `${chars.slice(0, TEXT_MAX).join("")}…` : chars.join("");
   const evidence = typeof job.payload?.evidence === "string" && job.payload.evidence ? `\n\n🔍 Key moments\n${job.payload.evidence}` : "";
+  const meta = typeof job.payload?.meta === "string" && job.payload.meta ? `\n${job.payload.meta}` : "";
   const goLabel = job.kind === "record" ? "✅ Publish" : job.kind === "short" ? "✅ Post short" : "✅ Post";
-  const text = `#${job.id} v${job.version} · ${job.kind} · ${job.stream} · ${job.ref}${note}\n\n${caption}${evidence}\n\n→ ${targets(env)}\nReply: ok / 唔要 / title 改做 X / pause ${job.stream} / status`;
+  // Single-record jobs link straight to the doc page.
+  const docUrl = (job.kind === "post" || job.kind === "showcase") && ["pick", "manual", "showcase"].includes(job.stream)
+    ? `${SITE}/doc/${encodeURIComponent(job.ref)}` : null;
+  const kb: Keyboard = [
+    [
+      { text: goLabel, callback_data: `ok:${job.id}:${job.version}` },
+      { text: "❌ Skip", callback_data: `skip:${job.id}:${job.version}` },
+    ],
+    ...(docUrl ? [[{ text: "📄 Open doc", url: docUrl }]] : []),
+  ];
+  const text = `#${job.id} v${job.version} · ${job.kind} · ${job.stream} · ${job.ref}${note}${meta}\n\n${caption}${evidence}\n\n→ ${targets(env)}\nReply: ok / 唔要 / title 改做 X / pause ${job.stream} / status`;
   const tChars = Array.from(text); // caption + evidence can jointly pass the Bot API's 4096
   const finalText = tChars.length > 4000 ? `${tChars.slice(0, 4000).join("")}…` : text;
   try {
-    msgs.push(await sendMessage(env, chat, finalText, [[
-      { text: goLabel, callback_data: `ok:${job.id}:${job.version}` },
-      { text: "❌ Skip", callback_data: `skip:${job.id}:${job.version}` },
-    ]]));
+    msgs.push(await sendMessage(env, chat, finalText, kb));
   } catch (e) {
     // no buttons reached the owner: close the job (failed jobs can be offered again) instead of leaving it open and invisible
     const reason = `preview not delivered: ${errMsg(e)}`;
