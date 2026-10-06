@@ -1,0 +1,73 @@
+name: reindex
+# One-click reindex for records whose stored text fell behind their OCR text
+# (skill: ocr-full-text § "Rebuild consumers, in this order").
+# Requeues the ids (drops the stale record_text row, marks text_index failed),
+# then runs: fulltext → summaries → textindex → tldr → cards, and IndexNows
+# the changed doc pages. fulltext only rebuilds records missing a record_text
+# row, so the requeue is what makes it pick the ids up again.
+permissions:
+  contents: read
+on:
+  workflow_dispatch:
+    inputs:
+      ids:
+        description: "Space-separated record ids to reindex (e.g. 'FBI-UAP-D002')"
+        required: true
+        default: "FBI-UAP-D002"
+      dry_run:
+        description: "Dry run (print only; no D1/R2/Vectorize writes)"
+        type: boolean
+        default: true
+jobs:
+  reindex:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install -r crawler/ingest/requirements.txt
+      - run: sudo apt-get update -q && sudo apt-get install -yq poppler-utils
+      - run: npm i -g wrangler
+      - name: requeue + rebuild
+        working-directory: crawler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          IDS: ${{ github.event.inputs.ids }}
+          LIVE: ${{ github.event.inputs.dry_run == 'false' }}
+        run: |
+          set -euo pipefail
+          python3 - "$IDS" <<'EOF'
+          import sys
+          ids = sys.argv[1].split()
+          assert ids, "no ids given"
+          assert all(i and all(c.isalnum() or c in "-_." for c in i) for i in ids), f"bad ids: {ids}"
+          def q(v): return "'" + v.replace("'", "''") + "'"
+          sql = "".join(
+              f"DELETE FROM record_text WHERE record_id={q(i)};\n"
+              f"UPDATE text_index SET status='failed' WHERE record_id={q(i)};\n" for i in ids)
+          open("/tmp/requeue.sql", "w").write(sql)
+          print(sql, end="")
+          EOF
+          if [ "$LIVE" = "true" ]; then
+            wrangler d1 execute realufo-db --remote --file /tmp/requeue.sql
+            python -m ingest.fulltext
+            python -m ingest.summaries --ids $IDS
+            python -m ingest.textindex
+            python -m ingest.tldr --ids $IDS
+            python -m ingest.cards --ids $IDS
+            for id in $IDS; do
+              python3 indexnow.py "https://realufo.org/doc/$id" "https://realufo.org/doc/$id/text"
+            done
+          else
+            echo "--- dry run: requeue SQL above NOT applied ---"
+            python -m ingest.fulltext --dry-run --limit 2
+            python -m ingest.summaries --ids $IDS --dry-run
+            python -m ingest.textindex --dry-run --limit 2
+            python -m ingest.tldr --ids $IDS --dry-run
+            python -m ingest.cards --ids $IDS --dry-run
+            for id in $IDS; do
+              python3 indexnow.py --dry-run "https://realufo.org/doc/$id" "https://realufo.org/doc/$id/text"
+            done
+          fi
