@@ -49,7 +49,7 @@ const fmtDur = (s: number) => {
 // Every single-record job also gets a metadata line (archive · date · place).
 // Stored on the job payload so re-previews (edits) show the same set.
 async function previewExtras(env: Env, c: Candidate, primary: Media): Promise<{
-  media: { key: string; mime: string; size: number }[]; evidence: string | null; meta: string | null;
+  media: { key: string; mime: string; size: number; label?: string }[]; evidence: string | null; meta: string | null;
 }> {
   const rec = "record" in c ? c.record : null;
   if (!rec) return { media: [], evidence: null, meta: null };
@@ -60,11 +60,16 @@ async function previewExtras(env: Env, c: Candidate, primary: Media): Promise<{
     rec.duration ? fmtDur(rec.duration) : null,
   ].filter(Boolean).join(" · ") || null;
   if (!primary?.mime.startsWith("video/")) return { media: [], evidence: null, meta };
-  const media: { key: string; mime: string; size: number }[] = [];
+  const media: { key: string; mime: string; size: number; label?: string }[] = [];
   // money-shot still: the AI-picked representative frame (thumb). The primary is the
   // clip here, so this is always a different image when it exists.
   const thumb = await thumbFor(env, rec);
   if (thumb && thumb.key !== primary.key) media.push(thumb);
+  // vertical Shorts cut: the 9:16 version awaiting approval in clips-staging.
+  // Shown in the TG preview so the owner sees the final clip, not just the square one.
+  const vkey = `clips-staging/${rec.archive}/${rec.id}.mp4`;
+  const v = await env.MEDIA.head(vkey);
+  if (v) media.push({ key: vkey, mime: "video/mp4", size: v.size, label: "📱 vertical" });
   return { media, evidence: evidenceText(rec.ai_moments), meta };
 }
 
@@ -102,7 +107,8 @@ export async function sendJobMedia(env: Env, job: Job): Promise<{ msgs: number[]
     }
   };
   if (job.media) await sendOne(job.media.key, tag);
-  for (const m of (job.payload?.preview_extra as { key: string }[] | undefined) ?? []) await sendOne(m.key, `${tag} · money shot`);
+  for (const m of (job.payload?.preview_extra as { key: string; label?: string }[] | undefined) ?? [])
+    await sendOne(m.key, `${tag} · ${m.label ?? "money shot"}`);
   return { msgs, note };
 }
 
