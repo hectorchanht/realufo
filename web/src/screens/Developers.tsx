@@ -229,11 +229,12 @@ export default function Developers() {
         <a className="text-signal hover:underline" href="/api/v1/openapi.json">OpenAPI spec</a>
       </p>
       <ApiPulse />
+      <Jumper />
 
-      <H2>Try it live</H2>
+      <H2 id="try-it-live">Try it live</H2>
       <Playground />
 
-      <H2>Quickstart</H2>
+      <H2 id="quickstart">Quickstart</H2>
       <Code>{`# search the archive
 curl "https://realufo.org/api/v1/records?q=roswell&per_page=5"
 
@@ -243,7 +244,7 @@ curl "https://realufo.org/api/v1/records/DOW-UAP-PR057a"
 # OCR full text of a record
 curl "https://realufo.org/api/v1/records/DOE-UAP-D004/text"`}</Code>
 
-      <H2>Envelope</H2>
+      <H2 id="envelope">Envelope</H2>
       <p className="mb-2 max-w-[680px] text-[14px] leading-[1.6] text-dim">
         Every v1 response is <code className="font-mono text-[12px] text-ink">{"{ data, meta }"}</code>. List endpoints add{" "}
         <code className="font-mono text-[12px] text-ink">meta.total / meta.page / meta.per_page</code>. Errors are{" "}
@@ -251,10 +252,10 @@ curl "https://realufo.org/api/v1/records/DOE-UAP-D004/text"`}</Code>
         Documented fields are additive-only: new fields may appear, documented ones never change type or disappear.
       </p>
 
-      <H2>Endpoints</H2>
+      <H2 id="endpoints">Endpoints</H2>
       <ul className="max-w-[680px] divide-y divide-line text-[14px]">
         <Endpoint method="GET" path="/api/v1/records" desc="Search + filter. Params: q, archive, type, agency, location, year, decade, release, sort (new, az, release, old, recent, random), has (text,ai,moments,featured), page, per_page (max 100)" />
-        <Endpoint method="GET" path="/api/v1/records/:id" desc="Full detail: assets, release, series, related, AI summary, TL;DR, topics, hubs" />
+        <Endpoint method="GET" path="/api/v1/records/:id" desc="Full detail: assets (with SHA-256 hashes), release, series, related, AI summary, TL;DR, topics, hubs" />
         <Endpoint method="GET" path="/api/v1/records/:id/text" desc="OCR pages of a record" />
         <Endpoint method="GET" path="/api/v1/archives" desc="Filter facets: releases, kinds, agencies, decades, locations" />
         <Endpoint method="GET" path="/api/v1/releases" desc="war.gov release list with file counts" />
@@ -266,7 +267,7 @@ curl "https://realufo.org/api/v1/records/DOE-UAP-D004/text"`}</Code>
         <Endpoint method="GET" path="/api/v1/usage" desc="Aggregate API usage, last 30 days (no IPs or user agents logged)" />
       </ul>
 
-      <H2>Example</H2>
+      <H2 id="example">Example</H2>
       <Code>{`$ curl "https://realufo.org/api/v1/records?q=tictac&per_page=1"
 {"data": [{"id": "AARO-SASC_AARO_Open_Hearing_Case_Slides_19Nov2024",
 "archive": "aaro", "agency": "AARO",
@@ -275,7 +276,7 @@ curl "https://realufo.org/api/v1/records/DOE-UAP-D004/text"`}</Code>
 "thumb": "https://assets.realufo.org/pdf-thumbs/aaro/…"}],
 "meta": {"total": 2, "page": 1, "per_page": 1}}`}</Code>
 
-      <H2>Recipes</H2>
+      <H2 id="recipes">Recipes</H2>
       <p className="mb-2 max-w-[680px] text-[14px] leading-[1.6] text-dim">
         Copy-paste starters for the common jobs.
       </p>
@@ -291,7 +292,7 @@ curl "https://realufo.org/api/v1/cases/roswell"
 # OCR text of a record (page by page)
 curl "https://realufo.org/api/v1/records/DOE-UAP-D004/text"`}</Code>
 
-      <H2>Limits</H2>
+      <H2 id="limits">Limits</H2>
       <p className="max-w-[680px] text-[14px] leading-[1.6] text-dim">
         600 requests per 60 seconds per IP (<code className="font-mono text-[12px] text-ink">429</code> +{" "}
         <code className="font-mono text-[12px] text-ink">Retry-After</code> past that). CORS is open (
@@ -299,7 +300,7 @@ curl "https://realufo.org/api/v1/records/DOE-UAP-D004/text"`}</Code>
         it directly. List responses cache at the edge for 5 minutes; details for 10.
       </p>
 
-      <H2>Webhooks</H2>
+      <H2 id="webhooks">Webhooks</H2>
       <p className="mb-2 max-w-[680px] text-[14px] leading-[1.6] text-dim">
         Don’t poll — subscribe. RealUFO POSTs signed JSON to your URL when records appear (
         <code className="font-mono text-[12px] text-ink">records.created</code>) or a new war.gov release lands (
@@ -322,7 +323,7 @@ curl -X POST https://realufo.org/api/v1/webhooks \\
 curl -X DELETE https://realufo.org/api/v1/webhooks/wh_… \\
   -H "X-Webhook-Secret: …"`}</Code>
 
-      <H2>Embed</H2>      <p className="mb-2 max-w-[680px] text-[14px] leading-[1.6] text-dim">
+      <H2 id="embed">Embed</H2>      <p className="mb-2 max-w-[680px] text-[14px] leading-[1.6] text-dim">
         Put the archive on your site: a live "latest release" badge that links back to realufo.org. Free distribution.
       </p>
       <Code>{`<iframe src="https://realufo.org/embed/badge"
@@ -336,7 +337,7 @@ curl -X DELETE https://realufo.org/api/v1/webhooks/wh_… \\
   width="360" height="180" style="border:0"
   loading="lazy" title="RealUFO record"></iframe>`}</Code>
 
-      <H2>SDKs</H2>
+      <H2 id="sdks">SDKs</H2>
       <p className="mb-2 max-w-[680px] text-[14px] leading-[1.6] text-dim">
         Thin clients, zero dependencies. Source in the{" "}
         <a className="text-signal hover:underline" href="https://github.com/hectorchanht/realufo/tree/main/sdk">sdk/</a>{" "}
@@ -357,7 +358,7 @@ page = api.records(q="tic tac")
 full = api.record("DOW-UAP-PR057a")
 pages = api.text("DOE-UAP-D004")`}</Code>
 
-      <H2>MCP server</H2>
+      <H2 id="mcp-server">MCP server</H2>
       <p className="mb-2 max-w-[680px] text-[14px] leading-[1.6] text-dim">
         Query the archive from Claude Desktop, Claude Code and other MCP clients. Zero dependencies, plain Node 18+.{" "}
         <a className="text-signal hover:underline" href="https://www.npmjs.com/package/realufo-mcp">npm: realufo-mcp</a>{" "}
@@ -374,7 +375,7 @@ pages = api.text("DOE-UAP-D004")`}</Code>
   }
 }`}</Code>
 
-      <H2>Terms</H2>
+      <H2 id="terms">Terms</H2>
       <p className="max-w-[680px] text-[14px] leading-[1.6] text-dim">
         The records are declassified public documents; the archive mirrors official sources verbatim. If you re-present
         mirrored fields, keep their values exact — don't relabel an official value as a different one. AI summaries and

@@ -43,6 +43,7 @@ import { v1ListRecords, v1GetRecord, v1RecordText, v1Archives, v1Releases, v1Cas
 import { createWebhookRoute, getWebhookRoute, deleteWebhookRoute } from "./routes/webhooks";
 import { webhookTick } from "./lib/webhooks";
 import { badge, card } from "./routes/embed";
+import { hashAssets } from "./routes/hashbackfill";
 
 on("GET", "/api/health", health);
 on("GET", "/api/bootstrap", bootstrap);
@@ -223,6 +224,7 @@ async function handleFetch(req: Request, env: Env, ctx: ExecutionContext): Promi
       return res ?? error(404, "not found");
     }
     if (url.pathname === "/__tick") return manualTick(req, env);
+    if (url.pathname === "/__hash-assets") return hashAssets(req, env);
     if (url.pathname === "/__tg") return tgWebhook(req, env);
     if (url.pathname === "/__job") return jobRoute(req, env);
     if (url.pathname === "/sitemap.xml") return sitemap(req, env);

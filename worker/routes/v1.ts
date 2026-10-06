@@ -146,6 +146,7 @@ export const v1GetRecord = v1guarded("GET /api/v1/records/:id", async (req, env,
       assets: (d.assets as any[]).map((a) => ({
         role: a.role, url: a.cdn_url, mime: a.mime,
         width: a.width ?? null, height: a.height ?? null, duration: a.duration ?? null, crop: a.crop ?? null,
+        sha256: a.sha256 ?? null,
       })),
       release: d.release,
       series: {
