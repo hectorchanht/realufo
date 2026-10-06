@@ -9,6 +9,7 @@ on:
       dry_run: { description: "dry run (no writes)", type: boolean, default: true }
       sources: { description: "comma sources", default: "wargov,aaro,nasa,nara" }
       force_clips: { description: "re-cut every existing clip (after a clip format change)", type: boolean, default: false }
+      clip_ids: { description: "only re-cut these record ids (space-separated; needs force_clips)", default: "" }
 jobs:
   ingest:
     runs-on: ubuntu-latest
@@ -56,6 +57,17 @@ jobs:
             python -m ingest.thumbs --dry-run --limit 1 | tee -a ingest-summary.txt
           fi
       # X bot + social clips (Spec 4/5): ≤30 s MP4s at clips/ and 9:16 twins at clips-v/
+      # Kokoro voiceover for the 9:16 twins (--voice): CPU torch + model cached across runs
+      - uses: actions/cache@v4
+        if: ${{ !cancelled() }}
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/huggingface
+          key: kokoro-voice-v1
+      - name: voice deps
+        if: ${{ !cancelled() }}
+        run: pip install -q torch --index-url https://download.pytorch.org/whl/cpu && pip install -q kokoro soundfile
       - name: clips
         if: ${{ !cancelled() }}
         working-directory: crawler
@@ -64,14 +76,15 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           LIVE: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run == 'false' }}
           FORCE: ${{ github.event.inputs.force_clips == 'true' && '--force' || '' }}
+          ONLY: ${{ github.event.inputs.clip_ids != '' && format('--only {0}', github.event.inputs.clip_ids) || '' }}
         run: |
           set -o pipefail
           if [ "$LIVE" = "true" ]; then
             python -m ingest.clips $FORCE | tee -a ingest-summary.txt
-            python -m ingest.clips --vertical $FORCE | tee -a ingest-summary.txt
+            python -m ingest.clips --vertical --voice $FORCE $ONLY | tee -a ingest-summary.txt
           else
             python -m ingest.clips --dry-run --limit 1 | tee -a ingest-summary.txt
-            python -m ingest.clips --vertical --dry-run --limit 1 | tee -a ingest-summary.txt
+            python -m ingest.clips --vertical --voice --dry-run --limit 1 | tee -a ingest-summary.txt
           fi
       # AI key moments for videos still without them (spec 2026-10-02-realufo-ai-key-moments)
       - name: moments

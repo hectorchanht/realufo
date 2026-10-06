@@ -14,7 +14,10 @@ Idempotent: existing clips skipped unless --force (re-cut after a length change)
 --vertical writes the 9:16 twin for Reels/Shorts/TikTok (Spec 5 §7) to
 clips-staging/<archive>/<id>.mp4: black pillar/letterbox bars cropped off (cropdetect), then the
 video as big as it fits, on a blurred, cropped copy of itself (near-9:16 video fills the
-frame); record id + clean title in the top band and realufo.org in the bottom band.
+frame); record id + clean title in the top band and a showcase-style "realufo.org · <id>"
+watermark bottom-centre — all burned onto the content itself, never the blurred surround.
+--voice mixes a Kokoro voiceover (spoken id + title + one-liner, same af_heart voice as the
+handmade showcase clips) under the source audio; best-effort, the clip renders regardless.
 Staging is invisible to the /shorts listing (it reads clips-v/ directly): the Telegram
 admin portal (worker/lib/contentTick.ts) offers one staged clip per day, and approval
 promotes it to clips-v/<archive>/<id>.mp4 — one curated Short per day, no batch posting.
@@ -22,13 +25,14 @@ Both need a TTF at $CLIP_FONT (default: DejaVu Sans Bold from apt fonts-dejavu-c
 must not contain spaces, ':' or quotes (ffmpeg filtergraph syntax).
 """
 import argparse, os, re, subprocess, sys, tempfile, time
-from . import d1, fetch, r2
+from . import d1, fetch, kokoro_voice, r2
 from .models import R2_BASE
 
 CLIP = 30.0
 
-SELECT = """SELECT r.id, r.archive, r.title, a.cdn_url, a.duration, a.crop FROM records r
+SELECT = """SELECT r.id, r.archive, r.title, a.cdn_url, a.duration, a.crop, t.one_liner FROM records r
 JOIN assets a ON a.record_id=r.id AND a.role='full'
+LEFT JOIN record_tldr t ON t.record_id=r.id AND t.lang='en'
 WHERE r.status='live' AND a.mime LIKE 'video/%' ORDER BY r.id"""
 FONT = os.environ.get("CLIP_FONT", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
 
@@ -66,6 +70,19 @@ def title_layout(t, width=1000, em=0.72, max_fs=64):
 def fit(n, max_fs, width=1000, em=0.72) -> int:
     """Largest fontsize ≤ max_fs at which n chars fit `width` px (see title_layout for em)."""
     return min(max_fs, int(width / (em * max(n, 1))))
+
+def spoken_id(rid) -> str:
+    """Record id as TTS input: alpha runs spelled out ("AARO-DOD_109584445" ->
+    "A A R O D O D 109584445") so Kokoro reads the letters instead of a word."""
+    return " ".join(" ".join(tok) if tok.isalpha() else tok
+                    for tok in re.findall(r"[A-Za-z]+|\d+", rid or ""))
+
+def narration_text(row) -> str:
+    """Voiceover line: spoken id + title + the record's one-liner (≤15 words) when it has one."""
+    title = clean_title(row["id"], row.get("title"), 60)
+    text = f"{spoken_id(row['id'])}. {title}."
+    one = (row.get("one_liner") or "").strip()
+    return f"{text} {one}" if one else text
 
 def bars(iw, ih, w, h, x, y):
     """cropdetect box -> crop filter for a centred black pillarbox/letterbox, else None. Only one
@@ -159,26 +176,51 @@ def ffmpeg_args(url, start, length, out, id_file, font, title_file=None, id_len=
             "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-movflags", "+faststart", out]
 
 def vertical_args(url, start, length, out, title_files, fontsize, font, audio=True, id_file=None, id_fontsize=46,
-                  crop=None, fill=False):
+                  crop=None, fill=False, brand_file=None, brand_fontsize=52, voice_file=None):
     """title_files: one textfile per line (each drawtext centres its own line). crop strips black
-    bars first; fill zooms near-9:16 content to the whole frame, else it is fitted as large as fits."""
-    # Text stays inside the Reels/Shorts/TikTok safe zone: below the top tabs (~200 px)
-    # and above the caption/buttons area (bottom ~450 px) of the 1080x1920 frame.
-    band = f"fontfile={font}:fontcolor=white:borderw=3:bordercolor=black:shadowcolor=black@0.6:shadowx=2:shadowy=2:x=(w-text_w)/2"
-    title = "".join(f"drawtext={band}:textfile={f}:expansion=none:fontsize={fontsize}:y={340 + round(i * fontsize * 1.3)},"
-                    for i, f in enumerate(title_files))
+    bars first; fill zooms near-9:16 content to the whole frame, else it is fitted as large as fits.
+    brand_file: textfile with "realufo.org · <id>", burned bottom-centre of the clip itself.
+    voice_file: Kokoro narration wav mixed under the source audio (best-effort: None skips it)."""
+    # Text is burned onto the fitted content box BEFORE the blur composite, so the watermark
+    # always sits inside the clip — never on the blurred surround (the old fixed y=1420 landed
+    # outside the clip whenever the content didn't fill the frame, e.g. #12 AARO-DOD_109584445).
+    # Style copied from the handmade showcase clips (showcase/lib.py): bold white with a thick
+    # black outline + soft shadow, no box; the brand line sits bottom-centre of the content.
+    band = ("fontfile=%s:fontcolor=white:borderw=4:bordercolor=black:shadowcolor=black@0.6:"
+            "shadowx=2:shadowy=2:x=(w-text_w)/2" % font)
+    fg_text = "".join([
+        f",drawtext={band}:textfile={id_file}:expansion=none:fontsize={id_fontsize}:y=40" if id_file else "",
+        *[f",drawtext={band}:textfile={f}:expansion=none:fontsize={fontsize}"
+           f":y={40 + round(id_fontsize * 1.4) + round(i * fontsize * 1.3)}"
+           for i, f in enumerate(title_files)],
+        # showcase-style watermark: "realufo.org · <id>", bottom-centre of the clip itself
+        f",drawtext={band}:textfile={brand_file}:expansion=none:fontsize={brand_fontsize}:y=h-text_h-90" if brand_file else "",
+    ])
     cover = "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920"
     fc = (f"[0:v]{crop + ',' if crop else ''}split[a][b];"
           f"[a]{cover},boxblur=20[bg];"
-          f"[b]{cover if fill else 'scale=1080:1920:force_original_aspect_ratio=decrease'}[fg];"
-          "[bg][fg]overlay=(W-w)/2:(H-h)/2,"
-          + (f"drawtext={band}:textfile={id_file}:expansion=none:fontsize={id_fontsize}:y=270," if id_file else "") +
-          f"{title}"
-          f"drawtext={band}:text=realufo.org:fontsize=44:y=1420[v]")
+          f"[b]{cover if fill else 'scale=1080:1920:force_original_aspect_ratio=decrease'}{fg_text}[fg];"
+          "[bg][fg]overlay=(W-w)/2:(H-h)/2[v]")
     a = ["ffmpeg", "-v", "error", "-y", "-ss", f"{start:.2f}", "-i", url]
-    if not audio:
+    n_in = 1
+    vi = ai = None
+    if voice_file:
+        a += ["-i", voice_file]
+        vi, n_in = n_in, n_in + 1
+    if not audio and voice_file is None:
         a += ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100"]
-    return a + ["-t", f"{length:.2f}", "-filter_complex", fc, "-map", "[v]", "-map", "0:a:0" if audio else "1:a",
+        ai, n_in = n_in, n_in + 1
+    if voice_file is not None:
+        # narration under the source audio (or a silent bed when the source has none),
+        # starting 0.8 s in so the title card reads first; never longer than the clip
+        base = ("[0:a]aformat=channel_layouts=stereo[base]" if audio
+                else f"anullsrc=channel_layout=stereo:sample_rate=44100:d={length:.2f}[base]")
+        fc += (f";{base};[{vi}:a]aformat=channel_layouts=stereo,adelay=800|800[vo];"
+               "[base][vo]amix=inputs=2:normalize=0:duration=first[aout]")
+        amap = ["-map", "[aout]"]
+    else:
+        amap = ["-map", "0:a:0" if audio else f"{ai}:a"]
+    return a + ["-t", f"{length:.2f}", "-filter_complex", fc, "-map", "[v]", *amap,
                 # constant 30 fps: TikTok rejects < 23 fps (FBI-UAP-PR007's source is 10 fps)
                 "-r", "30", "-c:v", "libx264", "-profile:v", "high", "-pix_fmt", "yuv420p", "-preset", "veryfast",
                 "-crf", "23", "-maxrate", "1500k", "-bufsize", "3000k",
@@ -222,6 +264,9 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--force", action="store_true", help="re-cut clips that already exist")
     ap.add_argument("--vertical", action="store_true", help="cut the 9:16 twin to clips-v/ (Reels/Shorts/TikTok)")
+    ap.add_argument("--voice", action="store_true",
+                    help="mix a Kokoro voiceover (spoken id + title + one-liner) under --vertical twins; "
+                         "best-effort: the clip still renders when TTS is unavailable")
     ap.add_argument("--only", nargs="+", metavar="ID", help="just these record ids (with --force: re-cut them)")
     ap.add_argument("--out", default=os.path.join(tempfile.gettempdir(), "realufo-clips"))
     args = ap.parse_args(argv)
@@ -239,28 +284,34 @@ def main(argv=None):
         out = os.path.join(args.out, f"{row['id']}{'-v' if args.vertical else ''}.mp4")
         start, length = skip_slates(row["cdn_url"], *window(row["duration"]))
         # textfile= (not text=): ids and titles may hold ':' or quotes that break filtergraph syntax
-        with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as idf:
-            idf.write(row["id"])
+        tmp_txts = []
+
+        def textfile(text):
+            with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as tf:
+                tf.write(text)
+            tmp_txts.append(tf.name)
+            return tf.name
+
+        id_file = textfile(row["id"])
         title = clean_title(row["id"], row.get("title"))     # landscape: one line, 40 chars
         if args.vertical:
             # 60: two auto-fitted lines hold it, so places/years survive ("…, Atlantic Ocean, 2020")
             lines, fs = title_layout(clean_title(row["id"], row.get("title"), 60))
-            tfs = []
-            for ln in lines:
-                with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as tf:
-                    tf.write(ln)
-                tfs.append(tf.name)
+            tfs = [textfile(ln) for ln in lines]
+            # showcase-style watermark, burned bottom-centre of the clip itself
+            brand_text = f"realufo.org · {row['id']}"
+            brand_file = textfile(brand_text)
+            brand_fs = fit(len(brand_text), 52, 1000, 0.62)   # shrink long ids to the 1080 frame
+            voice_file = (kokoro_voice.narration_wav(narration_text(row), os.path.join(args.out, ".voice"))
+                          if args.voice else None)
             crop, fill = stored(row.get("crop")) or probe(row["cdn_url"], start, length)
-            cmd = vertical_args(row["cdn_url"], start, length, out, tfs, fs, FONT, has_audio(row["cdn_url"]), idf.name,
-                                fit(len(row["id"]), 46), crop, fill)
+            cmd = vertical_args(row["cdn_url"], start, length, out, tfs, fs, FONT, has_audio(row["cdn_url"]), id_file,
+                                fit(len(row["id"]), 46), crop, fill, brand_file, brand_fs, voice_file)
         else:
-            with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as tf:
-                tf.write(title)
-            tfs = [tf.name]
-            cmd = ffmpeg_args(row["cdn_url"], start, length, out, idf.name, FONT, tf.name, len(row["id"]), len(title))
+            tfs = [textfile(title)]
+            cmd = ffmpeg_args(row["cdn_url"], start, length, out, id_file, FONT, tfs[0], len(row["id"]), len(title))
         p = subprocess.run(cmd, capture_output=True, text=True)
-        os.unlink(idf.name)
-        for f in tfs:
+        for f in tmp_txts:
             os.unlink(f)
         if p.returncode or not os.path.exists(out) or not os.path.getsize(out):
             failed += 1

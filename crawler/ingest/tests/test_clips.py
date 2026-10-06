@@ -1,4 +1,4 @@
-from ingest.clips import window, ffmpeg_args, todo, key, vkey, clean_title, vertical_args, title_layout, fit, bars, fills, slate, trim
+from ingest.clips import window, ffmpeg_args, todo, key, vkey, clean_title, vertical_args, title_layout, fit, bars, fills, slate, trim, spoken_id, narration_text
 
 def test_window_is_30s_from_35pct_kept_inside_the_video():
     assert window(20.0) == (0.0, 30.0)           # short video: whole (-t 30 is a no-op)
@@ -45,12 +45,16 @@ def test_clean_title_strips_id_prefix_underscores_and_caps_length():
     assert len(t) == 40 and t.endswith("…")
 
 def test_vertical_args_pad_blur_overlay_and_text():
-    a = vertical_args("https://cdn/v.mp4", 210.0, 30.0, "/tmp/o.mp4", ["/tmp/t.txt"], 56, "/fonts/D.ttf")
+    a = vertical_args("https://cdn/v.mp4", 210.0, 30.0, "/tmp/o.mp4", ["/tmp/t.txt"], 56, "/fonts/D.ttf",
+                      brand_file="/tmp/b.txt")
     fc = a[a.index("-filter_complex") + 1]
     for part in ("scale=1080:1920:force_original_aspect_ratio=increase", "crop=1080:1920", "boxblur",
                  "scale=1080:1920:force_original_aspect_ratio=decrease", "overlay=(W-w)/2:(H-h)/2", "textfile=/tmp/t.txt", "expansion=none",
-                 "fontfile=/fonts/D.ttf", "text=realufo.org"):
+                 "fontfile=/fonts/D.ttf", "textfile=/tmp/b.txt", "borderw=4"):
         assert part in fc
+    # text is burned onto the content box before the composite (never the blurred surround)
+    assert fc.index("[fg]") > fc.index("textfile=/tmp/b.txt")
+    assert "[bg][fg]overlay=(W-w)/2:(H-h)/2[v]" in fc
     assert a.index("-ss") < a.index("-i") and a[a.index("-t") + 1] == "30.00"
     assert "anullsrc" not in " ".join(a) and "0:a:0" in a
     assert a[a.index("-r") + 1] == "30"                        # constant fps: TikTok needs >= 23
@@ -61,7 +65,42 @@ def test_vertical_args_pad_blur_overlay_and_text():
 def test_vertical_args_burns_the_id_above_the_title():
     fc = (a := vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", ["/tmp/t.txt"], 56, "/f.ttf", id_file="/tmp/id.txt"))[a.index("-filter_complex") + 1]
     assert fc.index("textfile=/tmp/id.txt") < fc.index("textfile=/tmp/t.txt")
-    assert "textfile=/tmp/id.txt:expansion=none:fontsize=46:" in fc
+    assert "textfile=/tmp/id.txt:expansion=none:fontsize=46:y=40" in fc
+
+def test_vertical_args_brand_watermark_is_showcase_style_and_inside_the_clip():
+    fc = (a := vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", ["/tmp/t.txt"], 56, "/f.ttf",
+                             brand_file="/tmp/b.txt"))[a.index("-filter_complex") + 1]
+    # bold white + thick black outline + shadow, no box; bottom-centre of the content box itself
+    assert "textfile=/tmp/b.txt:expansion=none:fontsize=52:y=h-text_h-90" in fc
+    assert "borderw=4:bordercolor=black" in fc
+    assert "text=realufo.org" not in fc                        # brand goes through a textfile (ids hold '_')
+
+def test_vertical_args_mixes_voiceover_under_source_audio():
+    a = vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", ["/tmp/t.txt"], 56, "/f.ttf", voice_file="/tmp/v.wav")
+    j = " ".join(a)
+    assert "-i /tmp/v.wav" in j
+    fc = a[a.index("-filter_complex") + 1]
+    assert "adelay=800|800[vo]" in fc and "[base][vo]amix=inputs=2:normalize=0:duration=first[aout]" in fc
+    assert "[0:a]aformat=channel_layouts=stereo[base]" in fc   # source audio kept under the narration
+    assert a[a.index("-map", a.index("[v]")) + 1] == "[aout]"
+
+def test_vertical_args_voice_without_source_audio_uses_silent_bed():
+    a = vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", ["/tmp/t.txt"], 56, "/f.ttf", audio=False, voice_file="/tmp/v.wav")
+    j = " ".join(a)
+    assert "anullsrc" not in j.split("-filter_complex")[0]    # bed lives in the filtergraph, not an input
+    assert "anullsrc=channel_layout=stereo:sample_rate=44100:d=30.00[base]" in j
+    assert a[a.index("-map", a.index("[v]")) + 1] == "[aout]"
+
+def test_spoken_id_spells_out_letters_for_tts():
+    assert spoken_id("AARO-DOD_109584445") == "A A R O D O D 109584445"
+    assert spoken_id("FBI-UAP-PR003") == "F B I U A P P R 003"
+
+def test_narration_text_is_id_title_and_one_liner():
+    row = {"id": "AARO-DOD_109584445", "title": "Middle East Object",
+           "one_liner": "At 24 s, even the video can't decide its own identity."}
+    assert narration_text(row) == ("A A R O D O D 109584445. Middle East Object. "
+                                   "At 24 s, even the video can't decide its own identity.")
+    assert narration_text({"id": "X1", "title": None, "one_liner": None}) == "X 1. X1."
 
 def test_fit_shrinks_long_ids_to_the_frame():
     assert fit(20, 46) == 46                                   # WARGOV-VID-111688723
@@ -88,10 +127,10 @@ def test_title_layout_wraps_and_sizes_to_fit_the_frame():
 def test_vertical_args_draw_one_centred_line_per_title_file():
     a = vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", ["/tmp/1.txt", "/tmp/2.txt"], 50, "/f.ttf")
     fc = a[a.index("-filter_complex") + 1]
-    assert "textfile=/tmp/1.txt:expansion=none:fontsize=50:y=340," in fc   # below the app tabs (safe zone)
-    assert "textfile=/tmp/2.txt:expansion=none:fontsize=50:y=405," in fc
-    assert "text=realufo.org:fontsize=44:y=1420" in fc                   # above the caption/buttons area
-    assert fc.count("x=(w-text_w)/2") == 3                    # both title lines + realufo.org
+    assert "textfile=/tmp/1.txt:expansion=none:fontsize=50:y=104," in fc   # top of the content box
+    assert "textfile=/tmp/2.txt:expansion=none:fontsize=50:y=169[fg]" in fc
+    assert "text=realufo.org" not in fc                                 # brand is a textfile now, on the box
+    assert fc.count("x=(w-text_w)/2") == 2                    # both title lines, centred on the box
 
 def test_bars_crops_only_centred_one_axis_black_bars():
     assert bars(1920, 1080, 616, 1080, 652, 0) == "crop=616:1080:652:0"    # AARO-956955: portrait in 16:9
@@ -109,7 +148,7 @@ def test_vertical_args_crops_bars_then_fills():
     a = vertical_args("u", 0.0, 30.0, "/tmp/o.mp4", ["/tmp/t.txt"], 56, "/f.ttf", crop="crop=616:1080:652:0", fill=True)
     fc = a[a.index("-filter_complex") + 1]
     assert fc.startswith("[0:v]crop=616:1080:652:0,split[a][b];")
-    assert "[b]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[fg]" in fc
+    assert "[b]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,drawtext=" in fc
 
 def test_slate_is_a_mostly_green_frame():
     green, grey = bytes([40, 170, 20]) * 100, bytes([120, 120, 120]) * 100
