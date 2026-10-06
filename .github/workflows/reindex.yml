@@ -11,9 +11,13 @@ on:
   workflow_dispatch:
     inputs:
       ids:
-        description: "Space-separated record ids to reindex (e.g. 'FBI-UAP-D002')"
+        description: "Space-separated record ids to reindex (e.g. 'FBI-UAP-D002'); ignored when detect_stale is true"
         required: true
         default: "FBI-UAP-D002"
+      detect_stale:
+        description: "Auto-detect every record whose record_text is stale vs its PaddleOCR text, and reindex those"
+        type: boolean
+        default: false
       dry_run:
         description: "Dry run (print only; no D1/R2/Vectorize writes)"
         type: boolean
@@ -35,9 +39,26 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           IDS: ${{ github.event.inputs.ids }}
-          LIVE: ${{ github.event.inputs.dry_run == 'false' }}
+          # dry_run arrives as boolean true from the UI default, or the string
+          # "true"/"false" via the API: live unless it is true in either form.
+          LIVE: ${{ github.event.inputs.dry_run != true && github.event.inputs.dry_run != 'true' }}
         run: |
           set -euo pipefail
+          case "${{ github.event.inputs.detect_stale }}" in
+            true|True|TRUE) DETECT=1;; *) DETECT=0;;
+          esac
+          if [ "$DETECT" = "1" ]; then
+            # Every live PDF with a record_ocr marker whose stored record_text
+            # differs from what the R2 OCR text selects today, plus markers
+            # that never got a record_text row at all.
+            DETECT_OUT="$(python -m ingest.find_stale_text)" || { echo "stale detection failed"; exit 1; }
+            eval "$DETECT_OUT"
+            IDS="$STALE_IDS $MISSING_IDS"
+            echo "auto-detected stale: $STALE_IDS"
+            echo "auto-detected missing: $MISSING_IDS"
+          fi
+          IDS="$(echo "$IDS" | tr -s ' ' | sed 's/^ *//;s/ *$//')"
+          if [ -z "$IDS" ]; then echo "nothing to reindex"; exit 0; fi
           python3 - "$IDS" <<'EOF'
           import sys
           ids = sys.argv[1].split()
