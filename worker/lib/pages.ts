@@ -520,6 +520,16 @@ const notificationsPage: Loader = async () => ({
   body: "<h1>Notifications</h1>",
 });
 
+const developersPage: Loader = async () => ({
+  meta: { title: "Developers", description: "RealUFO Public API v1: read-only, keyless JSON API for the declassified UAP archive — plus webhooks, SDKs and embed badges.", type: "website" },
+  body: "<h1>Developers</h1>",
+});
+
+const comparePage: Loader = async () => ({
+  meta: { title: "Compare", description: "Two RealUFO records side by side — spot redactions, renames and new summaries between releases.", type: "website", robots: "noindex" },
+  body: "<h1>Compare</h1>",
+});
+
 // A Short is the doc's video cut 9:16: same page for crawlers, canonical = the doc.
 const shortPage: Loader = async (env, g, url) => {
   const p = await docPage(env, g, url);
@@ -541,6 +551,8 @@ export const ROUTES: { pattern: URLPattern; load: Loader }[] = [
   { pattern: new URLPattern({ pathname: "/privacy" }), load: privacyPage },
   { pattern: new URLPattern({ pathname: "/terms" }), load: termsPage },
   { pattern: new URLPattern({ pathname: "/notifications" }), load: notificationsPage },
+  { pattern: new URLPattern({ pathname: "/developers" }), load: developersPage },
+  { pattern: new URLPattern({ pathname: "/compare" }), load: comparePage },
   { pattern: new URLPattern({ pathname: "/release/:slug" }), load: hubPage("release") },
   { pattern: new URLPattern({ pathname: "/topic/:slug" }), load: hubPage("topic") },
   { pattern: new URLPattern({ pathname: "/agency/:slug" }), load: hubPage("agency") },
