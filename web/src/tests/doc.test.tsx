@@ -485,7 +485,7 @@ describe("Doc", () => {
     const bar = document.querySelector('[data-quickreply]');
     expect(bar).toBeTruthy();
     expect(bar!.className).toContain("sticky");
-    const input = screen.getByRole("textbox", { name: /Add your read on this file/i });
+    const input = screen.getByRole("textbox", { name: /Add your read…/i });
     const send = screen.getByRole("button", { name: /Send reply/i });
     expect(send).toBeDisabled(); // empty draft can't send
     fireEvent.change(input, { target: { value: "  hello from the bar  " } });
@@ -498,7 +498,7 @@ describe("Doc", () => {
 
   it("quick-reply send stays disabled for whitespace-only drafts", () => {
     renderDoc();
-    const input = screen.getByRole("textbox", { name: /Add your read on this file/i });
+    const input = screen.getByRole("textbox", { name: /Add your read…/i });
     fireEvent.change(input, { target: { value: "   " } });
     expect(screen.getByRole("button", { name: /Send reply/i })).toBeDisabled();
     expect(mockQuickMutate).not.toHaveBeenCalled();

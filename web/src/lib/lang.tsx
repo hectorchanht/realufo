@@ -46,7 +46,7 @@ const STRINGS = {
   "doc.discussThread": ["Discuss this", "討論呢份文件"],
   "doc.startDiscussion": ["Start the discussion", "開個討論串"],
   "doc.voteNudge": ["You voted — say something?", "投咗票，講兩句？"],
-  "doc.quickReply": ["Add your read on this file…", "講下你點睇呢份文件…"],
+  "doc.quickReply": ["Add your read…", "講下你點睇…"],
   "doc.sendReply": ["Send reply", "發送回覆"],
   "doc.dismiss": ["Dismiss", "關閉"],
   "doc.posted": ["Posted", "已發佈"],
