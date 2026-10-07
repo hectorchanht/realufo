@@ -78,7 +78,7 @@ export default function CiteButton({ record }: { record: CiteRecord | undefined 
             aria-label="Cite this record"
           >
           <div
-            className="w-full max-w-[520px] rounded-2xl border border-line bg-bg p-4"
+            className="w-full max-w-[520px] min-w-0 rounded-2xl border border-line bg-bg p-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-between">
@@ -94,7 +94,9 @@ export default function CiteButton({ record }: { record: CiteRecord | undefined 
                 <X size={18} />
               </button>
             </div>
-            <div className="mb-3 flex gap-1" role="tablist" aria-label="Citation format">
+            {/* flex-wrap: on ~320px phones the four tabs (~277px min-content)
+                would otherwise force the card wider than the viewport */}
+            <div className="mb-3 flex flex-wrap gap-1" role="tablist" aria-label="Citation format">
               {FORMATS.map((f) => (
                 <button
                   key={f}
