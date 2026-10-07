@@ -80,6 +80,7 @@ vi.mock("../api/queries", () => ({
   useComments: () => ({ data: emptyComments, isLoading: false }),
   useVote: () => ({ mutate: vi.fn(), isPending: false }),
   useCastVerdict: () => ({ mutate: vi.fn(), isPending: false }),
+  useAddComment: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 function getAppBar(): HTMLElement {

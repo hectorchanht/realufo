@@ -104,6 +104,7 @@ vi.mock("../api/queries", () => ({
   useRecord: () => ({ data: undefined, isLoading: false }),
   useComments: () => ({ data: undefined, isLoading: false }),
   useRecords: () => ({ data: undefined, isLoading: false }),
+  useAddComment: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 describe("Feed", () => {
