@@ -63,9 +63,14 @@ export async function emailCaseOfWeek(env: Env, now: Date = new Date()): Promise
   await setState(env, WEEK_WM, week);
   await setState(env, IDX_KEY, String(idx + 1));
   const subject = `🛸 Case file: ${CASE_STORY_TEXT[slug].title}`;
+  let delivered = 0;
   for (const s of subs) {
     const unsub = `https://realufo.org/api/email/unsubscribe?token=${s.token}`;
-    await sendEmail(env, s.email, subject, renderCaseNewsletter(slug, unsub));
+    if (await sendEmail(env, s.email, subject, renderCaseNewsletter(slug, unsub))) delivered++;
   }
+  // Record the issue for the /newsletter archive (best-effort: never break the cron).
+  try {
+    await env.DB.prepare("INSERT OR IGNORE INTO newsletter_issues (week, slug, recipients) VALUES (?, ?, ?)").bind(week, slug, delivered).run();
+  } catch { /* table may not exist yet on first run */ }
   return { sent: true, slug, n: subs.length };
 }

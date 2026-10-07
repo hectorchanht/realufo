@@ -22,6 +22,7 @@ import { yearOf } from "./facets";
 import { trackerData } from "../routes/releases";
 import { agencyList, longDate } from "./releases";
 import { TOPIC_RULES, firstSentence } from "./topics";
+import { CASE_STORY_TEXT } from "./caseStoryText";
 
 // One SPA route's pre-render: <head> meta (url is filled in by serveWithMeta)
 // and the HTML that goes inside #root. A loader returns null when the entity
@@ -583,6 +584,25 @@ const shelfPage: Loader = async () => ({
   body: `<h1>Reading Shelf</h1><p>Twelve books the researchers behind these files actually read — each one picked because it illuminates something in the archive.</p><ul>${ALL_PICKS.map((p) => `<li><a href="${escAttr(affiliateUrl(p))}" rel="sponsored nofollow">${escAttr(p.title)}</a> — ${escAttr(p.creator)}</li>`).join("")}</ul>`,
 });
 
+// /newsletter is in sitemap.xml, so it must pre-render (not 404+noindex) — and the
+// crawler gets the real issue list, not just the SPA shell.
+const newsletterPage: Loader = async (env) => {
+  let rows: { week: string; slug: string; sent_at: string }[] = [];
+  try {
+    const r = await env.DB.prepare("SELECT week, slug, sent_at FROM newsletter_issues ORDER BY week DESC LIMIT 60").all<{ week: string; slug: string; sent_at: string }>();
+    rows = r.results ?? [];
+  } catch { /* table may not exist yet */ }
+  const items = rows.map((x) => {
+    const title = CASE_STORY_TEXT[x.slug]?.title ?? x.slug;
+    return `<li><a href="/case/${escAttr(x.slug)}">${escAttr(title)}</a> <span>— ${escAttr(x.sent_at.slice(0, 10))}</span></li>`;
+  }).join("");
+  const list = items || "<li>No issues sent yet — the first case file goes out this Friday.</li>";
+  return {
+    meta: { title: "Newsletter archive", description: "Every weekly declassified UFO case file from the RealUFO newsletter — one researched case per week, every claim cited.", type: "website" },
+    body: `<h1>Newsletter archive</h1><p>One declassified UFO case file every Friday. Past issues, newest first:</p><ul>${list}</ul><p><a href="/notifications">Get the next one by email →</a></p>`,
+  };
+};
+
 // A Short is the doc's video cut 9:16: same page for crawlers, canonical = the doc.
 const shortPage: Loader = async (env, g, url) => {
   const p = await docPage(env, g, url);
@@ -607,6 +627,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader; cacheKey?: (url: URL) 
   { pattern: new URLPattern({ pathname: "/developers" }), load: developersPage },
   { pattern: new URLPattern({ pathname: "/compare" }), load: comparePage },
   { pattern: new URLPattern({ pathname: "/shelf" }), load: shelfPage },
+  { pattern: new URLPattern({ pathname: "/newsletter" }), load: newsletterPage },
   { pattern: new URLPattern({ pathname: "/release/:slug" }), load: hubPage("release"), cacheKey: (url) => `page=${pageOf(url)}` },
   { pattern: new URLPattern({ pathname: "/topic/:slug" }), load: hubPage("topic"), cacheKey: (url) => `page=${pageOf(url)}` },
   { pattern: new URLPattern({ pathname: "/agency/:slug" }), load: hubPage("agency"), cacheKey: (url) => `page=${pageOf(url)}` },

@@ -30,6 +30,7 @@ const STRINGS = {
   "footer.decades": ["Decades", "年代"],
   "footer.resources": ["Resources", "資源"],
   "footer.shelf": ["Reading shelf", "閱讀書架"],
+  "footer.newsletter": ["Newsletter", "電子報"],
   "footer.request": ["Request a file 🛸", "許願池 🛸"],
   "footer.developers": ["Developers", "開發者"],
   "footer.privacy": ["Privacy", "私隱"],
@@ -41,6 +42,14 @@ const STRINGS = {
   "lang.label": ["繁", "EN"],
   "lang.name": ["Traditional Chinese", "English"],
   "cases.sub": ["Famous cases and the files behind them", "著名案件與背後的檔案"],
+  // doc screen discussion engagement
+  "doc.discussThread": ["Discuss this", "討論呢份文件"],
+  "doc.startDiscussion": ["Start the discussion", "開個討論串"],
+  "doc.voteNudge": ["You voted — say something?", "投咗票，講兩句？"],
+  "doc.quickReply": ["Add your read on this file…", "講下你點睇呢份文件…"],
+  "doc.sendReply": ["Send reply", "發送回覆"],
+  "doc.dismiss": ["Dismiss", "關閉"],
+  "doc.posted": ["Posted", "已發佈"],
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

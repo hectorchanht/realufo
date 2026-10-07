@@ -54,3 +54,13 @@ export async function emailUnsubscribe(req: Request, env: Env) {
   return new Response(shell("Unsubscribed", `<p style="font-size:14px">${row ? `No more alerts for <b>${esc(row.email)}</b>.` : "This link is invalid."}</p><p><a href="https://realufo.org" style="color:#4df0a6">← back to the archive</a></p>`),
     { headers: { "content-type": "text/html; charset=utf-8" } });
 }
+
+// GET /api/newsletter/issues → past weekly case-file issues (for the /newsletter archive).
+export async function newsletterIssues(req: Request, env: Env) {
+  let rows: { week: string; slug: string; sent_at: string }[] = [];
+  try {
+    const r = await env.DB.prepare("SELECT week, slug, sent_at FROM newsletter_issues ORDER BY week DESC LIMIT 60").all<{ week: string; slug: string; sent_at: string }>();
+    rows = r.results ?? [];
+  } catch { /* table may not exist yet */ }
+  return json({ issues: rows.map((x) => ({ week: x.week, slug: x.slug, date: x.sent_at.slice(0, 10) })) });
+}

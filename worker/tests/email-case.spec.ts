@@ -2,6 +2,7 @@ import { env } from "cloudflare:test";
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from "vitest";
 import { seedTestDB } from "./helpers";
 import { emailCaseOfWeek, isoWeekKey, pickCaseSlug, renderCaseNewsletter } from "../lib/emailCase";
+import { newsletterIssues } from "../routes/email";
 import { CASE_SLUGS } from "../lib/caseStories";
 
 let E: any;
@@ -95,7 +96,30 @@ describe("emailCaseOfWeek", () => {
     expect(r.sent).toBe(false);
     expect(hits).toHaveLength(0);
   });
+});
 
+describe("newsletterIssues", () => {
+  it("returns recorded issues newest-first", async () => {
+    await env.DB.prepare("INSERT INTO newsletter_issues (week, slug, sent_at, recipients) VALUES (?,?,?,?)").bind("2026-W40", "kaikoura", "2026-10-02 12:00:00", 2).run();
+    await env.DB.prepare("INSERT INTO newsletter_issues (week, slug, sent_at, recipients) VALUES (?,?,?,?)").bind("2026-W41", "roswell", "2026-10-09 12:00:00", 5).run();
+    const res = await newsletterIssues(new Request("https://realufo.org/api/newsletter/issues"), E);
+    const body = await res.json<{ issues: { week: string; slug: string; date: string }[] }>();
+    expect(body.issues).toEqual([
+      { week: "2026-W41", slug: "roswell", date: "2026-10-09" },
+      { week: "2026-W40", slug: "kaikoura", date: "2026-10-02" },
+    ]);
+  });
+
+  it("records the issue when the weekly email sends", async () => {
+    await addSub("a@example.com");
+    const r = await emailCaseOfWeek(E, FRIDAY);
+    expect(r.sent).toBe(true);
+    const row = await env.DB.prepare("SELECT week, slug, recipients FROM newsletter_issues WHERE week=?").bind("2026-W41").first<{ week: string; slug: string; recipients: number }>();
+    expect(row).toMatchObject({ week: "2026-W41", slug: CASE_SLUGS[0], recipients: 1 });
+  });
+});
+
+describe("renderCaseNewsletter", () => {
   it("renders every story without throwing", () => {
     for (const slug of CASE_SLUGS) {
       const html = renderCaseNewsletter(slug, "https://realufo.org/api/email/unsubscribe?token=x");
