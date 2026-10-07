@@ -1309,7 +1309,7 @@ export function Doc() {
             rows={1}
             placeholder={t("doc.quickReply")}
             aria-label={t("doc.quickReply")}
-            className="max-h-[120px] min-h-[44px] flex-1 resize-none overflow-y-auto rounded-xl border border-line2 bg-surface px-[14px] py-[11px] font-body text-[13.5px] leading-[1.45] text-ink outline-none placeholder:text-faint"
+            className="max-h-[120px] min-h-[44px] flex-1 resize-none overflow-y-auto rounded-xl border border-line2 bg-surface px-[14px] py-[11px] font-body text-[13.5px] leading-[1.45] text-ink outline-none placeholder:text-faint placeholder:whitespace-nowrap placeholder:overflow-hidden placeholder:text-ellipsis"
           />
           <button
             type="button"

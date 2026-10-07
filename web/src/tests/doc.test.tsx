@@ -504,6 +504,15 @@ describe("Doc", () => {
     expect(mockQuickMutate).not.toHaveBeenCalled();
   });
 
+  it("quick-reply placeholder stays on one line (no wrap on narrow screens)", () => {
+    renderDoc();
+    const input = screen.getByRole("textbox", { name: /Add your read…/i });
+    // ::placeholder gets white-space:nowrap + ellipsis so a long placeholder
+    // never wraps to two lines inside the 44px-tall bar.
+    expect(input.className).toContain("placeholder:whitespace-nowrap");
+    expect(input.className).toContain("placeholder:text-ellipsis");
+  });
+
   it("shows a simple not-found state when the record is missing (never indexes into undefined)", () => {
     useRecordMock.mockReturnValue({ data: undefined, isLoading: false });
     renderDoc();
