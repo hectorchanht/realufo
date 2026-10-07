@@ -32,7 +32,7 @@ export default function EmailAlerts() {
       <h2 id="email-alerts" className="mb-1 font-mono text-[11px] font-semibold tracking-[.4px] text-faint">
         EMAIL ALERTS
       </h2>
-      <p className="mb-2 text-[13px] text-dim">One email when new declassified files land. No spam, unsubscribe anytime.</p>
+      <p className="mb-2 text-[13px] text-dim">One declassified case file every week, plus an alert when new files land. No spam, unsubscribe anytime.</p>
       {state === "sent" ? (
         <p className="rounded-lg border border-line p-3 text-[13px] text-ink">{msg}</p>
       ) : (

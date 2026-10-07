@@ -15,6 +15,7 @@ import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
 import { LoadError } from "../components/LoadError";
 import { FollowBell } from "../components/FollowBell";
+import EmailAlerts from "../components/EmailAlerts";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { useLang } from "../lib/lang";
 import { promoteCommentOpts } from "../lib/promoteComment";
@@ -318,6 +319,9 @@ function Story({ v }: { v: StoryView }) {
         </ol>
       </section>
       <div className="font-mono text-[10px] text-faint">Last fact-checked: {v.updated}. Every claim cites its source.</div>
+      <div className="mt-6 border-t border-line pt-4">
+        <EmailAlerts />
+      </div>
     </article>
   );
 }

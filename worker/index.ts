@@ -38,6 +38,7 @@ import { pollTick } from "./lib/xpoll";
 import { pushNewFiles, pushDaily } from "./lib/push";
 import { pushConfig, subscribe, setPrefs, unsubscribe, pushMe, getFollow, toggleFollow, mergeFollows } from "./routes/push";
 import { emailNewFiles } from "./lib/email";
+import { emailCaseOfWeek } from "./lib/emailCase";
 import { emailSubscribe, emailConfirm, emailUnsubscribe } from "./routes/email";
 import { v1ListRecords, v1GetRecord, v1RecordText, v1Archives, v1Releases, v1Cases, v1GetCase, v1Shorts, v1Hubs, v1GetHub, v1Usage, v1OpenAPI, v1Preflight } from "./routes/v1";
 import { createWebhookRoute, getWebhookRoute, deleteWebhookRoute } from "./routes/webhooks";
@@ -120,6 +121,7 @@ async function runTick(env: Env) {
   await pushDaily(env).catch(logErr("pushDaily"));
   await webhookTick(env).catch(logErr("webhooks")); // public API v1 event fan-out
   await emailNewFiles(env).catch(logErr("emailFiles"));
+  await emailCaseOfWeek(env).catch(logErr("emailCase"));
   await hashBackfillTick(env).catch(logErr("hashbackfill")); // SHA-256 backfill: self-terminates at 0 remaining
 }
 
