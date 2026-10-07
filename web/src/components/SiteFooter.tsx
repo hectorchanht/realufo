@@ -78,11 +78,6 @@ export default function SiteFooter() {
         </ul>
       </div>
       <nav aria-label="Site" className="flex flex-wrap gap-x-8 gap-y-6 sm:gap-x-10">
-        {page?.links.length
-          ? col(page.title, page.links.map((l) => (
-              <li key={l.to}><Link className="text-signal hover:underline" to={l.to}>{l.text}</Link></li>
-            )))
-          : null}
         {col(t("footer.explore"), [
           ...[...tabs, ...more].map((i) => (
             <li key={i.path}><Link className={linkCls} to={i.path}>{i.label}</Link></li>
@@ -115,6 +110,12 @@ export default function SiteFooter() {
             <li key={href}><a className={linkCls} href={href}>{text === "Open dataset" ? t("footer.openDataset") : text}</a></li>
           )),
         ])}
+        {/* Page-specific links ("This file") go last: site navigation first. */}
+        {page?.links.length
+          ? col(page.title, page.links.map((l) => (
+              <li key={l.to}><Link className="text-signal hover:underline" to={l.to}>{l.text}</Link></li>
+            )))
+          : null}
       </nav>
       {/* Legal + contact + display prefs: the small print. */}
       <div className="mt-8 flex flex-wrap items-start justify-between gap-4 border-t border-line pt-4">
