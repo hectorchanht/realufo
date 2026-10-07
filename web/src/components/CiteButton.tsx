@@ -2,7 +2,15 @@
 // BibTeX / RIS, so researchers and journalists link back to the archive
 // (SEO + attribution). Icon-only (Quote), opens a small modal with format
 // tabs + copy button.
-import { useState } from "react";
+//
+// The modal is portaled to <body>: doc/case screens run a filling `fadeup`
+// enter animation, and a transform animation (even a finished fill) makes the
+// screen div a containing block for `position:fixed` descendants — the modal
+// then sizes to the whole article height and its card lands far below the
+// viewport, leaving only the dim visible. (Same trap MoreMenu's sheet avoids
+// by portaling past BottomTab's slide-away transform.)
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Quote, X, Copy, Check } from "lucide-react";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { buildCitations, type CiteRecord } from "../lib/cite";
@@ -14,6 +22,16 @@ export default function CiteButton({ record }: { record: CiteRecord | undefined 
   const [open, setOpen] = useState(false);
   const [fmt, setFmt] = useState<(typeof FORMATS)[number]>("APA");
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open ]);
+
   if (!record) return null;
   const cites = buildCitations(record, window.location.origin);
 
@@ -42,14 +60,15 @@ export default function CiteButton({ record }: { record: CiteRecord | undefined 
       >
         <Quote size={20} />
       </button>
-      {open && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4"
-          onClick={() => setOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Cite this record"
-        >
+      {open &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4"
+            onClick={() => setOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Cite this record"
+          >
           <div
             className="w-full max-w-[520px] rounded-2xl border border-line bg-bg p-4"
             onClick={(e) => e.stopPropagation()}
@@ -98,7 +117,8 @@ export default function CiteButton({ record }: { record: CiteRecord | undefined 
               Mirrored official values stay verbatim — cite, don't rewrite.
             </p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
