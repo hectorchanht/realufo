@@ -54,7 +54,7 @@ function ToolRow(p: {
   }
   const nextMag = LENS_MAGS[(LENS_MAGS.indexOf(p.mag) + 1) % LENS_MAGS.length];
   return (
-    <div className="mb-2.5 flex flex-wrap items-center gap-2">
+    <div data-scroll className="mb-2.5 flex items-center gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
       {/* look closer: lens + frame zoom */}
       <button type="button" aria-label="Lens" aria-pressed={p.lens} onClick={() => p.onLens(!p.lens)} title="Lens (L)" className={`${chip} ${p.lens ? on : off}`}>
         <Search {...ico} />
@@ -188,7 +188,7 @@ function ToolRow(p: {
 
 function SpeedRow({ video }: { video: VideoCtl }) {
   return (
-    <div className="mb-2.5 flex flex-wrap items-center gap-2">
+    <div data-scroll className="mb-2.5 flex items-center gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
       {SPEEDS.map((s) => (
         <button key={s} type="button" aria-label={`Speed ${s}×`} aria-pressed={video.rate === s} title="Speed ([ ])" onClick={() => video.setRate(s)} className={`${chip} ${video.rate === s ? on : off}`}>
           {s}×
@@ -228,7 +228,7 @@ export function SimpleBody(p: ConsoleProps) {
         help={p.help}
       />
       {p.video && <SpeedRow video={p.video} />}
-      <div className="mb-2.5 flex flex-wrap items-center gap-2">
+      <div data-scroll className="mb-2.5 flex items-center gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
         {EFFECTS.map((e) => {
           const active = e.active(p.adjust);
           return (

@@ -224,7 +224,7 @@ export function MediaConsole(props: ConsoleProps) {
   return (
     <div>
       {/* console header: style picker + presets, shared by all three bodies */}
-      <div className="mb-2.5 flex flex-wrap items-center gap-2">
+      <div data-scroll className="mb-2.5 flex items-center gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
         <SkinPicker skin={skin} onPick={onSkin} />
         <span className="mx-1 h-4 w-px bg-line2" aria-hidden="true" />
         <PresetRow
