@@ -53,7 +53,7 @@ IRONBOW = ramp_lut("0 0.15 0.55 0.85 0.98 1 1", "0 0 0.02 0.2 0.5 0.8 1", "0 0.4
 HERE = os.path.dirname(os.path.abspath(__file__))
 VOICE = os.environ.get("ELEVENLABS_VOICE", "nPczCjzI2devNBz1zQrb")  # "Brian": deep, calm narrator (legacy; tts now uses Kokoro)
 KOKORO_VENV = os.environ.get("KOKORO_VENV", os.path.expanduser("~/kokoro-venv"))
-KOKORO_VOICE = os.environ.get("KOKORO_VOICE", "af_heart")
+KOKORO_VOICE = os.environ.get("KOKORO_VOICE", "am_onyx")
 KOKORO_SPEED = float(os.environ.get("KOKORO_SPEED", "1.1"))
 
 def _dur(path):

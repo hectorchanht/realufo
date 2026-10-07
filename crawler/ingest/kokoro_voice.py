@@ -15,7 +15,7 @@ must never fail a clip render — the clip simply ships without voiceover.
 import hashlib
 import os
 
-VOICE = os.environ.get("KOKORO_VOICE", "af_heart")
+VOICE = os.environ.get("KOKORO_VOICE", "am_onyx")
 SPEED = float(os.environ.get("KOKORO_SPEED", "1.1"))
 SNAPSHOT = os.environ.get(
     "KOKORO_SNAPSHOT",
