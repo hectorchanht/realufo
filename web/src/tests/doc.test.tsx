@@ -56,6 +56,7 @@ vi.mock("../api/queries", () => ({
   useVote: () => ({ mutate: vi.fn(), isPending: false }),
   useCastVerdict: () => ({ mutate: vi.fn(), isPending: false }),
   useAddComment: (id: string) => useAddCommentMock(id),
+  useDiscussionStarter: () => ({ data: undefined, isLoading: false }),
   useHubs: () => ({ data: { hubs: [] } }),
 }));
 

@@ -50,6 +50,8 @@ const STRINGS = {
   "doc.sendReply": ["Send reply", "發送回覆"],
   "doc.dismiss": ["Dismiss", "關閉"],
   "doc.posted": ["Posted", "已發佈"],
+  "doc.starterLabel": ["AI discussion starter", "AI 開場問題"],
+  "doc.starterReply": ["Reply", "回覆"],
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

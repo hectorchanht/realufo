@@ -45,6 +45,7 @@ import type { ImageAdjust } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
 import { Articles } from "../components/Articles";
 import { VerdictBar } from "../components/VerdictBar";
+import { DiscussionStarter } from "../components/DiscussionStarter";
 import { FollowBell } from "../components/FollowBell";
 import CiteButton from "../components/CiteButton";
 import { TldrCard } from "../components/TldrCard";
@@ -1178,6 +1179,11 @@ export function Doc() {
           )}
         </div>
       </div>
+
+      {/* AI discussion starter — pinned prompt while the record is quiet
+          (fewer than STARTER_MAX_COMMENTS comments); hidden once discussion
+          is alive. The Reply affordance focuses the sticky quick-reply bar. */}
+      <DiscussionStarter recordId={id} commentCount={comments.length} onReply={focusQuickReply} />
 
       {/* "Add your read on this file…" — prototype lines 369-373 */}
       <button

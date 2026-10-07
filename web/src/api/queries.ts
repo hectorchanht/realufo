@@ -75,6 +75,7 @@ export const qk = {
   hub: (kind: string, slug: string) => ["hub", kind, slug] as const,
   releases: ["releases"] as const,
   comments: (recordId: string) => ["comments", recordId] as const,
+  starter: (recordId: string, lang: string) => ["starter", recordId, lang] as const,
   boardThreads: (boardId: string) => ["boardThreads", boardId] as const,
   threadSearch: (q: string) => ["threadSearch", q] as const,
   ask: (question: string) => ["ask", question] as const,
@@ -181,6 +182,22 @@ export function useComments(recordId: string) {
     queryKey: qk.comments(recordId),
     queryFn: () => api.get<CommentsResponse>(`/api/records/${recordId}/comments`),
     enabled: !!recordId,
+  });
+}
+
+// AI discussion starter for quiet doc pages. The caller gates `enabled` on the
+// comment count (hidden once discussion is alive); the server caches per
+// record+lang, so this fires at most once per quiet page view.
+export function useDiscussionStarter(recordId: string, lang: string, enabled: boolean) {
+  return useQuery({
+    queryKey: qk.starter(recordId, lang),
+    queryFn: () =>
+      api.get<{ question: string | null; cached?: boolean }>(
+        `/api/records/${recordId}/starter?lang=${encodeURIComponent(lang)}`,
+      ),
+    enabled: enabled && !!recordId,
+    staleTime: 1000 * 60 * 60,
+    retry: 1,
   });
 }
 
