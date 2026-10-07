@@ -69,4 +69,25 @@ describe("VerdictBar", () => {
     expect(mutate).toHaveBeenCalledTimes(2);
     now.mockRestore();
   });
+
+  it("fires onVoted when a fresh vote succeeds, not when re-tapping clears it", () => {
+    mutate.mockImplementation((_v, opts) => opts.onSuccess());
+    const onVoted = vi.fn();
+    const now = vi.spyOn(Date, "now").mockReturnValue(1000);
+    const { rerender } = render(<VerdictBar recordId="r1" state={{ mine: null, total: 0 }} onVoted={onVoted} />);
+    fireEvent.click(screen.getByRole("button", { name: "EXPLAINED" }));
+    expect(onVoted).toHaveBeenCalledTimes(1);
+    // re-tapping the selected option clears the vote — no nudge
+    now.mockReturnValue(2000);
+    rerender(
+      <VerdictBar
+        recordId="r1"
+        state={{ mine: "explained", total: 1, tally: { explained: 1, unexplained: 0, more_data: 0 } }}
+        onVoted={onVoted}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "EXPLAINED" }));
+    expect(onVoted).toHaveBeenCalledTimes(1);
+    now.mockRestore();
+  });
 });

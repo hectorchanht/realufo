@@ -23,7 +23,16 @@ const TEASE = (
 );
 const plural = (n: number) => `${n} ${n === 1 ? "verdict" : "verdicts"}`;
 
-export function VerdictBar({ recordId, state }: { recordId: string; state?: VerdictState }) {
+export function VerdictBar({
+  recordId,
+  state,
+  onVoted,
+}: {
+  recordId: string;
+  state?: VerdictState;
+  /** Fired after a fresh vote lands (not when a re-tap clears the vote). */
+  onVoted?: () => void;
+}) {
   const cast = useCastVerdict(recordId);
   const { toast } = useOverlay();
   const mine = state?.mine ?? null;
@@ -38,7 +47,15 @@ export function VerdictBar({ recordId, state }: { recordId: string; state?: Verd
     lastTap.current = { v, t };
     if (prev?.v === v && t - prev.t < DOUBLE_TAP_MS) return;
     navigator.vibrate?.(5);
-    cast.mutate(v, { onError: (e: Error) => toast(e.message) });
+    // Tapping the already-selected option clears the vote (useCastVerdict
+    // flips `mine` back to null) — only a genuinely new vote counts.
+    const fresh = mine !== v;
+    cast.mutate(v, {
+      onError: (e: Error) => toast(e.message),
+      onSuccess: () => {
+        if (fresh) onVoted?.();
+      },
+    });
   };
 
   return (

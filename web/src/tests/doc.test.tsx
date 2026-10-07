@@ -44,6 +44,8 @@ const useRecordMock = vi.fn();
 const useCommentsMock = vi.fn();
 const useRecordsMock = vi.fn();
 const useBootstrapMock = vi.fn();
+const mockQuickMutate = vi.fn();
+const useAddCommentMock = vi.fn();
 
 vi.mock("../api/queries", () => ({
   isVotedLocally: () => false,
@@ -53,6 +55,7 @@ vi.mock("../api/queries", () => ({
   useBootstrap: () => useBootstrapMock(),
   useVote: () => ({ mutate: vi.fn(), isPending: false }),
   useCastVerdict: () => ({ mutate: vi.fn(), isPending: false }),
+  useAddComment: (id: string) => useAddCommentMock(id),
   useHubs: () => ({ data: { hubs: [] } }),
 }));
 
@@ -210,6 +213,9 @@ beforeEach(() => {
   useCommentsMock.mockReset();
   useRecordsMock.mockReset();
   useBootstrapMock.mockReset();
+  mockQuickMutate.mockReset();
+  useAddCommentMock.mockReset();
+  useAddCommentMock.mockReturnValue({ mutate: mockQuickMutate, isPending: false });
   useRecordMock.mockReturnValue({ data: mockDetail, isLoading: false });
   useCommentsMock.mockReturnValue({ data: mockComments, isLoading: false });
   useRecordsMock.mockReturnValue({ data: emptyRecords, isLoading: false });
@@ -452,6 +458,49 @@ describe("Doc", () => {
     renderDoc();
     const link = screen.getByRole("link", { name: /Was this radar contact ever explained/ });
     expect(link).toHaveAttribute("href", "/thread/th1");
+  });
+
+  it('"Discuss this" in the discussion header deep-links to the record\'s board thread', () => {
+    renderDoc();
+    const cta = screen.getByRole("link", { name: /Discuss this/ });
+    expect(cta).toHaveAttribute("href", "/thread/th1");
+  });
+
+  it('"Start the discussion" opens the newThread composer when no thread exists yet', () => {
+    useRecordMock.mockReturnValue({ data: { ...mockDetail, promotedThreads: [] }, isLoading: false });
+    renderDoc();
+    expect(screen.queryByRole("link", { name: /Discuss this/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Start the discussion/i }));
+    expect(mockOpenComposer).toHaveBeenCalledTimes(1);
+    const [opts] = mockOpenComposer.mock.calls[0];
+    expect(opts.mode).toBe("newThread");
+    expect(opts.sourceRecordId).toBe("rec1");
+    expect(opts.boardId).toBe("gov"); // a PDF is a government document
+  });
+
+  it("sticky quick-reply bar posts a comment via useAddComment and clears on success", () => {
+    mockQuickMutate.mockImplementation((_vars, opts) => opts.onSuccess());
+    renderDoc();
+    const bar = document.querySelector('[data-quickreply]');
+    expect(bar).toBeTruthy();
+    expect(bar!.className).toContain("sticky");
+    const input = screen.getByRole("textbox", { name: /Add your read on this file/i });
+    const send = screen.getByRole("button", { name: /Send reply/i });
+    expect(send).toBeDisabled(); // empty draft can't send
+    fireEvent.change(input, { target: { value: "  hello from the bar  " } });
+    expect(send).not.toBeDisabled();
+    fireEvent.click(send);
+    expect(useAddCommentMock).toHaveBeenCalledWith("rec1");
+    expect(mockQuickMutate).toHaveBeenCalledWith({ body: "hello from the bar" }, expect.any(Object));
+    expect(input).toHaveValue("");
+  });
+
+  it("quick-reply send stays disabled for whitespace-only drafts", () => {
+    renderDoc();
+    const input = screen.getByRole("textbox", { name: /Add your read on this file/i });
+    fireEvent.change(input, { target: { value: "   " } });
+    expect(screen.getByRole("button", { name: /Send reply/i })).toBeDisabled();
+    expect(mockQuickMutate).not.toHaveBeenCalled();
   });
 
   it("shows a simple not-found state when the record is missing (never indexes into undefined)", () => {
