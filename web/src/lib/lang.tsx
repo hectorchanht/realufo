@@ -29,6 +29,7 @@ const STRINGS = {
   "footer.agencies": ["Agencies", "機構"],
   "footer.decades": ["Decades", "年代"],
   "footer.resources": ["Resources", "資源"],
+  "footer.shelf": ["Reading shelf", "閱讀書架"],
   "footer.request": ["Request a file 🛸", "許願池 🛸"],
   "footer.developers": ["Developers", "開發者"],
   "footer.privacy": ["Privacy", "私隱"],

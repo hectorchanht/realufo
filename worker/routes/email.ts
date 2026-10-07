@@ -40,7 +40,7 @@ export async function emailConfirm(req: Request, env: Env) {
     title = "Alerts on";
     msg = `Done — <b>${esc(row.email)}</b> will get an email whenever new files land in the archive.`;
   }
-  return new Response(shell(title, `<p style="font-size:14px">${msg}</p><p><a href="https://realufo.org" style="color:#4df0a6">← back to the archive</a></p>`),
+  return new Response(shell(title, `<p style="font-size:14px">${msg}</p><p>📚 <a href="https://realufo.org/shelf" style="color:#4df0a6">Browse the recommended reading shelf</a></p><p><a href="https://realufo.org" style="color:#4df0a6">← back to the archive</a></p>`),
     { headers: { "content-type": "text/html; charset=utf-8" } });
 }
 

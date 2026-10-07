@@ -123,6 +123,9 @@ const PICKS: AffiliatePick[] = [
   },
 ];
 
+// The full 12-book shelf, in D1 affiliate_picks sort order.
+export const ALL_PICKS: AffiliatePick[] = PICKS;
+
 // Topic hub pages: which picks show on each topic.
 const TOPIC_PICKS: Record<string, string[]> = {
   "project-blue-book": ["The UFO Experience", "The Hynek UFO Report", "Project Blue Book Declassified"],
