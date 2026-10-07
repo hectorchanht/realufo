@@ -40,13 +40,11 @@ export function validNotifyEmail(raw: unknown): string | null {
 /** Subscribe a post's author to reply notifications. Re-subscribing with the
  *  same email keeps the original token (INSERT OR IGNORE). */
 export async function subscribeReply(env: Env, postId: string, email: string): Promise<void> {
-  console.log("[e2e] subscribeReply", postId, email);
   try {
     await env.DB.prepare("INSERT OR IGNORE INTO reply_subs(id, post_id, email, token) VALUES(?,?,?,?)")
       .bind(newId(), postId, email, crypto.randomUUID().replace(/-/g, ""))
       .run();
-  } catch (e) {
-    console.log("[e2e] subscribeReply threw", String(e));
+  } catch {
     // reply_subs missing (migration 0047 not applied) — feature off.
   }
 }
@@ -59,10 +57,8 @@ export async function notifyQuoted(
   threadTitle: string,
   reply: { no: number; body: string; actor_id: string | null; notifyEmail: string | null },
 ): Promise<void> {
-  console.log("[e2e] notifyQuoted entry", JSON.stringify({ threadId, emailOn: emailOn(env), bodyHead: (reply.body||"").slice(0,30) }));
   if (!emailOn(env)) return;
   const nos = parseQuoteNos(reply.body);
-  console.log("[e2e] quote nos", JSON.stringify(nos));
   if (!nos.length) return;
   let quoted: QuotedPost[];
   try {
@@ -72,11 +68,9 @@ export async function notifyQuoted(
       .bind(threadId, ...nos)
       .all<QuotedPost>();
     quoted = r.results ?? [];
-  } catch (e) {
-    console.log("[e2e] quoted lookup threw", String(e));
+  } catch {
     return; // reply_subs missing — feature off.
   }
-  console.log("[e2e] quoted posts found", quoted.length);
   for (const q of quoted) {
     // Quoting your own post from the same browser: no notification.
     if (q.actor_id && reply.actor_id && q.actor_id === reply.actor_id) continue;
@@ -86,11 +80,9 @@ export async function notifyQuoted(
         .bind(q.id)
         .all<{ email: string; token: string }>();
       subs = r.results ?? [];
-    } catch (e) {
-      console.log("[e2e] subs lookup threw", String(e));
+    } catch {
       continue;
     }
-    console.log("[e2e] subs for post", q.no, subs.length);
     for (const s of subs) {
       // The replier's own subscription (same email they just posted with).
       if (reply.notifyEmail && s.email === reply.notifyEmail) continue;
@@ -121,7 +113,6 @@ async function sendReplyEmail(
   const url = `https://realufo.org/thread/${encodeURIComponent(threadId)}#p${replyNo}`;
   const unsub = `https://realufo.org/api/email/unsubscribe?token=${token}`;
   const snippet = replyBody.length > SNIPPET_LEN ? replyBody.slice(0, SNIPPET_LEN - 1).trimEnd() + "…" : replyBody;
-  console.log("[e2e] calling sendEmail to", to);
   const ok = await sendEmail(
     env,
     to,
@@ -135,7 +126,6 @@ async function sendReplyEmail(
         `<p style="font-size:11px;color:#6b7280"><a href="${unsub}" style="color:#6b7280">Stop reply notifications for this post</a></p>`,
     ),
   );
-  console.log("[e2e] sendEmail ok =", ok);
   if (ok) {
     try {
       await setState(env, `reply_notify:${new Date().toISOString().slice(0, 10)}`, String((await dailyCount(env)) + 1));
@@ -144,4 +134,3 @@ async function sendReplyEmail(
     }
   }
 }
-
