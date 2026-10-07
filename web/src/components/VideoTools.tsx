@@ -94,7 +94,7 @@ export function VideoTransport({
         onChange={(e) => ctl.seek(Number(e.target.value))}
         className="w-full accent-[var(--signal)]"
       />
-      {/* playback group: play/pause + timecode */}
+      {/* transport group: play/pause + timecode + frame stepper as one compact unit */}
       <span role="group" aria-label="Playback" className={tgroup}>
         <button type="button" aria-label={playing ? "Pause" : "Play"} title={`${playing ? "Pause" : "Play"} (Space)`} onClick={ctl.togglePlay} className={`${chip} ${off}`}>
           {playing ? <Pause {...ico} /> : <Play {...ico} />}
@@ -102,9 +102,7 @@ export function VideoTransport({
         <span className="px-1 font-mono text-[10px] tabular-nums text-dim">
           {formatMoment(t, true)} / {formatMoment(dur, true)}
         </span>
-      </span>
-      {/* frame stepper group: kept as one unit so it never breaks across lines */}
-      <span role="group" aria-label="Frame step" className={tgroup}>
+        <span aria-hidden="true" className="mx-0.5 h-5 w-px bg-line2" />
         <button type="button" aria-label="Previous frame" title="Previous frame (,)" onClick={() => ctl.stepFrame(-1)} className={`${chip} ${off}`}>
           <StepBack {...ico} />
         </button>
@@ -113,8 +111,8 @@ export function VideoTransport({
           <StepForward {...ico} />
         </button>
       </span>
-      {/* view group: mute, full screen, download + the Adjust panel button */}
-      <span role="group" aria-label="View options" className={tgroup}>
+      {/* tools group: view options + share actions — pushed right */}
+      <span role="group" aria-label="Tools" className={`${tgroup} ml-auto`}>
         <button type="button" aria-label={muted ? "Unmute" : "Mute"} aria-pressed={muted} title={`${muted ? "Unmute" : "Mute"} (M)`} onClick={ctl.toggleMute} className={`${chip} ${muted ? on : off}`}>
           {muted ? <VolumeX {...ico} /> : <Volume2 {...ico} />}
         </button>
@@ -126,9 +124,6 @@ export function VideoTransport({
         </button>
         {/* the Adjust panel's button lives here (after Download); its tools moved inside the panel */}
         <AdjustButton open={adjustOpen} onToggle={onToggleAdjust} changed={adjustChanged} />
-      </span>
-      {/* share group: copy link, capture frame, post frame — pushed right */}
-      <span role="group" aria-label="Share" className={`${tgroup} ml-auto`}>
         <button
           type="button"
           aria-label="Copy link to this moment"
