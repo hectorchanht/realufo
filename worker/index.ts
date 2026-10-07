@@ -92,7 +92,7 @@ on("GET", "/api/email/confirm", emailConfirm);
 on("GET", "/api/email/unsubscribe", emailUnsubscribe);
 on("GET", "/api/newsletter/issues", newsletterIssues);
 on("GET", "/api/podcast/episodes", podcastEpisodes);
-on("GET", "/audio/podcast/:slug", podcastAudio);
+on("GET", "/api/podcast/audio/:slug", podcastAudio);
 on("GET", "/api/follows", getFollow);
 on("POST", "/api/follows", toggleFollow);
 on("POST", "/api/follows/merge", mergeFollows);

@@ -75,14 +75,14 @@ async function fetchFeedEpisodes(): Promise<PodcastEpisode[]> {
 }
 
 // Episodes as served to the site: audio comes same-origin from R2
-// (/audio/podcast/:slug) so playback never depends on a third-party
+// (/api/podcast/audio/:slug) so playback never depends on a third-party
 // signed-URL redirect chain. Episodes without a known case slug keep
 // the feed's enclosure URL.
 export async function fetchPodcastEpisodes(): Promise<PodcastEpisode[]> {
   const eps = await fetchFeedEpisodes();
   return eps.map((e) => ({
     ...e,
-    audioUrl: e.caseSlug ? `/audio/podcast/${e.caseSlug}` : e.audioUrl,
+    audioUrl: e.caseSlug ? `/api/podcast/audio/${e.caseSlug}` : e.audioUrl,
   }));
 }
 
