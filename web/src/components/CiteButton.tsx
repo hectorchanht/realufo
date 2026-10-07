@@ -26,10 +26,18 @@ export default function CiteButton({ record }: { record: CiteRecord | undefined 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      // Capture phase + stopPropagation: Doc's own window keydown handler
+      // treats Esc as "leave the file" (goBack). Our listener is registered
+      // after Doc's (it mounts when the modal opens), so in the bubble phase
+      // Doc's handler would run first and navigate away even as we close the
+      // modal. Capturing on window lets us claim the key first.
+      e.stopPropagation();
+      setOpen(false);
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [open ]);
 
   if (!record) return null;
