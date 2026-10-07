@@ -14,7 +14,7 @@ import LangToggle from "./LangToggle";
 import { Saucer } from "./Saucer";
 import { DATASET_URL, SOCIAL_PROFILES } from "../../../worker/lib/profiles";
 
-const GROUPS: [HubKind, "footer.topics" | "footer.releases" | "footer.agencies" | "footer.decades"][] = [["topic", "footer.topics"], ["release", "footer.releases"], ["agency", "footer.agencies"], ["decade", "footer.decades"]];
+const GROUPS: [HubKind, "footer.topics" | "footer.releases" | "footer.agencies" | "footer.decades"][] = [["release", "footer.releases"], ["agency", "footer.agencies"], ["decade", "footer.decades"], ["topic", "footer.topics"]];
 // Plain <a>: served by the Worker, not SPA routes.
 const FILES = [
   ["llms.txt", "/llms.txt"],
@@ -84,8 +84,6 @@ export default function SiteFooter() {
           )),
           // Record comparison tool (not a nav tab, but a site feature).
           <li key="compare"><Link className={linkCls} to="/compare">{t("footer.compare")}</Link></li>,
-          // Wishing pool: anonymous content-request form (Google Forms).
-          <li key="wishing-pool"><a className="text-signal hover:underline" href="https://docs.google.com/forms/d/e/1FAIpQLSesgIQPmSYoGsR4n2nkKMp18enYripao1yezoO62kHtKPIqJw/viewform" target="_blank" rel="noopener">{t("footer.request")}</a></li>,
         ])}
         {GROUPS.map(([kind, key]) => {
           const group = hubs.filter((h) => h.kind === kind);
@@ -125,9 +123,13 @@ export default function SiteFooter() {
           <li><Link className={linkCls} to="/privacy">{t("footer.privacy")}</Link></li>
           <li><Link className={linkCls} to="/terms">{t("footer.terms")}</Link></li>
         </ul>
-        <div className="flex items-center gap-2" role="group" aria-label="Display preferences">
-          <LangToggle />
-          <div aria-label="Appearance" role="group"><AppearanceSwitcher /></div>
+        <div className="flex flex-col items-end gap-2" role="group" aria-label="Display preferences">
+          <div className="flex items-center gap-2">
+            <LangToggle />
+            <div aria-label="Appearance" role="group"><AppearanceSwitcher /></div>
+          </div>
+          {/* Wishing pool: anonymous content-request form (Google Forms), under the scanlines toggle. */}
+          <a className="text-signal hover:underline" href="https://docs.google.com/forms/d/e/1FAIpQLSesgIQPmSYoGsR4n2nkKMp18enYripao1yezoO62kHtKPIqJw/viewform" target="_blank" rel="noopener">{t("footer.request")}</a>
         </div>
       </div>
     </footer>
