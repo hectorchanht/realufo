@@ -171,6 +171,10 @@ export async function listRecords(req: Request, env: Env) {
     join = "LEFT JOIN json_each(?) y ON y.key = r.incident_date";
     joinBind.push(JSON.stringify(Object.fromEntries(rows.results.map((r) => [r.d, Number(yearOf(r.d))]).filter(([, y]) => y))));
     order = `y.value IS NULL, y.value ${sort === "old" ? "ASC" : "DESC"}, r.created_at DESC`;
+  } else if (sort === "discussed") {
+    // Most discussed: record-comment count descending (same metric as the
+    // commentN shown on cards), then newest added. Zero-comment records last.
+    order = "(SELECT count(*) FROM comments c WHERE c.record_id=r.id) DESC, r.created_at DESC";
   }
   const limit = Math.max(1, Math.min(100, Number(u.searchParams.get("limit")) || 40));
   const offset = Math.max(0, Number(u.searchParams.get("offset")) || 0);

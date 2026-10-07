@@ -6,6 +6,7 @@ import { autoFollow, later } from "../lib/follows";
 import { pushActivity } from "../lib/push";
 import { allowWrite } from "../lib/ratelimit";
 import { readBody, putImage, uploadUrl } from "../lib/upload";
+import { subscribeReply, notifyQuoted, validNotifyEmail } from "../lib/replyNotify";
 
 export async function createPost(req: Request, env: Env, p: Record<string, string>, ctx?: ExecutionContext) {
   const { b, image } = await readBody(req);
@@ -21,6 +22,9 @@ export async function createPost(req: Request, env: Env, p: Record<string, strin
   const stance = stanceOK(b.stance);
   const handle = String(b.handle ?? "").trim() || null;
   const src = b.source_record_id || null;
+  // Opt-in reply notifications: the poster gave an email in the composer.
+  // Anonymous posters (no email) get no notification — nothing to send to.
+  const notifyEmail = validNotifyEmail(b.notify_email);
   let imageKey: string | null = null;
   if (image) {
     const r = await putImage(env, image);
@@ -37,6 +41,11 @@ export async function createPost(req: Request, env: Env, p: Record<string, strin
   ]);
   await autoFollow(env, actor, "thread", p.id);
   await later(ctx, pushActivity(env, "thread", p.id, actor, body));
+  if (notifyEmail) await subscribeReply(env, id, notifyEmail);
+  // Direct quote-replies (>>No) to subscribed posts trigger one email each.
+  // waitUntil: failures are swallowed inside notifyQuoted.
+  const thread = await env.DB.prepare("SELECT title FROM threads WHERE id=?").bind(p.id).first<{ title: string }>();
+  await later(ctx, notifyQuoted(env, p.id, thread?.title ?? "a thread", { no, body, actor_id: actor, notifyEmail }));
   return json(
     {
       post: {

@@ -52,6 +52,18 @@ const STRINGS = {
   "doc.posted": ["Posted", "已發佈"],
   "doc.starterLabel": ["AI discussion starter", "AI 開場問題"],
   "doc.starterReply": ["Reply", "回覆"],
+  // thread composer reply notifications
+  "thread.notifyEmailPh": ["Email for reply alerts (optional)", "收回覆通知用電郵（選填）"],
+  "thread.notifyEmailHint": ["We'll email you when someone quotes your post. One-click unsubscribe, no spam.", "有人引用回覆你嗰陣會 email 通知你，一㩒即退訂，唔會 spam。"],
+  // archive sort options
+  "archive.sortLabel": ["Sort", "排序"],
+  "archive.sortFeatured": ["Featured first", "精選優先"],
+  "archive.sortNew": ["Newest added", "最新加入"],
+  "archive.sortOld": ["Oldest incident", "最早事件"],
+  "archive.sortRecent": ["Newest incident", "最新事件"],
+  "archive.sortRelease": ["Newest release", "最新解密"],
+  "archive.sortAz": ["Title A–Z", "標題 A–Z"],
+  "archive.sortDiscussed": ["Most discussed", "最多討論"],
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

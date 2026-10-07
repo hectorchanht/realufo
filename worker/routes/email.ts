@@ -45,13 +45,30 @@ export async function emailConfirm(req: Request, env: Env) {
 }
 
 // GET /api/email/unsubscribe?token= → one-click unsubscribe.
+// Handles both newsletter subscriptions (email_subscribers) and
+// reply-notification subscriptions (reply_subs, migration 0047).
 export async function emailUnsubscribe(req: Request, env: Env) {
   const token = new URL(req.url).searchParams.get("token") ?? "";
-  const row = await env.DB.prepare("SELECT email FROM email_subscribers WHERE token=?").bind(token).first<{ email: string }>();
-  if (row) {
-    await env.DB.prepare("UPDATE email_subscribers SET status='unsubscribed', unsubscribed_at=datetime('now') WHERE token=?").bind(token).run();
+  let msg = "This link is invalid.";
+  // Reply-notification opt-out: one row per (post, email); deleting it stops
+  // reply emails for that post only.
+  try {
+    const sub = await env.DB.prepare("SELECT email FROM reply_subs WHERE token=?").bind(token).first<{ email: string }>();
+    if (sub) {
+      await env.DB.prepare("DELETE FROM reply_subs WHERE token=?").bind(token).run();
+      msg = `No more reply notifications for <b>${esc(sub.email)}</b> on that post.`;
+    }
+  } catch {
+    // reply_subs missing (migration 0047 not applied) — fall through.
   }
-  return new Response(shell("Unsubscribed", `<p style="font-size:14px">${row ? `No more alerts for <b>${esc(row.email)}</b>.` : "This link is invalid."}</p><p><a href="https://realufo.org" style="color:#4df0a6">← back to the archive</a></p>`),
+  if (msg === "This link is invalid.") {
+    const row = await env.DB.prepare("SELECT email FROM email_subscribers WHERE token=?").bind(token).first<{ email: string }>();
+    if (row) {
+      await env.DB.prepare("UPDATE email_subscribers SET status='unsubscribed', unsubscribed_at=datetime('now') WHERE token=?").bind(token).run();
+      msg = `No more alerts for <b>${esc(row.email)}</b>.`;
+    }
+  }
+  return new Response(shell("Unsubscribed", `<p style="font-size:14px">${msg}</p><p><a href="https://realufo.org" style="color:#4df0a6">← back to the archive</a></p>`),
     { headers: { "content-type": "text/html; charset=utf-8" } });
 }
 

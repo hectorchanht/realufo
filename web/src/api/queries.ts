@@ -391,6 +391,8 @@ export function useCreateThread() {
       image?: File;
       /** Name of an existing upload to reuse (promoted comment's image). */
       image_ref?: string;
+      /** Opt-in reply-notification email for the OP. */
+      notify_email?: string;
     }) => api.post<CreateThreadResponse>("/api/threads", withImage(vars)),
     onSettled: (data, _err, vars) => {
       void queryClient.invalidateQueries({ queryKey: qk.feed });
@@ -411,6 +413,8 @@ export function useReply(threadId: string) {
       handle?: string;
       source_record_id?: string;
       image?: File;
+      /** Opt-in reply-notification email (thread posts only). */
+      notify_email?: string;
     }) => api.post<CreatePostResponse>(`/api/threads/${threadId}/posts`, withImage(vars)),
     onSuccess: (data) => {
       queryClient.setQueryData<ThreadDetail>(qk.thread(threadId), (old) =>

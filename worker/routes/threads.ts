@@ -3,6 +3,7 @@ import { json, error } from "../lib/json";
 import { relAgo, stanceOK, thumbSql, THREAD_THUMB_COLS } from "../lib/db";
 import { newId, newNo, postActor } from "../lib/anon";
 import { autoFollow } from "../lib/follows";
+import { subscribeReply, validNotifyEmail } from "../lib/replyNotify";
 import { allowWrite } from "../lib/ratelimit";
 import { readBody, putImage, uploadUrl, UPLOAD_NAME_RE, withThreadThumb } from "../lib/upload";
 
@@ -98,6 +99,9 @@ export async function createThread(req: Request, env: Env) {
     ).bind(opId, no, id, op_body, handle, stance, src, imageKey, imageKey && "upload", created_at, actor),
   ]);
   await autoFollow(env, actor, "thread", id);
+  // OP opted into reply notifications with an email in the composer.
+  const opNotifyEmail = validNotifyEmail(b.notify_email);
+  if (opNotifyEmail) await subscribeReply(env, opId, opNotifyEmail);
   return json(
     {
       thread: {

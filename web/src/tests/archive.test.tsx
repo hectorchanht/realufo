@@ -308,6 +308,16 @@ describe("Archive", () => {
     expect(screen.queryByRole("list", { name: "Active filters" })).not.toBeInTheDocument();
   });
 
+  it("offers a Most discussed sort that flows to the records query", async () => {
+    renderAppAt("/archive");
+    await screen.findByText(/CIA-UAP-017/);
+    const last = () => useRecordsMock.mock.lastCall![0];
+    const sort = screen.getByLabelText("Sort");
+    expect(within(sort as HTMLElement).getByRole("option", { name: "Most discussed" })).toHaveValue("discussed");
+    fireEvent.change(sort, { target: { value: "discussed" } });
+    await waitFor(() => expect(last()).toEqual(expect.objectContaining({ sort: "discussed" })));
+  });
+
   it("picking a non-war.gov archive drops the release filter and hides release chips", async () => {
     renderAppAt("/archive?release=1");
     await screen.findByText(/CIA-UAP-017/);

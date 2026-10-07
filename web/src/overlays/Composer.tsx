@@ -15,13 +15,14 @@
 // small grab-bar element is added here purely to host that pointer handling
 // without stealing pointer capture from the header's close button or any
 // input inside the sheet.
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, BellRing } from "lucide-react";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAddComment, useAddCaseComment, useCreateThread, useReply } from "../api/queries";
 import { ApiError, QueuedError } from "../api/client";
 import type { Stance } from "../api/types";
 import { useOverlay, type ComposerMode } from "./OverlayProvider";
+import { useLang } from "../lib/lang";
 
 type StanceValue = NonNullable<Stance>;
 
@@ -46,6 +47,7 @@ const SHEET_TRANSITION = "transform .34s cubic-bezier(.32,.72,0,1)"; // prototyp
 export function Composer() {
   const { composer, closeComposer: closeSheet, toast, drafts } = useOverlay();
   const navigate = useNavigate();
+  const { t } = useLang();
 
   // Always called (never conditionally) so hook order stays stable across
   // renders — the empty-string fallback id is inert until .mutate() fires,
@@ -64,6 +66,10 @@ export function Composer() {
   const [body, setBody] = useState(saved?.body ?? composer?.presetBody ?? "");
   const [stance, setStance] = useState<StanceValue>("neutral");
   const [handle, setHandle] = useState("");
+  // Reply-notification email (thread posts only — record/case comments are
+  // flat and can't be replied to). Optional; empty = no notifications.
+  const [notifyEmail, setNotifyEmail] = useState("");
+  const showNotifyEmail = composer?.mode === "reply" || composer?.mode === "newThread";
   const [threadTitle, setThreadTitle] = useState(saved?.title ?? composer?.presetTitle ?? "");
   useEffect(() => {
     if (!draftKey) return;
@@ -177,7 +183,7 @@ export function Composer() {
 
     if (composer!.mode === "reply") {
       reply.mutate(
-        { body: trimmedBody, stance, handle: trimmedHandle, image: img ?? undefined },
+        { body: trimmedBody, stance, handle: trimmedHandle, image: img ?? undefined, notify_email: notifyEmail.trim() || undefined },
         {
           onSuccess: () => {
             toast("Posted");
@@ -203,6 +209,7 @@ export function Composer() {
         case_slug: composer!.caseSlug,
         image: img ?? undefined,
         image_ref: !img && imgUrl ? imgUrl.split("/").pop() : undefined,
+        notify_email: notifyEmail.trim() || undefined,
       },
       {
         onSuccess: async (data) => {
@@ -355,6 +362,24 @@ export function Composer() {
             </label>
           )}
         </div>
+
+        {showNotifyEmail && (
+          <div className="mt-[11px]">
+            <div className="flex items-center gap-[10px]">
+              <BellRing size={15} strokeWidth={1.75} aria-hidden="true" className="flex-none text-dim" />
+              <input
+                value={notifyEmail}
+                onChange={(e) => setNotifyEmail(e.target.value)}
+                placeholder={t("thread.notifyEmailPh")}
+                type="email"
+                autoComplete="email"
+                aria-label={t("thread.notifyEmailPh")}
+                className="min-w-0 flex-1 rounded-[10px] border border-line2 bg-surface px-[11px] py-[9px] font-mono text-xs text-ink outline-none"
+              />
+            </div>
+            <p className="mt-[6px] font-mono text-[9.5px] leading-[1.5] text-faint">{t("thread.notifyEmailHint")}</p>
+          </div>
+        )}
 
         <div className="mt-[14px] flex items-center gap-3">
           <span className="flex-1 font-mono text-[9.5px] text-faint">◉ Posting as {asLabel}</span>

@@ -50,6 +50,7 @@ import { DocCard } from "../components/DocCard";
 import { LoadError } from "../components/LoadError";
 import { ShortsRow, shortHref } from "../components/ShortsRow";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { useLang, type StringKey } from "../lib/lang";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
 import { Skeleton } from "../components/Skeleton";
 import { useMediaQuery } from "../lib/useMediaQuery";
@@ -261,12 +262,13 @@ const HAS_FLAGS = [
   ["moments", "Video moments"],
   ["featured", "Featured"],
 ] as const;
-const SORTS = [
-  { value: "new", label: "Newest added" },
-  { value: "old", label: "Oldest incident" },
-  { value: "recent", label: "Newest incident" },
-  { value: "release", label: "Newest release" },
-  { value: "az", label: "Title A–Z" },
+const SORTS: { value: string; key: StringKey }[] = [
+  { value: "new", key: "archive.sortNew" },
+  { value: "old", key: "archive.sortOld" },
+  { value: "recent", key: "archive.sortRecent" },
+  { value: "release", key: "archive.sortRelease" },
+  { value: "az", key: "archive.sortAz" },
+  { value: "discussed", key: "archive.sortDiscussed" },
 ];
 
 // "Surprise me" dice: one random live record via sort=random (never cached
@@ -303,6 +305,7 @@ function RandomButton() {
 
 export function Archive() {
   const { data: boot } = useBootstrap();
+  const { t } = useLang();
   // mouse + keyboard: Doc flips with ← →; "swipe" is touch wording
   const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
   const totalRecords = boot?.stats?.records;
@@ -542,7 +545,7 @@ export function Archive() {
             options={(facets?.locations ?? []).map((l) => ({ value: l.name, label: `${l.name} (${l.count})` }))}
             onChange={(v) => setParam("location", v)}
           />
-          <FacetSelect label="Sort" all="Featured first" value={filter.sort ?? ""} options={SORTS} onChange={(v) => setParam("sort", v)} />
+          <FacetSelect label={t("archive.sortLabel")} all={t("archive.sortFeatured")} value={filter.sort ?? ""} options={SORTS.map((o) => ({ value: o.value, label: t(o.key) }))} onChange={(v) => setParam("sort", v)} />
         </div>
 
         {/* type chips */}

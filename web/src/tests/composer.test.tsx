@@ -142,6 +142,36 @@ describe("Composer", () => {
     expect(mockReplyMutate.mock.calls[0][0]).toMatchObject({ body: "see pic", image: file });
   });
 
+  it("reply mode shows the reply-alert email field and sends it with the reply", () => {
+    renderComposer({ mode: "reply", threadId: "t1" });
+    expect(screen.getByPlaceholderText(/Email for reply alerts/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "quoting you" } });
+    fireEvent.change(screen.getByPlaceholderText(/Email for reply alerts/i), { target: { value: " me@Example.com " } });
+    fireEvent.click(screen.getByRole("button", { name: /post/i }));
+    // client trims; the worker lowercases + validates
+    expect(mockReplyMutate.mock.calls[0][0]).toMatchObject({ body: "quoting you", notify_email: "me@Example.com" });
+  });
+
+  it("reply mode without an email sends no notify_email", () => {
+    renderComposer({ mode: "reply", threadId: "t1" });
+    fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "no email" } });
+    fireEvent.click(screen.getByRole("button", { name: /post/i }));
+    expect(mockReplyMutate.mock.calls[0][0].notify_email).toBeUndefined();
+  });
+
+  it("comment mode (flat record comments) shows no email field", () => {
+    renderComposer({ mode: "comment", recordId: "rec1" });
+    expect(screen.queryByPlaceholderText(/Email for reply alerts/i)).not.toBeInTheDocument();
+  });
+
+  it("newThread mode sends notify_email for the OP", () => {
+    renderComposer({ mode: "newThread", boardId: "uap" });
+    fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "op body" } });
+    fireEvent.change(screen.getByPlaceholderText(/Email for reply alerts/i), { target: { value: "op@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: /post/i }));
+    expect(mockCreateThreadMutate.mock.calls[0][0]).toMatchObject({ notify_email: "op@example.com" });
+  });
+
   it("previews the picked image; ✕ removes it, frees the blob URL, and posts without it", () => {
     const create = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:preview-1");
     const revoke = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
