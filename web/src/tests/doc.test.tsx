@@ -581,6 +581,32 @@ describe("Doc", () => {
     pause.mockRestore();
   });
 
+  it("video: the Adjust button sits right after Download, and the tool buttons hide inside its panel", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "video" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/clip.mp4", mime: "video/mp4", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    const pause = vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+    renderDoc();
+    // tools are hidden until Adjust opens
+    expect(screen.queryByRole("button", { name: "Lens" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Zoom in" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Ruler" })).toBeNull();
+    // one Adjust button, immediately after Download in the transport row
+    const adjust = screen.getByRole("button", { name: /adjust/i });
+    const download = screen.getByRole("button", { name: /download video/i });
+    expect(adjust.compareDocumentPosition(download) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    expect(adjust.previousElementSibling).toBe(download);
+    fireEvent.click(adjust);
+    expect(screen.getByRole("button", { name: "Lens" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Zoom in" })).toBeInTheDocument();
+    pause.mockRestore();
+  });
+
   it("with a mouse the lens is on by default and click-through (tap-to-open still works)", () => {
     vi.stubGlobal("matchMedia", (q: string) => ({
       matches: q.includes("pointer: fine") || q.includes("900px"),
@@ -603,6 +629,7 @@ describe("Doc", () => {
     expect(screen.getByRole("button", { name: /open IMG/i })).toBeInTheDocument();
 
     // help: hidden until hover/click; click pins it, Esc closes. With a mouse each row shows its keys.
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i })); // tools hide inside the Adjust panel
     const keysBtn = screen.getByRole("button", { name: "How to use the media tools" });
     const tip = document.getElementById(keysBtn.getAttribute("aria-controls")!)!;
     const row = (name: string) => [...tip.querySelectorAll("li")].find((li) => li.querySelector("b")?.textContent === name);
@@ -630,6 +657,7 @@ describe("Doc", () => {
     const img = document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
     Object.defineProperty(img, "naturalWidth", { value: 400 });
     Object.defineProperty(img, "naturalHeight", { value: 300 });
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i })); // tools hide inside the Adjust panel
     fireEvent.click(screen.getByRole("button", { name: /lens/i }));
     const layer = document.querySelector("[data-zoom-lens]") as HTMLElement;
     layer.getBoundingClientRect = () => ({ left: 100, top: 50, width: 400, height: 300, right: 500, bottom: 350, x: 100, y: 50, toJSON() {} });
@@ -776,6 +804,7 @@ describe("Doc", () => {
     Object.defineProperty(img, "naturalHeight", { value: 600 });
     fireEvent.load(img);
     expect(img.style.transform).toContain("rotate(90deg)");
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i })); // tools hide inside the Adjust panel
     expect(screen.getByRole("button", { name: "Reset zoom" })).toHaveTextContent("2.0×");
     fireEvent.click(screen.getByRole("button", { name: "Copy link to this view" }));
     const url = new URL(writeText.mock.calls[0][0]);
@@ -1001,6 +1030,7 @@ describe("Doc", () => {
     });
 
     renderDoc("/doc/rec1?inv=1");
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i })); // tools hide inside the Adjust panel
     fireEvent.click(screen.getByRole("button", { name: "Save view" }));
     await act(() => new Promise((r) => setTimeout(r, 0)));
     expect(loaded).toEqual(["/api/file/rec1"]);
@@ -1044,6 +1074,7 @@ describe("Doc", () => {
     Object.defineProperty(img, "naturalHeight", { value: 600 });
     fireEvent.load(img);
     expect(document.querySelector("[data-minimap]")).toBeNull(); // 1×: nothing to find your way around
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i })); // tools hide inside the Adjust panel
     fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
     fireEvent.click(screen.getByRole("button", { name: "Zoom in" })); // 2.25×, centred
     const map = document.querySelector("[data-minimap]") as HTMLElement;
@@ -1097,6 +1128,7 @@ describe("Doc", () => {
     Object.defineProperty(img, "naturalWidth", { value: 800 });
     Object.defineProperty(img, "naturalHeight", { value: 600 });
     fireEvent.load(img);
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i })); // tools hide inside the Adjust panel
     fireEvent.click(screen.getByRole("button", { name: "Ruler" }));
     const layer = document.querySelector("[data-ruler]") as HTMLElement;
     layer.getBoundingClientRect = () => rect;
@@ -1126,6 +1158,7 @@ describe("Doc", () => {
     const video = () => document.querySelector('[data-screen="doc"] video') as HTMLVideoElement;
     expect(video().getAttribute("src")).toBe("https://cdn.example/clip.mp4");
     expect(document.querySelector("canvas[data-motion]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i })); // tools hide inside the Adjust panel
     fireEvent.click(screen.getByRole("button", { name: "Motion" }));
     expect(video().getAttribute("src")).toBe("/api/file/rec1");
     expect(document.querySelector("canvas[data-motion]")).toBeInTheDocument();
@@ -1145,6 +1178,7 @@ describe("Doc", () => {
       isLoading: false,
     });
     const { unmount } = renderDoc();
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i })); // tools hide inside the Adjust panel
     const help = () => document.getElementById(screen.getByRole("button", { name: "How to use the media tools" }).getAttribute("aria-controls")!)!;
     const groups = () => [...help().querySelectorAll("h3")].map((h) => h.textContent);
     const names = () => [...help().querySelectorAll("li b")].map((b) => b.textContent);
@@ -1260,6 +1294,7 @@ describe("Doc", () => {
       renderDoc("/doc/mid?br=999&pal=evil&mag=7&lens=1");
       const img = document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
       expect(img.style.filter).toBe("brightness(2)");
+      fireEvent.click(screen.getByRole("button", { name: /adjust/i })); // tools hide inside the Adjust panel
       expect(screen.getByRole("button", { name: /lens magnification 3×/i })).toBeInTheDocument();
     });
 

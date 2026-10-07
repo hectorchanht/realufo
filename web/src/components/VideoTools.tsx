@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { RefObject } from "react";
 import { Camera, Download, Link, LoaderCircle, Maximize, MessageSquarePlus, Minimize, Pause, Play, Repeat, Repeat1, StepBack, StepForward, TriangleAlert, Volume2, VolumeX, X } from "lucide-react";
-import { LENS_PX, LensLayer, chip, ico, lensTurn, off, on, renderPng } from "./ImageTools";
+import { AdjustButton, LENS_PX, LensLayer, chip, ico, lensTurn, off, on, renderPng } from "./ImageTools";
 import type { LensHit } from "./ImageTools";
 import type { MediaView } from "../lib/mediaView";
 import { formatMoment } from "../lib/recordMedia";
@@ -63,6 +63,9 @@ export function VideoTransport({
   onPost,
   speedSlot,
   stage,
+  adjustOpen,
+  onToggleAdjust,
+  adjustChanged,
 }: {
   videoRef: RefObject<HTMLVideoElement | null>;
   crop: VideoCrop | null; // saved frames drop the black bars too
@@ -78,6 +81,11 @@ export function VideoTransport({
   speedSlot?: HTMLElement | null;
   /** The media panel: fullscreened whole so filters, zoom and the lens come along. */
   stage?: HTMLElement | null;
+  /** Adjust panel state, lifted to the page so this row can host the button after Download. */
+  adjustOpen: boolean;
+  onToggleAdjust: (open: boolean) => void;
+  /** A filter/look is active: highlight the Adjust button. */
+  adjustChanged: boolean;
 }) {
   const [t, setT] = useState(0);
   const [dur, setDur] = useState(0);
@@ -285,6 +293,8 @@ export function VideoTransport({
       <button type="button" aria-label="Download video" title="Download video" onClick={download} className={`${chip} ${off}`}>
         <Download {...ico} />
       </button>
+      {/* the Adjust panel's button lives here (after Download); its tools moved inside the panel */}
+      <AdjustButton open={adjustOpen} onToggle={onToggleAdjust} changed={adjustChanged} />
       {speedSlot &&
         createPortal(
           <>

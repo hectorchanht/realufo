@@ -40,7 +40,7 @@ import { goBack } from "../components/navItems";
 import { MediaRuler } from "../components/MediaRuler";
 import { MediaHelp } from "../components/MediaHelp";
 import { MotionLayer } from "../components/MotionLayer";
-import { LENS_MAGS, MediaFilters, MediaToolbar, Minimap, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams, grabImage } from "../components/ImageTools";
+import { LENS_MAGS, MediaFilters, MediaToolbar, Minimap, TOOL_PARAMS, ZoomLens, adjustFilter, adjustFromParams, adjustToParams, grabImage, useAdjustOpen } from "../components/ImageTools";
 import type { ImageAdjust } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
 import { Articles } from "../components/Articles";
@@ -246,6 +246,9 @@ export function Doc() {
     };
   }
   const setAdjust = tool<ImageAdjust>(adjustFromParams, adjustToParams);
+  // Adjust panel open state, lifted here so the video transport row can host
+  // the Adjust button (after Download) while the tools hide inside the panel.
+  const [adjustOpen, setAdjustOpen] = useAdjustOpen();
   const setLens = tool<boolean>(lensOf, (sp, v) => (v === finePointer ? sp.delete("lens") : sp.set("lens", v ? "1" : "0")));
   const setMag = tool<number>(magOf, (sp, v) => (v === 3 ? sp.delete("mag") : sp.set("mag", String(v))));
   const [view, setView] = useState(DEFAULT_VIEW); // frame zoom / pan / rotate / flip
@@ -853,6 +856,9 @@ export function Doc() {
           onPost={handlePostFrame}
           speedSlot={speedSlot}
           stage={panel}
+          adjustOpen={adjustOpen}
+          onToggleAdjust={setAdjustOpen}
+          adjustChanged={adjustFilter(adjust) !== ""}
         />
       )}
       {(media === "image" || media === "video") && (
@@ -876,6 +882,9 @@ export function Doc() {
           onMotion={media === "video" ? toggleMotion : undefined}
           panelSlot={media === "video" ? setSpeedSlot : undefined}
           help={<MediaHelp media={media} touch={!finePointer} />}
+          open={adjustOpen}
+          onToggleOpen={setAdjustOpen}
+          showAdjustButton={media === "image"}
         />
       )}
       {media === "video" && (keyMoments.moments.length > 0 || aiMoments.length > 0) && (

@@ -192,6 +192,44 @@ export const off = "border-line2 text-dim";
 
 const ADJUST_OPEN_KEY = "ru:adjust-open";
 
+/** Adjust panel open state, lifted so a parent can host the button elsewhere
+ *  (the video transport row). Persists per browser: once opened, stays open. */
+export function useAdjustOpen() {
+  const [open, setOpenState] = useState(() => {
+    try {
+      return localStorage.getItem(ADJUST_OPEN_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  function setOpen(next: boolean) {
+    setOpenState(next);
+    try {
+      localStorage.setItem(ADJUST_OPEN_KEY, next ? "1" : "0");
+    } catch {
+      /* private mode etc.: the choice lasts for this page only */
+    }
+  }
+  return [open, setOpen] as const;
+}
+
+/** The sliders button that opens the Adjust panel. Highlighted while open or
+ *  while any filter/look is changed. */
+export function AdjustButton({ open, onToggle, changed }: { open: boolean; onToggle: (open: boolean) => void; changed: boolean }) {
+  return (
+    <button
+      type="button"
+      aria-label="Adjust"
+      aria-expanded={open}
+      title="Adjust"
+      onClick={() => onToggle(!open)}
+      className={`${chip} ${open || changed ? on : off}`}
+    >
+      <SlidersHorizontal {...ico} />
+    </button>
+  );
+}
+
 export function MediaToolbar({
   adjust,
   onAdjust,
@@ -212,6 +250,9 @@ export function MediaToolbar({
   onCompare,
   help,
   panelSlot,
+  open,
+  onToggleOpen,
+  showAdjustButton = true,
 }: {
   adjust: ImageAdjust;
   onAdjust: (a: ImageAdjust) => void;
@@ -239,23 +280,12 @@ export function MediaToolbar({
   help?: ReactNode;
   /** Top row of the Adjust panel, for controls another component portals in (video speed/loop). */
   panelSlot?: (el: HTMLDivElement | null) => void;
+  /** Controlled open state (Doc lifts it so the video transport can host the Adjust button). */
+  open: boolean;
+  onToggleOpen: (open: boolean) => void;
+  /** Render the Adjust button in the toolbar row; false when the parent renders it (video transport). */
+  showAdjustButton?: boolean;
 }) {
-  // Closed by default; once a visitor opens it, it stays open on later pages.
-  const [open, setOpenState] = useState(() => {
-    try {
-      return localStorage.getItem(ADJUST_OPEN_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
-  function setOpen(next: boolean) {
-    setOpenState(next);
-    try {
-      localStorage.setItem(ADJUST_OPEN_KEY, next ? "1" : "0");
-    } catch {
-      /* private mode etc.: the choice lasts for this page only */
-    }
-  }
   const changed = adjustFilter(adjust) !== "";
   const [saving, setSaving] = useState<"idle" | "busy" | "failed">("idle");
   async function save() {
@@ -269,131 +299,128 @@ export function MediaToolbar({
     }
   }
   const nextMag = LENS_MAGS[(LENS_MAGS.indexOf(mag) + 1) % LENS_MAGS.length];
+  if (!showAdjustButton && !open) return null;
   return (
     <div className="mb-3.5">
-      {/* relative: MediaHelp's panel spans this row */}
-      <div className="relative flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          aria-label="Adjust"
-          aria-expanded={open}
-          title="Adjust"
-          onClick={() => setOpen(!open)}
-          className={`${chip} ${open || changed ? on : off}`}
-        >
-          <SlidersHorizontal {...ico} />
-        </button>
-        <button type="button" aria-label="Lens" aria-pressed={lens} onClick={() => onLens(!lens)} title="Lens (L)" className={`${chip} ${lens ? on : off}`}>
-          <Search {...ico} />
-        </button>
-        {lens && (
-          <button
-            type="button"
-            aria-label={`Lens magnification ${mag}×`}
-            onClick={() => onMag(nextMag)}
-            title="Shift+wheel or - / =  changes it"
-            className={`${chip} ${on}`}
-          >
-            {mag}×
-          </button>
-        )}
-        <button type="button" aria-label="Zoom out" title="Zoom out" disabled={view.z <= 1} onClick={() => onZoom(1 / 1.5)} className={`${chip} ${off} disabled:opacity-40`}>
-          <ZoomOut {...ico} />
-        </button>
-        <button type="button" aria-label="Zoom in" title="Zoom in" disabled={view.z >= MAX_ZOOM} onClick={() => onZoom(1.5)} className={`${chip} ${off} disabled:opacity-40`}>
-          <ZoomIn {...ico} />
-        </button>
-        <button
-          type="button"
-          aria-label="Rotate 90°"
-          title="Rotate 90° (R)"
-          onClick={() => onView({ ...DEFAULT_VIEW, flip: view.flip, rot: ((view.rot + 90) % 360) as MediaView["rot"] })}
-          className={`${chip} ${view.rot ? on : off}`}
-        >
-          <RotateCw {...ico} />
-          {view.rot ? `${view.rot}°` : ""}
-        </button>
-        <button
-          type="button"
-          aria-label="Flip"
-          aria-pressed={view.flip}
-          title="Flip (F)"
-          onClick={() => onView({ ...view, flip: !view.flip })}
-          className={`${chip} ${view.flip ? on : off}`}
-        >
-          <FlipHorizontal2 {...ico} />
-        </button>
-        {view.z > 1 && (
-          <button type="button" aria-label="Reset zoom" title="Reset zoom (0)" onClick={() => onView({ ...view, z: 1, x: 0, y: 0 })} className={`${chip} ${on}`}>
-            <Shrink {...ico} />
-            {view.z.toFixed(1)}×
-            <X {...ico} size={12} />
-          </button>
-        )}
-        <button type="button" aria-label="Ruler" aria-pressed={ruler} title="Ruler: drag a line (pixels, % of width, angle)" onClick={() => onRuler(!ruler)} className={`${chip} ${ruler ? on : off}`}>
-          <Ruler {...ico} />
-        </button>
-        {onMotion && (
-          <button
-            type="button"
-            aria-label="Motion"
-            aria-pressed={!!motion}
-            title="Motion: what moved lights up, still areas go dark"
-            onClick={() => onMotion(!motion)}
-            className={`${chip} ${motion ? on : off}`}
-          >
-            <Activity {...ico} />
-          </button>
-        )}
-        {onLink && (
-          <button type="button" aria-label="Copy link to this view" title="Copy link to this view" onClick={onLink} className={`${chip} ${off}`}>
-            <Link {...ico} />
-          </button>
-        )}
-        {onSave && (
-          <button
-            type="button"
-            aria-label={saving === "failed" ? "Save failed, retry" : "Save view"}
-            title={saving === "failed" ? "Save failed — retry" : "Save view (PNG, with filters + rotation)"}
-            onClick={() => void save()}
-            disabled={saving === "busy"}
-            className={`${chip} ${saving === "failed" ? "border-amber text-amber" : off}`}
-          >
-            {saving === "busy" ? <LoaderCircle {...ico} className="animate-spin" /> : saving === "failed" ? <TriangleAlert {...ico} /> : <ImageDown {...ico} />}
-          </button>
-        )}
-        {help}
-        {changed && (
-          // press and hold (pointer, or Space/Enter on the focused chip): see the file as it is, no filters
-          <button
-            type="button"
-            aria-label="Hold to see the original"
-            aria-pressed={compare}
-            title="Hold to see the original (\)"
-            onPointerDown={(e) => {
-              e.currentTarget.setPointerCapture?.(e.pointerId);
-              onCompare(true);
-            }}
-            onPointerUp={() => onCompare(false)}
-            onPointerCancel={() => onCompare(false)}
-            onLostPointerCapture={() => onCompare(false)}
-            onKeyDown={(e) => (e.key === " " || e.key === "Enter") && onCompare(true)}
-            onKeyUp={() => onCompare(false)}
-            onBlur={() => onCompare(false)}
-            onContextMenu={(e) => e.preventDefault()}
-            className={`${chip} ${compare ? on : off} touch-none select-none`}
-          >
-            <Eye {...ico} />
-          </button>
-        )}
-        {changed && (
-          <button type="button" aria-label="Reset filters" title="Reset filters" onClick={() => onAdjust(DEFAULT_ADJUST)} className={`${chip} ${off} ml-auto`}>
-            <RotateCcw {...ico} />
-          </button>
-        )}
-      </div>
+      {showAdjustButton && (
+        <div className="flex flex-wrap items-center gap-2">
+          <AdjustButton open={open} onToggle={onToggleOpen} changed={changed} />
+        </div>
+      )}
       {open && (
-        <div className="mt-3 rounded-xl border border-line bg-surface px-3.5 py-3">
+        // relative: MediaHelp's tooltip panel spans this box
+        <div className={`relative rounded-xl border border-line bg-surface px-3.5 py-3 ${showAdjustButton ? "mt-3" : ""}`}>
+          {/* the tool buttons, hidden behind Adjust to save space */}
+          <div className="mb-2.5 flex flex-wrap items-center gap-2">
+          <button type="button" aria-label="Lens" aria-pressed={lens} onClick={() => onLens(!lens)} title="Lens (L)" className={`${chip} ${lens ? on : off}`}>
+            <Search {...ico} />
+          </button>
+          {lens && (
+            <button
+              type="button"
+              aria-label={`Lens magnification ${mag}×`}
+              onClick={() => onMag(nextMag)}
+              title="Shift+wheel or - / =  changes it"
+              className={`${chip} ${on}`}
+            >
+              {mag}×
+            </button>
+          )}
+          <button type="button" aria-label="Zoom out" title="Zoom out" disabled={view.z <= 1} onClick={() => onZoom(1 / 1.5)} className={`${chip} ${off} disabled:opacity-40`}>
+            <ZoomOut {...ico} />
+          </button>
+          <button type="button" aria-label="Zoom in" title="Zoom in" disabled={view.z >= MAX_ZOOM} onClick={() => onZoom(1.5)} className={`${chip} ${off} disabled:opacity-40`}>
+            <ZoomIn {...ico} />
+          </button>
+          <button
+            type="button"
+            aria-label="Rotate 90°"
+            title="Rotate 90° (R)"
+            onClick={() => onView({ ...DEFAULT_VIEW, flip: view.flip, rot: ((view.rot + 90) % 360) as MediaView["rot"] })}
+            className={`${chip} ${view.rot ? on : off}`}
+          >
+            <RotateCw {...ico} />
+            {view.rot ? `${view.rot}°` : ""}
+          </button>
+          <button
+            type="button"
+            aria-label="Flip"
+            aria-pressed={view.flip}
+            title="Flip (F)"
+            onClick={() => onView({ ...view, flip: !view.flip })}
+            className={`${chip} ${view.flip ? on : off}`}
+          >
+            <FlipHorizontal2 {...ico} />
+          </button>
+          {view.z > 1 && (
+            <button type="button" aria-label="Reset zoom" title="Reset zoom (0)" onClick={() => onView({ ...view, z: 1, x: 0, y: 0 })} className={`${chip} ${on}`}>
+              <Shrink {...ico} />
+              {view.z.toFixed(1)}×
+              <X {...ico} size={12} />
+            </button>
+          )}
+          <button type="button" aria-label="Ruler" aria-pressed={ruler} title="Ruler: drag a line (pixels, % of width, angle)" onClick={() => onRuler(!ruler)} className={`${chip} ${ruler ? on : off}`}>
+            <Ruler {...ico} />
+          </button>
+          {onMotion && (
+            <button
+              type="button"
+              aria-label="Motion"
+              aria-pressed={!!motion}
+              title="Motion: what moved lights up, still areas go dark"
+              onClick={() => onMotion(!motion)}
+              className={`${chip} ${motion ? on : off}`}
+            >
+              <Activity {...ico} />
+            </button>
+          )}
+          {onLink && (
+            <button type="button" aria-label="Copy link to this view" title="Copy link to this view" onClick={onLink} className={`${chip} ${off}`}>
+              <Link {...ico} />
+            </button>
+          )}
+          {onSave && (
+            <button
+              type="button"
+              aria-label={saving === "failed" ? "Save failed, retry" : "Save view"}
+              title={saving === "failed" ? "Save failed — retry" : "Save view (PNG, with filters + rotation)"}
+              onClick={() => void save()}
+              disabled={saving === "busy"}
+              className={`${chip} ${saving === "failed" ? "border-amber text-amber" : off}`}
+            >
+              {saving === "busy" ? <LoaderCircle {...ico} className="animate-spin" /> : saving === "failed" ? <TriangleAlert {...ico} /> : <ImageDown {...ico} />}
+            </button>
+          )}
+          {help}
+          {changed && (
+            // press and hold (pointer, or Space/Enter on the focused chip): see the file as it is, no filters
+            <button
+              type="button"
+              aria-label="Hold to see the original"
+              aria-pressed={compare}
+              title="Hold to see the original (\)"
+              onPointerDown={(e) => {
+                e.currentTarget.setPointerCapture?.(e.pointerId);
+                onCompare(true);
+              }}
+              onPointerUp={() => onCompare(false)}
+              onPointerCancel={() => onCompare(false)}
+              onLostPointerCapture={() => onCompare(false)}
+              onKeyDown={(e) => (e.key === " " || e.key === "Enter") && onCompare(true)}
+              onKeyUp={() => onCompare(false)}
+              onBlur={() => onCompare(false)}
+              onContextMenu={(e) => e.preventDefault()}
+              className={`${chip} ${compare ? on : off} touch-none select-none`}
+            >
+              <Eye {...ico} />
+            </button>
+          )}
+              {changed && (
+                <button type="button" aria-label="Reset filters" title="Reset filters" onClick={() => onAdjust(DEFAULT_ADJUST)} className={`${chip} ${off} ml-auto`}>
+                  <RotateCcw {...ico} />
+                </button>
+              )}
+          </div>
           {panelSlot && <div ref={panelSlot} className="mb-2.5 flex flex-wrap items-center gap-2 empty:hidden" />}
           <div className="mb-2.5 flex flex-wrap items-center gap-2">
             {PRESETS.map((p) => {
