@@ -29,23 +29,23 @@ export function renderCaseNewsletter(slug: string, unsub: string): string {
   const story = CASE_STORY_TEXT[slug];
   if (!story) throw new Error(`no story for slug ${slug}`);
   const sec = story.sections[0];
-  const hook = sec.paras.slice(0, 2).map((p) => `<p style="font-size:14px;line-height:1.6">${esc(p)}</p>`).join("");
+  const hook = sec.paras.slice(0, 2).map((p) => `<p style="font-size:17px;line-height:1.7">${esc(p)}</p>`).join("");
   const quote = sec.quote
-    ? `<blockquote style="border-left:3px solid #4df0a6;margin:16px 0;padding:4px 0 4px 12px;font-size:14px;font-style:italic;color:#e8ecf1">“${esc(sec.quote.text)}”<br><span style="font-size:12px;color:#6b7280;font-style:normal">— ${esc(sec.quote.who)}</span></blockquote>`
+    ? `<blockquote style="border-left:3px solid #4df0a6;margin:16px 0;padding:4px 0 4px 12px;font-size:16px;font-style:italic;color:#e8ecf1">“${esc(sec.quote.text)}”<br><span style="font-size:13px;color:#6b7280;font-style:normal">— ${esc(sec.quote.who)}</span></blockquote>`
     : "";
   const tl = story.timeline.slice(0, 4).map((t) =>
-    `<li style="margin:6px 0;font-size:13px"><span style="font-family:monospace;color:#4df0a6">${esc(t.date)}</span> <span style="color:#d7dce3">${esc(t.event)}</span></li>`).join("");
+    `<li style="margin:8px 0;font-size:15px;line-height:1.6"><span style="font-family:monospace;color:#4df0a6">${esc(t.date)}</span> <span style="color:#d7dce3">${esc(t.event)}</span></li>`).join("");
   const url = `https://realufo.org/case/${encodeURIComponent(slug)}`;
   const body = `
-    <p style="font-size:12px;letter-spacing:1px;color:#4df0a6">🛸 THIS WEEK'S DECLASSIFIED CASE FILE</p>
-    <h2 style="font-size:20px;color:#fff;margin:8px 0 4px">${esc(story.title)}</h2>
-    <h3 style="font-size:14px;color:#9aa3ad;margin:0 0 8px">${esc(sec.heading)}</h3>
+    <p style="font-size:13px;letter-spacing:1px;color:#4df0a6">🛸 THIS WEEK'S DECLASSIFIED CASE FILE</p>
+    <h2 style="font-size:24px;line-height:1.3;color:#fff;margin:8px 0 4px">${esc(story.title)}</h2>
+    <h3 style="font-size:16px;color:#9aa3ad;margin:0 0 8px">${esc(sec.heading)}</h3>
     ${hook}${quote}
-    <h3 style="font-size:14px;color:#9aa3ad;margin:16px 0 4px">Key moments</h3>
+    <h3 style="font-size:16px;color:#9aa3ad;margin:16px 0 4px">Key moments</h3>
     <ul style="padding-left:18px;margin:0">${tl}</ul>
-    <p style="margin:18px 0"><a href="${url}" style="display:inline-block;background:#4df0a6;color:#07080c;padding:10px 22px;text-decoration:none;font-weight:bold;font-size:14px">READ THE FULL CASE FILE →</a></p>
-    <p style="font-size:12px;color:#6b7280">Know someone who needs to see this? Forward it — they can <a href="https://realufo.org/notifications" style="color:#4df0a6">subscribe here</a>.</p>
-    <p style="font-size:11px;color:#6b7280"><a href="${unsub}" style="color:#6b7280">unsubscribe</a> · <a href="https://realufo.org/shelf" style="color:#6b7280">reading shelf</a></p>`;
+    <p style="margin:20px 0"><a href="${url}" style="display:inline-block;background:#4df0a6;color:#07080c;padding:12px 24px;text-decoration:none;font-weight:bold;font-size:16px">READ THE FULL CASE FILE →</a></p>
+    <p style="font-size:14px;line-height:1.6;color:#6b7280">Know someone who needs to see this? Forward it — they can <a href="https://realufo.org/notifications" style="color:#4df0a6">subscribe here</a>.</p>
+    <p style="font-size:13px;color:#6b7280"><a href="${unsub}" style="color:#6b7280">unsubscribe</a> · <a href="https://realufo.org/shelf" style="color:#6b7280">reading shelf</a></p>`;
   return shell(`Case file: ${story.title}`, body);
 }
 

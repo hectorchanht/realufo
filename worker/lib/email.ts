@@ -26,7 +26,7 @@ export function esc(s: string): string {
 }
 
 export function shell(title: string, body: string): string {
-  return `<!doctype html><html><body style="margin:0;background:#07080c;color:#d7dce3;font-family:monospace,monospace"><div style="max-width:560px;margin:0 auto;padding:24px"><div style="font-size:11px;letter-spacing:2px;color:#4df0a6">REALUFO.ORG</div><h1 style="font-size:18px;color:#fff">${title}</h1>${body}<hr style="border:none;border-top:1px solid #1c2027;margin:20px 0"><div style="font-size:11px;color:#6b7280">Declassified UAP archive · <a href="https://realufo.org" style="color:#4df0a6">realufo.org</a></div></div></body></html>`;
+  return `<!doctype html><html><body style="margin:0;background:#07080c;color:#d7dce3;font-family:monospace,monospace"><div style="max-width:560px;margin:0 auto;padding:24px"><div style="font-size:11px;letter-spacing:2px;color:#4df0a6">REALUFO.ORG</div><h1 style="font-size:22px;line-height:1.3;color:#fff">${title}</h1>${body}<hr style="border:none;border-top:1px solid #1c2027;margin:20px 0"><div style="font-size:11px;color:#6b7280">Declassified UAP archive · <a href="https://realufo.org" style="color:#4df0a6">realufo.org</a></div></div></body></html>`;
 }
 
 // Cron: email digest for records that went live since the last run.
