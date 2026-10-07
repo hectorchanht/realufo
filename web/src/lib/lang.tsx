@@ -65,6 +65,19 @@ const STRINGS = {
   "archive.sortRelease": ["Newest release", "最新解密"],
   "archive.sortAz": ["Title A–Z", "標題 A–Z"],
   "archive.sortDiscussed": ["Most discussed", "最多討論"],
+  "archive.sortWtfWeek": ["Most WTF this week", "本週最 WTF"],
+  "archive.sortWtfMonth": ["Most WTF this month", "本月最 WTF"],
+  "archive.emptyLine1": ["no records match.", "搵唔到相關檔案。"],
+  "archive.emptyLine2": ["the truth is elsewhere.", "真相喺第二度。"],
+  // doc screen share row
+  "share.rowLabel": ["Share this file", "分享呢份檔案"],
+  "share.copyLink": ["Copy link", "複製連結"],
+  "share.copied": ["Link copied", "已複製連結"],
+  "share.x": ["Share on X", "分享去 X"],
+  "share.facebook": ["Share on Facebook", "分享去 Facebook"],
+  "share.whatsapp": ["Share on WhatsApp", "分享去 WhatsApp"],
+  // doc screen blink: shown under the title of top-WTF records
+  "doc.wtfBlink": ["Yeah, we know why you're here.", "我哋知你嚟睇乜。"],
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

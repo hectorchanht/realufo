@@ -175,6 +175,12 @@ export async function listRecords(req: Request, env: Env) {
     // Most discussed: record-comment count descending (same metric as the
     // commentN shown on cards), then newest added. Zero-comment records last.
     order = "(SELECT count(*) FROM comments c WHERE c.record_id=r.id) DESC, r.created_at DESC";
+  } else if (sort === "wtf_week" || sort === "wtf_month") {
+    // Most WTF this week/month: unexplained-verdict activity inside the window.
+    // updated_at moves when a vote is (re)cast, so this measures recent heat,
+    // not first-cast dates. Quiet records sink to the bottom, then newest added.
+    const days = sort === "wtf_week" ? 7 : 30;
+    order = `(SELECT count(*) FROM record_verdicts v WHERE v.record_id=r.id AND v.verdict='unexplained' AND v.updated_at >= datetime('now','-${days} days')) DESC, r.created_at DESC`;
   }
   const limit = Math.max(1, Math.min(100, Number(u.searchParams.get("limit")) || 40));
   const offset = Math.max(0, Number(u.searchParams.get("offset")) || 0);

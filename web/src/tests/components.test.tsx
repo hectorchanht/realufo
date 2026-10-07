@@ -40,6 +40,7 @@ import { DocCard } from "../components/DocCard";
 import { ThreadRow } from "../components/ThreadRow";
 import { BoardRow } from "../components/BoardRow";
 import { Ticker } from "../components/Ticker";
+import { ShareRow } from "../components/ShareRow";
 
 // DocCard calls the (mocked) `useBootstrap()` react-query hook, so anything
 // that can render a DocCard needs a QueryClientProvider in its tree — a real
@@ -403,5 +404,58 @@ describe("Ticker", () => {
     const uapTags = screen.getAllByText("/uap/");
     expect(uapTags.length).toBeGreaterThanOrEqual(1);
     within(uapTags[0].closest("span") as HTMLElement);
+  });
+});
+
+describe("ShareRow", () => {
+  const URL = "https://realufo.org/doc/DOW-UAP-D006";
+  const TITLE = "DOW-UAP-D006 test file";
+  const renderRow = () => render(<ShareRow url={URL} title={TITLE} />);
+  const realClipboard = navigator.clipboard;
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    Object.defineProperty(navigator, "clipboard", { value: realClipboard, configurable: true });
+  });
+
+  it("renders copy + X + Facebook + WhatsApp targets with correct hrefs", () => {
+    renderRow();
+    expect(screen.getByRole("button", { name: "Copy link" })).toBeInTheDocument();
+    const x = screen.getByRole("link", { name: "Share on X" });
+    expect(x.getAttribute("href")).toBe(
+      `https://x.com/intent/tweet?text=${encodeURIComponent(TITLE)}&url=${encodeURIComponent(URL)}`
+    );
+    expect(screen.getByRole("link", { name: "Share on Facebook" }).getAttribute("href")).toBe(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(URL)}`
+    );
+    expect(screen.getByRole("link", { name: "Share on WhatsApp" }).getAttribute("href")).toBe(
+      `https://wa.me/?text=${encodeURIComponent(`${TITLE} ${URL}`)}`
+    );
+    for (const l of screen.getAllByRole("link")) {
+      expect(l).toHaveAttribute("target", "_blank");
+      expect(l.getAttribute("rel")).toContain("noopener");
+    }
+  });
+
+  it("copies the URL and shows the copied state", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    renderRow();
+    fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
+    await screen.findByRole("button", { name: "Link copied" });
+    expect(writeText).toHaveBeenCalledWith(URL);
+  });
+
+  it("falls back to the textarea path when the clipboard API throws", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+      configurable: true,
+    });
+    const execSpy = vi.fn().mockReturnValue(true);
+    Object.defineProperty(document, "execCommand", { value: execSpy, configurable: true });
+    renderRow();
+    fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
+    await screen.findByRole("button", { name: "Link copied" });
+    expect(execSpy).toHaveBeenCalledWith("copy");
   });
 });

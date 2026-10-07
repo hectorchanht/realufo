@@ -45,6 +45,7 @@ import type { ImageAdjust } from "../components/ImageTools";
 import { KeyMoments, VideoLens, VideoTransport } from "../components/VideoTools";
 import { Articles } from "../components/Articles";
 import { VerdictBar } from "../components/VerdictBar";
+import { ShareRow } from "../components/ShareRow";
 import { DiscussionStarter } from "../components/DiscussionStarter";
 import { FollowBell } from "../components/FollowBell";
 import CiteButton from "../components/CiteButton";
@@ -658,6 +659,13 @@ export function Doc() {
 
   // Desktop: title sits above the media (uapbrowser-style) and TopNav drops its copy;
   // mobile keeps it under the media, with the AppBar carrying the short title.
+  // Blink: when the crowd strongly agrees a file is unexplained (>=70% of >=5
+  // verdicts — the same crowd bar as the WTF-meter), a quiet line under the title.
+  const vtally = detail?.verdicts?.tally;
+  const vtotal = detail?.verdicts?.total ?? 0;
+  const wtfPct = vtally && vtotal > 0 ? Math.round((vtally.unexplained * 100) / vtotal) : 0;
+  const showBlink = vtotal >= 5 && wtfPct >= 70;
+  const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/doc/${id}` : `/doc/${id}`;
   const titleBlock = (
     <>
       {/* title — id prefix and underscores stripped; the id rides inside the h1 as a
@@ -686,6 +694,12 @@ export function Doc() {
           </button>
           <FollowBell kind="record" id={id} />
         </div>
+      </div>
+      {showBlink && (
+        <p className="mb-2 font-mono text-[11px] text-faint">{t("doc.wtfBlink")}</p>
+      )}
+      <div className="mb-3 flex justify-end">
+        <ShareRow url={shareUrl} title={title} />
       </div>
     </>
   );

@@ -64,3 +64,35 @@ describe("file verdicts", () => {
     expect((await post()).status).toBe(429);
   });
 });
+
+describe("wtf leaderboard sorts", () => {
+  const orderOf = async (sort: string) =>
+    (((await (await call(`/api/records?sort=${sort}&limit=100`)).json()) as any).records as any[]).map((r) => r.id);
+  beforeAll(async () => {
+    for (const id of ["WTF-A", "WTF-B", "WTF-C"])
+      await env.DB.prepare("INSERT INTO records(id) VALUES(?)").bind(id).run();
+    for (const a of ["wa1", "wa2", "wa3"]) await cast("unexplained", a, "WTF-A");
+    for (const a of ["wb1", "wb2"]) await cast("unexplained", a, "WTF-B");
+    await cast("unexplained", "wc1", "WTF-C");
+    // A is 10 days old (in the month window, out of the week window),
+    // B is 40 days old (out of both windows).
+    await env.DB.prepare("UPDATE record_verdicts SET updated_at=datetime('now','-10 days') WHERE record_id='WTF-A'").run();
+    await env.DB.prepare("UPDATE record_verdicts SET updated_at=datetime('now','-40 days') WHERE record_id='WTF-B'").run();
+  });
+
+  it("wtf_week only counts the last 7 days", async () => {
+    const got = await orderOf("wtf_week");
+    expect(got[0]).toBe("WTF-C"); // the only record with in-week unexplained votes
+  });
+
+  it("wtf_month counts the last 30 days", async () => {
+    const got = await orderOf("wtf_month");
+    expect(got[0]).toBe("WTF-A"); // 3 votes, 10 days old
+    expect(got[1]).toBe("WTF-C"); // 1 vote, recent
+  });
+
+  it("old votes sink below recent ones", async () => {
+    const got = await orderOf("wtf_month");
+    expect(got.indexOf("WTF-C")).toBeLessThan(got.indexOf("WTF-B")); // B: 0 in-window
+  });
+});

@@ -269,6 +269,8 @@ const SORTS: { value: string; key: StringKey }[] = [
   { value: "release", key: "archive.sortRelease" },
   { value: "az", key: "archive.sortAz" },
   { value: "discussed", key: "archive.sortDiscussed" },
+  { value: "wtf_week", key: "archive.sortWtfWeek" },
+  { value: "wtf_month", key: "archive.sortWtfMonth" },
 ];
 
 // "Surprise me" dice: one random live record via sort=random (never cached
@@ -667,9 +669,9 @@ export function Archive() {
           ) : (
             count === 0 && (
               <div className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
-                no records match.
+                {t("archive.emptyLine1")}
                 <br />
-                the truth is elsewhere.
+                {t("archive.emptyLine2")}
               </div>
             )
           )}
