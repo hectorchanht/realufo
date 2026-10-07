@@ -13,8 +13,8 @@
 // this suite only needs the `/doc/:id` param + a `/thread/:id` target for the
 // promoted-thread link assertion, per the task brief ("Render within
 // providers + MemoryRouter at /doc/:id").
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { act, render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import type { CommentsResponse, RecordDetail, RecordsListResponse } from "../api/types";
 import Doc from "../screens/Doc";
@@ -1314,5 +1314,70 @@ describe("Doc", () => {
       fireEvent.click(screen.getByRole("button", { name: /previous file/i }));
       expect(mockNavigate).toHaveBeenLastCalledWith("/doc/p1z?archive=nara");
     });
+  });
+});
+
+describe("Doc PDF size gate", () => {
+  // The panel probes the file size with a 1-byte range request before
+  // deciding whether the native viewer may load it inline.
+  function mockProbe(bytes: number | null) {
+    // desktop viewport: inline PDF <iframe> only renders at >=900px
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("900px"),
+      media: q,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    const fetchMock = vi.fn().mockResolvedValue({
+      headers: {
+        get: (k: string) =>
+          k.toLowerCase() === "content-range" && bytes !== null ? `bytes 0-0/${bytes}` : null,
+      },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function panelFrame(): HTMLIFrameElement | null {
+    return document.querySelector('[data-screen="doc"] iframe');
+  }
+
+  it("probes the PDF size with a 1-byte range request and embeds small files fitted to the panel width", async () => {
+    const fetchMock = mockProbe(1_417_100);
+    renderDoc();
+    await waitFor(() => expect(panelFrame()).not.toBeNull());
+    expect(fetchMock).toHaveBeenCalledWith("/api/file/rec1", { headers: { Range: "bytes=0-0" } });
+    // view=FitH: pages fit the box width, never wider than the panel
+    expect(panelFrame()!.getAttribute("src")).toBe("/api/file/rec1#view=FitH");
+  });
+
+  it("keeps the ?p=N deep-link page when fitting the viewer to the panel width", async () => {
+    mockProbe(1_417_100);
+    renderDoc("/doc/rec1?p=3");
+    await waitFor(() => expect(panelFrame()).not.toBeNull());
+    expect(panelFrame()!.getAttribute("src")).toBe("/api/file/rec1#page=3&view=FitH");
+  });
+
+  it("gates huge PDFs behind an explicit open button instead of auto-loading the file", async () => {
+    mockProbe(200 * 1024 * 1024);
+    renderDoc();
+    await screen.findByText(/too big to preview inline/);
+    expect(screen.getByText(/200\.0 MB/)).toBeInTheDocument();
+    // no iframe: the giant scan never rasterizes inside this tab
+    expect(panelFrame()).toBeNull();
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    fireEvent.click(screen.getByRole("button", { name: /OPEN FULL PDF/i }));
+    expect(openSpy).toHaveBeenCalledWith("/api/file/rec1", "_blank", "noopener,noreferrer");
+    openSpy.mockRestore();
+  });
+
+  it("falls back to the inline viewer when the size probe fails", async () => {
+    mockProbe(null);
+    renderDoc();
+    await waitFor(() => expect(panelFrame()).not.toBeNull());
   });
 });

@@ -90,6 +90,12 @@ const RELATED_HEAD: Record<RelatedGroup["key"], string> = {
 // Matches DocCard.tsx's local `typeGlyph` (kept duplicated rather than
 // exported/shared — it's a 3-line pure function and the two screens don't
 // otherwise share a module).
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
 function typeGlyph(kind: RecordKind): string {
   if (kind === "video") return "VID";
   if (kind === "image") return "IMG";
@@ -139,6 +145,11 @@ interface MetaCellProps {
 // Media panel cap: leaves room for the title above and the video tools bar below,
 // which otherwise sat on the viewport's bottom edge like a detached mini-player.
 const PANEL_MAX_H = "min(78vh, calc(100dvh - 280px))";
+// PDFs render in the browser's native viewer inside the panel <iframe> — a huge
+// scanned PDF rasterized in-tab can OOM the tab ("Aw, snap"). The byte size is
+// probed with a 1-byte range request first; anything over this never auto-loads
+// into the page — it gets an explicit open-in-new-tab gate instead.
+const PDF_INLINE_MAX_BYTES = 30 * 1024 * 1024;
 
 function MetaCell({ label, value }: MetaCellProps) {
   return (
@@ -182,6 +193,31 @@ export function Doc() {
   // uploaded key). Reset when navigating to another record.
   const [thumbFailed, setThumbFailed] = useState(false);
   useEffect(() => setThumbFailed(false), [id]);
+
+  // Byte size of the PDF behind the panel: undefined = still probing, null =
+  // probe failed → fail open to the current inline behavior. The 1-byte range
+  // request is answered by the worker's R2 range support (see
+  // worker/routes/file.ts) without downloading the file.
+  const panelMedia = recordMedia(detail, isDesktop).media;
+  const [pdfBytes, setPdfBytes] = useState<number | null | undefined>(undefined);
+  useEffect(() => {
+    if (panelMedia !== "pdf") return;
+    setPdfBytes(undefined);
+    let live = true;
+    const probe = async () => {
+      try {
+        const res = await fetch(`/api/file/${id}`, { headers: { Range: "bytes=0-0" } });
+        const m = /\/(\d+)\s*$/.exec(res.headers.get("content-range") ?? "");
+        if (live) setPdfBytes(m ? Number(m[1]) : null);
+      } catch {
+        if (live) setPdfBytes(null);
+      }
+    };
+    void probe();
+    return () => {
+      live = false;
+    };
+  }, [id, panelMedia]);
 
   // Image/video tools: adjust filters + zoom lens live in the URL (see
   // TOOL_PARAMS), so prev/next (docHref keeps the query) and series links
@@ -238,7 +274,6 @@ export function Doc() {
     setMotion(false);
     setSwapped(false);
   }, [id]);
-  const panelMedia = recordMedia(detail, isDesktop).media;
   // A transformed <video> would zoom/rotate its native controls too, so they
   // hide then (VideoTransport has its own seek bar).
   const transformed = view.z !== 1 || view.rot !== 0 || view.flip;
@@ -265,6 +300,15 @@ export function Doc() {
   // ?p=N: a PDF page, the document equivalent of ?t= (article evidence links use it).
   const pdfPage = Math.max(0, Math.floor(Number(searchParams.get("p")))) || undefined;
   const fileHref = `/api/file/${id}${pdfPage ? `#page=${pdfPage}` : ""}`;
+  // Too big to preview inline: an explicit open-in-new-tab gate instead, so a
+  // giant scan never rasterizes inside this tab. While probing, the iframe
+  // stays unloaded too — the heavy file only ever loads on an explicit open.
+  // `view=FitH`: the native viewer fits pages to the box width, so the PDF
+  // content can never render wider than the panel (no internal horizontal
+  // blowout); users can still zoom with the viewer's own toolbar.
+  const pdfTooBig = panelMedia === "pdf" && pdfBytes !== undefined && pdfBytes !== null && pdfBytes > PDF_INLINE_MAX_BYTES;
+  const pdfInline = panelMedia === "pdf" && !pdfTooBig && pdfBytes !== undefined;
+  const pdfSrc = `/api/file/${id}#${pdfPage ? `page=${pdfPage}&` : ""}view=FitH`;
   // VideoTransport portals its speed/loop chips into MediaToolbar's Adjust panel.
   const [speedSlot, setSpeedSlot] = useState<HTMLDivElement | null>(null);
   // Official time-coded "Video Description" lines → key moments (the rest stays as summary prose).
@@ -593,6 +637,8 @@ export function Doc() {
           aspectRatio: panelRatio ? `${panelRatio}` : "4/3",
           width: panelRatio ? `min(100%, calc(${PANEL_MAX_H} * ${panelRatio}))` : undefined,
           marginInline: "auto",
+          // the box never exceeds the view width, whatever the media inside does
+          maxWidth: "100%",
           maxHeight: PANEL_MAX_H,
           touchAction: view.z > 1 ? "none" : "pan-y",
           WebkitTouchCallout: "none",
@@ -643,8 +689,36 @@ export function Doc() {
             />
           </div>
         )}
-        {media === "pdf" && (
-          <iframe title={title} src={fileHref} className="h-full w-full border-0 bg-white" />
+        {pdfInline && (
+          <iframe title={title} src={pdfSrc} className="h-full w-full border-0 bg-white" />
+        )}
+        {media === "pdf" && !pdfInline && (
+          <div className="grid h-full w-full place-items-center gap-3 overflow-hidden bg-white p-5 text-center">
+            {thumbUrl && !thumbFailed ? (
+              <img
+                src={thumbUrl}
+                alt=""
+                onError={() => setThumbFailed(true)}
+                className="max-h-[52%] max-w-full object-contain opacity-90"
+              />
+            ) : null}
+            <div>
+              <div className="font-mono text-[11px] text-neutral-600">
+                {pdfBytes === undefined
+                  ? "checking file size…"
+                  : `PDF · ${formatBytes(pdfBytes ?? 0)} — too big to preview inline`}
+              </div>
+              {pdfTooBig && (
+                <button
+                  type="button"
+                  onClick={handleOpenOriginal}
+                  className="mt-2 rounded-lg border border-neutral-300 px-4 py-2 font-mono text-xs font-semibold text-neutral-800 active:scale-[.98]"
+                >
+                  ⛶ OPEN FULL PDF
+                </button>
+              )}
+            </div>
+          </div>
         )}
         {(media === "thumb" || media === "audio") &&
           (thumbUrl && !thumbFailed ? (
