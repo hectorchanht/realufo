@@ -15,6 +15,7 @@ import { askHref, askIdOf } from "./ask";
 import { PRIVACY_HTML } from "./privacy";
 import { TERMS_HTML } from "./terms";
 import { SOCIAL_PROFILES } from "./profiles";
+import { ALL_PICKS, affiliateUrl } from "./affiliate";
 import { MAP_INTRO, RELEASES_DESCRIPTION, RELEASES_TITLE } from "./shared";
 import { PLACES, placeSlug } from "./places";
 import { yearOf } from "./facets";
@@ -574,6 +575,14 @@ const comparePage: Loader = async () => ({
   body: "<h1>Compare</h1>",
 });
 
+// /shelf is in sitemap.xml, so it must pre-render (not 404+noindex) — and the
+// crawler gets the real book list, not just the SPA shell.
+const escAttr = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const shelfPage: Loader = async () => ({
+  meta: { title: "Reading Shelf", description: "Twelve books the researchers behind these declassified UAP files actually read — RealUFO's recommended reading shelf.", type: "website" },
+  body: `<h1>Reading Shelf</h1><p>Twelve books the researchers behind these files actually read — each one picked because it illuminates something in the archive.</p><ul>${ALL_PICKS.map((p) => `<li><a href="${escAttr(affiliateUrl(p))}" rel="sponsored nofollow">${escAttr(p.title)}</a> — ${escAttr(p.creator)}</li>`).join("")}</ul>`,
+});
+
 // A Short is the doc's video cut 9:16: same page for crawlers, canonical = the doc.
 const shortPage: Loader = async (env, g, url) => {
   const p = await docPage(env, g, url);
@@ -597,6 +606,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader; cacheKey?: (url: URL) 
   { pattern: new URLPattern({ pathname: "/notifications" }), load: notificationsPage },
   { pattern: new URLPattern({ pathname: "/developers" }), load: developersPage },
   { pattern: new URLPattern({ pathname: "/compare" }), load: comparePage },
+  { pattern: new URLPattern({ pathname: "/shelf" }), load: shelfPage },
   { pattern: new URLPattern({ pathname: "/release/:slug" }), load: hubPage("release"), cacheKey: (url) => `page=${pageOf(url)}` },
   { pattern: new URLPattern({ pathname: "/topic/:slug" }), load: hubPage("topic"), cacheKey: (url) => `page=${pageOf(url)}` },
   { pattern: new URLPattern({ pathname: "/agency/:slug" }), load: hubPage("agency"), cacheKey: (url) => `page=${pageOf(url)}` },
