@@ -3,6 +3,10 @@
 // that is on stays pressed down (sunk 2px, accent). Every key ≥ 36px: the
 // keyboard grows rather than the keys shrinking. `hold` keys (Original) are
 // momentary: held = on.
+//
+// Each white key owns its wrapper; the black key (if any) hangs off the
+// wrapper's right edge, so it always straddles the exact boundary between
+// white keys — no gap math to drift.
 import type { PointerEvent as ReactPointerEvent } from "react";
 import type { LucideIcon } from "lucide-react";
 
@@ -18,10 +22,10 @@ export interface KeyDef {
 }
 
 const WHITE_H = "h-[76px]";
-const BLACK_W = 34;
-const BLACK_H = 46;
+const BLACK_W = 36;
+const BLACK_H = 48;
 
-function WhiteKey({ k }: { k: KeyDef }) {
+function WhiteKey({ k, blackKey }: { k: KeyDef; blackKey?: KeyDef }) {
   const holdProps = k.hold
     ? {
         onPointerDown: (e: ReactPointerEvent) => {
@@ -38,49 +42,48 @@ function WhiteKey({ k }: { k: KeyDef }) {
       }
     : { onClick: () => k.onTap() };
   return (
-    <button
-      type="button"
-      aria-label={k.hold ? `${k.label} (hold)` : k.label}
-      aria-pressed={k.hold ? undefined : k.active}
-      title={k.title}
-      {...holdProps}
-      className={`flex min-h-[44px] min-w-[36px] flex-1 flex-col items-center justify-end gap-1 rounded-b-[8px] rounded-t-[4px] border pb-2 pt-1 transition-all duration-150 ease-out active:translate-y-[2px] motion-reduce:transition-none ${
-        k.active
-          ? "translate-y-[2px] border-signal bg-[var(--signal-dim)] text-signal"
-          : "border-line2 bg-bg text-dim"
-      } ${WHITE_H} ${k.hold ? "touch-none select-none" : ""}`}
-    >
-      <k.Icon size={18} strokeWidth={1.75} aria-hidden="true" />
-    </button>
+    <div className="relative min-w-[36px] flex-1">
+      <button
+        type="button"
+        aria-label={k.hold ? `${k.label} (hold)` : k.label}
+        aria-pressed={k.hold ? undefined : k.active}
+        title={k.title}
+        {...holdProps}
+        className={`flex w-full flex-col items-center justify-end gap-1 rounded-b-[8px] rounded-t-[4px] border pb-1.5 pt-1 transition-all duration-150 ease-out active:translate-y-[2px] motion-reduce:transition-none ${
+          k.active
+            ? "translate-y-[2px] border-signal bg-[var(--signal-dim)] text-signal"
+            : "border-line2 bg-bg text-dim"
+        } ${WHITE_H} ${k.hold ? "touch-none select-none" : ""}`}
+      >
+        <k.Icon size={18} strokeWidth={1.75} aria-hidden="true" />
+        <span className="whitespace-nowrap font-mono text-[8px] uppercase tracking-wider opacity-80">{k.label}</span>
+      </button>
+      {blackKey && (
+        <button
+          type="button"
+          aria-label={blackKey.label}
+          aria-pressed={blackKey.active}
+          title={blackKey.title}
+          onClick={() => blackKey.onTap()}
+          style={{ width: BLACK_W, height: BLACK_H }}
+          className={`absolute -right-[18px] top-0 z-10 grid place-items-center rounded-b-[8px] border transition-all duration-150 ease-out active:translate-y-[2px] motion-reduce:transition-none ${
+            blackKey.active
+              ? "translate-y-[2px] border-signal bg-[var(--signal-dim)] text-signal"
+              : "border-line2 bg-bg2 text-dim"
+          }`}
+        >
+          <blackKey.Icon size={16} strokeWidth={1.75} aria-hidden="true" />
+        </button>
+      )}
+    </div>
   );
 }
 
 export function WakemanKeyboard({ white, black }: { white: KeyDef[]; black: KeyDef[] }) {
   return (
-    <div className="relative">
-      <div className="flex items-stretch gap-[3px]">
-        {white.map((k) => (
-          <WhiteKey key={k.id} k={k} />
-        ))}
-      </div>
-      {/* black keys sit on the boundaries between white keys, top half */}
-      {black.map((k, i) => (
-        <button
-          key={k.id}
-          type="button"
-          aria-label={k.label}
-          aria-pressed={k.active}
-          title={k.title}
-          onClick={() => k.onTap()}
-          style={{ left: `calc(${((i + 1) * 100) / white.length}% - ${BLACK_W / 2}px)`, width: BLACK_W, height: BLACK_H }}
-          className={`absolute top-0 z-10 grid place-items-center rounded-b-[8px] border transition-all duration-150 ease-out active:translate-y-[2px] motion-reduce:transition-none ${
-            k.active
-              ? "translate-y-[2px] border-signal bg-[var(--signal-dim)] text-signal"
-              : "border-line2 bg-bg2 text-dim"
-          }`}
-        >
-          <k.Icon size={16} strokeWidth={1.75} aria-hidden="true" />
-        </button>
+    <div className="flex items-stretch gap-[3px]">
+      {white.map((k, i) => (
+        <WhiteKey key={k.id} k={k} blackKey={black[i]} />
       ))}
     </div>
   );

@@ -88,7 +88,7 @@ const HELP: { title: string; only?: Kind; rows: Row[] }[] = [
   {
     title: "Console styles",
     rows: [
-      { Icon: Palette, name: "Console style", what: "Simple or 茶盤: two layouts for the same tools. Pick with the palette button; remembered on this device." },
+      { Icon: Palette, name: "Console style", what: "Simple or DJ desk: two layouts for the same tools. Pick with the palette button; remembered on this device." },
       { Icon: Bookmark, name: "Presets P1–P4", what: "One tap applies a saved look. Tap the floppy, then a slot, to save the current setup there.", keys: ["1", "2", "3", "4"] },
     ],
   },

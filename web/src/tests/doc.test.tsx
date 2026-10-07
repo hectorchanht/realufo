@@ -1458,15 +1458,15 @@ describe("Media console", () => {
     renderDoc();
     fireEvent.click(screen.getByRole("button", { name: /adjust/i }));
     fireEvent.click(screen.getByRole("button", { name: "Console style" }));
-    const chaban = screen.getByRole("button", { name: /茶盤/ });
+    const chaban = screen.getByRole("button", { name: /DJ desk/ });
     expect(chaban).toHaveAttribute("aria-pressed", "false");
     fireEvent.click(chaban);
     expect(localStorage.getItem("ru:media-skin")).toBe("chaban");
-    // the 茶盤 deck renders (Simple has no sliders with this role)
+    // the DJ desk deck renders (Simple has no sliders with this role)
     expect(screen.getByRole("slider", { name: "Zoom wheel" })).toBeInTheDocument();
-    // remembered: reopening the picker shows 茶盤 ticked
+    // remembered: reopening the picker shows DJ desk ticked
     fireEvent.click(screen.getByRole("button", { name: "Console style" }));
-    expect(screen.getByRole("button", { name: /茶盤/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /DJ desk/ })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("P2 applies the Night hunt look; the floppy saves the current setup to a slot", () => {
@@ -1496,7 +1496,7 @@ describe("Media console", () => {
     expect(saved.presets[1].name).toBe("Night hunt"); // other slots untouched
   });
 
-  it("茶盤 deck: wheel arrow keys step frames, the knob turns the magnifier", () => {
+  it("DJ desk deck: wheel arrow keys step frames, the knob turns the magnifier", () => {
     localStorage.setItem("ru:media-skin", "chaban");
     useRecordMock.mockReturnValue({
       data: {

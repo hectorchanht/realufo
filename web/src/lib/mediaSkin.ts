@@ -1,15 +1,15 @@
 import { useState } from "react";
 
 // Media console layout: the visitor picks the toolbox they like — Simple or
-// 茶盤 — and the choice stays on this device. 茶盤 is the instrument console
-// (茶盤 ちゃばん design style): the DJ deck on wide screens, the Walkman on
-// phones, same tools either way. Spec:
+// DJ desk — and the choice stays on this device. The DJ desk is the
+// instrument console (茶盤 ちゃばん design style): the DJ deck on wide
+// screens, the Walkman on phones, same tools either way. Spec:
 // docs/superpowers/specs/2026-10-04-media-dj-console-design.md
 export type MediaSkin = "simple" | "chaban";
 
 export const SKINS: { key: MediaSkin; name: string; blurb: string }[] = [
   { key: "simple", name: "Simple", blurb: "Chips, sliders and labels — the plain toolbox." },
-  { key: "chaban", name: "茶盤", blurb: "Faders, pads and a click wheel — the instrument console." },
+  { key: "chaban", name: "DJ desk", blurb: "Faders, pads and a click wheel — the instrument console." },
 ];
 
 const SKIN_KEY = "ru:media-skin";

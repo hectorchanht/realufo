@@ -146,7 +146,7 @@ Naming presets, more than 4 slots, adding/removing pads, cross-device sync, MIDI
 ## Shipped v1 (2026-10-07)
 - Two console layouts, picked with the Palette button in the console header (`ru:media-skin`, Simple default):
   - **Simple** — today's panel tidied: tools grouped with dividers (zoom cluster reads Zoom out → Zoom in → Reset zoom, the Lens → Lens magnification pattern), video speed/loop/A–B as a chips row (the `speedSlot` portal is gone). Desktop shows text labels next to the icons (phones stay icon-only).
-  - **茶盤** — the instrument console: DJ deck body on wide screens (faders, square pads, click wheel + magnifier knob), Walkman body on phones (cassette window, Wakeman keyboard, click wheel). Same tools and keys in each.
+  - **DJ desk** — the instrument console: DJ deck body on wide screens (faders, square pads, click wheel + magnifier knob), Walkman body on phones (cassette window, Wakeman keyboard, click wheel). Same tools and keys in each.
 - Presets P1–P4 + floppy save flow shared by both layouts (`ru:media-presets`); `1`–`4` keys apply them while the console is open.
 - `useVideoTransport` hook: the transport row and the console deck drive one video state.
 - `ru:adjust-open` renamed `ru:console-open`; identity export carries `ru:console-open`, `ru:media-skin`, `ru:media-presets`.

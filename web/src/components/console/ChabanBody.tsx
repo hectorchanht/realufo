@@ -1,4 +1,4 @@
-// 茶盤 layout: the instrument console. DJ deck on wide screens (everything
+// DJ desk layout: the instrument console. DJ deck on wide screens (everything
 // visible at once), Walkman on phones (one-thumb use). Same tools either way.
 import { useMediaQuery } from "../../lib/useMediaQuery";
 import { DjBody } from "./DjBody";

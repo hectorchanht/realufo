@@ -27,9 +27,10 @@ export function Fader({
         onChange={(e) => onChange(Number(e.target.value))}
         onDoubleClick={onReset}
         title={`${label} — double-click to reset`}
-        // vertical-lr + rtl: max at the top, like a mixer fader
+        // vertical-lr + rtl: max at the top, like a mixer fader.
+        // w-10: a 40px grab strip — 24px is too thin for thumbs.
         style={{ writingMode: "vertical-lr", direction: "rtl", height: 128 } as CSSProperties}
-        className="w-6 cursor-ns-resize accent-[var(--signal)]"
+        className="w-10 cursor-ns-resize accent-[var(--signal)]"
       />
       <Icon size={16} strokeWidth={1.75} aria-hidden="true" className="text-faint" />
       <span className="font-mono text-[9px] tabular-nums text-dim">{value}%</span>
