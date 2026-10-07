@@ -67,6 +67,28 @@ describe("CiteButton modal", () => {
     expect(screen.queryByRole("dialog", { name: "Cite this record" })).toBeNull();
   });
 
+  it("Escape does not trigger Doc's global Esc-leaves-the-file navigation", () => {
+    // Doc.tsx registers a bubble-phase window keydown: Esc -> goBack(). The
+    // modal's capture-phase handler must claim the key first so the page
+    // doesn't navigate to /archive as the modal closes.
+    const navigated: string[] = [];
+    const docKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") navigated.push("/archive");
+    };
+    window.addEventListener("keydown", docKey); // bubble, like Doc
+    try {
+      setup();
+      openModal();
+      // Dispatch on an inner node so capture/bubble phases run as in a browser
+      // (dispatching directly on window would collapse them to target phase).
+      fireEvent.keyDown(document.body, { key: "Escape" });
+      expect(screen.queryByRole("dialog", { name: "Cite this record" })).toBeNull();
+      expect(navigated).toEqual([]);
+    } finally {
+      window.removeEventListener("keydown", docKey);
+    }
+  });
+
   it("renders nothing without a record", () => {
     render(
       <OverlayProvider>
