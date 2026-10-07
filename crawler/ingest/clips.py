@@ -72,10 +72,10 @@ def fit(n, max_fs, width=1000, em=0.72) -> int:
     return min(max_fs, int(width / (em * max(n, 1))))
 
 def spoken_id(rid) -> str:
-    """Record id as TTS input: alpha runs spelled out ("AARO-DOD_109584445" ->
-    "A A R O D O D 109584445") so Kokoro reads the letters instead of a word."""
-    return " ".join(" ".join(tok) if tok.isalpha() else tok
-                    for tok in re.findall(r"[A-Za-z]+|\d+", rid or ""))
+    """Record id as TTS input: letters AND digits spelled out ("AARO-DOD_109584445" ->
+    "A A R O D O D 1 0 9 5 8 4 4 4 5") so Kokoro reads it as an id, never as
+    "one hundred nine million ..."."""
+    return " ".join(" ".join(tok) for tok in re.findall(r"[A-Za-z]+|\d+", rid or ""))
 
 def narration_text(row) -> str:
     """Voiceover line: spoken id + title + the record's one-liner (≤15 words) when it has one."""

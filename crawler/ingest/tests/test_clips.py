@@ -92,13 +92,13 @@ def test_vertical_args_voice_without_source_audio_uses_silent_bed():
     assert a[a.index("-map", a.index("[v]")) + 1] == "[aout]"
 
 def test_spoken_id_spells_out_letters_for_tts():
-    assert spoken_id("AARO-DOD_109584445") == "A A R O D O D 109584445"
-    assert spoken_id("FBI-UAP-PR003") == "F B I U A P P R 003"
+    assert spoken_id("AARO-DOD_109584445") == "A A R O D O D 1 0 9 5 8 4 4 4 5"
+    assert spoken_id("FBI-UAP-PR003") == "F B I U A P P R 0 0 3"
 
 def test_narration_text_is_id_title_and_one_liner():
     row = {"id": "AARO-DOD_109584445", "title": "Middle East Object",
            "one_liner": "At 24 s, even the video can't decide its own identity."}
-    assert narration_text(row) == ("A A R O D O D 109584445. Middle East Object. "
+    assert narration_text(row) == ("A A R O D O D 1 0 9 5 8 4 4 4 5. Middle East Object. "
                                    "At 24 s, even the video can't decide its own identity.")
     assert narration_text({"id": "X1", "title": None, "one_liner": None}) == "X 1. X1."
 
