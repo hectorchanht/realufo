@@ -54,14 +54,14 @@ export async function emailCaseOfWeek(env: Env, now: Date = new Date()): Promise
   if (now.getUTCDay() !== 5) return { sent: false }; // Friday (UTC) only
   const week = isoWeekKey(now);
   if ((await getState(env, WEEK_WM)) === week) return { sent: false }; // already sent this week
-  const idx = parseInt((await getState(env, IDX_KEY)) ?? "0", 10) || 0;
-  const slug = pickCaseSlug(idx);
   const { results: subs } = await env.DB.prepare(
     "SELECT email, token FROM email_subscribers WHERE status='confirmed' LIMIT 100",
   ).all<{ email: string; token: string }>();
+  if (!subs.length) return { sent: false }; // nobody to send to: keep this week's slot for next Friday
+  const idx = parseInt((await getState(env, IDX_KEY)) ?? "0", 10) || 0;
+  const slug = pickCaseSlug(idx);
   await setState(env, WEEK_WM, week);
   await setState(env, IDX_KEY, String(idx + 1));
-  if (!subs.length) return { sent: true, slug, n: 0 };
   const subject = `🛸 Case file: ${CASE_STORY_TEXT[slug].title}`;
   for (const s of subs) {
     const unsub = `https://realufo.org/api/email/unsubscribe?token=${s.token}`;

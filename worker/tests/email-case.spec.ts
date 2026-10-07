@@ -77,12 +77,16 @@ describe("emailCaseOfWeek", () => {
     expect(r2.slug).toBe(CASE_SLUGS[1]);
   });
 
-  it("skips pending subscribers and works with an empty list", async () => {
+  it("skips pending subscribers and keeps the slot when the list is empty", async () => {
     await addSub("p@example.com", "pending");
     const r = await emailCaseOfWeek(E, FRIDAY);
-    expect(r.sent).toBe(true);
-    expect(r.n).toBe(0);
+    expect(r.sent).toBe(false); // slot not consumed: Roswell still goes out next Friday
     expect(hits).toHaveLength(0);
+    // next week still sends the first story, not the second
+    await addSub("a@example.com");
+    const r2 = await emailCaseOfWeek(E, new Date("2026-10-16T12:00:00Z"));
+    expect(r2.sent).toBe(true);
+    expect(r2.slug).toBe(CASE_SLUGS[0]);
   });
 
   it("is off without an API key", async () => {
