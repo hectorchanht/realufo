@@ -27,9 +27,10 @@ function isTyping() {
   return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
 }
 
-// Transport button groups: related controls share one pill so the row reads
-// as structured groups on narrow screens, and a group never breaks apart
-// mid-row (flex-nowrap inside; the row itself still wraps group-by-group).
+// Transport button groups: related controls share one pill. The button row
+// scrolls horizontally (filter-pills pattern) when wider than the viewport,
+// so a pill never squeezes or breaks mid-row — each is flex-none.
+// Two pills: Playback [play][timecode] | [prev][Fnnn][next], Tools [view + share].
 const tgroup = "inline-flex flex-nowrap items-center gap-1 rounded-[12px] bg-white/[0.04] px-1 py-1";
 
 /** The playback row (video only): seek bar, play, frame step, timecode, mute, full screen. */
@@ -82,7 +83,7 @@ export function VideoTransport({
   }, [keys]);
 
   return (
-    <div className="mb-2 flex flex-wrap items-center gap-2">
+    <div className="mb-2">
       {/* own seek bar: the native controls hide while the video is zoomed/rotated */}
       <input
         type="range"
@@ -92,27 +93,29 @@ export function VideoTransport({
         step={1 / FPS}
         value={Math.min(t, dur || 0)}
         onChange={(e) => ctl.seek(Number(e.target.value))}
-        className="w-full accent-[var(--signal)]"
+        className="mb-2 w-full accent-[var(--signal)]"
       />
+      {/* button row: horizontal scroll (filter-pills pattern) when wider than the viewport */}
+      <div data-scroll className="flex items-center gap-2 overflow-x-auto pb-1">
       {/* transport group: play/pause + timecode + frame stepper as one compact unit */}
-      <span role="group" aria-label="Playback" className={tgroup}>
+      <span role="group" aria-label="Playback" className={`${tgroup} flex-none`}>
         <button type="button" aria-label={playing ? "Pause" : "Play"} title={`${playing ? "Pause" : "Play"} (Space)`} onClick={ctl.togglePlay} className={`${chip} ${off}`}>
           {playing ? <Pause {...ico} /> : <Play {...ico} />}
         </button>
-        <span className="px-1 font-mono text-[10px] tabular-nums text-dim">
+        <span className="whitespace-nowrap px-1 font-mono text-[10px] tabular-nums text-dim">
           {formatMoment(t, true)} / {formatMoment(dur, true)}
         </span>
         <span aria-hidden="true" className="mx-0.5 h-5 w-px bg-line2" />
         <button type="button" aria-label="Previous frame" title="Previous frame (,)" onClick={() => ctl.stepFrame(-1)} className={`${chip} ${off}`}>
           <StepBack {...ico} />
         </button>
-        <span className="px-1 font-mono text-[10px] tabular-nums text-faint">F{frameOf(t)}</span>
+        <span className="whitespace-nowrap px-1 font-mono text-[10px] tabular-nums text-faint">F{frameOf(t)}</span>
         <button type="button" aria-label="Next frame" title="Next frame (.)" onClick={() => ctl.stepFrame(1)} className={`${chip} ${off}`}>
           <StepForward {...ico} />
         </button>
       </span>
-      {/* tools group: view options + share actions — pushed right */}
-      <span role="group" aria-label="Tools" className={`${tgroup} ml-auto`}>
+      {/* tools group: view options + share actions */}
+      <span role="group" aria-label="Tools" className={`${tgroup} flex-none`}>
         <button type="button" aria-label={muted ? "Unmute" : "Mute"} aria-pressed={muted} title={`${muted ? "Unmute" : "Mute"} (M)`} onClick={ctl.toggleMute} className={`${chip} ${muted ? on : off}`}>
           {muted ? <VolumeX {...ico} /> : <Volume2 {...ico} />}
         </button>
@@ -154,6 +157,7 @@ export function VideoTransport({
           {capture === "busy" ? <LoaderCircle {...ico} className="animate-spin" /> : <MessageSquarePlus {...ico} />}
         </button>
       </span>
+      </div>
     </div>
   );
 }

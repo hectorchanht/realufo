@@ -1,7 +1,7 @@
-// VideoTransport: compact grouped mobile layout + busy spinners.
-// - Controls sit in two labeled pills (Playback / Tools) so the row takes
-//   at most two rows on narrow screens: [play][timecode] | [◀][Fnnn][▶]
-//   then [mute][full][download][adjust][link][capture][post].
+// VideoTransport: scrollable grouped mobile layout + busy spinners.
+// - Controls sit in two labeled pills (Playback / Tools) inside one
+//   horizontally scrollable row (filter-pills pattern): the row never wraps
+//   and pills never squeeze — it scrolls when wider than the viewport.
 // - The frame stepper [◀][Fnnn][▶] stays together as one non-wrapping unit.
 // - Both capture buttons (save + post to discussion) show a spinner while
 //   the frame grab is busy.
@@ -41,7 +41,7 @@ function mockCtl(over: Partial<VideoCtl> = {}): VideoCtl {
 
 function setup(over: Partial<VideoCtl> = {}) {
   const ctl = mockCtl(over);
-  render(
+  const utils = render(
     <VideoTransport
       ctl={ctl}
       keys={false}
@@ -51,21 +51,26 @@ function setup(over: Partial<VideoCtl> = {}) {
       adjustChanged={false}
     />,
   );
-  return ctl;
+  return { ctl, ...utils };
 }
 
 describe("VideoTransport layout", () => {
-  it("groups controls into two labeled, non-wrapping pills", () => {
-    setup();
+  it("button row scrolls horizontally; pills never wrap or squeeze", () => {
+    const { container } = setup();
+    const row = container.querySelector("[data-scroll]");
+    expect(row).toBeTruthy();
+    expect(row!.className).toContain("overflow-x-auto");
+    expect(row!.className).not.toContain("flex-wrap");
     for (const label of ["Playback", "Tools"]) {
       const g = screen.getByRole("group", { name: label });
-      expect(g.className).toContain("inline-flex");
+      expect(row!.contains(g)).toBe(true);
+      expect(g.className).toContain("flex-none");
       expect(g.className).toContain("flex-nowrap");
     }
   });
 
   it("frame stepper keeps [prev][F-count][next] together inside the Playback pill", () => {
-    const ctl = setup();
+    const { ctl } = setup();
     const group = screen.getByRole("group", { name: "Playback" });
     const prev = screen.getByRole("button", { name: "Previous frame" });
     const next = screen.getByRole("button", { name: "Next frame" });
