@@ -14,7 +14,7 @@
 // promoted-thread link assertion, per the task brief ("Render within
 // providers + MemoryRouter at /doc/:id").
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import type { CommentsResponse, RecordDetail, RecordsListResponse } from "../api/types";
 import Doc from "../screens/Doc";
@@ -203,7 +203,9 @@ function renderDoc(path = "/doc/rec1") {
 beforeEach(() => {
   mockOpenComposer.mockReset();
   mockOpenViewer.mockReset();
-  localStorage.removeItem?.("ru:adjust-open");
+  localStorage.removeItem?.("ru:console-open");
+  localStorage.removeItem?.("ru:media-skin");
+  localStorage.removeItem?.("ru:media-presets");
   useRecordMock.mockReset();
   useCommentsMock.mockReset();
   useRecordsMock.mockReset();
@@ -506,7 +508,7 @@ describe("Doc", () => {
     const adjust = screen.getByRole("button", { name: /adjust/i });
     expect(adjust).toHaveAttribute("aria-expanded", "false"); // closed by default
     fireEvent.click(adjust);
-    expect(localStorage.getItem("ru:adjust-open")).toBe("1"); // remembered for later pages
+    expect(localStorage.getItem("ru:console-open")).toBe("1"); // remembered for later pages
     fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
     expect(img().style.filter).toContain("invert(1)");
     // presets are toggles: lit while active, a second click turns it off
@@ -516,7 +518,7 @@ describe("Doc", () => {
     fireEvent.click(screen.getByRole("button", { name: /invert ir/i }));
     fireEvent.change(screen.getByLabelText(/brightness/i), { target: { value: "150" } });
     expect(img().style.filter).toContain("brightness(1.5)");
-    fireEvent.click(screen.getByRole("button", { name: /reset/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Reset filters" }));
     expect(img().style.filter).toBe("");
     fireEvent.click(screen.getByRole("button", { name: /lens/i }));
     expect(document.querySelector("[data-zoom-lens]")).toBeInTheDocument();
@@ -542,15 +544,15 @@ describe("Doc", () => {
     video.currentTime = 2;
 
     // speed + loop live in the Adjust panel, closed by default
-    expect(screen.queryByRole("button", { name: "0.25×" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Speed 0.25×" })).toBeNull();
     const adjust = screen.getByRole("button", { name: /adjust/i });
     expect(adjust).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(adjust);
-    expect(localStorage.getItem("ru:adjust-open")).toBe("1"); // remembered for later pages
+    expect(localStorage.getItem("ru:console-open")).toBe("1"); // remembered for later pages
 
-    fireEvent.click(screen.getByRole("button", { name: "0.25×" }));
+    fireEvent.click(screen.getByRole("button", { name: "Speed 0.25×" }));
     expect(video.playbackRate).toBe(0.25);
-    expect(screen.getByRole("button", { name: "0.25×" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Speed 0.25×" })).toHaveAttribute("aria-pressed", "true");
 
     fireEvent.click(screen.getByRole("button", { name: /next frame/i }));
     expect(video.currentTime).toBeCloseTo(2 + 1 / 30);
@@ -1182,8 +1184,8 @@ describe("Doc", () => {
     const help = () => document.getElementById(screen.getByRole("button", { name: "How to use the media tools" }).getAttribute("aria-controls")!)!;
     const groups = () => [...help().querySelectorAll("h3")].map((h) => h.textContent);
     const names = () => [...help().querySelectorAll("li b")].map((b) => b.textContent);
-    expect(groups()).toEqual(["Look closer", "Change the look", "Measure and spot", "Share and save", "Move between files"]);
-    expect(names()).toEqual(expect.arrayContaining(["Turn", "Ruler", "See the original", "Save picture", "Night"]));
+    expect(groups()).toEqual(["Look closer", "Change the look", "Console styles", "Measure and spot", "Share and save", "Move between files"]);
+    expect(names()).toEqual(expect.arrayContaining(["Turn", "Ruler", "See the original", "Save picture", "Night", "Console style", "Presets P1–P4"]));
     expect(names()).not.toContain("Motion"); // video only
     expect(names()).not.toContain("Save frame");
     // test env = touch screen: gestures instead of keys
@@ -1414,5 +1416,112 @@ describe("Doc PDF size gate", () => {
     mockProbe(null);
     renderDoc();
     await waitFor(() => expect(panelFrame()).not.toBeNull());
+  });
+});
+
+describe("Media console", () => {
+  it("Reset zoom sits right after Zoom in (parent, then its modifier)", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    const img = () => document.querySelector('[data-screen="doc"] img') as HTMLImageElement;
+    Object.defineProperty(img(), "naturalWidth", { configurable: true, value: 1600 });
+    Object.defineProperty(img(), "naturalHeight", { configurable: true, value: 1000 });
+    fireEvent.load(img());
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i })); // tools hide inside the Adjust panel
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    const zoomIn = screen.getByRole("button", { name: "Zoom in" });
+    const reset = screen.getByRole("button", { name: "Reset zoom" });
+    expect(reset.previousElementSibling).toBe(zoomIn); // no divider between them: one zoom cluster
+    // Lens magnification keeps the same pattern after Lens
+    fireEvent.click(screen.getByRole("button", { name: "Lens" }));
+    const lens = screen.getByRole("button", { name: "Lens" });
+    const mag = screen.getByRole("button", { name: /lens magnification/i });
+    expect(mag.previousElementSibling).toBe(lens);
+  });
+
+  it("the style picker switches the console body and remembers the choice", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Console style" }));
+    const chaban = screen.getByRole("button", { name: /茶盤/ });
+    expect(chaban).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(chaban);
+    expect(localStorage.getItem("ru:media-skin")).toBe("chaban");
+    // the 茶盤 deck renders (Simple has no sliders with this role)
+    expect(screen.getByRole("slider", { name: "Zoom wheel" })).toBeInTheDocument();
+    // remembered: reopening the picker shows 茶盤 ticked
+    fireEvent.click(screen.getByRole("button", { name: "Console style" }));
+    expect(screen.getByRole("button", { name: /茶盤/ })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("P2 applies the Night hunt look; the floppy saves the current setup to a slot", () => {
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "image" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/photo.jpg", mime: "image/jpeg", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Preset 2: Night hunt" }));
+    expect((screen.getByLabelText("Shadows") as HTMLInputElement).value).toBe("170");
+    expect(screen.getByRole("button", { name: "Preset 2: Night hunt" })).toHaveAttribute("aria-pressed", "true");
+    // 2 on the keyboard applies P2 as well
+    fireEvent.click(screen.getByRole("button", { name: "Preset 1: Clean" }));
+    fireEvent.keyDown(window, { key: "2" });
+    expect((screen.getByLabelText("Shadows") as HTMLInputElement).value).toBe("170");
+    // save the current (clean) setup into P1
+    fireEvent.click(screen.getByRole("button", { name: "Preset 1: Clean" }));
+    fireEvent.click(screen.getByRole("button", { name: /save the current setup/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save to preset 1/i }));
+    const saved = JSON.parse(localStorage.getItem("ru:media-presets")!);
+    expect(saved.presets[0].name).toBe("Your setup");
+    expect(saved.presets[1].name).toBe("Night hunt"); // other slots untouched
+  });
+
+  it("茶盤 deck: wheel arrow keys step frames, the knob turns the magnifier", () => {
+    localStorage.setItem("ru:media-skin", "chaban");
+    useRecordMock.mockReturnValue({
+      data: {
+        ...mockDetail,
+        record: { ...mockDetail.record, kind: "video" },
+        assets: [{ role: "full", cdn_url: "https://cdn.example/clip.mp4", mime: "video/mp4", width: null, height: null }],
+      },
+      isLoading: false,
+    });
+    renderDoc();
+    fireEvent.click(screen.getByRole("button", { name: /adjust/i }));
+    const video = document.querySelector('[data-screen="doc"] video') as HTMLVideoElement;
+    video.currentTime = 10;
+    const wheel = screen.getByRole("slider", { name: "Scrub frames" });
+    fireEvent.keyDown(wheel, { key: "ArrowRight" });
+    expect(video.currentTime).toBeCloseTo(10 + 1 / 30, 5);
+    fireEvent.keyDown(wheel, { key: "ArrowLeft" });
+    expect(video.currentTime).toBeCloseTo(10, 5);
+    // the knob steps 3× → 5× → 8×
+    const knob = screen.getByRole("slider", { name: "Lens" });
+    expect(knob).toHaveAttribute("aria-valuenow", "3");
+    fireEvent.keyDown(knob, { key: "ArrowUp" });
+    expect(knob).toHaveAttribute("aria-valuenow", "5");
+    // wheel centre = play/pause (inside the wheel; the transport row has its own Play)
+    expect(within(wheel).getByRole("button", { name: "Play" })).toBeInTheDocument();
+    expect(knob).toBeInTheDocument(); // deck stays put
   });
 });

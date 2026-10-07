@@ -7,226 +7,48 @@
 // headers, so the canvas is tainted: fine for the lens (drawing only), but
 // capture can't read pixels from it. Capture instead seeks a hidden copy of
 // the same file through our same-origin /api/file/:id route.
+//
+// Playback state lives in useVideoTransport (lib): the transport row here and
+// the media console deck drive the same state.
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import type { RefObject } from "react";
-import { Camera, Download, Link, LoaderCircle, Maximize, MessageSquarePlus, Minimize, Pause, Play, Repeat, Repeat1, StepBack, StepForward, TriangleAlert, Volume2, VolumeX, X } from "lucide-react";
-import { AdjustButton, LENS_PX, LensLayer, chip, ico, lensTurn, off, on, renderPng } from "./ImageTools";
+import { Camera, Download, Link, LoaderCircle, Maximize, MessageSquarePlus, Minimize, Pause, Play, StepBack, StepForward, TriangleAlert, Volume2, VolumeX } from "lucide-react";
+import { AdjustButton, LENS_PX, LensLayer, chip, ico, lensTurn, off, on } from "./ImageTools";
 import type { LensHit } from "./ImageTools";
 import type { MediaView } from "../lib/mediaView";
+import { FPS, SPEEDS, frameOf } from "../lib/useVideoTransport";
+import type { VideoCtl } from "../lib/useVideoTransport";
 import { formatMoment } from "../lib/recordMedia";
 import type { VideoCrop } from "../lib/recordMedia";
 import type { KeyMoment } from "../lib/keyMoments";
-
-// ponytail: fixed 30 fps (the DoD clips are ~29.97/30); read the real rate via
-// requestVideoFrameCallback if frame-exact stepping ever matters.
-const FPS = 30;
-const SPEEDS = [0.1, 0.25, 0.5, 1, 1.5, 2];
-
-// currentTime lands a hair under k/FPS (0.066666 × 30 = 1.99998), so nudge before flooring
-const frameOf = (t: number) => Math.floor(t * FPS + 0.01);
-
-/** Seek a hidden same-origin copy of the file to `time` and encode that frame (bars cropped, filter, rotate, flip applied) as PNG. */
-function grabFrame(src: string, time: number, filter: string, view: MediaView, crop: VideoCrop | null): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const v = document.createElement("video");
-    v.muted = true;
-    v.preload = "auto";
-    v.onerror = () => reject(new Error("load failed"));
-    // seeking to the current position fires no `seeked`, so never seek to exactly 0
-    v.onloadedmetadata = () => (v.currentTime = Math.max(time, 0.001));
-    v.onseeked = () => {
-      const png = renderPng(v, crop ?? { w: v.videoWidth, h: v.videoHeight, x: 0, y: 0 }, filter, view); // draws now, encodes async
-      v.removeAttribute("src");
-      v.load();
-      png.then(resolve, reject);
-    };
-    v.src = src;
-  });
-}
 
 function isTyping() {
   const el = document.activeElement as HTMLElement | null;
   return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
 }
 
+/** The playback row (video only): seek bar, play, frame step, timecode, mute, full screen. */
 export function VideoTransport({
-  videoRef,
-  crop,
-  fileUrl,
-  name,
-  filter,
-  view,
-  startAt,
+  ctl,
   keys,
   onShare,
-  onPost,
-  speedSlot,
-  stage,
   adjustOpen,
   onToggleAdjust,
   adjustChanged,
 }: {
-  videoRef: RefObject<HTMLVideoElement | null>;
-  crop: VideoCrop | null; // saved frames drop the black bars too
-  fileUrl: string; // same-origin copy for capture
-  name: string; // capture file name prefix
-  filter: string;
-  view: MediaView;
-  startAt?: number; // seconds (?t=)
-  keys: boolean; // keyboard shortcuts live (off while an overlay is open)
+  /** Playback state (useVideoTransport); the console deck drives the same object. */
+  ctl: VideoCtl;
+  /** Keyboard shortcuts live (off while an overlay is open). */
+  keys: boolean;
+  /** Copy a link to the current moment. */
   onShare: (t: number) => void;
-  onPost: (frame: File, t: number) => void;
-  /** Where speed + loop render (MediaToolbar's Adjust panel); null while it's closed. State stays here. */
-  speedSlot?: HTMLElement | null;
-  /** The media panel: fullscreened whole so filters, zoom and the lens come along. */
-  stage?: HTMLElement | null;
   /** Adjust panel state, lifted to the page so this row can host the button after Download. */
   adjustOpen: boolean;
   onToggleAdjust: (open: boolean) => void;
   /** A filter/look is active: highlight the Adjust button. */
   adjustChanged: boolean;
 }) {
-  const [t, setT] = useState(0);
-  const [dur, setDur] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [rate, setRate] = useState(1);
-  const [loop, setLoop] = useState(false);
-  const [muted, setMuted] = useState(false);
-  const [ab, setAb] = useState<{ a: number; b?: number } | null>(null);
-  const [capture, setCapture] = useState<"idle" | "busy" | "failed">("idle");
-  const [full, setFull] = useState(false);
-  const abRef = useRef(ab);
-  useEffect(() => {
-    abRef.current = ab;
-  }, [ab]);
-
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    let raf = 0;
-    // per-frame while playing: smooth timecode + tight A–B looping (timeupdate is only ~4 Hz)
-    const tick = () => {
-      const r = abRef.current;
-      if (r?.b !== undefined && v.currentTime >= r.b) v.currentTime = r.a;
-      setT(v.currentTime);
-      if (!v.paused) raf = requestAnimationFrame(tick);
-    };
-    const onPlay = () => {
-      setPlaying(true);
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(tick);
-    };
-    const onPause = () => {
-      setPlaying(false);
-      cancelAnimationFrame(raf);
-    };
-    const onTime = () => setT(v.currentTime);
-    const onMeta = () => {
-      setDur(Number.isFinite(v.duration) ? v.duration : 0);
-      if (startAt && v.readyState >= 1 && v.currentTime === 0) v.currentTime = startAt;
-    };
-    const onRate = () => setRate(v.playbackRate);
-    const onVol = () => setMuted(v.muted);
-    const events: [string, () => void][] = [
-      ["play", onPlay],
-      ["pause", onPause],
-      ["seeked", onTime],
-      ["timeupdate", onTime],
-      ["loadedmetadata", onMeta],
-      ["ratechange", onRate],
-      ["volumechange", onVol],
-    ];
-    events.forEach(([k, f]) => v.addEventListener(k, f));
-    onMeta();
-    onVol();
-    if (!v.paused) onPlay(); // autoplay may have started before this effect attached
-    return () => {
-      cancelAnimationFrame(raf);
-      events.forEach(([k, f]) => v.removeEventListener(k, f));
-    };
-  }, [videoRef, startAt]);
-
-  const v = () => videoRef.current;
-
-  function togglePlay() {
-    const el = v();
-    if (!el) return;
-    if (el.paused) el.play().catch(() => {});
-    else el.pause();
-  }
-
-  function step(dir: number) {
-    const el = v();
-    if (!el) return;
-    el.pause();
-    el.currentTime = Math.min(Math.max(el.currentTime + dir / FPS, 0), el.duration || Infinity);
-    setT(el.currentTime);
-  }
-
-  function speed(s: number) {
-    const el = v();
-    if (el) el.playbackRate = s;
-    setRate(s);
-  }
-
-  function toggleMute() {
-    const el = v();
-    if (el) el.muted = !muted;
-    setMuted(!muted);
-  }
-
-  useEffect(() => {
-    const onFs = () => setFull(!!stage && document.fullscreenElement === stage);
-    document.addEventListener("fullscreenchange", onFs);
-    return () => document.removeEventListener("fullscreenchange", onFs);
-  }, [stage]);
-
-  function toggleFull() {
-    if (document.fullscreenElement) return void document.exitFullscreen().catch(() => {});
-    if (stage?.requestFullscreen) return void stage.requestFullscreen().catch(() => {});
-    // iPhone Safari can't fullscreen a div, only the <video> itself (native player, no filters)
-    (v() as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null)?.webkitEnterFullscreen?.();
-  }
-
-  function download() {
-    // same-origin route, so `download` is honoured (ignored on the cross-origin CDN URL); extension from the CDN file
-    const ext = /\.\w+$/.exec(new URL(v()?.currentSrc || "x:/", location.href).pathname)?.[0] ?? "";
-    const a = document.createElement("a");
-    a.href = fileUrl;
-    a.download = name + ext;
-    a.click();
-  }
-
-  function markAb() {
-    const now = v()?.currentTime ?? 0;
-    if (!ab) setAb({ a: now });
-    else if (ab.b === undefined && now > ab.a) setAb({ ...ab, b: now });
-    else setAb(null);
-  }
-
-  async function grab(then: "save" | "post") {
-    const el = v();
-    if (!el || capture === "busy") return;
-    const at = el.currentTime;
-    el.pause();
-    setCapture("busy");
-    try {
-      const blob = await grabFrame(fileUrl, at, filter, view, crop);
-      const fileName = `${name}_${formatMoment(at).replace(/[:.]/g, "-")}.png`;
-      if (then === "post") onPost(new File([blob], fileName, { type: "image/png" }), at);
-      else {
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = fileName;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
-      }
-      setCapture("idle");
-    } catch {
-      setCapture("failed");
-    }
-  }
+  const { t, dur, playing, muted, full, capture } = ctl;
 
   // Shortcuts (Doc owns ←/→ file nav, Esc, and the lens/filter/rotate keys).
   const act = useRef<(e: KeyboardEvent) => void>(() => {});
@@ -235,12 +57,14 @@ export function VideoTransport({
       if (e.ctrlKey || e.metaKey || e.altKey || isTyping()) return;
       const k = e.key.toLowerCase();
       // a focused <video> already toggles on Space itself
-      if ((k === " " && (document.activeElement as HTMLElement | null)?.tagName !== "VIDEO") || k === "k") togglePlay();
-      else if (k === "," || k === ".") step(k === "," ? -1 : 1);
-      else if (k === "[" || k === "]") speed(SPEEDS[Math.min(SPEEDS.length - 1, Math.max(0, SPEEDS.indexOf(rate) + (k === "[" ? -1 : 1)))]);
-      else if (k === "a") markAb();
-      else if (k === "m") toggleMute();
-      else if (k === "c") void grab("save");
+      if ((k === " " && (document.activeElement as HTMLElement | null)?.tagName !== "VIDEO") || k === "k") ctl.togglePlay();
+      else if (k === ",") ctl.stepFrame(-1);
+      else if (k === ".") ctl.stepFrame(1);
+      else if (k === "[") ctl.setRate(SPEEDS[Math.max(0, SPEEDS.indexOf(ctl.rate) - 1)]);
+      else if (k === "]") ctl.setRate(SPEEDS[Math.min(SPEEDS.length - 1, SPEEDS.indexOf(ctl.rate) + 1)]);
+      else if (k === "a") ctl.markAb();
+      else if (k === "m") ctl.toggleMute();
+      else if (k === "c") void ctl.grab("save");
       else return;
       e.preventDefault();
     };
@@ -252,8 +76,6 @@ export function VideoTransport({
     return () => window.removeEventListener("keydown", h);
   }, [keys]);
 
-  const abLabel = `Loop A–B: ${!ab ? "set A" : ab.b === undefined ? "set B" : "clear"}`;
-
   return (
     <div className="mb-2 flex flex-wrap items-center gap-2">
       {/* own seek bar: the native controls hide while the video is zoomed/rotated */}
@@ -264,72 +86,39 @@ export function VideoTransport({
         max={dur || 0}
         step={1 / FPS}
         value={Math.min(t, dur || 0)}
-        onChange={(e) => {
-          const el = v();
-          if (el) el.currentTime = Number(e.target.value);
-          setT(Number(e.target.value));
-        }}
+        onChange={(e) => ctl.seek(Number(e.target.value))}
         className="w-full accent-[var(--signal)]"
       />
-      <button type="button" aria-label={playing ? "Pause" : "Play"} title={`${playing ? "Pause" : "Play"} (Space)`} onClick={togglePlay} className={`${chip} ${off}`}>
+      <button type="button" aria-label={playing ? "Pause" : "Play"} title={`${playing ? "Pause" : "Play"} (Space)`} onClick={ctl.togglePlay} className={`${chip} ${off}`}>
         {playing ? <Pause {...ico} /> : <Play {...ico} />}
       </button>
       <span className="font-mono text-[10px] tabular-nums text-dim">
         {formatMoment(t, true)} / {formatMoment(dur, true)}
       </span>
-      <button type="button" aria-label="Previous frame" title="Previous frame (,)" onClick={() => step(-1)} className={`${chip} ${off}`}>
+      <button type="button" aria-label="Previous frame" title="Previous frame (,)" onClick={() => ctl.stepFrame(-1)} className={`${chip} ${off}`}>
         <StepBack {...ico} />
       </button>
       <span className="font-mono text-[10px] tabular-nums text-faint">F{frameOf(t)}</span>
-      <button type="button" aria-label="Next frame" title="Next frame (.)" onClick={() => step(1)} className={`${chip} ${off}`}>
+      <button type="button" aria-label="Next frame" title="Next frame (.)" onClick={() => ctl.stepFrame(1)} className={`${chip} ${off}`}>
         <StepForward {...ico} />
       </button>
-      <button type="button" aria-label={muted ? "Unmute" : "Mute"} aria-pressed={muted} title={`${muted ? "Unmute" : "Mute"} (M)`} onClick={toggleMute} className={`${chip} ${muted ? on : off}`}>
+      <button type="button" aria-label={muted ? "Unmute" : "Mute"} aria-pressed={muted} title={`${muted ? "Unmute" : "Mute"} (M)`} onClick={ctl.toggleMute} className={`${chip} ${muted ? on : off}`}>
         {muted ? <VolumeX {...ico} /> : <Volume2 {...ico} />}
       </button>
-      <button type="button" aria-label={full ? "Exit full screen" : "Full screen"} aria-pressed={full} title={full ? "Exit full screen (Esc)" : "Full screen"} onClick={toggleFull} className={`${chip} ${full ? on : off}`}>
+      <button type="button" aria-label={full ? "Exit full screen" : "Full screen"} aria-pressed={full} title={full ? "Exit full screen (Esc)" : "Full screen"} onClick={ctl.toggleFull} className={`${chip} ${full ? on : off}`}>
         {full ? <Minimize {...ico} /> : <Maximize {...ico} />}
       </button>
-      <button type="button" aria-label="Download video" title="Download video" onClick={download} className={`${chip} ${off}`}>
+      <button type="button" aria-label="Download video" title="Download video" onClick={ctl.download} className={`${chip} ${off}`}>
         <Download {...ico} />
       </button>
       {/* the Adjust panel's button lives here (after Download); its tools moved inside the panel */}
       <AdjustButton open={adjustOpen} onToggle={onToggleAdjust} changed={adjustChanged} />
-      {speedSlot &&
-        createPortal(
-          <>
-            {SPEEDS.map((s) => (
-              <button key={s} type="button" aria-pressed={rate === s} title="Speed ([ ])" onClick={() => speed(s)} className={`${chip} ${rate === s ? on : off}`}>
-                {s}×
-              </button>
-            ))}
-            <button
-              type="button"
-              aria-label="Loop"
-              aria-pressed={loop}
-              title="Loop"
-              onClick={() => {
-                const el = v();
-                if (el) el.loop = !loop;
-                setLoop(!loop);
-              }}
-              className={`${chip} ${loop ? on : off}`}
-            >
-              <Repeat {...ico} />
-            </button>
-            <button type="button" aria-label={abLabel} aria-pressed={ab?.b !== undefined} title={`${abLabel} (A)`} onClick={markAb} className={`${chip} ${ab ? on : off}`}>
-              <Repeat1 {...ico} />
-              {ab && (ab.b === undefined ? "B?" : <X {...ico} size={12} />)}
-            </button>
-          </>,
-          speedSlot,
-        )}
       <span className="ml-auto flex flex-wrap gap-2">
         <button
           type="button"
           aria-label="Copy link to this moment"
           title={`Copy link @${formatMoment(t)}`}
-          onClick={() => onShare(v()?.currentTime ?? t)}
+          onClick={() => onShare(ctl.now())}
           className={`${chip} ${off}`}
         >
           <Link {...ico} />
@@ -338,7 +127,7 @@ export function VideoTransport({
           type="button"
           aria-label={capture === "failed" ? "Capture failed, retry" : "Capture frame"}
           title={capture === "failed" ? "Capture failed — retry (C)" : "Save frame (C)"}
-          onClick={() => grab("save")}
+          onClick={() => ctl.grab("save")}
           disabled={capture === "busy"}
           className={`${chip} ${capture === "failed" ? "border-amber text-amber" : off}`}
         >
@@ -348,7 +137,7 @@ export function VideoTransport({
           type="button"
           aria-label="Post frame to discussion"
           title="Post frame to discussion"
-          onClick={() => grab("post")}
+          onClick={() => ctl.grab("post")}
           disabled={capture === "busy"}
           className={`${chip} ${off}`}
         >

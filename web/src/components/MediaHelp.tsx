@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import {
   Activity,
   ArrowLeftRight,
+  Bookmark,
   Camera,
   CircleHelp,
   CornerUpLeft,
@@ -24,6 +25,7 @@ import {
   MessageSquarePlus,
   MoonStar,
   MousePointerClick,
+  Palette,
   Play,
   Repeat,
   Repeat1,
@@ -42,6 +44,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { chip, ico, off, on } from "./ImageTools";
+import { DeskLabel } from "./console/DeskLabel";
 
 type Kind = "image" | "video";
 interface Row {
@@ -80,6 +83,13 @@ const HELP: { title: string; only?: Kind; rows: Row[] }[] = [
       { Icon: Sun, name: "Sliders", what: "Fine-tune brightness, contrast, colour and shadows." },
       { Icon: Eye, name: "See the original", what: "Hold the eye button to see the file with no changes, to check nothing was added.", keys: ["hold \\"], touch: "Press and hold" },
       { Icon: RotateCcw, name: "Undo looks", what: "Back to the file as it came." },
+    ],
+  },
+  {
+    title: "Console styles",
+    rows: [
+      { Icon: Palette, name: "Console style", what: "Simple or 茶盤: two layouts for the same tools. Pick with the palette button; remembered on this device." },
+      { Icon: Bookmark, name: "Presets P1–P4", what: "One tap applies a saved look. Tap the floppy, then a slot, to save the current setup there.", keys: ["1", "2", "3", "4"] },
     ],
   },
   {
@@ -161,6 +171,7 @@ export function MediaHelp({ media, touch }: { media: Kind; touch: boolean }) {
         className={`${chip} ${open ? on : off}`}
       >
         <CircleHelp {...ico} />
+        <DeskLabel>Help</DeskLabel>
       </button>
       {/* pt (not mt) keeps the gap inside the hover area, so the pointer can travel into the panel */}
       <div id={id} role="tooltip" className={`absolute left-0 right-0 top-full z-30 pt-1.5 ${open ? "block" : "hidden group-hover:block group-focus-within:block"}`}>

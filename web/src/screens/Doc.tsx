@@ -51,6 +51,8 @@ import { TldrCard } from "../components/TldrCard";
 import GoDeeper from "../components/GoDeeper";
 import { picksForRecord } from "../../../worker/lib/affiliate";
 import { parseAiMoments, parseKeyMoments } from "../lib/keyMoments";
+import { useMediaSkin } from "../lib/mediaSkin";
+import { useVideoTransport } from "../lib/useVideoTransport";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
 import FullText from "../components/FullText";
@@ -198,7 +200,7 @@ export function Doc() {
   // probe failed → fail open to the current inline behavior. The 1-byte range
   // request is answered by the worker's R2 range support (see
   // worker/routes/file.ts) without downloading the file.
-  const panelMedia = recordMedia(detail, isDesktop).media;
+  const { media: panelMedia, crop: panelCrop } = recordMedia(detail, isDesktop);
   const [pdfBytes, setPdfBytes] = useState<number | null | undefined>(undefined);
   useEffect(() => {
     if (panelMedia !== "pdf") return;
@@ -312,8 +314,25 @@ export function Doc() {
   const pdfTooBig = panelMedia === "pdf" && pdfBytes !== undefined && pdfBytes !== null && pdfBytes > PDF_INLINE_MAX_BYTES;
   const pdfInline = panelMedia === "pdf" && !pdfTooBig && pdfBytes !== undefined;
   const pdfSrc = `/api/file/${id}#${pdfPage ? `page=${pdfPage}&` : ""}view=FitH`;
-  // VideoTransport portals its speed/loop chips into MediaToolbar's Adjust panel.
-  const [speedSlot, setSpeedSlot] = useState<HTMLDivElement | null>(null);
+  // Console style (Simple / 茶盤): the visitor picks it, remembered on this device.
+  const [skin, setSkin] = useMediaSkin();
+  // Video playback state lives in the hook so the transport row and the
+  // console deck drive the same video.
+  const vt = useVideoTransport(
+    videoRef,
+    panelMedia === "video"
+      ? {
+          filter: adjustFilter(adjust),
+          view,
+          crop: panelCrop,
+          fileUrl: `/api/file/${id}`,
+          name: id,
+          startAt,
+          stage: panel,
+          onPost: handlePostFrame,
+        }
+      : null,
+  );
   // Official time-coded "Video Description" lines → key moments (the rest stays as summary prose).
   const keyMoments = useMemo(() => parseKeyMoments(detail?.record.summary), [detail]);
   const aiMoments = useMemo(() => parseAiMoments(detail?.record.ai_moments), [detail]);
@@ -841,21 +860,12 @@ export function Doc() {
         )}
       </div>
 
-      {media === "video" && (
+      {media === "video" && vt && (
         <VideoTransport
           key={id}
-          videoRef={videoRef}
-          crop={crop}
-          fileUrl={`/api/file/${id}`}
-          name={id}
-          filter={adjustFilter(adjust)}
-          view={view}
-          startAt={startAt}
+          ctl={vt}
           keys={!(composer || viewer)}
           onShare={handleShare}
-          onPost={handlePostFrame}
-          speedSlot={speedSlot}
-          stage={panel}
           adjustOpen={adjustOpen}
           onToggleAdjust={setAdjustOpen}
           adjustChanged={adjustFilter(adjust) !== ""}
@@ -863,6 +873,9 @@ export function Doc() {
       )}
       {(media === "image" || media === "video") && (
         <MediaToolbar
+          media={media}
+          skin={skin}
+          onSkin={setSkin}
           adjust={adjust}
           onAdjust={setAdjust}
           lens={lens}
@@ -873,6 +886,7 @@ export function Doc() {
           onView={setView}
           onZoom={zoom.zoomBy}
           onLink={media === "image" ? () => handleShare() : undefined}
+          onMomentLink={media === "video" && vt ? () => handleShare(vt.now()) : undefined}
           onSave={media === "image" ? saveView : undefined}
           compare={compare}
           onCompare={setCompare}
@@ -880,7 +894,7 @@ export function Doc() {
           onRuler={setRuler}
           motion={motion}
           onMotion={media === "video" ? toggleMotion : undefined}
-          panelSlot={media === "video" ? setSpeedSlot : undefined}
+          video={vt}
           help={<MediaHelp media={media} touch={!finePointer} />}
           open={adjustOpen}
           onToggleOpen={setAdjustOpen}

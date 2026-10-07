@@ -7,10 +7,12 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { PointerEvent as ReactPointerEvent, ReactNode, RefObject } from "react";
-import { Activity, Contrast, DropletOff, Moon, MoonStar, Eye, Droplet, Flame, FlipHorizontal2, Focus, ImageDown, Link, LoaderCircle, Rainbow, RotateCcw, RotateCw, Ruler, Search, Shrink, SlidersHorizontal, Sun, SunMoon, TriangleAlert, WandSparkles, X, ZoomIn, ZoomOut } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { DEFAULT_VIEW, MAX_ZOOM, centreOn, pointToUV } from "../lib/mediaView";
+import { SlidersHorizontal } from "lucide-react";
+import { DEFAULT_VIEW, centreOn, pointToUV } from "../lib/mediaView";
 import type { MediaView } from "../lib/mediaView";
+import type { MediaSkin } from "../lib/mediaSkin";
+import type { VideoCtl } from "../lib/useVideoTransport";
+import { MediaConsole } from "./console/MediaConsole";
 
 export type Palette = "none" | "ironbow" | "rainbow";
 
@@ -75,26 +77,8 @@ export function adjustToParams(sp: URLSearchParams, a: ImageAdjust) {
   if (a.sharpen) sp.set("sharp", "1");
 }
 
-// Presets set the tone controls only; palette + sharpen stay as they are.
-const PRESETS: { label: string; Icon: LucideIcon; adj: Partial<ImageAdjust> }[] = [
-  { label: "Enhance", Icon: WandSparkles, adj: { brightness: 110, contrast: 140, saturate: 120 } },
-  { label: "Invert IR", Icon: SunMoon, adj: { invert: true } },
-  { label: "B&W", Icon: DropletOff, adj: { contrast: 120, gray: true } },
-  { label: "Night", Icon: MoonStar, adj: { gamma: 170, contrast: 110 } }, // dark footage: lift the shadows
-];
-const TONE = { brightness: 100, contrast: 100, saturate: 100, gamma: 100, invert: false, gray: false };
-
-const PALETTES: { key: Exclude<Palette, "none">; label: string; Icon: LucideIcon }[] = [
-  { key: "ironbow", label: "Ironbow", Icon: Flame },
-  { key: "rainbow", label: "Rainbow", Icon: Rainbow },
-];
-
-const SLIDERS: { key: "brightness" | "contrast" | "saturate" | "gamma"; label: string; Icon: LucideIcon }[] = [
-  { key: "brightness", label: "Brightness", Icon: Sun },
-  { key: "contrast", label: "Contrast", Icon: Contrast },
-  { key: "saturate", label: "Saturation", Icon: Droplet },
-  { key: "gamma", label: "Shadows", Icon: Moon },
-];
+// Presets, palettes and sliders now live with the console bodies
+// (components/console/): SimpleBody, DjBody, WalkmanBody share effects.ts.
 
 /** Shadows % → gamma exponent: 100 → 1, 200 → ~0.37 (lifted), 0 → ~2.7 (crushed). */
 export const gammaExponent = (g: number) => +Math.pow(2, (100 - g) / 70).toFixed(3);
@@ -190,7 +174,7 @@ export const ico = { size: 18, strokeWidth: 1.75, "aria-hidden": true } as const
 export const on = "border-signal text-signal";
 export const off = "border-line2 text-dim";
 
-const ADJUST_OPEN_KEY = "ru:adjust-open";
+const ADJUST_OPEN_KEY = "ru:console-open";
 
 /** Adjust panel open state, lifted so a parent can host the button elsewhere
  *  (the video transport row). Persists per browser: once opened, stays open. */
@@ -231,6 +215,9 @@ export function AdjustButton({ open, onToggle, changed }: { open: boolean; onTog
 }
 
 export function MediaToolbar({
+  media,
+  skin,
+  onSkin,
   adjust,
   onAdjust,
   lens,
@@ -241,6 +228,7 @@ export function MediaToolbar({
   onView,
   onZoom,
   onLink,
+  onMomentLink,
   onSave,
   ruler,
   onRuler,
@@ -249,11 +237,16 @@ export function MediaToolbar({
   compare,
   onCompare,
   help,
-  panelSlot,
+  video,
   open,
   onToggleOpen,
   showAdjustButton = true,
 }: {
+  /** "image" or "video": which bodies and pads render. */
+  media: "image" | "video";
+  /** Console style; the visitor picks it with the Palette button. */
+  skin: MediaSkin;
+  onSkin(s: MediaSkin): void;
   adjust: ImageAdjust;
   onAdjust: (a: ImageAdjust) => void;
   lens: boolean;
@@ -264,22 +257,24 @@ export function MediaToolbar({
   onView: (v: MediaView) => void;
   /** Frame zoom by a factor around the panel centre. */
   onZoom: (f: number) => void;
-  /** Copy a link to this view (images; video has its own moment link). */
+  /** Copy a link to this view (images). */
   onLink?: () => void;
-  /** Save the picture as seen, as PNG (images; video has Save frame). */
+  /** Copy a link to the current moment (video pads). */
+  onMomentLink?: () => void;
+  /** Save the picture as seen, as PNG (images). */
   onSave?: () => Promise<void>;
   ruler: boolean;
   onRuler: (on: boolean) => void;
   /** Video motion highlight (absent for images). */
-  motion?: boolean;
+  motion: boolean;
   onMotion?: (on: boolean) => void;
   /** Hold-to-compare: true while the unfiltered picture shows. */
   compare: boolean;
   onCompare: (on: boolean) => void;
-  /** The "how to use" chip (MediaHelp), last in the row. */
+  /** The "how to use" chip (MediaHelp), last in the Simple tool row. */
   help?: ReactNode;
-  /** Top row of the Adjust panel, for controls another component portals in (video speed/loop). */
-  panelSlot?: (el: HTMLDivElement | null) => void;
+  /** Video transport state for the console deck (null for images). */
+  video: VideoCtl | null;
   /** Controlled open state (Doc lifts it so the video transport can host the Adjust button). */
   open: boolean;
   onToggleOpen: (open: boolean) => void;
@@ -287,18 +282,6 @@ export function MediaToolbar({
   showAdjustButton?: boolean;
 }) {
   const changed = adjustFilter(adjust) !== "";
-  const [saving, setSaving] = useState<"idle" | "busy" | "failed">("idle");
-  async function save() {
-    if (!onSave || saving === "busy") return;
-    setSaving("busy");
-    try {
-      await onSave();
-      setSaving("idle");
-    } catch {
-      setSaving("failed");
-    }
-  }
-  const nextMag = LENS_MAGS[(LENS_MAGS.indexOf(mag) + 1) % LENS_MAGS.length];
   if (!showAdjustButton && !open) return null;
   return (
     <div className="mb-3.5">
@@ -310,183 +293,37 @@ export function MediaToolbar({
       {open && (
         // relative: MediaHelp's tooltip panel spans this box
         <div className={`relative rounded-xl border border-line bg-surface px-3.5 py-3 ${showAdjustButton ? "mt-3" : ""}`}>
-          {/* the tool buttons, hidden behind Adjust to save space */}
-          <div className="mb-2.5 flex flex-wrap items-center gap-2">
-          <button type="button" aria-label="Lens" aria-pressed={lens} onClick={() => onLens(!lens)} title="Lens (L)" className={`${chip} ${lens ? on : off}`}>
-            <Search {...ico} />
-          </button>
-          {lens && (
-            <button
-              type="button"
-              aria-label={`Lens magnification ${mag}×`}
-              onClick={() => onMag(nextMag)}
-              title="Shift+wheel or - / =  changes it"
-              className={`${chip} ${on}`}
-            >
-              {mag}×
-            </button>
-          )}
-          <button type="button" aria-label="Zoom out" title="Zoom out" disabled={view.z <= 1} onClick={() => onZoom(1 / 1.5)} className={`${chip} ${off} disabled:opacity-40`}>
-            <ZoomOut {...ico} />
-          </button>
-          <button type="button" aria-label="Zoom in" title="Zoom in" disabled={view.z >= MAX_ZOOM} onClick={() => onZoom(1.5)} className={`${chip} ${off} disabled:opacity-40`}>
-            <ZoomIn {...ico} />
-          </button>
-          <button
-            type="button"
-            aria-label="Rotate 90°"
-            title="Rotate 90° (R)"
-            onClick={() => onView({ ...DEFAULT_VIEW, flip: view.flip, rot: ((view.rot + 90) % 360) as MediaView["rot"] })}
-            className={`${chip} ${view.rot ? on : off}`}
-          >
-            <RotateCw {...ico} />
-            {view.rot ? `${view.rot}°` : ""}
-          </button>
-          <button
-            type="button"
-            aria-label="Flip"
-            aria-pressed={view.flip}
-            title="Flip (F)"
-            onClick={() => onView({ ...view, flip: !view.flip })}
-            className={`${chip} ${view.flip ? on : off}`}
-          >
-            <FlipHorizontal2 {...ico} />
-          </button>
-          {view.z > 1 && (
-            <button type="button" aria-label="Reset zoom" title="Reset zoom (0)" onClick={() => onView({ ...view, z: 1, x: 0, y: 0 })} className={`${chip} ${on}`}>
-              <Shrink {...ico} />
-              {view.z.toFixed(1)}×
-              <X {...ico} size={12} />
-            </button>
-          )}
-          <button type="button" aria-label="Ruler" aria-pressed={ruler} title="Ruler: drag a line (pixels, % of width, angle)" onClick={() => onRuler(!ruler)} className={`${chip} ${ruler ? on : off}`}>
-            <Ruler {...ico} />
-          </button>
-          {onMotion && (
-            <button
-              type="button"
-              aria-label="Motion"
-              aria-pressed={!!motion}
-              title="Motion: what moved lights up, still areas go dark"
-              onClick={() => onMotion(!motion)}
-              className={`${chip} ${motion ? on : off}`}
-            >
-              <Activity {...ico} />
-            </button>
-          )}
-          {onLink && (
-            <button type="button" aria-label="Copy link to this view" title="Copy link to this view" onClick={onLink} className={`${chip} ${off}`}>
-              <Link {...ico} />
-            </button>
-          )}
-          {onSave && (
-            <button
-              type="button"
-              aria-label={saving === "failed" ? "Save failed, retry" : "Save view"}
-              title={saving === "failed" ? "Save failed — retry" : "Save view (PNG, with filters + rotation)"}
-              onClick={() => void save()}
-              disabled={saving === "busy"}
-              className={`${chip} ${saving === "failed" ? "border-amber text-amber" : off}`}
-            >
-              {saving === "busy" ? <LoaderCircle {...ico} className="animate-spin" /> : saving === "failed" ? <TriangleAlert {...ico} /> : <ImageDown {...ico} />}
-            </button>
-          )}
-          {help}
-          {changed && (
-            // press and hold (pointer, or Space/Enter on the focused chip): see the file as it is, no filters
-            <button
-              type="button"
-              aria-label="Hold to see the original"
-              aria-pressed={compare}
-              title="Hold to see the original (\)"
-              onPointerDown={(e) => {
-                e.currentTarget.setPointerCapture?.(e.pointerId);
-                onCompare(true);
-              }}
-              onPointerUp={() => onCompare(false)}
-              onPointerCancel={() => onCompare(false)}
-              onLostPointerCapture={() => onCompare(false)}
-              onKeyDown={(e) => (e.key === " " || e.key === "Enter") && onCompare(true)}
-              onKeyUp={() => onCompare(false)}
-              onBlur={() => onCompare(false)}
-              onContextMenu={(e) => e.preventDefault()}
-              className={`${chip} ${compare ? on : off} touch-none select-none`}
-            >
-              <Eye {...ico} />
-            </button>
-          )}
-              {changed && (
-                <button type="button" aria-label="Reset filters" title="Reset filters" onClick={() => onAdjust(DEFAULT_ADJUST)} className={`${chip} ${off} ml-auto`}>
-                  <RotateCcw {...ico} />
-                </button>
-              )}
-          </div>
-          {panelSlot && <div ref={panelSlot} className="mb-2.5 flex flex-wrap items-center gap-2 empty:hidden" />}
-          <div className="mb-2.5 flex flex-wrap items-center gap-2">
-            {PRESETS.map((p) => {
-              const preset = { ...adjust, ...TONE, ...p.adj };
-              const active = adjustFilter(preset) === adjustFilter(adjust);
-              return (
-                <button
-                  key={p.label}
-                  type="button"
-                  aria-label={p.label}
-                  aria-pressed={active}
-                  title={p.label}
-                  onClick={() => onAdjust(active ? { ...adjust, ...TONE } : preset)}
-                  className={`${chip} ${active ? on : off}`}
-                >
-                  <p.Icon {...ico} />
-                </button>
-              );
-            })}
-            <span className="mx-1 h-4 w-px bg-line2" aria-hidden="true" />
-            {PALETTES.map((p) => (
-              <button
-                key={p.key}
-                type="button"
-                aria-label={p.label}
-                aria-pressed={adjust.palette === p.key}
-                title={p.label}
-                onClick={() => onAdjust({ ...adjust, palette: adjust.palette === p.key ? "none" : p.key })}
-                className={`${chip} ${adjust.palette === p.key ? on : off}`}
-              >
-                <p.Icon {...ico} />
-              </button>
-            ))}
-            <button
-              type="button"
-              aria-label="Sharpen"
-              aria-pressed={adjust.sharpen}
-              title="Sharpen"
-              onClick={() => onAdjust({ ...adjust, sharpen: !adjust.sharpen })}
-              className={`${chip} ${adjust.sharpen ? on : off}`}
-            >
-              <Focus {...ico} />
-            </button>
-          </div>
-          <div className="grid gap-x-5 gap-y-2 min-[600px]:grid-cols-2">
-            {SLIDERS.map((s) => (
-              <label key={s.key} title={s.label} className="flex items-center gap-2.5 font-mono text-[9.5px] tracking-[.4px] text-faint">
-                <s.Icon {...ico} className="flex-none" />
-                <input
-                  type="range"
-                  aria-label={s.label}
-                  min={0}
-                  max={200}
-                  value={adjust[s.key]}
-                  onChange={(e) => onAdjust({ ...adjust, [s.key]: Number(e.target.value) })}
-                  className="min-w-0 flex-1 accent-[var(--signal)]"
-                />
-                <span className="w-8 flex-none text-right text-dim">{adjust[s.key]}%</span>
-              </label>
-            ))}
-          </div>
+          <MediaConsole
+            media={media}
+            skin={skin}
+            onSkin={onSkin}
+            adjust={adjust}
+            onAdjust={onAdjust}
+            lens={lens}
+            onLens={onLens}
+            mag={mag}
+            onMag={onMag}
+            view={view}
+            onView={onView}
+            onZoom={onZoom}
+            ruler={ruler}
+            onRuler={onRuler}
+            motion={motion}
+            onMotion={onMotion}
+            compare={compare}
+            onCompare={onCompare}
+            onLink={onLink}
+            onMomentLink={onMomentLink}
+            onSave={onSave}
+            video={video}
+            help={help}
+          />
         </div>
       )}
     </div>
   );
 }
+
 
 const MINI = 88; // minimap's long side, px
 

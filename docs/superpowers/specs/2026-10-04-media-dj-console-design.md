@@ -1,6 +1,6 @@
 # Media DJ console — design
 
-Date: 2026-10-04 · Status: approved direction, spec under review · Design style: [茶盤 ちゃばん](../../design/chaban-design-style.md)
+Date: 2026-10-04 · Status: approved direction, v1 shipped 2026-10-07 (see "Shipped v1" below) · Design style: [茶盤 ちゃばん](../../design/chaban-design-style.md)
 
 ## Goal
 
@@ -142,3 +142,13 @@ No cross-device sync (out of scope; could later ride on the anonymous ID).
 
 ## Out of scope
 Naming presets, more than 4 slots, adding/removing pads, cross-device sync, MIDI controllers.
+
+## Shipped v1 (2026-10-07)
+- Two console layouts, picked with the Palette button in the console header (`ru:media-skin`, Simple default):
+  - **Simple** — today's panel tidied: tools grouped with dividers (zoom cluster reads Zoom out → Zoom in → Reset zoom, the Lens → Lens magnification pattern), video speed/loop/A–B as a chips row (the `speedSlot` portal is gone). Desktop shows text labels next to the icons (phones stay icon-only).
+  - **茶盤** — the instrument console: DJ deck body on wide screens (faders, square pads, click wheel + magnifier knob), Walkman body on phones (cassette window, Wakeman keyboard, click wheel). Same tools and keys in each.
+- Presets P1–P4 + floppy save flow shared by both layouts (`ru:media-presets`); `1`–`4` keys apply them while the console is open.
+- `useVideoTransport` hook: the transport row and the console deck drive one video state.
+- `ru:adjust-open` renamed `ru:console-open`; identity export carries `ru:console-open`, `ru:media-skin`, `ru:media-presets`.
+- Deferred to v2: arrange mode (pad order), the always-visible strip redesign (status chips).
+- Deviation from spec (kept deliberately): the Flip button stays in the Simple tool row — removing a working tool users tap today needs Hector's explicit call; the `F` key keeps working regardless.

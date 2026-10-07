@@ -4,7 +4,7 @@
 // UI warns before download. Import REPLACES this device's state (user choice).
 import { api, ApiError } from "../api/client";
 
-const KEYS = ["ufo_anon", "ufo_voted", "ufo_theme", "realufo.askHistory", "ru:moments-src", "ru:adjust-open"];
+const KEYS = ["ufo_anon", "ufo_voted", "ufo_theme", "realufo.askHistory", "ru:moments-src", "ru:console-open", "ru:media-skin", "ru:media-presets"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // The id this device had before an import, until carryOverFollows hands it to the Worker.
 const PREV = "ufo_anon_prev";
