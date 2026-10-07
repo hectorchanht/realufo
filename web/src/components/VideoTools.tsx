@@ -27,6 +27,11 @@ function isTyping() {
   return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
 }
 
+// Transport button groups: related controls share one pill so the row reads
+// as structured groups on narrow screens, and a group never breaks apart
+// mid-row (flex-nowrap inside; the row itself still wraps group-by-group).
+const tgroup = "inline-flex flex-nowrap items-center gap-1 rounded-[12px] bg-white/[0.04] px-1 py-1";
+
 /** The playback row (video only): seek bar, play, frame step, timecode, mute, full screen. */
 export function VideoTransport({
   ctl,
@@ -89,31 +94,41 @@ export function VideoTransport({
         onChange={(e) => ctl.seek(Number(e.target.value))}
         className="w-full accent-[var(--signal)]"
       />
-      <button type="button" aria-label={playing ? "Pause" : "Play"} title={`${playing ? "Pause" : "Play"} (Space)`} onClick={ctl.togglePlay} className={`${chip} ${off}`}>
-        {playing ? <Pause {...ico} /> : <Play {...ico} />}
-      </button>
-      <span className="font-mono text-[10px] tabular-nums text-dim">
-        {formatMoment(t, true)} / {formatMoment(dur, true)}
+      {/* playback group: play/pause + timecode */}
+      <span role="group" aria-label="Playback" className={tgroup}>
+        <button type="button" aria-label={playing ? "Pause" : "Play"} title={`${playing ? "Pause" : "Play"} (Space)`} onClick={ctl.togglePlay} className={`${chip} ${off}`}>
+          {playing ? <Pause {...ico} /> : <Play {...ico} />}
+        </button>
+        <span className="px-1 font-mono text-[10px] tabular-nums text-dim">
+          {formatMoment(t, true)} / {formatMoment(dur, true)}
+        </span>
       </span>
-      <button type="button" aria-label="Previous frame" title="Previous frame (,)" onClick={() => ctl.stepFrame(-1)} className={`${chip} ${off}`}>
-        <StepBack {...ico} />
-      </button>
-      <span className="font-mono text-[10px] tabular-nums text-faint">F{frameOf(t)}</span>
-      <button type="button" aria-label="Next frame" title="Next frame (.)" onClick={() => ctl.stepFrame(1)} className={`${chip} ${off}`}>
-        <StepForward {...ico} />
-      </button>
-      <button type="button" aria-label={muted ? "Unmute" : "Mute"} aria-pressed={muted} title={`${muted ? "Unmute" : "Mute"} (M)`} onClick={ctl.toggleMute} className={`${chip} ${muted ? on : off}`}>
-        {muted ? <VolumeX {...ico} /> : <Volume2 {...ico} />}
-      </button>
-      <button type="button" aria-label={full ? "Exit full screen" : "Full screen"} aria-pressed={full} title={full ? "Exit full screen (Esc)" : "Full screen"} onClick={ctl.toggleFull} className={`${chip} ${full ? on : off}`}>
-        {full ? <Minimize {...ico} /> : <Maximize {...ico} />}
-      </button>
-      <button type="button" aria-label="Download video" title="Download video" onClick={ctl.download} className={`${chip} ${off}`}>
-        <Download {...ico} />
-      </button>
-      {/* the Adjust panel's button lives here (after Download); its tools moved inside the panel */}
-      <AdjustButton open={adjustOpen} onToggle={onToggleAdjust} changed={adjustChanged} />
-      <span className="ml-auto flex flex-wrap gap-2">
+      {/* frame stepper group: kept as one unit so it never breaks across lines */}
+      <span role="group" aria-label="Frame step" className={tgroup}>
+        <button type="button" aria-label="Previous frame" title="Previous frame (,)" onClick={() => ctl.stepFrame(-1)} className={`${chip} ${off}`}>
+          <StepBack {...ico} />
+        </button>
+        <span className="px-1 font-mono text-[10px] tabular-nums text-faint">F{frameOf(t)}</span>
+        <button type="button" aria-label="Next frame" title="Next frame (.)" onClick={() => ctl.stepFrame(1)} className={`${chip} ${off}`}>
+          <StepForward {...ico} />
+        </button>
+      </span>
+      {/* view group: mute, full screen, download + the Adjust panel button */}
+      <span role="group" aria-label="View options" className={tgroup}>
+        <button type="button" aria-label={muted ? "Unmute" : "Mute"} aria-pressed={muted} title={`${muted ? "Unmute" : "Mute"} (M)`} onClick={ctl.toggleMute} className={`${chip} ${muted ? on : off}`}>
+          {muted ? <VolumeX {...ico} /> : <Volume2 {...ico} />}
+        </button>
+        <button type="button" aria-label={full ? "Exit full screen" : "Full screen"} aria-pressed={full} title={full ? "Exit full screen (Esc)" : "Full screen"} onClick={ctl.toggleFull} className={`${chip} ${full ? on : off}`}>
+          {full ? <Minimize {...ico} /> : <Maximize {...ico} />}
+        </button>
+        <button type="button" aria-label="Download video" title="Download video" onClick={ctl.download} className={`${chip} ${off}`}>
+          <Download {...ico} />
+        </button>
+        {/* the Adjust panel's button lives here (after Download); its tools moved inside the panel */}
+        <AdjustButton open={adjustOpen} onToggle={onToggleAdjust} changed={adjustChanged} />
+      </span>
+      {/* share group: copy link, capture frame, post frame — pushed right */}
+      <span role="group" aria-label="Share" className={`${tgroup} ml-auto`}>
         <button
           type="button"
           aria-label="Copy link to this moment"
@@ -141,7 +156,7 @@ export function VideoTransport({
           disabled={capture === "busy"}
           className={`${chip} ${off}`}
         >
-          <MessageSquarePlus {...ico} />
+          {capture === "busy" ? <LoaderCircle {...ico} className="animate-spin" /> : <MessageSquarePlus {...ico} />}
         </button>
       </span>
     </div>
