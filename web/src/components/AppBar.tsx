@@ -31,7 +31,7 @@ export function AppBar({
       data-appbar
       data-hidden={hidden || undefined}
       className={
-        "sticky top-0 z-30 flex items-center gap-3 border-b border-line px-[18px] py-[11px] backdrop-blur-[22px] backdrop-saturate-[1.6] transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)] focus-within:translate-y-0 motion-reduce:transition-none" +
+        "sticky top-0 z-30 flex items-center gap-3 border-b border-line px-[18px] pb-[11px] pt-[max(11px,env(safe-area-inset-top))] backdrop-blur-[22px] backdrop-saturate-[1.6] transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)] focus-within:translate-y-0 motion-reduce:transition-none" +
         (hidden ? " -translate-y-full" : "")
       }
       style={{ background: "color-mix(in srgb, var(--bg) 72%, transparent)" }}

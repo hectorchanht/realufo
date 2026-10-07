@@ -32,7 +32,7 @@ export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
     >
       <div
         data-bottomtab
-        className="relative z-30 flex flex-none justify-around border-t border-line px-2 pb-1 pt-2 backdrop-blur-[22px] backdrop-saturate-[1.6]"
+        className="relative z-30 flex flex-none justify-around border-t border-line px-2 pt-2 backdrop-blur-[22px] backdrop-saturate-[1.6] pb-[max(4px,env(safe-area-inset-bottom))]"
         style={{ background: "color-mix(in srgb, var(--bg) 78%, transparent)" }}
       >
         {tabs.map((item) => {
