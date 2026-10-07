@@ -102,6 +102,7 @@ export default function SiteFooter() {
           <li key="release"><a className={linkCls} href="https://release.realufo.org/" target="_blank" rel="noopener">{t("footer.original")}</a></li>,
           <li key="shelf"><Link className={linkCls} to="/shelf">{t("footer.shelf")}</Link></li>,
           <li key="newsletter"><Link className={linkCls} to="/newsletter">{t("footer.newsletter")}</Link></li>,
+          <li key="podcast"><Link className={linkCls} to="/podcast">{t("footer.podcast")}</Link></li>,
           // SDK packages (proper nouns — no translation needed)
           <li key="npm"><a className={linkCls} href="https://www.npmjs.com/package/realufo" target="_blank" rel="noopener">npm package ↗</a></li>,
           <li key="pypi"><a className={linkCls} href="https://pypi.org/project/realufo/" target="_blank" rel="noopener">PyPI package ↗</a></li>,

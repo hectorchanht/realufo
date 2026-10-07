@@ -41,6 +41,7 @@ import { pushConfig, subscribe, setPrefs, unsubscribe, pushMe, getFollow, toggle
 import { emailNewFiles } from "./lib/email";
 import { emailCaseOfWeek } from "./lib/emailCase";
 import { emailSubscribe, emailConfirm, emailUnsubscribe, newsletterIssues } from "./routes/email";
+import { podcastEpisodes } from "./routes/podcast";
 import { v1ListRecords, v1GetRecord, v1RecordText, v1Archives, v1Releases, v1Cases, v1GetCase, v1Shorts, v1Hubs, v1GetHub, v1Usage, v1OpenAPI, v1Preflight } from "./routes/v1";
 import { createWebhookRoute, getWebhookRoute, deleteWebhookRoute } from "./routes/webhooks";
 import { webhookTick } from "./lib/webhooks";
@@ -90,6 +91,7 @@ on("POST", "/api/email/subscribe", emailSubscribe);
 on("GET", "/api/email/confirm", emailConfirm);
 on("GET", "/api/email/unsubscribe", emailUnsubscribe);
 on("GET", "/api/newsletter/issues", newsletterIssues);
+on("GET", "/api/podcast/episodes", podcastEpisodes);
 on("GET", "/api/follows", getFollow);
 on("POST", "/api/follows", toggleFollow);
 on("POST", "/api/follows/merge", mergeFollows);

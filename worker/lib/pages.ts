@@ -603,6 +603,27 @@ const newsletterPage: Loader = async (env) => {
   };
 };
 
+// /podcast is in sitemap.xml, so it must pre-render (not 404+noindex) — and the
+// crawler gets the real episode list, not just the SPA shell.
+const podcastPage: Loader = async (env) => {
+  const { fetchPodcastEpisodes, PODCAST_FEED_URL } = await import("../routes/podcast");
+  let eps: { title: string; description: string; pubDate: string; audioUrl: string; durationSecs: number; caseSlug: string }[] = [];
+  try {
+    eps = await fetchPodcastEpisodes();
+  } catch { /* feed unreachable — render the shell */ }
+  const fmtDur = (s: number) => (s > 0 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` : "");
+  const items = eps.map((e) => {
+    const mins = fmtDur(e.durationSecs);
+    const caseLink = e.caseSlug ? ` <a href="/case/${escAttr(e.caseSlug)}">Read the case file →</a>` : "";
+    return `<li><strong>${escAttr(e.title)}</strong> <span>— ${escAttr(e.pubDate)}${mins ? ` · ${mins}` : ""}</span><br><span>${escAttr(e.description)}</span>${caseLink}<br><audio controls preload="none" src="${escAttr(e.audioUrl)}"></audio></li>`;
+  }).join("");
+  const list = items || "<li>No episodes yet — the first one drops with this Friday's case file.</li>";
+  return {
+    meta: { title: "Podcast — RealUFO Case Files", description: "RealUFO Case Files: one declassified UFO case file every week in audio — researched from the primary documents, every claim cited.", type: "website" },
+    body: `<h1>RealUFO Case Files — the podcast</h1><p>One declassified UFO case file every week, in audio. Same case as the Friday email — listen or read, your pick.</p><p>Subscribe: <a href="${PODCAST_FEED_URL}">RSS</a></p><ul>${list}</ul>`,
+  };
+};
+
 // A Short is the doc's video cut 9:16: same page for crawlers, canonical = the doc.
 const shortPage: Loader = async (env, g, url) => {
   const p = await docPage(env, g, url);
@@ -628,6 +649,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader; cacheKey?: (url: URL) 
   { pattern: new URLPattern({ pathname: "/compare" }), load: comparePage },
   { pattern: new URLPattern({ pathname: "/shelf" }), load: shelfPage },
   { pattern: new URLPattern({ pathname: "/newsletter" }), load: newsletterPage },
+  { pattern: new URLPattern({ pathname: "/podcast" }), load: podcastPage },
   { pattern: new URLPattern({ pathname: "/release/:slug" }), load: hubPage("release"), cacheKey: (url) => `page=${pageOf(url)}` },
   { pattern: new URLPattern({ pathname: "/topic/:slug" }), load: hubPage("topic"), cacheKey: (url) => `page=${pageOf(url)}` },
   { pattern: new URLPattern({ pathname: "/agency/:slug" }), load: hubPage("agency"), cacheKey: (url) => `page=${pageOf(url)}` },

@@ -31,6 +31,7 @@ const STRINGS = {
   "footer.resources": ["Resources", "資源"],
   "footer.shelf": ["Reading shelf", "閱讀書架"],
   "footer.newsletter": ["Newsletter", "電子報"],
+  "footer.podcast": ["Podcast", "播客"],
   "footer.request": ["Request a file 🛸", "許願池 🛸"],
   "footer.developers": ["Developers", "開發者"],
   "footer.privacy": ["Privacy", "私隱"],
