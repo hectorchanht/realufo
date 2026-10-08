@@ -5,7 +5,7 @@
 // Spec: docs/superpowers/specs/2026-10-04-media-dj-console-design.md
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Check, Disc3, List, Palette, Save } from "lucide-react";
+import { Bookmark, Check, Disc3, List, Palette, Save } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { chip, ico, off, on } from "../ImageTools";
 import type { ImageAdjust } from "../ImageTools";
@@ -154,8 +154,9 @@ function PresetRow({
             aria-pressed={lit}
             title={arming ? `Save the current setup to P${p.slot}` : `P${p.slot} · ${p.name} (${p.slot})`}
             onClick={() => onApply(p)}
-            className={`${chip} ${lit ? on : off} ${arming ? "animate-pulse border-signal" : ""}`}
+            className={`${chip} ${lit ? on : off} ${arming ? "animate-pulse border-signal" : ""} inline-flex items-center gap-1`}
           >
+            <Bookmark size={10} strokeWidth={2.25} aria-hidden="true" />
             P{p.slot}
           </button>
         );

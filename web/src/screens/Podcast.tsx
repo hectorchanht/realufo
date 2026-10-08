@@ -1,5 +1,6 @@
 // /podcast — "RealUFO Case Files": the weekly case file in audio.
 // Same case as the Friday email — listen or read, your pick.
+import { Copy, Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSetPageTitle } from "../lib/pageTitle";
@@ -58,8 +59,9 @@ export default function Podcast() {
       <div data-scroll className="mb-6 flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
         <button
           onClick={copyFeed}
-          className="rounded-lg border border-line px-3 py-1.5 text-[13px] text-signal hover:underline"
+          className="inline-flex items-center gap-[7px] rounded-lg border border-line px-3 py-1.5 text-[13px] text-signal hover:underline"
         >
+          {copied ? <Check size={14} strokeWidth={2.25} aria-hidden="true" /> : <Copy size={14} strokeWidth={2} aria-hidden="true" />}
           {copied ? "Copied!" : "Copy RSS feed"}
         </button>
         <a

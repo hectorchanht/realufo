@@ -130,15 +130,15 @@ describe("AskAnswer", () => {
     useAskMock.mockReturnValue(answered);
     const onPost = vi.fn();
     const { rerender } = render(<MemoryRouter><AskAnswer question="what did radar see?" onPost={onPost} /></MemoryRouter>);
-    fireEvent.click(screen.getByRole("button", { name: "⤴ post to a board" }));
+    fireEvent.click(screen.getByRole("button", { name: "post to a board" }));
     expect(onPost).toHaveBeenCalledWith(answered.data);
 
     rerender(<MemoryRouter><AskAnswer question="what did radar see?" /></MemoryRouter>);
-    expect(screen.queryByRole("button", { name: "⤴ post to a board" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "post to a board" })).toBeNull();
 
     useAskMock.mockReturnValue({ ...answered, data: { ...answered.data, sources: [] } });
     rerender(<MemoryRouter><AskAnswer question="what did radar see?" onPost={onPost} /></MemoryRouter>);
-    expect(screen.queryByRole("button", { name: "⤴ post to a board" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "post to a board" })).toBeNull();
   });
 
   it("share publishes the answer, opens the share sheet, then offers share link / X / undo", async () => {
@@ -343,7 +343,7 @@ describe("Ask screen", () => {
   it("post to a board opens the new-thread composer pre-filled from the answer", async () => {
     useAskMock.mockReturnValue(answered);
     renderAppAt("/ask?q=what%20did%20radar%20see%3F");
-    fireEvent.click(await screen.findByRole("button", { name: "⤴ post to a board" }));
+    fireEvent.click(await screen.findByRole("button", { name: "post to a board" }));
     expect(await screen.findByPlaceholderText("Thread title")).toHaveValue("what did radar see?");
     const bodyBox = screen.getByPlaceholderText("Say your piece. Keep it sourced.") as HTMLTextAreaElement;
     expect(bodyBox.value).toContain("Radar tracked it [1] and pilots saw it [2].");

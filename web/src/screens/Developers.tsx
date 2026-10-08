@@ -1,5 +1,6 @@
 // /developers — public API v1 documentation for third-party developers.
 // Read-only, keyless, CORS-open. Code samples are copy-pasteable curl.
+import { Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSetPageTitle } from "../lib/pageTitle";
 
@@ -164,9 +165,9 @@ function Playground() {
         <button
           onClick={run}
           disabled={busy}
-          className="rounded border border-line bg-signal px-3 py-1 font-mono text-[12px] font-bold text-canvas disabled:opacity-50"
+          className="inline-flex items-center gap-[6px] rounded border border-line bg-signal px-3 py-1 font-mono text-[12px] font-bold text-canvas disabled:opacity-50"
         >
-          {busy ? "…" : "Run ▶"}
+          {busy ? "…" : (<><Play size={12} strokeWidth={2.5} aria-hidden="true" />Run</>)}
         </button>
       </div>
       {active && <p className="mb-2 font-mono text-[11px] text-faint">{active.desc}</p>}

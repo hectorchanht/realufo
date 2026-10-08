@@ -1,7 +1,7 @@
 // A shared Ask answer's permanent page (Spec 8 §3.4): the answer frozen when it
 // was asked, free to open, and shown even while new asks are resting. The
 // worker pre-renders the same URL (indexed) for crawlers and link previews.
-import { Share2 } from "lucide-react";
+import { Share2, Send } from "lucide-react";
 import { BrandIcon } from "../components/SiteFooter";
 import { useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -72,8 +72,9 @@ function SharedAnswer({ id }: { id: number | null }) {
             placeholder="ask your own question…"
             className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[12.5px] text-ink outline-none placeholder:text-faint"
           />
-          <button type="submit" className="flex-none rounded-md bg-signal px-2 py-0.5 font-mono text-[10px] font-bold text-on-signal">
-            ↵ ASK
+          <button type="submit" className="inline-flex flex-none items-center gap-1 rounded-md bg-signal px-2 py-0.5 font-mono text-[10px] font-bold text-on-signal">
+            <Send size={11} strokeWidth={2.5} aria-hidden="true" />
+            ASK
           </button>
         </form>
       )}

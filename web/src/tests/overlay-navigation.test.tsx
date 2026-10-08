@@ -63,7 +63,7 @@ describe("overlay navigation — Composer must render inside the router", () => 
     fireEvent.change(screen.getByPlaceholderText("Say your piece. Keep it sourced."), {
       target: { value: "a real theory worth its own thread" },
     });
-    fireEvent.click(screen.getByText("POST →"));
+    fireEvent.click(screen.getByRole("button", { name: "POST" }));
 
     await waitFor(() => expect(screen.getByTestId("path").textContent).toBe("/thread/ut_TEST"));
   });
@@ -93,7 +93,7 @@ describe("overlay navigation — browser Back closes the open overlay", () => {
     expect(screen.getByTestId("path").textContent).toBe("/board/uap");
   });
 
-  it("closing via ✕ pops the overlay's history entry", async () => {
+  it("closing via the close button pops the overlay's history entry", async () => {
     renderAt("/board/uap");
     fireEvent.click(screen.getByText("open composer"));
     expect(window.history.state?.overlay).toBe(true);

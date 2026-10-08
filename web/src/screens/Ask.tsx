@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { Send } from "lucide-react";
 import { useBootstrap } from "../api/queries";
 import { AskAnswer } from "../components/AskAnswer";
 import { AskHistory } from "../components/AskHistory";
@@ -60,8 +61,9 @@ export function Ask() {
           placeholder="ask the archive — e.g. what did the 1949 Los Alamos conference conclude?"
           className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[12.5px] text-ink outline-none placeholder:text-faint"
         />
-        <button type="submit" className="flex-none rounded-md bg-signal px-2 py-0.5 font-mono text-[10px] font-bold text-on-signal">
-          ↵ ASK
+        <button type="submit" className="inline-flex flex-none items-center gap-1 rounded-md bg-signal px-2 py-0.5 font-mono text-[10px] font-bold text-on-signal">
+          <Send size={11} strokeWidth={2.5} aria-hidden="true" />
+          ASK
         </button>
       </form>
       <p className="-mt-2 mb-3 px-0.5 font-mono text-[9.5px] text-faint">

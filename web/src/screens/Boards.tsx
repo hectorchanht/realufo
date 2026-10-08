@@ -20,6 +20,7 @@
 // looks structurally empty while boards are loading — only the board-row
 // list itself swaps to skeleton rows during the initial
 // fetch (`isLoading`).
+import { MessageSquarePlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useBootstrap, useSearchThreads } from "../api/queries";
@@ -92,9 +93,7 @@ export function Boards() {
           onClick={handleNewThread}
           className="flex w-16 flex-none flex-col items-center justify-center gap-1 rounded-[14px] bg-signal text-on-signal active:scale-[.95]"
         >
-          <span aria-hidden="true" className="text-[22px]">
-            ✎
-          </span>
+          <MessageSquarePlus size={22} strokeWidth={1.75} aria-hidden="true" />
           <span className="font-mono text-[8px] font-bold">NEW</span>
         </button>
       </div>

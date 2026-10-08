@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { FileText, Sparkles } from "lucide-react";
+import { FileText, Sparkles, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 import type { FullText as FullTextData } from "../api/types";
 import { chip, off, on } from "./ImageTools";
 import { formatPage } from "../../../worker/lib/ocrMarkdown";
@@ -170,16 +170,17 @@ export default function FullText({
             <button
               type="button"
               onClick={onOpenOriginal}
-              className="mb-2 w-full rounded-xl border border-signal px-3 py-2 text-left font-mono text-[11px] text-signal"
+              className="mb-2 flex w-full items-center gap-[7px] rounded-xl border border-signal px-3 py-2 text-left font-mono text-[11px] text-signal"
             >
-              Page {cur} isn't in the extracted text: open it in the original file →
+              <ExternalLink size={12} strokeWidth={2} aria-hidden="true" className="flex-none" />
+              <span>Page {cur} isn't in the extracted text: open it in the original file</span>
             </button>
           )}
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2 font-mono">
             <span className="flex items-center gap-1.5">
-              <button type="button" aria-label="Previous page" disabled={idx === 0} onClick={() => go(idx - 1)} className={arrow}>‹</button>
+              <button type="button" aria-label="Previous page" disabled={idx === 0} onClick={() => go(idx - 1)} className={arrow}><ChevronLeft size={15} strokeWidth={2.25} aria-hidden="true" /></button>
               <span className="text-[10px] tracking-[.5px] text-signal">PAGE {shown.n} / {all ? pages.length : data.total_pages}</span>
-              <button type="button" aria-label="Next page" disabled={idx >= pages.length - 1} onClick={() => go(idx + 1)} className={arrow}>›</button>
+              <button type="button" aria-label="Next page" disabled={idx >= pages.length - 1} onClick={() => go(idx + 1)} className={arrow}><ChevronRight size={15} strokeWidth={2.25} aria-hidden="true" /></button>
             </span>
             <span className="flex items-center gap-1">
               {fmt("md", "MD")}
@@ -212,9 +213,10 @@ export default function FullText({
             <button
               type="button"
               onClick={onOpenOriginal}
-              className="mt-3 w-full rounded-xl border border-line2 py-3 font-mono text-xs font-semibold text-ink active:scale-[.99]"
+              className="flex w-full items-center justify-center gap-[7px] rounded-xl border border-line2 py-3 font-mono text-xs font-semibold text-ink active:scale-[.99]"
             >
-              Text continues in the original file →
+              Text continues in the original file
+              <ExternalLink size={13} strokeWidth={2} aria-hidden="true" />
             </button>
           )}
         </>

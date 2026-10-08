@@ -12,7 +12,7 @@
 // the media console deck drive the same state.
 import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import { Camera, Download, Link, LoaderCircle, Maximize, MessageSquarePlus, Minimize, Pause, Play, StepBack, StepForward, TriangleAlert, Volume2, VolumeX } from "lucide-react";
+import { Camera, Download, Link, LoaderCircle, Maximize, MessageSquarePlus, Minimize, Pause, Play, StepBack, StepForward, TriangleAlert, Volume2, VolumeX, FileText, Sparkles } from "lucide-react";
 import { AdjustButton, LENS_PX, LensLayer, chip, ico, lensTurn, off, on } from "./ImageTools";
 import type { LensHit } from "./ImageTools";
 import type { MediaView } from "../lib/mediaView";
@@ -326,8 +326,9 @@ export function KeyMoments({
                   type="button"
                   aria-pressed={(k === "ai") === isAi}
                   onClick={() => choose(k)}
-                  className={`${chip} ${(k === "ai") === isAi ? on : off} px-[7px] py-[2px] text-[9px]`}
+                  className={`${chip} ${(k === "ai") === isAi ? on : off} inline-flex items-center gap-1 px-[7px] py-[2px] text-[9px]`}
                 >
+                  {k === "ai" ? <Sparkles size={10} strokeWidth={2.25} aria-hidden="true" /> : <FileText size={10} strokeWidth={2.25} aria-hidden="true" />}
                   {k === "ai" ? "AI" : "Official"}
                 </button>
               ))}

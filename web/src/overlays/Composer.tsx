@@ -15,7 +15,7 @@
 // small grab-bar element is added here purely to host that pointer handling
 // without stealing pointer capture from the header's close button or any
 // input inside the sheet.
-import { ImagePlus, BellRing } from "lucide-react";
+import { ImagePlus, BellRing, X, Send, Minus, Heart, HelpCircle, Microscope } from "lucide-react";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAddComment, useAddCaseComment, useCreateThread, useReply } from "../api/queries";
@@ -27,11 +27,11 @@ import { useLang } from "../lib/lang";
 type StanceValue = NonNullable<Stance>;
 
 // prototype line 639: `[['neutral','Neutral','var(--dim)'], ...]`.
-const STANCE_OPTS: Array<{ id: StanceValue; label: string; color: string }> = [
-  { id: "neutral", label: "Neutral", color: "var(--dim)" },
-  { id: "believer", label: "Believer", color: "var(--grn)" },
-  { id: "skeptic", label: "Skeptic", color: "var(--amber)" },
-  { id: "analyst", label: "Analyst", color: "var(--cyan)" },
+const STANCE_OPTS: Array<{ id: StanceValue; label: string; color: string; icon: typeof Minus }> = [
+  { id: "neutral", label: "Neutral", color: "var(--dim)", icon: Minus },
+  { id: "believer", label: "Believer", color: "var(--grn)", icon: Heart },
+  { id: "skeptic", label: "Skeptic", color: "var(--amber)", icon: HelpCircle },
+  { id: "analyst", label: "Analyst", color: "var(--cyan)", icon: Microscope },
 ];
 
 // prototype line 644.
@@ -261,9 +261,9 @@ export function Composer() {
             type="button"
             onClick={closeComposer}
             aria-label="Close composer"
-            className="flex h-8 w-8 flex-none items-center justify-center rounded-[9px] border border-line2 text-base text-dim active:scale-[.94]"
+            className="flex h-8 w-8 flex-none items-center justify-center rounded-[9px] border border-line2 text-dim active:scale-[.94]"
           >
-            ✕
+            <X size={15} strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
 
@@ -296,13 +296,14 @@ export function Composer() {
                 key={o.id}
                 type="button"
                 onClick={() => setStance(o.id)}
-                className="flex-1 rounded-[9px] border px-1 py-[7px] font-mono text-[10px] font-semibold active:scale-[.96]"
+                className="flex flex-1 items-center justify-center gap-1 rounded-[9px] border px-1 py-[7px] font-mono text-[10px] font-semibold active:scale-[.96]"
                 style={{
                   borderColor: o.color,
                   background: active ? o.color : "transparent",
                   color: active ? "var(--on-signal)" : o.color,
                 }}
               >
+                <o.icon size={11} strokeWidth={2.25} aria-hidden="true" />
                 {o.label}
               </button>
             );
@@ -339,9 +340,9 @@ export function Composer() {
                   setImgUrl(null);
                 }}
                 aria-label="Remove image"
-                className="flex h-[38px] w-[30px] items-center justify-center rounded-[8px] border border-line2 text-sm text-dim active:scale-[.94]"
+                className="flex h-[38px] w-[30px] items-center justify-center rounded-[8px] border border-line2 text-dim active:scale-[.94]"
               >
-                ✕
+                <X size={14} strokeWidth={2} aria-hidden="true" />
               </button>
             </div>
           ) : (
@@ -387,9 +388,10 @@ export function Composer() {
             type="button"
             onClick={handleSubmit}
             disabled={busy}
-            className="flex-none rounded-[11px] bg-signal px-[22px] py-[11px] font-mono text-xs font-bold tracking-[.5px] text-on-signal active:scale-[.96] disabled:pointer-events-none disabled:opacity-60"
+            className="flex flex-none items-center gap-[7px] rounded-[11px] bg-signal px-[22px] py-[11px] font-mono text-xs font-bold tracking-[.5px] text-on-signal active:scale-[.96] disabled:pointer-events-none disabled:opacity-60"
           >
-            POST →
+            <Send size={13} strokeWidth={2.25} aria-hidden="true" />
+            POST
           </button>
         </div>
       </div>

@@ -7,6 +7,7 @@
 // the PageTitleProvider context (Task 23b — lib/pageTitle.tsx), not props:
 // the AppShell-mounted provider is the single source of truth screens push
 // their contextual title into, and AppBar just reads it.
+import { ArrowLeft } from "lucide-react";
 import { Saucer } from "./Saucer";
 import { usePageTitle } from "../lib/pageTitle";
 import { ThemeToggle } from "./ThemeToggle";
@@ -41,9 +42,9 @@ export function AppBar({
           type="button"
           onClick={onBack}
           aria-label="Back"
-          className="-ml-[10px] grid h-[34px] w-[34px] flex-none place-items-center rounded-[8px] text-[20px] text-ink active:scale-[.94]"
+          className="-ml-[10px] grid h-[34px] w-[34px] flex-none place-items-center rounded-[8px] text-ink active:scale-[.94]"
         >
-          ‹
+          <ArrowLeft size={19} strokeWidth={2} aria-hidden="true" />
         </button>
       )}
       {showBrand && (

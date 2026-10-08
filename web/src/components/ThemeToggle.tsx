@@ -1,5 +1,6 @@
 // Dark/light switch for TopNav (desktop) and AppBar (mobile). Theme state +
 // persistence live in ThemeProvider; this is just the reachable control.
+import { Sun, Moon } from "lucide-react";
 import { useTheme } from "../theme/useTheme";
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
@@ -16,7 +17,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
         className
       }
     >
-      {theme === "dark" ? "☀" : "☾"}
+      {theme === "dark" ? <Sun size={15} strokeWidth={2} aria-hidden="true" /> : <Moon size={15} strokeWidth={2} aria-hidden="true" />}
     </button>
   );
 }

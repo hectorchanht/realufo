@@ -6,6 +6,7 @@
 // This component renders ONLY the screen content — AppShell (Task 14) owns
 // the app frame/AppBar/nav and mounts this inside its `<Outlet/>`, same as
 // every other screen task.
+import { MessageCircle, ArrowUpRight, MessageSquarePlus } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useBootstrap, useCase, useCaseComments } from "../api/queries";
 import { caseStoryUrl } from "../../../worker/lib/shared";
@@ -181,10 +182,10 @@ export function Case() {
       >
         <span
           aria-hidden="true"
-          className="grid h-[26px] w-[26px] flex-none place-items-center rounded-full text-[13px]"
+          className="grid h-[26px] w-[26px] flex-none place-items-center rounded-full"
           style={{ background: "var(--signal-dim)", color: "var(--signal)" }}
         >
-          ✎
+          <MessageCircle size={13} strokeWidth={2} aria-hidden="true" />
         </span>
         <span className="flex-1 font-body text-[13.5px] text-faint">Add your read on this case…</span>
         <span className="flex-none font-mono text-[8.5px] uppercase text-faint" style={{ letterSpacing: ".5px" }}>
@@ -222,7 +223,7 @@ export function Case() {
                 }
                 className="flex items-center gap-1.5 font-mono text-[11px] text-amber active:scale-[.93]"
               >
-                <span aria-hidden="true" className="text-[12px]">⤴</span>to a board
+                <ArrowUpRight size={13} strokeWidth={2.25} aria-hidden="true" />to a board
               </button>
             </div>
           </div>
@@ -242,7 +243,8 @@ export function Case() {
         }
         className="mt-4 flex w-full items-center justify-center gap-2.5 rounded-xl border border-dashed border-line2 py-[13px] font-mono text-xs font-semibold text-ink hover:border-signal hover:text-signal active:scale-[.98]"
       >
-        ◈ Start a board thread about this case
+        <MessageSquarePlus size={15} strokeWidth={2} aria-hidden="true" />
+        Start a board thread about this case
       </button>
 
       {otherCases.length > 0 && (

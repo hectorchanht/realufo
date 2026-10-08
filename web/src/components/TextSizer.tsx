@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
-import { AArrowDown, AArrowUp } from "lucide-react";
+import { AArrowDown, AArrowUp, ALargeSmall } from "lucide-react";
 import { TEXT_SCALES, useTheme } from "../theme/useTheme";
 import { useDismiss } from "../lib/useDismiss";
 
@@ -63,9 +63,9 @@ export function TextSizeBadge({ style, up = false, size = BADGE }: { style: CSSP
         aria-expanded={!!open}
         onClick={() => setOpen(open ? null : btn.current!.getBoundingClientRect())}
         className="absolute z-[31] grid -translate-x-1/2 shadow-lg -translate-y-1/2 place-items-center rounded-full font-mono font-bold leading-none active:scale-90 before:absolute before:-inset-[8px] before:content-['']"
-        style={{ ...style, width: size, height: size, fontSize: size / 2, background: "var(--signal)", color: "var(--bg)" }}
+        style={{ ...style, width: size, height: size, background: "var(--signal)", color: "var(--bg)" }}
       >
-        Aa
+        <ALargeSmall size={size / 2.2} strokeWidth={2.25} aria-hidden="true" />
       </button>
       {open &&
         createPortal(

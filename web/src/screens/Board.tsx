@@ -30,6 +30,7 @@
 // `undefined`. `useBoardThreads` is always called (with the resolved board's
 // id, or "" until resolved — its `enabled: !!boardId` guard skips the fetch)
 // so hook-call order never varies between renders (rules-of-hooks).
+import { MessageSquarePlus } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useBoardThreads, useBootstrap } from "../api/queries";
 import { ThreadRow } from "../components/ThreadRow";
@@ -104,10 +105,11 @@ export function Board() {
         <button
           type="button"
           onClick={handleNewThread}
-          className="mt-[13px] w-full rounded-[11px] border py-2.5 font-mono text-xs font-bold tracking-[.5px] active:scale-[.98]"
+          className="mt-[13px] flex w-full items-center justify-center gap-[8px] rounded-[11px] border py-2.5 font-mono text-xs font-bold tracking-[.5px] active:scale-[.98]"
           style={{ borderColor: dataInk(board.accent), color: dataInk(board.accent) }}
         >
-          ✎ START A NEW THREAD
+          <MessageSquarePlus size={15} strokeWidth={2} aria-hidden="true" />
+          START A NEW THREAD
         </button>
       </div>
 

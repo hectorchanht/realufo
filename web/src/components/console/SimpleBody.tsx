@@ -5,7 +5,7 @@
 // parent-then-modifier pattern as Lens → Lens magnification.
 import { useState } from "react";
 import {
-  Activity, Contrast, Droplet, Eye, FlipHorizontal2, ImageDown, Link, LoaderCircle, Moon, Repeat, Repeat1,
+  Activity, Contrast, Droplet, Eye, FlipHorizontal2, Gauge, ImageDown, Link, LoaderCircle, Moon, Repeat, Repeat1,
   RotateCcw, RotateCw, Ruler, Search, Shrink, Sun, TriangleAlert, X, ZoomIn, ZoomOut,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -66,8 +66,9 @@ function ToolRow(p: {
           aria-label={`Lens magnification ${p.mag}×`}
           onClick={() => p.onMag(nextMag)}
           title="Shift+wheel or - / =  changes it"
-          className={`${chip} ${on}`}
+          className={`${chip} ${on} inline-flex items-center gap-1`}
         >
+          <ZoomIn size={11} strokeWidth={2.25} aria-hidden="true" />
           {p.mag}×
         </button>
       )}
@@ -190,7 +191,8 @@ function SpeedRow({ video }: { video: VideoCtl }) {
   return (
     <div data-scroll className="mb-2.5 flex items-center gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
       {SPEEDS.map((s) => (
-        <button key={s} type="button" aria-label={`Speed ${s}×`} aria-pressed={video.rate === s} title="Speed ([ ])" onClick={() => video.setRate(s)} className={`${chip} ${video.rate === s ? on : off}`}>
+        <button key={s} type="button" aria-label={`Speed ${s}×`} aria-pressed={video.rate === s} title="Speed ([ ])" onClick={() => video.setRate(s)} className={`${chip} ${video.rate === s ? on : off} inline-flex items-center gap-1`}>
+          <Gauge size={11} strokeWidth={2.25} aria-hidden="true" />
           {s}×
         </button>
       ))}

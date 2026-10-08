@@ -31,7 +31,7 @@
 // thumb. Guarded defensively below (`post.source_record_id ===
 // sourceRecord?.id`) rather than assumed, so an unmatched id degrades to "no
 // image" instead of a wrong thumb.
-import { Reply } from "lucide-react";
+import { Reply, Pencil } from "lucide-react";
 import { Fragment } from "react";
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -412,7 +412,7 @@ export function Thread() {
           onClick={handleReply}
           className="flex w-full items-center gap-[10px] rounded-xl border border-line2 bg-surface px-[14px] py-[11px] text-left font-mono text-xs text-dim active:scale-[.99]"
         >
-          <span className="text-[15px] text-signal">✎</span>
+          <Pencil size={15} strokeWidth={2} aria-hidden="true" className="flex-none text-signal" />
           Post a reply — anonymous by default
         </button>
       </div>

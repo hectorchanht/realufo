@@ -2,6 +2,7 @@
 // realufo-handoff/RealUFO.dc.html lines 404-414 (`sc-if value="{{ viewer }}"`).
 import { useRef } from "react";
 import type { MouseEvent } from "react";
+import { X } from "lucide-react";
 import { useOverlay } from "./OverlayProvider";
 import { ZoomLens } from "../components/ImageTools";
 import { DEFAULT_VIEW, pointToUV } from "../lib/mediaView";
@@ -41,9 +42,9 @@ export function MediaViewer() {
           type="button"
           onClick={closeViewer}
           aria-label="Close viewer"
-          className="flex h-9 w-9 flex-none items-center justify-center rounded-[10px] border border-line2 text-[17px] text-white active:scale-[.94]"
+          className="flex h-9 w-9 flex-none items-center justify-center rounded-[10px] border border-line2 text-white active:scale-[.94]"
         >
-          ✕
+          <X size={16} strokeWidth={2} aria-hidden="true" />
         </button>
       </div>
 

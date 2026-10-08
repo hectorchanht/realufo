@@ -10,6 +10,7 @@
 // truth for "voted" across re-renders and reloads. The local overlay only
 // bridges the gap until the cache patch lands (it is dropped when `votes`
 // changes), so the pillar flips instantly on tap.
+import { ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ApiError, QueuedError } from "../api/client";
 import { isVotedLocally, useVote } from "../api/queries";
@@ -78,7 +79,7 @@ export function VoteButton({ targetType, targetId, votes, voted, row }: VoteButt
         color: isVoted ? "var(--on-signal)" : "var(--dim)",
       }}
     >
-      <span className="text-[13px] leading-none">▲</span>
+      <ChevronUp size={14} strokeWidth={2.5} aria-hidden="true" className="leading-none" />
       <span className="font-mono text-[11px] font-bold">{displayVotes}</span>
     </button>
   );

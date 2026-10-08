@@ -144,7 +144,8 @@ function CommentsSheet({ id, onClose, onCount }: { id: string; onClose: () => vo
           ))}
         </ul>
         <button type="button" onClick={() => openComposer({ mode: "comment", recordId: id })}
-          className="m-3 mb-[max(12px,env(safe-area-inset-bottom))] rounded-full border border-line2 px-4 py-2.5 text-left font-mono text-[12px] text-dim hover:border-signal">
+          className="m-3 mb-[max(12px,env(safe-area-inset-bottom))] inline-flex items-center gap-[8px] rounded-full border border-line2 px-4 py-2.5 text-left font-mono text-[12px] text-dim hover:border-signal">
+          <MessageCircle size={14} strokeWidth={2} aria-hidden="true" />
           Add a comment…
         </button>
       </div>

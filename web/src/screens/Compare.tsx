@@ -3,7 +3,7 @@
 // values are highlighted; each column links back to its doc page.
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeftRight, X } from "lucide-react";
+import { ArrowLeftRight, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRecord, useRecords } from "../api/queries";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { Skeleton } from "../components/Skeleton";
@@ -167,13 +167,15 @@ export default function Compare() {
         <div className="mb-4 flex flex-wrap gap-2 font-mono text-[11px]">
           <span className="self-center text-faint">Same series:</span>
           {series.prev && (
-            <button type="button" onClick={() => set("b", series.prev!)} className="rounded-full border border-line2 px-3 py-1.5 text-dim hover:border-signal hover:text-signal">
-              ← {series.prevTitle || series.prev}
+            <button type="button" onClick={() => set("b", series.prev!)} className="inline-flex items-center gap-1 rounded-full border border-line2 px-3 py-1.5 text-dim hover:border-signal hover:text-signal">
+              <ChevronLeft size={13} strokeWidth={2.25} aria-hidden="true" />
+              {series.prevTitle || series.prev}
             </button>
           )}
           {series.next && (
-            <button type="button" onClick={() => set("b", series.next!)} className="rounded-full border border-line2 px-3 py-1.5 text-dim hover:border-signal hover:text-signal">
-              {series.nextTitle || series.next} →
+            <button type="button" onClick={() => set("b", series.next!)} className="inline-flex items-center gap-1 rounded-full border border-line2 px-3 py-1.5 text-dim hover:border-signal hover:text-signal">
+              {series.nextTitle || series.next}
+              <ChevronRight size={13} strokeWidth={2.25} aria-hidden="true" />
             </button>
           )}
         </div>

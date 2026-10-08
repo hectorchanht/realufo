@@ -42,7 +42,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { Dices, Trophy } from "lucide-react";
+import { Dices, Trophy, ChevronLeft, ChevronRight, ArrowRight, Satellite, X } from "lucide-react";
 import { useBootstrap, useFacets, useHubs, useRecords, useShorts } from "../api/queries";
 import { hubForFilters } from "../lib/hubLink";
 import { useSetFooterLinks } from "../lib/footerLinks";
@@ -80,8 +80,8 @@ function Pager({ page, totalPages, onPage }: PagerProps) {
   const btn = "h-9 min-w-9 rounded-lg px-[9px] font-mono text-[11px] active:scale-[.96] disabled:opacity-35 disabled:active:scale-100";
   return (
     <nav aria-label="Pagination" className="mt-5 flex flex-wrap items-center justify-center gap-1.5">
-      <button type="button" className={btn} style={typeChipStyle(false)} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page" title="Previous page">
-        ‹
+      <button type="button" className={`${btn} inline-flex items-center justify-center`} style={typeChipStyle(false)} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page" title="Previous page">
+        <ChevronLeft size={14} strokeWidth={2.25} aria-hidden="true" />
       </button>
       {pageList(page, totalPages).map((p, i) =>
         p === "…" ? (
@@ -101,8 +101,8 @@ function Pager({ page, totalPages, onPage }: PagerProps) {
           </button>
         ),
       )}
-      <button type="button" className={btn} style={typeChipStyle(false)} disabled={page >= totalPages} onClick={() => onPage(page + 1)} aria-label="Next page" title="Next page">
-        ›
+      <button type="button" className={`${btn} inline-flex items-center justify-center`} style={typeChipStyle(false)} disabled={page >= totalPages} onClick={() => onPage(page + 1)} aria-label="Next page" title="Next page">
+        <ChevronRight size={14} strokeWidth={2.25} aria-hidden="true" />
       </button>
     </nav>
   );
@@ -133,7 +133,8 @@ function PageJump({ page, totalPages, onPage }: PagerProps) {
         className="w-[64px] rounded-lg border border-line2 bg-surface px-2 py-[5px] text-center text-[11px] text-ink outline-none focus:border-signal"
       />
       <span>/ {totalPages}</span>
-      <button type="submit" className="rounded-lg px-[9px] py-[5px] text-[11px] active:scale-[.96]" style={typeChipStyle(false)}>
+      <button type="submit" className="inline-flex items-center gap-1 rounded-lg px-[9px] py-[5px] text-[11px] active:scale-[.96]" style={typeChipStyle(false)} aria-label="Go to page">
+        <ArrowRight size={12} strokeWidth={2.25} aria-hidden="true" />
         go
       </button>
     </form>
@@ -499,7 +500,7 @@ export function Archive() {
         <div data-scroll className="mb-1.5 flex gap-[7px] overflow-x-auto pb-2.5">
           <ArchiveChip selected={archive === ""} style={archiveChipStyle(archive === "", true)} onClick={() => setParam("archive", null)}>
             {/* prototype archChips seeds the "all" entry with flag:'🛰' (RealUFO.dc.html:591) */}
-            <span aria-hidden="true">🛰</span>
+            <Satellite size={12} strokeWidth={2} aria-hidden="true" />
             All
           </ArchiveChip>
           {archives.map((a) => (
@@ -618,9 +619,9 @@ export function Archive() {
                   type="button"
                   aria-label={`Remove ${p.label}`}
                   onClick={() => setParams(p.remove)}
-                  className="rounded-full border border-signal px-2 py-[3px] font-mono text-[10px] text-signal hover:bg-signal hover:text-bg"
+                  className="inline-flex items-center gap-1 rounded-full border border-signal px-2 py-[3px] font-mono text-[10px] text-signal hover:bg-signal hover:text-bg"
                 >
-                  {p.label} ✕
+                  {p.label} <X size={10} strokeWidth={2.5} aria-hidden="true" />
                 </button>
               </li>
             ))}
@@ -628,9 +629,10 @@ export function Archive() {
               <button
                 type="button"
                 onClick={() => setParams(Object.fromEntries(FILTER_KEYS.map((k) => [k, null])))}
-                className="px-1 font-mono text-[10.5px] text-dim hover:text-signal"
+                className="inline-flex items-center gap-1 px-1 font-mono text-[10.5px] text-dim hover:text-signal"
               >
-                ✕ clear all
+                <X size={11} strokeWidth={2.5} aria-hidden="true" />
+                clear all
               </button>
             </li>
           </ul>

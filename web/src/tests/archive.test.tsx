@@ -210,7 +210,7 @@ describe("Archive", () => {
 
     const nav = screen.getByRole("navigation", { name: "Pagination" });
     // 1000 / 40 = 25 pages: 1 … 4 5 6 … 25
-    expect(nav.textContent).toBe("‹1…456…25›");
+    expect(nav.textContent).toBe("1…456…25");
     expect(screen.getByRole("button", { name: "5" })).toHaveAttribute("aria-current", "page");
 
     fireEvent.click(screen.getByRole("button", { name: "Next page" }));
@@ -232,7 +232,7 @@ describe("Archive", () => {
     await screen.findByText(/CIA-UAP-017/);
 
     fireEvent.change(screen.getByLabelText("jump to"), { target: { value: "12" } });
-    fireEvent.click(screen.getByRole("button", { name: "go" }));
+    fireEvent.click(screen.getByRole("button", { name: "Go to page" }));
     await waitFor(() => expect(useRecordsMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 440 })));
     expect(screen.getByLabelText("jump to")).toHaveValue(12);
 
@@ -299,7 +299,7 @@ describe("Archive", () => {
 
     // one pill per active filter (sort is an order, not a filter)
     const pills = screen.getByRole("list", { name: "Active filters" });
-    expect(within(pills).getAllByRole("button").map((b) => b.textContent)).toEqual(["FBI ✕", "AI summary ✕", "Featured ✕", "✕ clear all"]);
+    expect(within(pills).getAllByRole("button").map((b) => b.textContent)).toEqual(["FBI ", "AI summary ", "Featured ", "clear all"]);
     fireEvent.click(within(pills).getByRole("button", { name: "Remove AI summary" }));
     await waitFor(() => expect(last().has).toBe("featured"));
 

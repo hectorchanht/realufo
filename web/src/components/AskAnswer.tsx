@@ -1,6 +1,6 @@
 // Live "Ask the Archive" answer: fetches /api/ask, shows loading/error states,
 // and lets the asker share it as a public page (Spec 8 §3.3).
-import { RotateCw, Share2 } from "lucide-react";
+import { RotateCw, Share2, Undo2, Megaphone } from "lucide-react";
 import { BrandIcon } from "./SiteFooter";
 import { useState } from "react";
 import { useAsk, useShareAsk } from "../api/queries";
@@ -40,7 +40,8 @@ function ShareControls({ question, logId }: { question: string; logId: number })
   if (!url)
     return (
       <>
-        <button type="button" disabled={share.isPending} onClick={publish} className={ACTION}>
+        <button type="button" disabled={share.isPending} onClick={publish} className={`${ACTION} inline-flex items-center gap-[6px]`}>
+          <Share2 size={13} strokeWidth={2} aria-hidden="true" />
           share
         </button>
         {failed && <span className="font-mono text-[10px] text-dim">couldn't share — try again</span>}
@@ -65,8 +66,9 @@ function ShareControls({ question, logId }: { question: string; logId: number })
             { onSuccess: () => { setUrl(null); setResult(null); }, onError: () => setUndoFailed(true) }
           );
         }}
-        className={ACTION}
+        className={`${ACTION} inline-flex items-center gap-[6px]`}
       >
+        <Undo2 size={13} strokeWidth={2} aria-hidden="true" />
         undo
       </button>
       {undoFailed && <span className="font-mono text-[10px] text-dim">couldn't undo — try again</span>}
@@ -105,8 +107,9 @@ export function AskAnswer({ question, onPost }: { question: string; onPost?: (da
           <>
             {canShare && <ShareControls key={data.log_id} question={question} logId={data.log_id!} />}
             {canPost && (
-              <button type="button" onClick={() => onPost!(data)} className={ACTION}>
-                ⤴ post to a board
+              <button type="button" onClick={() => onPost!(data)} className={`${ACTION} inline-flex items-center gap-[6px]`}>
+                <Megaphone size={13} strokeWidth={2} aria-hidden="true" />
+                post to a board
               </button>
             )}
           </>

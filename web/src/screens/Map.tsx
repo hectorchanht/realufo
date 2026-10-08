@@ -20,6 +20,7 @@
 // filtered Archive). Curated case pins (`sightings[]`, case rows only) are a
 // separate diamond marker that navigates to /case/:slug; their prototype
 // counts were fake and are gone.
+import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useBootstrap, useRecords } from "../api/queries";
@@ -60,9 +61,9 @@ function PlacePanel({ place }: { place: MapPlace }) {
         <Link
           to="/map"
           aria-label="Close place panel"
-          className="px-1 font-mono text-[14px] text-faint hover:text-ink"
+          className="grid place-items-center px-1 text-faint hover:text-ink"
         >
-          ✕
+          <X size={15} strokeWidth={2} aria-hidden="true" />
         </Link>
       </div>
       {isLoading ? (
@@ -92,8 +93,8 @@ function PlaceChooser({ places, onPick, onClose }: { places: MapPlace[]; onPick:
     >
       <div className="mb-2 flex items-center gap-2">
         <h2 className="flex-1 font-mono text-[10px] uppercase tracking-[.6px] text-faint">{label}</h2>
-        <button type="button" aria-label="Close" onClick={onClose} className="px-1 font-mono text-[14px] text-faint hover:text-ink">
-          ✕
+        <button type="button" aria-label="Close" onClick={onClose} className="grid place-items-center px-1 text-faint hover:text-ink">
+          <X size={15} strokeWidth={2} aria-hidden="true" />
         </button>
       </div>
       <div className="flex flex-col">
