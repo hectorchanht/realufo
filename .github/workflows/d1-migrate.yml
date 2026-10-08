@@ -15,12 +15,12 @@ jobs:
       - run: npm i -g wrangler
       - run: |
           if [ -z "${{ github.event.inputs.migration }}" ]; then
-            echo "diagnostic only"
+            echo "=== diagnostic: check image_keys columns ==="
+            wrangler d1 execute realufo-db --remote --command "SELECT name FROM pragma_table_info('comments') WHERE name='image_keys';"
+            wrangler d1 execute realufo-db --remote --command "SELECT name FROM pragma_table_info('posts') WHERE name='image_keys';"
           else
-            echo "=== step 1: alter comments ==="
-            wrangler d1 execute realufo-db --remote --command "ALTER TABLE comments ADD COLUMN image_keys TEXT;"
-            echo "=== step 2: alter posts ==="
-            wrangler d1 execute realufo-db --remote --command "ALTER TABLE posts ADD COLUMN image_keys TEXT;"
+            echo "=== apply migration ==="
+            wrangler d1 execute realufo-db --remote --file "${{ github.event.inputs.migration }}"
             echo "=== verify ==="
             wrangler d1 execute realufo-db --remote --command "SELECT name FROM pragma_table_info('comments') WHERE name='image_keys';"
             wrangler d1 execute realufo-db --remote --command "SELECT name FROM pragma_table_info('posts') WHERE name='image_keys';"
