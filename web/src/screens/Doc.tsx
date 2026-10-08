@@ -27,11 +27,11 @@
 // Loading/not-found: `record` is undefined both while `useRecord` hasn't
 // settled and if the id doesn't resolve to a real record — both cases render
 // the same simple safe states (no attempt to index into `undefined`).
-import { Expand, GitCompare, MessageCircle, MessageSquarePlus, MessagesSquare, Send, X } from "lucide-react";
+import { Expand, GitCompare, MessageCircle, MessageSquarePlus, MessagesSquare, X, ChevronLeft, ChevronRight, Pencil, CornerUpRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useAddComment, useBootstrap, useComments, useRecord, useRecords } from "../api/queries";
+import { useBootstrap, useComments, useRecord, useRecords } from "../api/queries";
 import type { RecordsParams } from "../api/queries";
 import type { Comment, RecordDetail, RecordKind, RelatedGroup } from "../api/types";
 import { DocCard } from "../components/DocCard";
@@ -75,7 +75,6 @@ import { Skeleton } from "../components/Skeleton";
 import { dataInk } from "../lib/dataInk";
 import { plural } from "../lib/plural";
 import { useLang } from "../lib/lang";
-import { ApiError, QueuedError } from "../api/client";
 
 // prototype line 522: `if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4)`.
 const SWIPE_MIN_DX = 55;
@@ -194,14 +193,11 @@ export function Doc() {
   const { data: commentsData, error: commentsError, refetch: refetchComments } = useComments(id);
   const { data: boot } = useBootstrap();
 
-  // Sticky bottom quick-reply bar: a real textarea + send button that posts a
-  // comment through the same mutation the composer sheet uses (anonymous,
-  // neutral stance — the sheet stays for handle/stance/image posts).
-  const quickPost = useAddComment(id);
-  const [quickBody, setQuickBody] = useState("");
+  // Sticky bottom reply bar: a single icon pill that opens the full composer
+  // in comment mode — the same modal every other reply entry point uses.
+  // (The composer posts through useAddComment, anonymous, neutral stance;
+  // the sheet stays for handle/stance/image posts.)
   const [showVoteNudge, setShowVoteNudge] = useState(false);
-  const quickBarRef = useRef<HTMLDivElement>(null);
-  const quickInputRef = useRef<HTMLTextAreaElement>(null);
   // Inline PDF <iframe> only on desktop — it renders blank on mobile browsers,
   // so mobile keeps the thumbnail + tap-to-open-in-new-tab flow.
   const isDesktop = useMediaQuery("(min-width: 900px)");
@@ -211,11 +207,9 @@ export function Doc() {
   // uploaded key). Reset when navigating to another record.
   const [thumbFailed, setThumbFailed] = useState(false);
   useEffect(() => setThumbFailed(false), [id]);
-  // A new file gets a fresh quick-reply draft and no stale vote nudge.
+  // A new file gets no stale vote nudge.
   useEffect(() => {
-    setQuickBody("");
     setShowVoteNudge(false);
-    if (quickInputRef.current) quickInputRef.current.style.height = "auto";
   }, [id]);
 
   // Byte size of the PDF behind the panel: undefined = still probing, null =
@@ -599,49 +593,11 @@ export function Doc() {
     openComposer({ mode: "comment", recordId: id });
   }
 
-  // Quick-reply bar: chat-style auto-grow, posts on send.
-  function growQuickInput() {
-    const el = quickInputRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
-  }
-
-  function submitQuickReply() {
-    const body = quickBody.trim();
-    if (!body || quickPost.isPending) return;
-    navigator.vibrate?.(5);
-    quickPost.mutate(
-      { body },
-      {
-        onSuccess: () => {
-          setQuickBody("");
-          if (quickInputRef.current) quickInputRef.current.style.height = "auto";
-          toast(t("doc.posted"));
-        },
-        onError: (e: unknown) => {
-          // QueuedError: saved to the offline outbox — it will be sent (the
-          // OverlayHost toasts), so the draft goes. Otherwise mirror the
-          // composer sheet's error copy.
-          if (e instanceof QueuedError) {
-            setQuickBody("");
-            if (quickInputRef.current) quickInputRef.current.style.height = "auto";
-            return;
-          }
-          if (e instanceof ApiError && e.status === 429) toast("slow down — too many posts");
-          else toast("Could not post — try again");
-        },
-      },
-    );
-  }
-
-  // Vote nudge → jump to the quick-reply bar and focus it. The bar is sticky
-  // at the viewport bottom while reading, so this is usually just a focus;
-  // the scroll covers the bar's resting position at page end.
+  // Vote nudge / discussion-starter Reply → the full composer in comment
+  // mode, same modal as every other reply entry point.
   function focusQuickReply() {
     setShowVoteNudge(false);
-    quickBarRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-    window.setTimeout(() => quickInputRef.current?.focus({ preventScroll: true }), 400);
+    handleAddComment();
   }
 
   // The "⤴ to a board" promote flow (prototype lines 631-632's `onPromote`).
@@ -817,9 +773,10 @@ export function Doc() {
                 <button
                   type="button"
                   onClick={handleOpenOriginal}
-                  className="mt-2 rounded-lg border border-neutral-300 px-4 py-2 font-mono text-xs font-semibold text-neutral-800 active:scale-[.98]"
+                  className="mt-2 inline-flex items-center gap-[8px] rounded-lg border border-neutral-300 px-4 py-2 font-mono text-xs font-semibold text-neutral-800 active:scale-[.98]"
                 >
-                  ⛶ OPEN FULL PDF
+                  <Expand size={14} strokeWidth={2} aria-hidden="true" />
+                  OPEN FULL PDF
                 </button>
               )}
             </div>
@@ -877,7 +834,7 @@ export function Doc() {
               className={`absolute bottom-[11px] right-3 rounded-[7px] px-[9px] py-1 font-mono text-[10px] text-white ${fade}`}
               style={{ background: "rgba(0,0,0,.6)" }}
             >
-              {media === "image" ? <Expand size={13} strokeWidth={2} /> : `⛶ open ${glyph}`}
+              {media === "image" ? <Expand size={13} strokeWidth={2} /> : <span className="inline-flex items-center gap-1"><Expand size={11} strokeWidth={2} aria-hidden="true" />open {glyph}</span>}
             </span>
           </button>
         )}
@@ -923,10 +880,10 @@ export function Doc() {
             onClick={() => goTo(-1)}
             aria-label="Previous file"
             data-lens-hide
-            className={`absolute left-2 top-1/2 grid h-[38px] w-[38px] -translate-y-1/2 place-items-center rounded-full border border-white/25 text-[19px] text-white active:scale-90 ${fade}`}
+            className={`absolute left-2 top-1/2 grid h-[38px] w-[38px] -translate-y-1/2 place-items-center rounded-full border border-white/25 text-white active:scale-90 ${fade}`}
             style={{ background: "rgba(0,0,0,.5)" }}
           >
-            ‹
+            <ChevronLeft size={20} strokeWidth={2} aria-hidden="true" />
           </button>
         )}
         {nextOk && (
@@ -935,10 +892,10 @@ export function Doc() {
             onClick={() => goTo(1)}
             aria-label="Next file"
             data-lens-hide
-            className={`absolute right-2 top-1/2 grid h-[38px] w-[38px] -translate-y-1/2 place-items-center rounded-full border border-white/25 text-[19px] text-white active:scale-90 ${fade}`}
+            className={`absolute right-2 top-1/2 grid h-[38px] w-[38px] -translate-y-1/2 place-items-center rounded-full border border-white/25 text-white active:scale-90 ${fade}`}
             style={{ background: "rgba(0,0,0,.5)" }}
           >
-            ›
+            <ChevronRight size={20} strokeWidth={2} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -1088,9 +1045,10 @@ export function Doc() {
         onClick={handleOpenOriginal}
         aria-label={`Open original ${glyph}`}
         title={`Open original ${glyph}`}
-        className="mb-[22px] w-full rounded-xl border border-line2 py-3 font-mono text-xs font-semibold text-ink active:scale-[.99]"
+        className="mb-[22px] flex w-full items-center justify-center gap-[8px] rounded-xl border border-line2 py-3 font-mono text-xs font-semibold text-ink active:scale-[.99]"
       >
-        ⛶ {glyph}
+        <Expand size={14} strokeWidth={2} aria-hidden="true" />
+        {glyph}
       </button>
       {srcLinks.length > 0 && (
         <div className="-mt-3 mb-[22px] flex flex-wrap justify-center gap-x-5 gap-y-1 font-mono text-[11px]">
@@ -1228,10 +1186,10 @@ export function Doc() {
       >
         <span
           aria-hidden="true"
-          className="grid h-[26px] w-[26px] flex-none place-items-center rounded-full text-[13px]"
+          className="grid h-[26px] w-[26px] flex-none place-items-center rounded-full"
           style={{ background: "var(--signal-dim)", color: "var(--signal)" }}
         >
-          ✎
+          <Pencil size={13} strokeWidth={2} aria-hidden="true" />
         </span>
         <span className="flex-1 font-body text-[13.5px] text-faint">Add your read on this file…</span>
         <span className="flex-none font-mono text-[8.5px] tracking-[.5px] text-faint">ANON OK</span>
@@ -1274,9 +1232,7 @@ export function Doc() {
                 onClick={() => handlePromote(c)}
                 className="flex items-center gap-[5px] font-mono text-[11px] text-amber active:scale-[.93]"
               >
-                <span aria-hidden="true" className="text-xs">
-                  ⤴
-                </span>
+                <CornerUpRight size={13} strokeWidth={2.25} aria-hidden="true" />
                 to a board
               </button>
             </div>
@@ -1290,7 +1246,8 @@ export function Doc() {
         onClick={handleFileThread}
         className="mt-4 flex w-full items-center justify-center gap-[9px] rounded-xl border border-dashed border-line2 py-[13px] font-mono text-xs font-semibold text-ink active:scale-[.98]"
       >
-        ◈ Start a board thread about this file
+        <MessageSquarePlus size={15} strokeWidth={2} aria-hidden="true" />
+        Start a board thread about this file
       </button>
 
       {/* related files — uapbrowser-style groups: war.gov's related media,
@@ -1308,16 +1265,13 @@ export function Doc() {
         </section>
       ))}
 
-      {/* Sticky bottom quick-reply bar — same mechanics as Thread's reply
-          bar: `sticky bottom` keeps it pinned to the viewport bottom (above
-          the mobile BottomTab overlay via --bnav-y, 0 when the tab hides)
-          while reading; at page end it rests in flow. In flow at the end it
-          never covers content, and the shell's screenpad already clears the
-          BottomTab. A real textarea + send posts via useAddComment
-          (anonymous, neutral stance); the "Add your read" sheet above stays
-          for handle/stance/image posts. */}
+      {/* Sticky bottom reply bar — same mechanics as Thread's reply bar:
+          `sticky bottom` keeps it pinned to the viewport bottom (above the
+          mobile BottomTab overlay via --bnav-y, 0 when the tab hides) while
+          reading; at page end it rests in flow. Icon-only pill: taps open
+          the full composer in comment mode, the same modal as the
+          "Add your read on this file…" button and the discussion header. */}
       <div
-        ref={quickBarRef}
         data-quickreply
         className="sticky left-0 right-0 z-20 -mx-4 mt-4 border-t border-line px-4 py-[10px] transition-[bottom] duration-300 ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none"
         style={{
@@ -1327,35 +1281,15 @@ export function Doc() {
           WebkitBackdropFilter: "blur(18px)",
         }}
       >
-        <div className="flex items-end gap-2">
-          <textarea
-            ref={quickInputRef}
-            value={quickBody}
-            onChange={(e) => {
-              setQuickBody(e.target.value);
-              growQuickInput();
-            }}
-            onFocus={() => {
-              // iOS Safari doesn't resize the layout viewport for the
-              // keyboard — re-assert visibility once it opens. block:"nearest"
-              // is a no-op when the stuck bar is already in view.
-              window.setTimeout(() => quickBarRef.current?.scrollIntoView({ block: "nearest" }), 300);
-            }}
-            rows={1}
-            placeholder={t("doc.quickReply")}
-            aria-label={t("doc.quickReply")}
-            className="max-h-[120px] min-h-[44px] flex-1 resize-none overflow-y-auto rounded-xl border border-line2 bg-surface px-[14px] py-[11px] font-body text-[13.5px] leading-[1.45] text-ink outline-none placeholder:text-faint placeholder:whitespace-nowrap placeholder:overflow-hidden placeholder:text-ellipsis"
-          />
-          <button
-            type="button"
-            onClick={submitQuickReply}
-            disabled={!quickBody.trim() || quickPost.isPending}
-            aria-label={t("doc.sendReply")}
-            className="grid h-[44px] w-[44px] flex-none place-items-center rounded-xl bg-signal text-on-signal active:scale-[.96] disabled:opacity-40"
-          >
-            <Send size={18} aria-hidden="true" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleAddComment}
+          aria-label={t("doc.quickReply")}
+          title={t("doc.quickReply")}
+          className="grid h-[48px] w-full place-items-center rounded-xl border border-line2 bg-surface text-signal active:scale-[.99]"
+        >
+          <MessageCircle size={20} aria-hidden="true" />
+        </button>
       </div>
     </div>
   );

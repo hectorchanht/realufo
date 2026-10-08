@@ -480,38 +480,17 @@ describe("Doc", () => {
     expect(opts.boardId).toBe("gov"); // a PDF is a government document
   });
 
-  it("sticky quick-reply bar posts a comment via useAddComment and clears on success", () => {
-    mockQuickMutate.mockImplementation((_vars, opts) => opts.onSuccess());
+  it("sticky reply bar is an icon pill that opens the composer in comment mode", () => {
     renderDoc();
     const bar = document.querySelector('[data-quickreply]');
     expect(bar).toBeTruthy();
     expect(bar!.className).toContain("sticky");
-    const input = screen.getByRole("textbox", { name: /Add your read…/i });
-    const send = screen.getByRole("button", { name: /Send reply/i });
-    expect(send).toBeDisabled(); // empty draft can't send
-    fireEvent.change(input, { target: { value: "  hello from the bar  " } });
-    expect(send).not.toBeDisabled();
-    fireEvent.click(send);
-    expect(useAddCommentMock).toHaveBeenCalledWith("rec1");
-    expect(mockQuickMutate).toHaveBeenCalledWith({ body: "hello from the bar" }, expect.any(Object));
-    expect(input).toHaveValue("");
-  });
-
-  it("quick-reply send stays disabled for whitespace-only drafts", () => {
-    renderDoc();
-    const input = screen.getByRole("textbox", { name: /Add your read…/i });
-    fireEvent.change(input, { target: { value: "   " } });
-    expect(screen.getByRole("button", { name: /Send reply/i })).toBeDisabled();
+    const pill = screen.getByRole("button", { name: /Add your read…/i });
+    // icon-only: no visible words on the pill
+    expect(pill.textContent).toBe("");
+    fireEvent.click(pill);
+    expect(mockOpenComposer).toHaveBeenCalledWith(expect.objectContaining({ mode: "comment", recordId: "rec1" }));
     expect(mockQuickMutate).not.toHaveBeenCalled();
-  });
-
-  it("quick-reply placeholder stays on one line (no wrap on narrow screens)", () => {
-    renderDoc();
-    const input = screen.getByRole("textbox", { name: /Add your read…/i });
-    // ::placeholder gets white-space:nowrap + ellipsis so a long placeholder
-    // never wraps to two lines inside the 44px-tall bar.
-    expect(input.className).toContain("placeholder:whitespace-nowrap");
-    expect(input.className).toContain("placeholder:text-ellipsis");
   });
 
   it("shows a simple not-found state when the record is missing (never indexes into undefined)", () => {
