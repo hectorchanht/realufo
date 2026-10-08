@@ -2,8 +2,8 @@ name: d1-migrate
 on:
   workflow_dispatch:
     inputs:
-      migration:
-        description: "Migration file to apply, e.g. db/migrations/0050_post_images.sql (empty = diagnostic only)"
+      sql:
+        description: "SQL to execute (empty = diagnostic: check image_keys columns)"
         default: ""
 jobs:
   migrate:
@@ -14,13 +14,13 @@ jobs:
         with: { ref: "build/app-foundation" }
       - run: npm i -g wrangler
       - run: |
-          if [ -z "${{ github.event.inputs.migration }}" ]; then
+          if [ -z "${{ github.event.inputs.sql }}" ]; then
             echo "=== diagnostic: check image_keys columns ==="
             wrangler d1 execute realufo-db --remote --command "SELECT name FROM pragma_table_info('comments') WHERE name='image_keys';"
             wrangler d1 execute realufo-db --remote --command "SELECT name FROM pragma_table_info('posts') WHERE name='image_keys';"
           else
-            echo "=== apply migration ==="
-            wrangler d1 execute realufo-db --remote --file "${{ github.event.inputs.migration }}"
+            echo "=== executing SQL ==="
+            wrangler d1 execute realufo-db --remote --command "${{ github.event.inputs.sql }}"
             echo "=== verify ==="
             wrangler d1 execute realufo-db --remote --command "SELECT name FROM pragma_table_info('comments') WHERE name='image_keys';"
             wrangler d1 execute realufo-db --remote --command "SELECT name FROM pragma_table_info('posts') WHERE name='image_keys';"
