@@ -67,6 +67,13 @@ const STRINGS = {
   "archive.sortDiscussed": ["Most discussed", "最多討論"],
   "archive.sortWtfWeek": ["Most WTF this week", "本週最 WTF"],
   "archive.sortWtfMonth": ["Most WTF this month", "本月最 WTF"],
+  "leaderboard.title": ["WTF Leaderboard", "WTF 排行榜"],
+  "leaderboard.subtitle": ["The files the crowd finds hardest to explain, ranked by unexplained votes.", "群眾覺得最難解釋嘅檔案，按「無法解釋」票數排名。"],
+  "leaderboard.week": ["This week", "本週"],
+  "leaderboard.month": ["This month", "本月"],
+  "leaderboard.emptyLine1": ["no votes yet.", "暫時未有人投票。"],
+  "leaderboard.emptyLine2": ["be the first to call it.", "做第一個投票嘅人。"],
+  "leaderboard.link": ["Leaderboard", "排行榜"],
   "archive.emptyLine1": ["no records match.", "搵唔到相關檔案。"],
   "archive.emptyLine2": ["the truth is elsewhere.", "真相喺第二度。"],
   // doc screen share row

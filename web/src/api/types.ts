@@ -144,6 +144,8 @@ export interface ListRecordCard extends RecordCardBase {
   doc_date: string | null;
   /** Searching (`q`): best-matching page of the file's own text, with an excerpt. */
   match?: { page: number; text: string } | null;
+  /** WTF sorts (`wtf_week`/`wtf_month`): unexplained votes inside the window. */
+  wtfCount?: number | null;
 }
 
 /** Union of both RecordCard projections — narrow with `"commentN" in card` or `"location" in card`. */

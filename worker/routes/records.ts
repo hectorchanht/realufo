@@ -132,6 +132,11 @@ export async function listRecords(req: Request, env: Env) {
   const w = where.length ? "WHERE " + where.join(" AND ") : "";
   const sort = u.searchParams.get("sort");
   let order = "r.featured DESC, r.created_at DESC";
+  // Unexplained-vote count inside a trailing window; shared by the wtf_week /
+  // wtf_month ORDER BY and the `wtfCount` select column (powers /leaderboard).
+  let wtfDays = 0;
+  const wtfCountSql = (days: number) =>
+    `(SELECT count(*) FROM record_verdicts v WHERE v.record_id=r.id AND v.verdict='unexplained' AND v.updated_at >= datetime('now','-${days} days'))`;
   const orderBind: unknown[] = [];
   let join = "";
   const joinBind: unknown[] = [];
@@ -179,8 +184,9 @@ export async function listRecords(req: Request, env: Env) {
     // Most WTF this week/month: unexplained-verdict activity inside the window.
     // updated_at moves when a vote is (re)cast, so this measures recent heat,
     // not first-cast dates. Quiet records sink to the bottom, then newest added.
-    const days = sort === "wtf_week" ? 7 : 30;
-    order = `(SELECT count(*) FROM record_verdicts v WHERE v.record_id=r.id AND v.verdict='unexplained' AND v.updated_at >= datetime('now','-${days} days')) DESC, r.created_at DESC`;
+    // wtfDays is also reused below to expose the count as `wtfCount` (leaderboard).
+    wtfDays = sort === "wtf_week" ? 7 : 30;
+    order = `${wtfCountSql(wtfDays)} DESC, r.created_at DESC`;
   }
   const limit = Math.max(1, Math.min(100, Number(u.searchParams.get("limit")) || 40));
   const offset = Math.max(0, Number(u.searchParams.get("offset")) || 0);
@@ -191,9 +197,10 @@ export async function listRecords(req: Request, env: Env) {
           WHERE record_fts MATCH ? AND record_id = r.id ORDER BY rank LIMIT 1)`;
   const ftsTiers = fts ? [...(tiers ? [tiers.phrase, tiers.exact] : []), fts] : [];
   const matchCol = fts ? `, coalesce(${ftsTiers.map(() => pageOf).join(", ")}, NULL) text_match` : "";
+  const wtfCol = wtfDays ? `, ${wtfCountSql(wtfDays)} wtfCount` : "";
   const rows = await env.DB.prepare(
     `
-    SELECT ${CARD_COLS}${matchCol}
+    SELECT ${CARD_COLS}${matchCol}${wtfCol}
     FROM records r ${join} ${w} ORDER BY ${order} LIMIT ? OFFSET ?`
   )
     .bind(...ftsTiers, ...joinBind, ...bind, ...orderBind, limit, offset)

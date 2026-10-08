@@ -41,8 +41,8 @@
 // exact page (Doc.tsx crosses into neighbour pages at the edges).
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
-import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { Dices } from "lucide-react";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Dices, Trophy } from "lucide-react";
 import { useBootstrap, useFacets, useHubs, useRecords, useShorts } from "../api/queries";
 import { hubForFilters } from "../lib/hubLink";
 import { useSetFooterLinks } from "../lib/footerLinks";
@@ -548,6 +548,14 @@ export function Archive() {
             onChange={(v) => setParam("location", v)}
           />
           <FacetSelect label={t("archive.sortLabel")} all={t("archive.sortFeatured")} value={filter.sort ?? ""} options={SORTS.map((o) => ({ value: o.value, label: t(o.key) }))} onChange={(v) => setParam("sort", v)} />
+          <Link
+            to="/leaderboard"
+            className="flex min-w-0 items-center justify-center gap-1.5 rounded-lg border px-2 py-[5px] font-mono text-[10.5px] outline-none transition hover:text-ink"
+            style={{ borderColor: "var(--line2)", color: "var(--dim)" }}
+          >
+            <Trophy size={13} />
+            {t("leaderboard.link")}
+          </Link>
         </div>
 
         {/* type chips */}

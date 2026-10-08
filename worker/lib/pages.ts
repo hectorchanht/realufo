@@ -65,6 +65,11 @@ const TAB = {
     description: "Anonymous discussion boards for UAP sightings, declassified files and cold cases.",
     type: "website" as const,
   },
+  leaderboard: {
+    title: "WTF Leaderboard",
+    description: "The declassified UAP files the crowd finds hardest to explain, ranked by unexplained votes this month.",
+    type: "website" as const,
+  },
   cases: {
     title: "Cold Cases",
     description: "Famous UAP cases, what the official record says, and where to discuss them.",
@@ -154,6 +159,40 @@ const boardsPage: Loader = async (env) => {
   const t = TAB.boards;
   const links = results.map((b) => ({ href: boardHref(b.slug), text: b.desc ? `${b.name} — ${b.desc}` : b.name }));
   return { meta: t, body: tabBody(t.title, t.description, section("Boards", links)) };
+};
+
+// /leaderboard — top 30 by unexplained ("WTF") votes in the trailing 30 days,
+// with schema.org ItemList for SEO. The SPA takes over for week/month tabs.
+const leaderboardPage: Loader = async (env, _g, url) => {
+  const t = TAB.leaderboard;
+  const { results } = await env.DB.prepare(
+    `SELECT r.id, r.title, r.kind,
+       (SELECT count(*) FROM record_verdicts v WHERE v.record_id=r.id AND v.verdict='unexplained'
+        AND v.updated_at >= datetime('now','-30 days')) wtfCount
+     FROM records r WHERE r.status='live'
+     ORDER BY wtfCount DESC, r.created_at DESC LIMIT 30`
+  ).all<{ id: string; title: string | null; kind: string; wtfCount: number }>();
+  const origin = url?.origin ?? "https://realufo.org";
+  const links = results.map((r) => ({
+    href: docHref(r.id),
+    text: `${docTitle(r.title ?? r.id, r.id, r.kind)} — ${r.wtfCount} unexplained votes`,
+  }));
+  return {
+    meta: {
+      ...t,
+      jsonLd: {
+        "@type": "ItemList",
+        name: t.title,
+        itemListElement: results.map((r, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          url: `${origin}${docHref(r.id)}`,
+          name: docTitle(r.title ?? r.id, r.id, r.kind),
+        })),
+      },
+    },
+    body: tabBody(t.title, t.description, section("Top 30 this month", links)),
+  };
 };
 
 const casesPage: Loader = async (env) => {
@@ -648,6 +687,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader; cacheKey?: (url: URL) 
   { pattern: new URLPattern({ pathname: "/developers" }), load: developersPage },
   { pattern: new URLPattern({ pathname: "/compare" }), load: comparePage },
   { pattern: new URLPattern({ pathname: "/shelf" }), load: shelfPage },
+  { pattern: new URLPattern({ pathname: "/leaderboard" }), load: leaderboardPage },
   { pattern: new URLPattern({ pathname: "/newsletter" }), load: newsletterPage },
   { pattern: new URLPattern({ pathname: "/podcast" }), load: podcastPage },
   { pattern: new URLPattern({ pathname: "/release/:slug" }), load: hubPage("release"), cacheKey: (url) => `page=${pageOf(url)}` },
