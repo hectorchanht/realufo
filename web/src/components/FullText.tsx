@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { FileText, Sparkles } from "lucide-react";
 import type { FullText as FullTextData } from "../api/types";
 import { chip, off, on } from "./ImageTools";
 import { formatPage } from "../../../worker/lib/ocrMarkdown";
@@ -87,15 +88,19 @@ export default function FullText({
     onPageChange?.(n);
   };
   const showSummary = !!data.aiSummary && view === "summary";
-  const tab = (k: "summary" | "text", label: string) => (
+  // Icon-only tabs (Sparkles = AI summary, FileText = full text); the English
+  // label survives as aria-label/title for screen readers, tooltips, tests.
+  const tab = (k: "summary" | "text", label: string, Icon: typeof Sparkles) => (
     <button
       key={k}
       type="button"
       aria-pressed={(k === "summary") === showSummary}
+      aria-label={label}
+      title={label}
       onClick={() => setView(k)}
-      className={`${chip} ${(k === "summary") === showSummary ? on : off} px-[7px] py-[2px] text-[9px]`}
+      className={`${chip} grid h-8 w-8 place-items-center ${(k === "summary") === showSummary ? on : off}`}
     >
-      {label}
+      <Icon size={14} aria-hidden="true" />
     </button>
   );
   const fmt = (k: "md" | "json", label: string) => (
@@ -116,8 +121,8 @@ export default function FullText({
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 font-mono">
         {data.aiSummary ? (
           <span className="flex gap-1">
-            {tab("summary", "AI SUMMARY")}
-            {tab("text", "FULL TEXT")}
+            {tab("summary", "AI SUMMARY", Sparkles)}
+            {tab("text", "FULL TEXT", FileText)}
           </span>
         ) : (
           <h2 className="text-[11px] font-semibold tracking-[.5px] text-ink">FULL TEXT</h2>

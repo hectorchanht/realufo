@@ -5,7 +5,7 @@
 // what makes people click.
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, ChevronDown, Coffee } from "lucide-react";
+import { BookOpen, ChevronDown, Coffee, Bell } from "lucide-react";
 import {
   AMAZON_TAG,
   affiliateUrl,
@@ -66,11 +66,11 @@ export function SupportStrip() {
       <span className="inline-flex items-center gap-1.5">
         <Coffee size={13} className="text-signal" /> RealUFO is free &amp; open source.
       </span>
-      <Link to="/notifications" className="text-signal hover:underline">
-        Get new-file alerts
+      <Link to="/notifications" aria-label="Get new-file alerts" title="Get new-file alerts" className="grid h-8 w-8 place-items-center rounded-full text-signal hover:underline">
+        <Bell size={15} aria-hidden="true" />
       </Link>
-      <a href={KOFI_URL} target="_blank" rel="noopener" className="text-signal hover:underline">
-        Buy us a coffee ↗
+      <a href={KOFI_URL} target="_blank" rel="noopener" aria-label="Buy us a coffee" title="Buy us a coffee" className="grid h-8 w-8 place-items-center rounded-full text-signal hover:underline">
+        <Coffee size={15} aria-hidden="true" />
       </a>
     </p>
   );

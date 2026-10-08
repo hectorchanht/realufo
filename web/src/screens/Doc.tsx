@@ -51,6 +51,7 @@ import { FollowBell } from "../components/FollowBell";
 import CiteButton from "../components/CiteButton";
 import { TldrCard } from "../components/TldrCard";
 import GoDeeper from "../components/GoDeeper";
+import FunnelStrip from "../components/FunnelStrip";
 import { picksForRecord } from "../../../worker/lib/affiliate";
 import { parseAiMoments, parseKeyMoments } from "../lib/keyMoments";
 import { useMediaSkin } from "../lib/mediaSkin";
@@ -1076,19 +1077,22 @@ export function Doc() {
 
       <GoDeeper picks={picksForRecord(record.title, record.summary || "")} note="Directly related to this file." />
 
-      {/* OPEN ORIGINAL — prototype line 367 */}
+      {/* OPEN ORIGINAL — prototype line 367. Icon + format glyph only
+          (e.g. "⛶ PDF"); the English label lives in aria-label. */}
       <button
         type="button"
         onClick={handleOpenOriginal}
+        aria-label={`Open original ${glyph}`}
+        title={`Open original ${glyph}`}
         className="mb-[22px] w-full rounded-xl border border-line2 py-3 font-mono text-xs font-semibold text-ink active:scale-[.99]"
       >
-        ⛶ OPEN ORIGINAL {glyph}
+        ⛶ {glyph}
       </button>
       {srcLinks.length > 0 && (
         <div className="-mt-3 mb-[22px] flex flex-wrap justify-center gap-x-5 gap-y-1 font-mono text-[11px]">
           {srcLinks.map((l) => (
             <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="py-1 text-dim hover:text-ink">
-              ↗ {l.label} page
+              ↗ {l.label}
             </a>
           ))}
         </div>
@@ -1112,17 +1116,18 @@ export function Doc() {
       {(detail.series?.prev || detail.series?.next) && (
         <div className="mb-[22px] grid grid-cols-2 gap-2 font-mono">
           {[
-            { id: detail.series.prev, t: detail.series.prevTitle, k: detail.series.prevKind, label: "← PREVIOUS IN SERIES", align: "text-left" },
-            { id: detail.series.next, t: detail.series.nextTitle, k: detail.series.nextKind, label: "NEXT IN SERIES →", align: "text-right" },
-          ].map(({ id: sid, t, k, label, align }) => {
+            { id: detail.series.prev, t: detail.series.prevTitle, k: detail.series.prevKind, arrow: "←", aria: "Previous in series", align: "text-left" },
+            { id: detail.series.next, t: detail.series.nextTitle, k: detail.series.nextKind, arrow: "→", aria: "Next in series", align: "text-right" },
+          ].map(({ id: sid, t, k, arrow, aria, align }) => {
             const sp = sid ? docTitleParts(sid, t, k ?? undefined) : null;
             return sid && sp ? (
               <Link
-                key={label}
+                key={aria}
                 to={`/doc/${sid}${toolQuery}`}
+                aria-label={`${aria}: ${sp.title}`}
                 className={`rounded-xl border border-line px-3 py-2.5 ${align} active:scale-[.99]`}
               >
-                <div className="text-[9px] tracking-[.5px] text-faint">{label}</div>
+                <div className="text-[9px] tracking-[.5px] text-faint" aria-hidden="true">{arrow}</div>
                 {sp.showId && (
                   <div className="mt-1 text-[10px] font-semibold" style={{ color: dataInk(accent), overflowWrap: "anywhere" }}>
                     {sp.id}
@@ -1133,7 +1138,7 @@ export function Doc() {
                 </div>
               </Link>
             ) : (
-              <div key={label} />
+              <div key={aria} />
             );
           })}
         </div>
@@ -1163,18 +1168,8 @@ export function Doc() {
         </div>
       )}
 
-      {/* Funnel strip: own-site link to the citizen skywatch gear guide
-          (watchthenight.com). One line on narrow screens — the question and
-          the link truncate instead of wrapping mid-phrase. */}
-      <div className="mb-4 flex items-center gap-1.5 whitespace-nowrap font-mono text-[11px] text-faint">
-        <span className="min-w-0 truncate">{t("funnel.stripQ")}</span>
-        <span aria-hidden="true" className="flex-none">
-          →
-        </span>
-        <a href="https://watchthenight.com" className="min-w-0 truncate font-semibold text-cyan active:scale-[.97]">
-          {t("funnel.stripLink")}
-        </a>
-      </div>
+      {/* Funnel strip: rotating watchthenight.com messages (link first). */}
+      <FunnelStrip />
 
       {/* Discussion header + count — prototype line 368. Icon-only: a speech
           bubble with the comment count on the left, and a single icon button

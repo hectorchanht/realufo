@@ -63,10 +63,11 @@ export function DiscussionStarter({
       <button
         type="button"
         onClick={onReply}
-        className="mt-2 flex items-center gap-1.5 font-mono text-[11px] font-semibold text-cyan active:scale-[.97]"
+        aria-label={t("doc.starterReply")}
+        title={t("doc.starterReply")}
+        className="mt-2 grid h-9 w-9 place-items-center rounded-full text-cyan active:scale-[.97]"
       >
-        <MessageCircle size={13} aria-hidden="true" />
-        {t("doc.starterReply")}
+        <MessageCircle size={17} aria-hidden="true" />
       </button>
     </div>
   );
