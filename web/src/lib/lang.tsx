@@ -1,8 +1,7 @@
-// Language: English / Traditional Chinese (zh-Hant). Persisted in localStorage,
-// toggled from the footer. Covers the persistent shell (nav, footer) and case
-// titles/ledes; long-form content (story bodies, docs) stays English for now —
-// a half-translated archive is worse than a clearly-English one.
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+// Language: English only for now — zh-Hant strings stay in STRINGS so the
+// toggle can come back later with a one-line change. LangProvider hard-codes
+// "en" (stored prefs are ignored) and the footer toggle is unmounted.
+import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from "react";
 
 export type Lang = "en" | "zh-Hant";
 const KEY = "realufo.lang";
@@ -108,24 +107,18 @@ const LangCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void; t: (k: S
 });
 
 export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => {
+  // zh-Hant disabled: everyone gets English. setLang is a no-op that also
+  // clears any stale stored preference so it can't resurrect later.
+  const setLang = useCallback((_l: Lang) => {
     try {
-      return (localStorage.getItem(KEY) as Lang) === "zh-Hant" ? "zh-Hant" : "en";
-    } catch {
-      return "en";
-    }
-  });
-  const setLang = useCallback((l: Lang) => {
-    setLangState(l);
-    try {
-      localStorage.setItem(KEY, l);
+      localStorage.removeItem(KEY);
     } catch { /* private mode */ }
   }, []);
   useEffect(() => {
-    document.documentElement.lang = lang;
-  }, [lang]);
-  const t = useCallback((k: StringKey) => STRINGS[k][lang === "zh-Hant" ? 1 : 0], [lang]);
-  const v = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
+    document.documentElement.lang = "en";
+  }, []);
+  const t = useCallback((k: StringKey) => STRINGS[k][0], []);
+  const v = useMemo(() => ({ lang: "en" as Lang, setLang, t }), [setLang, t]);
   return <LangCtx.Provider value={v}>{children}</LangCtx.Provider>;
 }
 

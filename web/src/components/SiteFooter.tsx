@@ -10,7 +10,7 @@ import { useNavItems } from "./navItems";
 import { useLang } from "../lib/lang";
 import { useFooterLinks } from "../lib/footerLinks";
 import { AppearanceSwitcher } from "./AppearanceSwitcher";
-import LangToggle from "./LangToggle";
+// (LangToggle unmounted: site is English-only for now — see lib/lang.tsx)
 import { Saucer } from "./Saucer";
 import { DATASET_URL, SOCIAL_PROFILES } from "../../../worker/lib/profiles";
 
@@ -135,7 +135,6 @@ export default function SiteFooter() {
         </ul>
         <div className="flex flex-col items-end gap-2" role="group" aria-label="Display preferences">
           <div className="flex items-center gap-2">
-            <LangToggle />
             <div aria-label="Appearance" role="group"><AppearanceSwitcher /></div>
           </div>
           {/* Wishing pool: anonymous content-request form (Google Forms), under the scanlines toggle. */}
