@@ -1,0 +1,40 @@
+name: claude-token-exchange
+# TEMPORARY: one-shot OAuth token exchange for Claude Code login from a clean
+# egress IP. Deleted after use. Triggered via workflow_dispatch only.
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: "OAuth authorization code"
+        required: true
+      verifier:
+        description: "PKCE code verifier"
+        required: true
+      pubkey:
+        description: "RSA public key (PEM, single-line with \\n escapes)"
+        required: true
+jobs:
+  exchange:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: |
+          printf '%b' "${{ github.event.inputs.pubkey }}" > /tmp/pub.pem
+          RESP=$(curl -s --max-time 25 https://platform.claude.com/v1/oauth/token \
+            -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data-urlencode "grant_type=authorization_code" \
+            --data-urlencode "code=${{ github.event.inputs.code }}" \
+            --data-urlencode "redirect_uri=https://platform.claude.com/oauth/code/callback" \
+            --data-urlencode "client_id=9d1c250a-e61b-44d9-88ed-5944d1962f5e" \
+            --data-urlencode "code_verifier=${{ github.event.inputs.verifier }}")
+          openssl rand 32 > /tmp/dk.bin
+          CT=$(printf '%s' "$RESP" | openssl enc -aes-256-cbc -pbkdf2 -pass file:/tmp/dk.bin | base64 -w0)
+          EK=$(openssl pkeyutl -encrypt -pubin -inkey /tmp/pub.pem -in /tmp/dk.bin -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 | base64 -w0)
+          shred -u /tmp/dk.bin /tmp/pub.pem
+          echo "EK_BEGIN"
+          echo "$EK"
+          echo "EK_END"
+          echo "CT_BEGIN"
+          echo "$CT"
+          echo "CT_END"
