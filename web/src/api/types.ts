@@ -142,6 +142,8 @@ export interface ListRecordCard extends RecordCardBase {
   location: string | null;
   incident_date: string | null;
   doc_date: string | null;
+  /** WTF leaderboard: unexplained votes inside the sort window (wtf_week|wtf_month). */
+  wtfCount?: number;
   /** Searching (`q`): best-matching page of the file's own text, with an excerpt. */
   match?: { page: number; text: string } | null;
 }
