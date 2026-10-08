@@ -88,8 +88,9 @@ export default function FullText({
     onPageChange?.(n);
   };
   const showSummary = !!data.aiSummary && view === "summary";
-  // Icon-only tabs (Sparkles = AI summary, FileText = full text); the English
-  // label survives as aria-label/title for screen readers, tooltips, tests.
+  // Icon-only tabs (Sparkles = AI summary, FileText = full text), each half
+  // of the row's width. The English label survives as aria-label/title for
+  // screen readers, tooltips, tests.
   const tab = (k: "summary" | "text", label: string, Icon: typeof Sparkles) => (
     <button
       key={k}
@@ -98,9 +99,9 @@ export default function FullText({
       aria-label={label}
       title={label}
       onClick={() => setView(k)}
-      className={`${chip} grid h-8 w-8 place-items-center ${(k === "summary") === showSummary ? on : off}`}
+      className={`${chip} grid h-10 flex-1 place-items-center ${(k === "summary") === showSummary ? on : off}`}
     >
-      <Icon size={14} aria-hidden="true" />
+      <Icon size={16} aria-hidden="true" />
     </button>
   );
   const fmt = (k: "md" | "json", label: string) => (
@@ -118,9 +119,9 @@ export default function FullText({
   const textUrl = `/doc/${encodeURIComponent(id)}/text`;
   return (
     <section ref={section} aria-label="Full text" className="mb-[22px]">
-      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 font-mono">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 font-mono">
         {data.aiSummary ? (
-          <span className="flex gap-1">
+          <span className="flex min-w-0 flex-1 gap-2">
             {tab("summary", "AI SUMMARY", Sparkles)}
             {tab("text", "FULL TEXT", FileText)}
           </span>
