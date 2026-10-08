@@ -670,30 +670,30 @@ export function Doc() {
     <>
       {/* title — id prefix and underscores stripped; the id rides inside the h1 as a
           kicker (uapbrowser-style) so "DOW-UAP-D006" searches match the heading.
-          Kicker only when the id isn't just the title respelled. */}
-      <div className="flex items-start gap-2">
-        <h1 className="mb-3.5 min-w-0 flex-1 text-[19px] font-bold leading-[1.3] text-ink" style={{ overflowWrap: "break-word" }}> {/* break-word not anywhere: wrap at spaces, never mid-word (mobile squeeze fix) */}
-          {tp!.showId && (
-            <span className="mb-2 block truncate font-pixel text-[10px] font-normal leading-normal" style={{ color: dataInk(accent) }}> {/* truncate: id never wraps mid-id on narrow screens */}
-              {tp!.id}
-              <span className="sr-only">, </span>
-            </span>
-          )}
-          {title}
-        </h1>
-        <div className="flex shrink-0 items-center">
-          <CiteButton record={record} />
-          <button
-            type="button"
-            onClick={() => navigate(`/compare?a=${encodeURIComponent(id)}`)}
-            aria-label="Compare with another record"
-            title="Compare with another record"
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-dim transition hover:bg-panel hover:text-ink"
-          >
-            <GitCompare size={20} />
-          </button>
-          <FollowBell kind="record" id={id} />
-        </div>
+          Kicker only when the id isn't just the title respelled.
+          The action buttons get their own row below so the id + title always
+          have the full width on mobile (never squeezed into a narrow column). */}
+      <h1 className="mb-3 min-w-0 text-[19px] font-bold leading-[1.3] text-ink" style={{ overflowWrap: "anywhere" }}>
+        {tp!.showId && (
+          <span className="mb-2 block font-pixel text-[10px] font-normal leading-normal" style={{ color: dataInk(accent) }}>
+            {tp!.id}
+            <span className="sr-only">, </span>
+          </span>
+        )}
+        {title}
+      </h1>
+      <div className="mb-3 flex items-center gap-1">
+        <CiteButton record={record} />
+        <button
+          type="button"
+          onClick={() => navigate(`/compare?a=${encodeURIComponent(id)}`)}
+          aria-label="Compare with another record"
+          title="Compare with another record"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-dim transition hover:bg-panel hover:text-ink"
+        >
+          <GitCompare size={20} />
+        </button>
+        <FollowBell kind="record" id={id} />
       </div>
       {showBlink && (
         <p className="mb-2 font-mono text-[11px] text-faint">{t("doc.wtfBlink")}</p>
@@ -1163,7 +1163,7 @@ export function Doc() {
         </div>
       )}
 
-            {/* Funnel strip: own-site link to the citizen skywatch gear guide
+      {/* Funnel strip: own-site link to the citizen skywatch gear guide
           (watchthenight.com). One line on narrow screens — the question and
           the link truncate instead of wrapping mid-phrase. */}
       <div className="mb-4 flex items-center gap-1.5 whitespace-nowrap font-mono text-[11px] text-faint">
@@ -1176,7 +1176,7 @@ export function Doc() {
         </a>
       </div>
 
-{/* Discussion header + count — prototype line 368. The CTA deep-links
+      {/* Discussion header + count — prototype line 368. The CTA deep-links
           to the record's board thread when one exists, else opens the
           new-thread composer prefilled with this file (same flow as the
           "Start a board thread" button below). */}

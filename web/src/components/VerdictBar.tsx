@@ -1,14 +1,18 @@
 // File verdict (Spec 6 Part A): one tap per visitor; the split is shown only
 // after you vote (the API withholds the tally until then).
 import { useRef } from "react";
+import { BadgeCheck, CircleHelp, FileSearch } from "lucide-react";
 import type { Verdict, VerdictState } from "../api/types";
 import { useCastVerdict } from "../api/queries";
 import { useOverlay } from "../overlays/OverlayProvider";
 
-const OPTIONS: { v: Verdict; label: string; color: string }[] = [
-  { v: "explained", label: "EXPLAINED", color: "var(--signal)" },
-  { v: "unexplained", label: "UNEXPLAINED", color: "var(--red)" },
-  { v: "more_data", label: "NEED MORE DATA", color: "var(--amber)" },
+// Icon-only verdicts: no English text on the buttons, so readers of any
+// language can judge. The English label survives as aria-label/title for
+// screen readers, tooltips, and tests.
+const OPTIONS: { v: Verdict; label: string; color: string; Icon: typeof BadgeCheck }[] = [
+  { v: "explained", label: "EXPLAINED", color: "var(--signal)", Icon: BadgeCheck },
+  { v: "unexplained", label: "UNEXPLAINED", color: "var(--red)", Icon: CircleHelp },
+  { v: "more_data", label: "NEED MORE DATA", color: "var(--amber)", Icon: FileSearch },
 ];
 const pct = (n: number, total: number) => (total ? Math.round((n * 100) / total) : 0);
 // A second tap on the same option inside this window is a double-tap, not "clear my vote".
@@ -74,13 +78,15 @@ export function VerdictBar({
           <button
             key={o.v}
             type="button"
+            aria-label={o.label}
+            title={o.label}
             aria-pressed={mine === o.v}
             disabled={cast.isPending}
             onClick={() => vote(o.v)}
-            className="min-h-[44px] rounded-[10px] border px-1 font-mono text-[10.5px] font-semibold active:scale-[.97] disabled:opacity-60"
+            className="grid min-h-[56px] place-items-center rounded-[10px] border active:scale-[.97] disabled:opacity-60"
             style={{ borderColor: mine === o.v ? o.color : "var(--line2)", color: mine === o.v ? o.color : "var(--dim)" }}
           >
-            {o.label}
+            <o.Icon size={24} aria-hidden="true" />
           </button>
         ))}
       </div>
