@@ -121,18 +121,112 @@ const PICKS: AffiliatePick[] = [
     asin: "1982196777",
     match: ["roswell", "congress", "disclosure"],
   },
+  {
+    title: "The Report on Unidentified Flying Objects",
+    creator: "Edward J. Ruppelt",
+    blurb: "The insider the shelf was missing: the Air Force captain who ran Project Blue Book 1951–1953 wrote the first serious account of the official investigation — Washington 1952, the Lubbock Lights, the Mantell crash.",
+    query: "Report on Unidentified Flying Objects Ruppelt",
+    match: ["ruppelt", "blue book", "project grudge", "project sign", "washington 1952"],
+  },
+  {
+    title: "Passport to Magonia",
+    creator: "Jacques Vallée",
+    blurb: "Hynek's own protégé goes furthest of all: UFO landings read against a thousand years of fairy lore. The multidimensional hypothesis starts here — the strangest book on the shelf, and the most influential.",
+    query: "Passport to Magonia Jacques Vallee",
+    asin: "0987422480",
+    match: ["vallee", "magonia", "folklore", "fairy"],
+  },
+  {
+    title: "UFOs: Generals, Pilots, and Government Officials Go on the Record",
+    creator: "Leslie Kean",
+    blurb: "A New York Times bestseller by an investigative journalist: generals, pilots and officials — Tehran 1976, Belgium 1989, the Phoenix Lights — write their own chapters. The credibility cornerstone of the modern UAP era.",
+    query: "UFOs Generals Pilots Government Officials Go on the Record Leslie Kean",
+    asin: "0307717089",
+    match: ["kean", "generals", "tehran", "belgium", "phoenix lights"],
+  },
+  {
+    title: "Hunt for the Skinwalker",
+    creator: "Colm Kelleher & George Knapp",
+    blurb: "Before the Pentagon's $22 million program, there was the ranch: the NIDS science team's instrumented investigation of Skinwalker Ranch — the direct predecessor of AAWSAP, by two of the same authors.",
+    query: "Hunt for the Skinwalker Kelleher Knapp",
+    asin: "1416505210",
+    match: ["skinwalker", "nids", "bigelow", "ranch"],
+  },
+  {
+    title: "Crash at Corona",
+    creator: "Stanton Friedman & Don Berliner",
+    blurb: "The nuclear physicist who reopened Roswell and an aviation writer rebuild the 1947 Corona crash from once-classified documents and debris-handler testimony. The definitive Roswell investigation.",
+    query: "Crash at Corona Friedman Berliner",
+    asin: "1605209392",
+    match: ["roswell", "corona", "friedman", "debris", "retrieval"],
+  },
+  {
+    title: "Clear Intent",
+    creator: "Lawrence Fawcett & Barry Greenwood",
+    blurb: "The FOIA pioneers' book: hundreds of declassified pages prised out of the CIA, FBI and NSA in the 1970s–80s. The playbook for reading the very files in this archive.",
+    query: "Clear Intent Fawcett Greenwood",
+    match: ["foia", "fawcett", "greenwood", "citizens against ufo secrecy"],
+  },
+  {
+    title: "Encounter in Rendlesham Forest",
+    creator: "Nick Pope, John Burroughs & Jim Penniston",
+    blurb: "Britain's Roswell, on the record: the MoD's former UFO-desk chief plus the two USAF airmen who walked into the forest in December 1980 — backed by formerly-classified documents.",
+    query: "Encounter in Rendlesham Forest Pope Burroughs Penniston",
+    asin: "1250038103",
+    match: ["rendlesham", "halt", "bentwaters", "woodbridge"],
+  },
+  {
+    title: "A.D. After Disclosure",
+    creator: "Richard Dolan & Bryce Zabel",
+    blurb: "The historian behind the National Security State series teams with a Hollywood screenwriter to game out the day after disclosure — government, science, religion, markets. The 'what happens next' book.",
+    query: "A.D. After Disclosure Dolan Zabel",
+    asin: "1601632223",
+    match: ["disclosure", "dolan", "zabel"],
+  },
+  {
+    title: "Witness to Roswell",
+    creator: "Thomas Carey & Donald Schmitt",
+    blurb: "The Roswell deep-dive by its two most persistent investigators — new witnesses, the debris trail, and a foreword by Apollo astronaut Edgar Mitchell. The follow-on for Crash at Corona readers.",
+    query: "Witness to Roswell Carey Schmitt",
+    asin: "1637480032",
+    match: ["roswell", "carey", "schmitt", "marcel"],
+  },
+  {
+    title: "The Day After Roswell",
+    creator: "Philip Corso & William Birnes",
+    blurb: "The wildest insider claim ever published: a Pentagon colonel says he seeded Roswell wreckage tech — integrated circuits, fiber optics, lasers — into American industry. A bestseller; read it skeptical.",
+    query: "The Day After Roswell Corso",
+    asin: "067101756X",
+    match: ["corso", "roswell", "reverse engineering", "day after roswell"],
+  },
+  {
+    title: "Abduction: Human Encounters with Aliens",
+    creator: "John E. Mack",
+    blurb: "A Harvard psychiatrist and Pulitzer winner puts his career on the line for 60+ experiencers — the clinical counterweight to every 'it's all bunk' memo in this archive.",
+    query: "Abduction Human Encounters with Aliens John Mack",
+    asin: "1416575804",
+    match: ["abduction", "mack", "experiencers", "harvard"],
+  },
+  {
+    title: "Communion",
+    creator: "Whitley Strieber",
+    blurb: "The 1987 bestseller that put the abduction experience on the map, by the horror novelist who lived it. Love it or doubt it — it's the book every case file gets compared against.",
+    query: "Communion Whitley Strieber",
+    asin: "0061474185",
+    match: ["communion", "strieber", "abduction"],
+  },
 ];
 
-// The full 12-book shelf, in D1 affiliate_picks sort order.
+// The full 24-book shelf, in D1 affiliate_picks sort order.
 export const ALL_PICKS: AffiliatePick[] = PICKS;
 
 // Topic hub pages: which picks show on each topic.
 const TOPIC_PICKS: Record<string, string[]> = {
-  "project-blue-book": ["The UFO Experience", "The Hynek UFO Report", "Project Blue Book Declassified"],
+  "project-blue-book": ["The UFO Experience", "The Hynek UFO Report", "Project Blue Book Declassified", "The Report on Unidentified Flying Objects"],
   "flying-discs": ["The Coming of the Saucers", "Flying Saucers Are Real"],
   "nuclear-sites": ["UFOs and Nukes"],
-  "aawsap": ["Skinwalkers at the Pentagon"],
-  "congress": ["Imminent", "UFO: The Inside Story"],
+  "aawsap": ["Skinwalkers at the Pentagon", "Hunt for the Skinwalker"],
+  "congress": ["Imminent", "UFO: The Inside Story", "UFOs: Generals, Pilots, and Government Officials Go on the Record", "A.D. After Disclosure"],
   "fbi-62-hq-83894": ["The FBI-CIA-UFO Connection"],
 };
 

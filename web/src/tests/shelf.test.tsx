@@ -1,4 +1,4 @@
-// /shelf — the reading-shelf funnel page: all 12 affiliate picks with the
+// /shelf — the reading-shelf funnel page: all 24 affiliate picks with the
 // Associates tag, the FTC disclosure, the Ko-fi support card, and email signup.
 import { describe, it, expect } from "vitest";
 import { screen } from "@testing-library/react";
@@ -6,7 +6,7 @@ import { renderAppAt } from "./util";
 import { ALL_PICKS } from "../../../worker/lib/affiliate";
 
 describe("/shelf", () => {
-  it("renders all 12 picks as tagged Amazon affiliate links", async () => {
+  it("renders all 24 picks as tagged Amazon affiliate links", async () => {
     renderAppAt("/shelf");
     await screen.findByRole("heading", { level: 1, name: /reading shelf/i });
     const amzLinks = screen.getAllByRole("link", { name: /view on amazon/i });
