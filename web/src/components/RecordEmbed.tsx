@@ -11,6 +11,7 @@ import { useOverlay } from "../overlays/OverlayProvider";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { formatMoment, recordMedia } from "../lib/recordMedia";
 import { docTitleParts } from "../lib/docTitle";
+import { isStandalone, navigateInPlace } from "../lib/pwaNav";
 
 export function RecordEmbed({ id, t, withMedia }: { id: string; t?: number; withMedia: boolean }) {
   const { data } = useRecord(id);
@@ -22,6 +23,16 @@ export function RecordEmbed({ id, t, withMedia }: { id: string; t?: number; with
   const { media, fullUrl, thumbUrl } = recordMedia(data, isDesktop);
   const label = docTitleParts(id, data.record.title, data.record.kind).title;
   const box = "my-2 block w-full max-w-[360px] overflow-hidden rounded-[10px] border border-line2 bg-black";
+  const pdfHref = `/api/file/${id}`;
+  // Installed PWA: open the PDF in the app window itself, not a _blank tab —
+  // the system browser would take over and the app cold-starts at the
+  // homepage on return (see lib/pwaNav.ts).
+  const onPdfClick = (e: React.MouseEvent) => {
+    if (isStandalone()) {
+      e.preventDefault();
+      navigateInPlace(pdfHref);
+    }
+  };
 
   return (
     <>
@@ -54,7 +65,7 @@ export function RecordEmbed({ id, t, withMedia }: { id: string; t?: number; with
           )}
           {media === "audio" && <audio src={fullUrl} controls preload="metadata" className="my-2 block w-full max-w-[360px]" />}
           {(media === "pdf" || media === "thumb") && (
-            <a href={`/api/file/${id}`} target="_blank" rel="noopener noreferrer" className={`${box} relative`}>
+            <a href={pdfHref} target="_blank" rel="noopener noreferrer" onClick={onPdfClick} className={`${box} relative`}>
               {thumbUrl ? (
                 <img src={thumbUrl} alt={label} loading="lazy" className="max-h-[200px] w-full object-cover" />
               ) : (

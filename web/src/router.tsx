@@ -2,6 +2,7 @@
 // tests can feed the exact same RouteObject[] into `createMemoryRouter`
 // instead of re-declaring the tree (see web/src/tests/util.tsx).
 import { createBrowserRouter, type RouteObject } from "react-router-dom";
+import { restoreLastRoute } from "./lib/resumeRoute";
 import { AppShell } from "./components/AppShell";
 import Feed from "./screens/Feed";
 import Doc from "./screens/Doc";
@@ -73,5 +74,9 @@ export const routes: RouteObject[] = [
     ],
   },
 ];
+
+// Installed PWA cold start at start_url: resume the last page *before* the
+// router below snapshots window.location (see lib/resumeRoute.ts).
+restoreLastRoute();
 
 export const router = createBrowserRouter(routes);

@@ -55,6 +55,7 @@ import FunnelStrip from "../components/FunnelStrip";
 import { picksForRecord } from "../../../worker/lib/affiliate";
 import { parseAiMoments, parseKeyMoments } from "../lib/keyMoments";
 import { useMediaSkin } from "../lib/mediaSkin";
+import { openPdf } from "../lib/pwaNav";
 import { useVideoTransport } from "../lib/useVideoTransport";
 import { UploadThumb } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
@@ -546,12 +547,15 @@ export function Doc() {
       openViewer({ kind: "image", url: fullUrl, label: title, filter: adjustFilter(adjust), lensMag: lens ? mag : undefined });
       return;
     }
-    // PDFs/docs open in a new tab via the SAME-ORIGIN inline route (worker
+    // PDFs/docs open via the SAME-ORIGIN inline route (worker
     // /api/file/:id sets Content-Disposition: inline). Opening the R2
     // cross-origin URL directly makes mobile browsers *download* the PDF
     // instead of viewing it; routing through our origin renders it inline in
     // the browser's PDF viewer. (An in-app <iframe> renders blank on mobile.)
-    window.open(fileHref, "_blank", "noopener,noreferrer");
+    // In the installed PWA this navigates the app window itself: _blank would
+    // hand the PDF to the system browser, Android kills the backgrounded PWA,
+    // and back cold-starts it at the homepage — see lib/pwaNav.ts.
+    openPdf(fileHref);
   }
 
   // Link to this file as seen: filters, lens, the zoomed/rotated view and (video) the moment.

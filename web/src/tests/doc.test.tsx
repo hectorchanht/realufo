@@ -18,6 +18,7 @@ import { act, render, screen, fireEvent, waitFor, within } from "@testing-librar
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import type { CommentsResponse, RecordDetail, RecordsListResponse } from "../api/types";
 import Doc from "../screens/Doc";
+import { pwaLocation } from "../lib/pwaNav";
 import SiteFooter from "../components/SiteFooter";
 import { FooterLinksProvider } from "../lib/footerLinks";
 import { ThemeProvider } from "../theme/ThemeProvider";
@@ -292,7 +293,7 @@ describe("Doc", () => {
     expect(box.textContent).not.toContain("Fourth page words");
     fireEvent.click(screen.getByRole("button", { name: "Next page" }));
     expect(screen.getByLabelText("Full text page").textContent).toContain("Fourth page words");
-    fireEvent.click(screen.getByRole("button", { name: "Text continues in the original file →" }));
+    fireEvent.click(screen.getByRole("button", { name: /Text continues in the original file/ }));
     expect(openSpy).toHaveBeenCalledWith("/api/file/rec1#page=4", "_blank", "noopener,noreferrer"); // page turn set ?p=4
     openSpy.mockRestore();
   });
@@ -528,7 +529,7 @@ describe("Doc", () => {
     expect(document.querySelector('[data-screen="doc"] img')).toBeNull();
   });
 
-  it("opening a PDF hands off to a new browser tab, not the in-app iframe viewer", () => {
+  it("opening a PDF hands off to a new browser tab outside the installed PWA, not the in-app iframe viewer", () => {
     // Cross-origin PDF-in-<iframe> renders blank on many browsers, so PDFs open
     // via window.open (native PDF handling) instead of openViewer.
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
@@ -538,6 +539,27 @@ describe("Doc", () => {
     expect(openSpy).toHaveBeenCalledWith("/api/file/rec1", "_blank", "noopener,noreferrer");
     expect(mockOpenViewer).not.toHaveBeenCalled();
     openSpy.mockRestore();
+  });
+
+  it("in the installed PWA the PDF opens in the app window, not a _blank tab", () => {
+    // _blank would hand the PDF to the system browser; Android kills the
+    // backgrounded PWA and back cold-starts it at the homepage.
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("display-mode: standalone"),
+      media: q,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    const assignSpy = vi.spyOn(pwaLocation, "assign").mockImplementation(() => {});
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderDoc();
+    fireEvent.click(screen.getByRole("button", { name: /OPEN ORIGINAL/i }));
+    expect(assignSpy).toHaveBeenCalledWith("/api/file/rec1");
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(mockOpenViewer).not.toHaveBeenCalled();
+    assignSpy.mockRestore();
+    openSpy.mockRestore();
+    vi.unstubAllGlobals();
   });
 
   it("renders an IMAGE record's full file inline even with no thumb asset", () => {

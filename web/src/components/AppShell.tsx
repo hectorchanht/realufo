@@ -36,6 +36,7 @@ import { scrollKey, useScrollMemory } from "../lib/useScrollMemory";
 import { useTheme } from "../theme/useTheme";
 import { PageTitleProvider } from "../lib/pageTitle";
 import { useStale } from "../lib/offline";
+import { saveLastRoute } from "../lib/resumeRoute";
 import { OverlayHost } from "../overlays/OverlayProvider";
 import { TopNav } from "./TopNav";
 import { AppBar } from "./AppBar";
@@ -70,6 +71,10 @@ export function AppShell() {
   useScrollMemory(scrollRef, key);
   const navHidden = useHideOnScroll(scrollRef, !isDesktop, key);
   useEffect(() => rememberTabUrl(pathname, search), [pathname, search]);
+  // Installed PWA: remember where the user is so a cold start (e.g. Android
+  // killing the app while a PDF is in the foreground) can resume here
+  // instead of resetting to the homepage — see lib/resumeRoute.ts.
+  useEffect(() => saveLastRoute(pathname + search), [pathname, search]);
 
   useEffect(() => {
     const nav = bnavRef.current;
