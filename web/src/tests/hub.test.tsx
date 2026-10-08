@@ -73,6 +73,18 @@ describe("Hub", () => {
     expect(screen.getByText("hub not found.")).toBeInTheDocument();
   });
 
+  it("shows the hub text-page skeleton (not the archive card grid) while loading", () => {
+    useHubMock.mockReturnValue({ data: undefined, isLoading: true });
+    const { container } = renderAt("/agency/fbi");
+    const sk = screen.getByTestId("hub-skeleton");
+    expect(sk).toBeInTheDocument();
+    // text-page chrome first: breadcrumb, title, intro, stands-out card
+    expect(container.querySelector('[data-skel="breadcrumb"]')).not.toBeNull();
+    expect(container.querySelector('[data-skel="title"]')).not.toBeNull();
+    expect(container.querySelector('[data-skel="intro"]')).not.toBeNull();
+    expect(container.querySelector('[data-skel="card"]')).not.toBeNull();
+  });
+
   it("paginates: ?page=N reaches the query and renders the pager", () => {
     useHubMock.mockReturnValue({ data: { ...fbi, total: 100, page: 2, totalPages: 3 }, isLoading: false });
     renderAt("/agency/fbi?page=2");

@@ -18,6 +18,42 @@ import { useEffect } from "react";
 export const KIND_LABEL: Record<HubKind, string> = { release: "RELEASE", topic: "TOPIC", agency: "AGENCY", location: "LOCATION", decade: "DECADE" };
 export const KIND_PLURAL: Record<HubKind, string> = { release: "RELEASES", topic: "TOPICS", agency: "AGENCIES", location: "LOCATIONS", decade: "DECADES" };
 
+// Hub pages (agency / topic / release / location / decade) are text-led:
+// breadcrumb, title, intro, a stands-out card, then the record grid. This
+// skeleton mirrors that order, so the page doesn't flash the archive's bare
+// DocCard grid while the hub data is in flight.
+function HubSkeleton() {
+  const box = "motion-safe:animate-pulse rounded bg-surface";
+  return (
+    <div role="status" aria-label="Loading" data-testid="hub-skeleton">
+      <div data-skel="breadcrumb" aria-hidden="true" className={`mb-1 h-[12px] w-[140px] ${box}`} />
+      <div data-skel="title" aria-hidden="true" className="mb-3 flex items-center gap-2">
+        <div className={`h-[26px] flex-1 ${box}`} />
+        <div className={`h-[26px] w-[26px] rounded-full ${box}`} />
+      </div>
+      <div data-skel="intro" aria-hidden="true" className="mb-5 flex flex-col gap-[8px]">
+        <div className={`h-[15px] ${box}`} />
+        <div className={`h-[15px] ${box}`} />
+        <div className={`h-[15px] w-[70%] ${box}`} />
+      </div>
+      <div data-skel="card" aria-hidden="true" className="mb-5 rounded-xl border border-line p-3">
+        <div className={`mb-2 h-[12px] w-[130px] ${box}`} />
+        <div className={`mb-3 h-[15px] w-[92%] ${box}`} />
+        {Array.from({ length: 3 }, (_, i) => (
+          <div key={i} className="flex gap-3 rounded-lg p-1">
+            <div className={`h-12 w-12 flex-none rounded-md ${box}`} />
+            <div className="flex min-w-0 flex-1 flex-col justify-center gap-[6px]">
+              <div className={`h-[13px] w-[80%] ${box}`} />
+              <div className={`h-[12px] w-[95%] ${box}`} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <Skeleton cards rows={4} />
+    </div>
+  );
+}
+
 export default function Hub({ kind }: { kind: HubKind }) {
   const { slug = "" } = useParams();
   const [searchParams] = useSearchParams();
@@ -32,7 +68,7 @@ export default function Hub({ kind }: { kind: HubKind }) {
   if (isLoading) {
     return (
       <div data-screen="hub">
-        <Skeleton cards rows={6} />
+        <HubSkeleton />
       </div>
     );
   }
