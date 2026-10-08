@@ -49,6 +49,7 @@ export async function llms(req: Request, env: Env) {
     link("Glossary", "/glossary", "UAP terms, agencies and file references"),
     link("FOIA", "/foia", "how to file freedom-of-information requests"),
     link("UFO Field Guide", "/sites", "the places behind the files: Roswell, Area 51, Marfa, Socorro, Rendlesham and more"),
+    link("WTF Leaderboard", "/leaderboard", "the files the crowd finds hardest to explain, ranked by unexplained votes"),
     link("Sitemap", "/sitemap.xml", "every file page"),
     link("Full text of every file", "/llms-full.txt", "llms-full.txt, about 6 MB of Markdown"),
     `- [Open dataset](${DATASET_URL}): record metadata and page text as JSONL on Hugging Face`,
