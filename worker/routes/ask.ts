@@ -127,17 +127,18 @@ async function answer(env: Env, q: string, min: number) {
   const emb = (await env.AI.run(ASK_EMBED_MODEL as any, { text: [q] } as any)) as unknown as { data: number[][] };
   const res = await env.VECTORIZE.query(emb.data[0], { topK: ASK_POOL, returnMetadata: "all" });
   const strong = res.matches.filter((m) => m.score >= min && m.metadata?.record_id);
-  // Dense retrieval can miss a term the archive names outright ("PURSUE" scores
-  // below the threshold even though an AI summary says "the PURSUE initiative"):
-  // fall back to keyword search over titles/summaries/AI summaries, then let
-  // the reranker + LLM judge relevance as usual.
-  const raw: { record_id: string; page: number; text: string }[] = strong.length
-    ? strong.map((m) => ({
-        record_id: String(m.metadata!.record_id),
-        page: Number(m.metadata!.page) || 0,
-        text: String(m.metadata!.text ?? ""),
-      }))
-    : await keywordChunks(env, q);
+  // Dense retrieval can miss (or weakly rank) a term the archive names outright
+  // ("PURSUE" scores below the threshold even though an AI summary says "the
+  // PURSUE initiative"): merge keyword hits over titles/summaries/AI summaries
+  // into the pool, then let the reranker + LLM judge relevance as usual.
+  const vec = strong.map((m) => ({
+    record_id: String(m.metadata!.record_id),
+    page: Number(m.metadata!.page) || 0,
+    text: String(m.metadata!.text ?? ""),
+  }));
+  const seen = new Set(vec.map((r) => r.record_id));
+  const kw = await keywordChunks(env, q).catch(() => [] as { record_id: string; page: number; text: string }[]);
+  const raw = [...vec, ...kw.filter((r) => !seen.has(r.record_id))];
   if (!raw.length) return notCovered();
 
   // Hydrate from D1; a chunk whose record was deleted is dropped.
