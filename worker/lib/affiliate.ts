@@ -405,9 +405,89 @@ const PICKS: AffiliatePick[] = [
     asin: "0578128837",
     match: ["flatwoods", "braxton", "1952", "monster", "west virginia"],
   },
+  {
+    title: "🎧 Dimensions (Audiobook)",
+    creator: "Jacques Vallée · narrated by Michael Hacker",
+    blurb: "Vallée's landmark 1988 book arguing the ET hypothesis 'is simply not strange enough' — centuries of encounters reexamined through an interdimensional lens. A foundation text of serious ufology, in audio.",
+    query: "Dimensions Jacques Vallee audiobook",
+    asin: "B09BK93VZC",
+    match: ["vallee", "dimensions", "alien contact", "interdimensional"],
+  },
+  {
+    title: "🎧 Operation Trojan Horse (Audiobook)",
+    creator: "John A. Keel · narrated by Michael Hacker",
+    blurb: "Keel's 1970 classic that shredded the nuts-and-bolts ET hypothesis, linking UFOs to paranormal and folkloric phenomena across history. The book that introduced the 'ultraterrestrial' concept.",
+    query: "Operation Trojan Horse John Keel audiobook",
+    asin: "B07L5YSW96",
+    match: ["keel", "trojan horse", "ultraterrestrial"],
+  },
+  {
+    title: "🎧 The Mothman Prophecies (Audiobook)",
+    creator: "John A. Keel · narrated by Craig Wasson",
+    blurb: "Keel's firsthand investigation of the 1966–67 Point Pleasant events — Mothman sightings, UFO flaps, Men in Black, and the Silver Bridge collapse. The best-selling Keel title, basis for the 2002 film.",
+    query: "The Mothman Prophecies John Keel audiobook",
+    asin: "B00006JMD5",
+    match: ["mothman", "point pleasant", "keel", "1966"],
+  },
+  {
+    title: "🎧 Walking Among Us (Audiobook)",
+    creator: "David M. Jacobs · narrated by Jeff Cummings",
+    blurb: "Jacobs' follow-up to The Threat (on the print shelf): his claim that alien-human hybrids are integrating into everyday society, drawn from 1,150+ abduction events he investigated.",
+    query: "Walking Among Us David Jacobs audiobook",
+    asin: "B013FASEFO",
+    match: ["jacobs", "abduction", "hybrids", "walking among us"],
+  },
+  {
+    title: "🎧 Confrontations (Audiobook)",
+    creator: "Jacques Vallée · narrated by Michael Hacker",
+    blurb: "Vallée personally investigates 40 UFO cases worldwide, focusing on physical trace evidence — ground traces, burns, electromagnetic interference. The empirical core of his Alien Contact trilogy.",
+    query: "Confrontations Jacques Vallee audiobook",
+    asin: "B0BV5YZXXK",
+    match: ["vallee", "confrontations", "trace evidence", "landing"],
+  },
+  {
+    title: "🎧 1973 (Audiobook)",
+    creator: "Philip Mantle with Kevin Randle",
+    blurb: "The pivotal 1973 UFO wave — unprecedented landings, the Pascagoula abduction of Hickson and Parker, and the Coyne helicopter close encounter. Pairs with the shelf's Pascagoula pick.",
+    query: "1973 Philip Mantle UFO audiobook",
+    asin: "B0CJZK49B9",
+    match: ["1973", "pascagoula", "coyne", "wave", "ufo wave"],
+  },
+  {
+    title: "🎧 Forbidden Science 5 (Audiobook)",
+    creator: "Jacques Vallée",
+    blurb: "Ten years of Vallée's journals, 2000–2009 — partly drawn from classified research: the reframing of the phenomenon for the 21st century, the road to 'disclosure,' and how 9/11 set the field back.",
+    query: "Forbidden Science 5 Jacques Vallee audiobook",
+    asin: "B0H6GN4VFB",
+    match: ["vallee", "forbidden science", "disclosure"],
+  },
+  {
+    title: "🎧 Forbidden Science 6 (Audiobook)",
+    creator: "Jacques Vallée · narrated by Michael Hacker",
+    blurb: "The latest journal volume, 2010–2019 — why the highly classified project Vallée joined could never solve the mystery, plus field investigations across Brazil, Argentina, Europe, and Russia.",
+    query: "Forbidden Science 6 Jacques Vallee audiobook",
+    asin: "B0FGZCT7TV",
+    match: ["vallee", "forbidden science", "brazil"],
+  },
+  {
+    title: "🎧 UFO by Garrett Graff (Audiobook)",
+    creator: "Garrett M. Graff · narrated by Jacques Roy",
+    blurb: "Pulitzer finalist Graff's deeply reported history of the government's decades-long UFO quest, 1947 through AATIP. 'One of the rare books on the topic that manages to be both entertaining and factually grounded.' — WSJ",
+    query: "UFO Garrett Graff audiobook",
+    asin: "B0BW1ZC4V5",
+    match: ["graff", "aatip", "government", "1947"],
+  },
+  {
+    title: "🎧 The Eighth Tower (Audiobook)",
+    creator: "John A. Keel · narrated by Michael Hacker",
+    blurb: "Keel's darkest work — asks whether a single intelligent force stands behind UFOs, religious apparitions, ghosts, and occult phenomena alike. The full statement of his 'superspectrum' theory.",
+    query: "The Eighth Tower John Keel audiobook",
+    asin: "B07MTQRW1C",
+    match: ["keel", "eighth tower", "ultraterrestrial", "superspectrum"],
+  },
 ];
 
-// The full 48-book shelf, in D1 affiliate_picks sort order.
+// The full 58-title shelf (48 books + 10 audiobooks), in D1 affiliate_picks sort order.
 export const ALL_PICKS: AffiliatePick[] = PICKS;
 
 // Topic hub pages: which picks show on each topic.

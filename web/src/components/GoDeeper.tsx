@@ -1,6 +1,6 @@
 // "FURTHER READING" — the monetization module on doc + hub pages.
 // Keyword-matched affiliate picks for what's being read, then the full
-// 48-book shelf (expandable), then the funnel's support strip: email
+// 58-title shelf (expandable), then the funnel's support strip: email
 // alerts + Ko-fi. Blurbs explain WHY each book matters here — that's
 // what makes people click.
 import { useState } from "react";
@@ -106,7 +106,7 @@ export default function GoDeeper({ picks, note }: { picks: AffiliatePick[]; note
         </>
       ) : (
         <p className="mb-2 text-[12px] text-dim">
-          Forty-eight books the researchers behind these files actually read — start with the shelf.
+          Fifty-eight books and audiobooks the researchers behind these files actually read — start with the shelf.
         </p>
       )}
       {rest.length > 0 && (
