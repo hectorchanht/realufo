@@ -63,9 +63,14 @@ export function FtcNote() {
 export function SupportStrip() {
   return (
     <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-dim">
-      <span className="inline-flex items-center gap-1.5">
-        <Coffee size={13} className="text-signal" /> RealUFO is free &amp; open source.
-      </span>
+      <a
+        href="https://github.com/hectorchanht/realufo"
+        target="_blank"
+        rel="noopener"
+        className="hover:underline"
+      >
+        RealUFO is free &amp; open source.
+      </a>
       <Link to="/notifications" aria-label="Get new-file alerts" title="Get new-file alerts" className="grid h-8 w-8 place-items-center rounded-full text-signal hover:underline">
         <Bell size={15} aria-hidden="true" />
       </Link>
