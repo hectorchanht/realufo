@@ -86,12 +86,17 @@ Q_R2 = """query($accountTag: string!, $bucket: string!, $start: Time!, $end: Tim
       max { payloadSize metadataSize objectCount }
       dimensions { datetime } } } } }"""
 
-Q_ZONE = """query($zoneTag: string!, $start: Time!, $end: Time!) {
+Q_ZONE = """query($zoneTag: String!, $since: String!) {
   viewer { zones(filter: {zoneTag: $zoneTag}) {
-    httpRequestsAdaptiveGroups(limit: 10000,
-      filter: {datetime_geq: $start, datetime_leq: $end}) {
-      sum { requests bytes cachedRequests threats pageViews }
-      uniq { uniques } } } } }"""
+    httpRequests1dGroups(limit: 5, orderBy: [date_DESC],
+      filter: {date_gt: $since}) {
+      sum { requests cachedRequests bytes threats }
+      uniq { uniques }
+      dimensions { date } } } } }"""
+# NOTE: this mirrors bin/cf-metrics zone_analytics(), the proven-working
+# pattern against this API (2026-10-08). The zone dashboard REST endpoint
+# rejects API tokens (err 1016) and httpRequestsAdaptiveGroups failed field
+# validation here, so 1d groups it is.
 
 
 
@@ -125,35 +130,32 @@ def main():
         snap["errors"].append("zone lookup: %s" % json.dumps(z)[:200])
 
     if zone_id:
-        # NOTE: /zones/{id}/analytics/dashboard rejects API tokens
-        # (error 1016: "Zone Analytics API only supports authentication using
-        # user-owned credentials"), so use GraphQL httpRequestsAdaptiveGroups
-        # which is token-compatible. No dimensions => single aggregate row
-        # over the trailing 24h window.
-        zdata, err = graphql_zone(token, Q_ZONE, {
-            "zoneTag": zone_id,
-            "start": iso(now - timedelta(hours=24)), "end": iso(now)})
+        since = (now - timedelta(days=3)).date().isoformat()
+        zdata, err = graphql_zone(token, Q_ZONE,
+                                  {"zoneTag": zone_id, "since": since})
         if err:
             snap["errors"].append("zone analytics: " + err)
         else:
             try:
-                rows = zdata["httpRequestsAdaptiveGroups"]
-                rq = sum((r["sum"]["requests"] or 0) for r in rows)
-                bw = sum((r["sum"]["bytes"] or 0) for r in rows)
-                cached = sum((r["sum"]["cachedRequests"] or 0) for r in rows)
-                threats = sum((r["sum"]["threats"] or 0) for r in rows)
-                pvs = sum((r["sum"]["pageViews"] or 0) for r in rows)
-                visitors = sum((r["uniq"]["uniques"] or 0) for r in rows)
+                rows = zdata["httpRequests1dGroups"]
+                today = now.date().isoformat()
+                # Latest COMPLETE UTC day (skip today's partial row) so the
+                # daily number is stable and comparable day-over-day.
+                row = next(r for r in rows
+                           if r["dimensions"]["date"] < today)
+                s, u = row["sum"], row["uniq"]
+                rq = s["requests"] or 0
                 snap["zone_24h"] = {
                     "requests": rq,
-                    "visitors": visitors,
-                    "pageviews": pvs,
-                    "bandwidth_gb": round(bw / 1e9, 3),
-                    "cache_hit_pct": (round(cached / rq * 100, 2)
-                                      if rq else 0),
-                    "threats_blocked": threats,
+                    "visitors": u["uniques"] or 0,
+                    "bandwidth_gb": round((s["bytes"] or 0) / 1e9, 3),
+                    "cache_hit_pct": (round((s["cachedRequests"] or 0)
+                                            / rq * 100, 2) if rq else 0),
+                    "threats_blocked": s["threats"] or 0,
+                    "window": ("complete UTC day "
+                               + row["dimensions"]["date"]),
                 }
-            except (KeyError, TypeError):
+            except (KeyError, TypeError, StopIteration):
                 snap["errors"].append("zone analytics: empty result set")
 
     # 2. worker invocations / errors, trailing 24h
