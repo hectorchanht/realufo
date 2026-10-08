@@ -33,6 +33,7 @@ import { DocCard } from "../components/DocCard";
 import { LoadError } from "../components/LoadError";
 import { ShortsRow, shortHref } from "../components/ShortsRow";
 import { ThreadRow } from "../components/ThreadRow";
+import { useLang } from "../lib/lang";
 import { useSetPageTitle } from "../lib/pageTitle";
 
 // Neutral copy shown until bootstrap's `stats` resolve (no fake numbers).
@@ -102,6 +103,7 @@ function ClipCarousel({ clips, loading }: { clips: Short[]; loading: boolean }) 
 export function Feed() {
   // AppBar title — prototype's `titles.feed` (RealUFO.dc.html:566).
   useSetPageTitle("REALUFO", "Declassified UAP archive + forum");
+  const { t } = useLang();
 
   const { data: boot } = useBootstrap();
   const { data: feed, isLoading: feedLoading, isError, error, refetch } = useFeed();
@@ -209,6 +211,24 @@ export function Feed() {
           </Link>
         </div>
       </div>
+
+      {/* Funnel: own-site link to the citizen skywatch gear guide
+          (watchthenight.com). Tasteful closer for the home page — the
+          archive is about evidence; looking up yourself is the next step. */}
+      <section aria-labelledby="feed-funnel" className="mt-[26px] overflow-hidden rounded-2xl border border-line">
+        <div className="px-[18px] pb-4 pt-[18px]">
+          <h2 id="feed-funnel" className="mb-[10px] font-pixel text-[9px] tracking-[1px] text-faint">
+            ◆ {t("funnel.heading")}
+          </h2>
+          <div className="text-[14px] font-medium leading-[1.5] text-ink">{t("funnel.body")}</div>
+          <a
+            href="https://watchthenight.com"
+            className="mt-[14px] inline-flex items-center gap-2 rounded-[11px] border border-signal px-4 py-[11px] font-mono text-[12px] font-bold tracking-[.5px] text-signal active:scale-[.97]"
+          >
+            {t("funnel.cta")}
+          </a>
+        </div>
+      </section>
     </div>
   );
 }

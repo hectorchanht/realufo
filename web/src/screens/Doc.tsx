@@ -1163,7 +1163,20 @@ export function Doc() {
         </div>
       )}
 
-      {/* Discussion header + count — prototype line 368. The CTA deep-links
+            {/* Funnel strip: own-site link to the citizen skywatch gear guide
+          (watchthenight.com). One line on narrow screens — the question and
+          the link truncate instead of wrapping mid-phrase. */}
+      <div className="mb-4 flex items-center gap-1.5 whitespace-nowrap font-mono text-[11px] text-faint">
+        <span className="min-w-0 truncate">{t("funnel.stripQ")}</span>
+        <span aria-hidden="true" className="flex-none">
+          →
+        </span>
+        <a href="https://watchthenight.com" className="min-w-0 truncate font-semibold text-cyan active:scale-[.97]">
+          {t("funnel.stripLink")}
+        </a>
+      </div>
+
+{/* Discussion header + count — prototype line 368. The CTA deep-links
           to the record's board thread when one exists, else opens the
           new-thread composer prefilled with this file (same flow as the
           "Start a board thread" button below). */}

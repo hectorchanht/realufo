@@ -88,6 +88,12 @@ const STRINGS = {
   "share.whatsapp": ["Share on WhatsApp", "分享去 WhatsApp"],
   // doc screen blink: shown under the title of top-WTF records
   "doc.wtfBlink": ["Yeah, we know why you're here.", "我哋知你嚟睇乜。"],
+  // funnel: realufo.org -> watchthenight.com (own site, not an affiliate hop)
+  "funnel.heading": ["See it yourself", "自己親眼睇"],
+  "funnel.body": ["Reading about the sky is one thing. Here's the gear we'd recommend if you want to look up and check for yourself.", "睇檔案係一回事，如果你想親自抬頭睇返轉頭，呢度係我哋推薦嘅觀星裝備。"],
+  "funnel.cta": ["Browse the gear guide →", "睇裝備指南 →"],
+  "funnel.stripQ": ["Want to see for yourself?", "想自己親眼睇？"],
+  "funnel.stripLink": ["Our citizen skywatch gear guide", "我哋嘅 citizen skywatch 裝備指南"],
 } as const;
 
 export type StringKey = keyof typeof STRINGS;
