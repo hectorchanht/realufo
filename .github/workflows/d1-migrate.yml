@@ -14,11 +14,17 @@ jobs:
         with: { ref: "build/app-foundation" }
       - run: npm i -g wrangler
       - run: |
-          echo "=== wrangler version ==="
-          wrangler --version
-          echo "=== diagnostic: simple select ==="
-          wrangler d1 execute realufo-db --remote --command "SELECT 1 AS one;"
-          echo "=== exit: $? ==="
+          if [ -z "${{ github.event.inputs.migration }}" ]; then
+            echo "diagnostic only"
+          else
+            echo "=== step 1: alter comments ==="
+            wrangler d1 execute realufo-db --remote --command "ALTER TABLE comments ADD COLUMN image_keys TEXT;"
+            echo "=== step 2: alter posts ==="
+            wrangler d1 execute realufo-db --remote --command "ALTER TABLE posts ADD COLUMN image_keys TEXT;"
+            echo "=== verify ==="
+            wrangler d1 execute realufo-db --remote --command "SELECT name FROM pragma_table_info('comments') WHERE name='image_keys';"
+            wrangler d1 execute realufo-db --remote --command "SELECT name FROM pragma_table_info('posts') WHERE name='image_keys';"
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
