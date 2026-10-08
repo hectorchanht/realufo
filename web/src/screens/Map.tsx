@@ -349,7 +349,7 @@ export function MapScreen() {
       {hubPlaces.length > 0 && (
         <nav aria-label="Places in the archive" className="mt-6">
           <h2 className="mx-0.5 mb-3 font-pixel text-[9px] tracking-[1px] text-faint">◆ Places in the archive</h2>
-          <ul className="flex flex-wrap gap-2">
+          <ul data-scroll className="flex gap-2 overflow-x-auto pb-1 [&>li]:flex-none">
             {hubPlaces.map((p) => (
               <li key={p.name}>
                 <Link

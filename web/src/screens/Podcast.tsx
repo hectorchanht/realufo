@@ -55,7 +55,7 @@ export default function Podcast() {
       <h2 className="mb-2 font-mono text-[11px] font-semibold tracking-[.4px] text-faint">
         SUBSCRIBE
       </h2>
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div data-scroll className="mb-6 flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
         <button
           onClick={copyFeed}
           className="rounded-lg border border-line px-3 py-1.5 text-[13px] text-signal hover:underline"

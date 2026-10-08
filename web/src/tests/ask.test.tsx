@@ -56,14 +56,15 @@ beforeEach(() => {
 });
 
 describe("AskAnswer", () => {
-  it("hub chips wrap on their own line under the title (title never squeezed out on phones)", () => {
+  it("hub chips scroll horizontally on their own line under the title (title never squeezed out on phones)", () => {
     useAskMock.mockReturnValue({
       ...answered,
       data: { ...answered.data, sources: [{ ...answered.data.sources[0], hubs: { agency: "fbi", release: "6" } }] },
     });
     renderCard();
     const chips = screen.getByRole("link", { name: "R06" }).parentElement!;
-    expect(chips.className).toContain("flex-wrap");
+    expect(chips.className).toContain("overflow-x-auto");
+    expect(chips.className).not.toContain("flex-wrap");
     const title = screen.getByRole("link", { name: /Los Alamos Conference/ });
     expect(title.parentElement).toBe(chips.parentElement); // title + chips stacked in one shrinkable column
     expect(title.parentElement!.className).toContain("min-w-0");
@@ -103,7 +104,7 @@ describe("AskAnswer", () => {
     const link = screen.getByRole("link", { name: /Unresolved UAP Report, Yellow Sea, 2025/ });
     expect(link).toHaveTextContent("DOW-UAP-PR104 (video)");
     expect(screen.getByText("Unresolved UAP Report, Yellow Sea, 2025").className).toContain("line-clamp-2");
-    expect(screen.getByText("AI").parentElement!.className).toContain("flex-wrap"); // AI chip rides the chip row
+    expect(screen.getByText("AI").parentElement!.className).toContain("overflow-x-auto"); // AI chip rides the scrolling chip row
   });
 
   it("renders the answer as text with citation buttons and numbered sources", () => {

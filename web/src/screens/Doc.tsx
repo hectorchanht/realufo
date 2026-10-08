@@ -987,7 +987,7 @@ export function Doc() {
       )}
 
       {/* chips row — prototype line 358 */}
-      <div className="mb-[10px] flex flex-wrap gap-[7px]">
+      <div data-scroll className="mb-[10px] flex gap-[7px] overflow-x-auto pb-1 [&>*]:flex-none">
         {/* every chip is a .tag link: hub page when the file has one, else the archive filtered to it */}
         <Link to={detail.hubs?.agency ? `/agency/${detail.hubs.agency}` : `/archive?agency=${encodeURIComponent(record.agency)}`} className="tag">
           {record.agency_full || record.agency}
@@ -1148,7 +1148,7 @@ export function Doc() {
       {promotedThreads.length > 0 && (
         <div className="mb-4">
           <div className="mb-2 font-mono text-[9px] uppercase tracking-[.6px] text-faint">◂ promoted threads</div>
-          <div className="flex flex-wrap gap-2">
+          <div data-scroll className="flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
             {promotedThreads.map((pt) => (
               <Link
                 key={pt.id}

@@ -33,7 +33,7 @@ export default function Browse() {
             <h2 id={`browse-${k}`} className="mb-2 font-mono text-[11px] font-semibold tracking-[.5px] text-ink">
               {KIND_PLURAL[k]}
             </h2>
-            <div className="flex flex-wrap gap-[7px]">
+            <div data-scroll className="flex gap-[7px] overflow-x-auto pb-1 [&>*]:flex-none">
               {group.map((h) => (
                 <Link
                   key={h.slug}

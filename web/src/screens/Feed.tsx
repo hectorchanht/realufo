@@ -61,7 +61,7 @@ function BrowseStrip() {
           see all ›
         </Link>
       </div>
-      <div className="flex flex-wrap gap-[7px]">
+      <div data-scroll className="flex gap-[7px] overflow-x-auto pb-1 [&>*]:flex-none">
         {chips.map((h) => (
           <Link
             key={`${h.kind}/${h.slug}`}
@@ -178,7 +178,7 @@ export function Feed() {
               see all ›
             </Link>
           </div>
-          <div className="flex flex-wrap gap-[7px]">
+          <div data-scroll className="flex gap-[7px] overflow-x-auto pb-1 [&>*]:flex-none">
             {cases.slice(0, 6).map((c) => (
               <Link
                 key={c.slug}

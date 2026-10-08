@@ -593,7 +593,7 @@ export function Archive() {
         </div>
 
         {pills.length > 0 && (
-          <ul aria-label="Active filters" className="mx-0.5 mb-2.5 flex flex-wrap items-center gap-1.5">
+          <ul aria-label="Active filters" data-scroll className="mx-0.5 mb-2.5 flex items-center gap-1.5 overflow-x-auto pb-1 [&>li]:flex-none">
             {pills.map((p) => (
               <li key={p.label}>
                 <button

@@ -96,7 +96,7 @@ export default function Hub({ kind }: { kind: HubKind }) {
           <h2 id="hub-more" className="mb-2 font-mono text-[11px] font-semibold tracking-[.5px] text-ink">
             MORE {KIND_PLURAL[kind]}
           </h2>
-          <div className="flex flex-wrap gap-[7px]">
+          <div data-scroll className="flex gap-[7px] overflow-x-auto pb-1 [&>*]:flex-none">
             {data.siblings.map((s) => (
               <Link
                 key={s.slug}

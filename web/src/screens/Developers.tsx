@@ -146,7 +146,7 @@ function Playground() {
   };
   return (
     <div className="max-w-[680px] rounded border border-line bg-panel p-3">
-      <div className="mb-2 flex flex-wrap gap-2">
+      <div data-scroll className="mb-2 flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
         <select
           aria-label="Example request"
           className="max-w-full rounded border border-line bg-canvas px-2 py-1 font-mono text-[12px] text-ink"

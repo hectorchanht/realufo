@@ -248,7 +248,7 @@ export function Case() {
       {otherCases.length > 0 && (
         <nav aria-label="More cold cases" className="mt-8">
           <h2 className="mx-0.5 mb-3 font-pixel text-[9px] tracking-[1px] text-faint">◆ {lang === "zh-Hant" ? "更多懸案" : "More cold cases"}</h2>
-          <ul className="flex flex-wrap gap-2">
+          <ul data-scroll className="flex gap-2 overflow-x-auto pb-1 [&>li]:flex-none">
             {otherCases.map((c) => (
               <li key={c.slug}>
                 <Link

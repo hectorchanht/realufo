@@ -60,7 +60,7 @@ function SourceChips({ s, labels }: { s: AskSource; labels: Map<string, string> 
         p.{s.page}
       </a>
     );
-  return chips.length ? <span className="mt-1 flex flex-wrap gap-1">{chips}</span> : null;
+  return chips.length ? <span data-scroll className="mt-1 flex gap-1 overflow-x-auto pb-1 [&>*]:flex-none">{chips}</span> : null;
 }
 
 export function AskCard({ question, data, footer }: { question: string; data: { answer: string; sources: AskSource[] }; footer?: ReactNode }) {
