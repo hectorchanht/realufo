@@ -127,19 +127,28 @@ async function answer(env: Env, q: string, min: number) {
   const emb = (await env.AI.run(ASK_EMBED_MODEL as any, { text: [q] } as any)) as unknown as { data: number[][] };
   const res = await env.VECTORIZE.query(emb.data[0], { topK: ASK_POOL, returnMetadata: "all" });
   const strong = res.matches.filter((m) => m.score >= min && m.metadata?.record_id);
-  if (!strong.length) return notCovered();
+  // Dense retrieval can miss a term the archive names outright ("PURSUE" scores
+  // below the threshold even though an AI summary says "the PURSUE initiative"):
+  // fall back to keyword search over titles/summaries/AI summaries, then let
+  // the reranker + LLM judge relevance as usual.
+  const raw: { record_id: string; page: number; text: string }[] = strong.length
+    ? strong.map((m) => ({
+        record_id: String(m.metadata!.record_id),
+        page: Number(m.metadata!.page) || 0,
+        text: String(m.metadata!.text ?? ""),
+      }))
+    : await keywordChunks(env, q);
+  if (!raw.length) return notCovered();
 
   // Hydrate from D1; a chunk whose record was deleted is dropped.
-  const ids = [...new Set(strong.map((m) => String(m.metadata!.record_id)))];
+  const ids = [...new Set(raw.map((r) => r.record_id))];
   const rows = await env.DB.prepare(
     `SELECT id,title,kind,${thumbSql("records.id")} thumb FROM records WHERE id IN (${ids.map(() => "?").join(",")})`
   )
     .bind(...ids)
     .all<Hydrated>();
   const byId = new Map(rows.results.map((r) => [r.id, r]));
-  const pool = strong
-    .filter((m) => byId.has(String(m.metadata!.record_id)))
-    .map((m) => ({ record_id: String(m.metadata!.record_id), page: Number(m.metadata!.page) || 0, text: String(m.metadata!.text ?? "") }));
+  const pool = raw.filter((r) => byId.has(r.record_id));
   if (!pool.length) return notCovered();
 
   const perRecord = new Map<string, number>();
@@ -169,6 +178,45 @@ async function answer(env: Env, q: string, min: number) {
       return { n: c.n, record_id: c.record_id, title: r.title, page: c.page, kind: r.kind, thumb: r.thumb ?? null, ...(ai && { ai }) };
     }),
   };
+}
+
+// Keyword fallback for answer(): distinctive question terms matched against
+// titles/summaries/AI summaries. Ranked by how many terms hit, capped, then
+// the normal rerank + LLM path judges relevance.
+const ASK_STOPWORDS = new Set(
+  "what is the a an of and or to in on for with as by at from that this these those it its be are was were who which whose whom how why when where do does did can could should would will shall there their them they we you your our ours his her him she he i me my mine our the this that these those am is are was were be been being have has had having do does did doing will would shall should may might must can could".split(" ")
+);
+const escLike = (s: string) => s.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+async function keywordChunks(env: Env, q: string): Promise<{ record_id: string; page: number; text: string }[]> {
+  const seen = new Set<string>();
+  const kws = ((q.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter(
+    (w) => w.length >= 3 && !ASK_STOPWORDS.has(w) && !seen.has(w) && seen.add(w)
+  )).slice(0, 6);
+  if (!kws.length) return [];
+  const hay = "lower(r.title || ' ' || coalesce(r.summary,'') || ' ' || coalesce(t.ai_summary,''))";
+  const ors = kws.map(() => `(${hay} LIKE ? ESCAPE '\\')`).join(" OR ");
+  const rows = await env.DB.prepare(
+    `SELECT r.id record_id, r.title title,
+       coalesce(t.ai_summary, r.summary, '') summary
+     FROM records r LEFT JOIN record_text t ON t.record_id = r.id
+     WHERE r.status='live' AND (${ors}) LIMIT 24`
+  )
+    .bind(...kws.map((k) => `%${escLike(k)}%`))
+    .all<{ record_id: string; title: string; summary: string }>();
+  const hits = rows.results
+    .map((r) => {
+      const h = `${r.title} ${r.summary}`.toLowerCase();
+      return { r, n: kws.filter((k) => h.includes(k)).length };
+    })
+    .filter((x) => x.n > 0)
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 12);
+  return hits.map(({ r }) => ({
+    record_id: r.record_id,
+    page: 0,
+    // Same "<title> — AI summary" head the indexer uses, so aiSourceOf labels it.
+    text: `${r.title} — AI summary\n${r.summary.slice(0, 1500)}`,
+  }));
 }
 
 // Pool in reranker order; any reranker failure keeps the vector order.

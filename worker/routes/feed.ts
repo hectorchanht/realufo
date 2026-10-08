@@ -11,7 +11,7 @@ import { listShorts } from "./shorts";
 //  - "Trending threads" = the 50 most recently active threads (latest
 //    post/reply, else creation time), ranked by trendScore so a fresh reply
 //    on a weak thread can't bury a well-voted thread with pictures.
-export async function feed(_req: Request, env: Env) {
+export async function feedData(env: Env) {
   // Activity = latest comment or verdict ('' sorts last in DESC; both are
   // "YYYY-MM-DD HH:MM:SS" strings).
   const featured = await env.DB.prepare(
@@ -36,7 +36,7 @@ export async function feed(_req: Request, env: Env) {
   ).all<any>();
 
   const now = Date.now();
-  return json({
+  return {
     featured: featured.results,
     // Motion-first: the carousel autoplays each card while it's on screen, so
     // clips whose first few frames actually move come first (db/0042).
@@ -47,7 +47,11 @@ export async function feed(_req: Request, env: Env) {
       .sort((a, b) => b.score - a.score)
       .slice(0, 4)
       .map(({ t }) => ({ ...t, ago: relAgo(t.lastPost || t.created_at) })),
-  });
+  };
+}
+
+export async function feed(_req: Request, env: Env) {
+  return json(await feedData(env));
 }
 
 // Hacker-News-style gravity: engagement over (age + 12)^1.5, age = hours since

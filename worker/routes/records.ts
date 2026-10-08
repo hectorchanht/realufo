@@ -5,7 +5,7 @@ import { hubsFor, MIN_HUB_FILES } from "../lib/hubs";
 import { listHubsCached, topicMembers } from "./hubs";
 import { TOPIC_RULES } from "../lib/topics";
 import { CASE_STORY_TEXT } from "../lib/caseStoryText";
-import { isoDate, yearOf, decadeOf, wargovReleases, facetCounts } from "../lib/facets";
+import { isoDate, yearOf, decadeOf, wargovReleases } from "../lib/facets";
 import { verdictState } from "./verdicts";
 import { queryShorts } from "./shorts";
 import { uploadUrl } from "../lib/upload";
@@ -74,54 +74,63 @@ export function metaMatch(q: string): { sql: string; bind: string[] } {
   return words.length ? { sql: words.map(() => `${META_HAY} LIKE ?`).join(" AND "), bind: words.map((w) => `%${fitLike(w)}%`) } : { sql: "0", bind: [] };
 }
 
-export async function listRecords(req: Request, env: Env) {
-  const u = new URL(req.url);
+// Shared WHERE builder for the archive listing and the facet counts.
+// `exclude` names the facet dimension being counted, so its own filter is
+// skipped and every control shows real numbers live under the other active
+// filters (faceted search).
+export type FacetDimension = "type" | "agency" | "location" | "decade" | "has" | "redacted" | "release";
+export async function buildRecordFilter(
+  p: URLSearchParams,
+  env: Env,
+  exclude: Set<FacetDimension> = new Set()
+): Promise<{ where: string[]; bind: unknown[] }> {
   const where: string[] = [];
   const bind: unknown[] = [];
-  const arch = u.searchParams.get("archive");
+  const arch = p.get("archive");
   if (arch && arch !== "all") {
     where.push("r.archive=?");
     bind.push(arch);
   }
-  const type = u.searchParams.get("type");
-  if (type && type !== "all") {
+  const type = p.get("type");
+  if (type && type !== "all" && !exclude.has("type")) {
     where.push("r.kind=?");
     bind.push(type.toLowerCase());
   }
-  const redacted = u.searchParams.get("redacted");
-  if (redacted === "1" || redacted === "0") where.push(`r.redacted=${redacted}`);
-  for (const f of (u.searchParams.get("has") || "").split(",")) if (HAS[f]) where.push(HAS[f]);
-  const release = u.searchParams.get("release");
-  if (release) {
+  const redacted = p.get("redacted");
+  if ((redacted === "1" || redacted === "0") && !exclude.has("redacted")) where.push(`r.redacted=${redacted}`);
+  if (!exclude.has("has")) for (const f of (p.get("has") || "").split(",")) if (HAS[f]) where.push(HAS[f]);
+  const release = p.get("release");
+  if (release && !exclude.has("release")) {
     where.push("r.archive='wargov' AND r.doc_date IN (SELECT value FROM json_each(?))");
     bind.push(JSON.stringify((await wargovReleases(env)).find((r) => String(r.no) === release)?.raw ?? []));
   }
-  const agency = u.searchParams.get("agency");
-  if (agency) {
+  const agency = p.get("agency");
+  if (agency && !exclude.has("agency")) {
     where.push("r.agency=?");
     bind.push(agency);
   }
   // Repeatable: a map place merges alias values ("Westen United States").
-  const locations = u.searchParams.getAll("location").filter(Boolean);
-  if (locations.length) {
+  const locations = p.getAll("location").filter(Boolean);
+  if (locations.length && !exclude.has("location")) {
     where.push("r.location IN (SELECT value FROM json_each(?))");
     bind.push(JSON.stringify(locations));
   }
-  const decade = Number(u.searchParams.get("decade"));
-  if (decade) {
+  // Decade and year are one dimension (free-text incident dates).
+  const decade = Number(p.get("decade"));
+  if (decade && !exclude.has("decade")) {
     // Free-text incident dates → match the distinct values whose year lands in the decade.
     const rows = await env.DB.prepare("SELECT DISTINCT incident_date d FROM records WHERE incident_date IS NOT NULL").all<{ d: string }>();
     where.push("r.incident_date IN (SELECT value FROM json_each(?))");
     bind.push(JSON.stringify(rows.results.map((r) => r.d).filter((d) => decadeOf(d) === decade)));
   }
-  const year = u.searchParams.get("year");
-  if (year && /^(19|20)\d{2}$/.test(year)) {
+  const year = p.get("year");
+  if (year && /^(19|20)\d{2}$/.test(year) && !exclude.has("decade")) {
     // Same free-text matching as the decade filter, narrowed to a single year.
     const rows = await env.DB.prepare("SELECT DISTINCT incident_date d FROM records WHERE incident_date IS NOT NULL").all<{ d: string }>();
     where.push("r.incident_date IN (SELECT value FROM json_each(?))");
     bind.push(JSON.stringify(rows.results.map((r) => r.d).filter((d) => yearOf(d) === year)));
   }
-  const q = (u.searchParams.get("q") || "").trim();
+  const q = (p.get("q") || "").trim();
   const meta = metaMatch(q);
   const fts = q ? ftsQuery(q) : null;
   if (q) {
@@ -129,7 +138,16 @@ export async function listRecords(req: Request, env: Env) {
     where.push(fts ? `((${meta.sql}) OR r.id IN (SELECT record_id FROM record_fts WHERE record_fts MATCH ?))` : `(${meta.sql})`);
     bind.push(...meta.bind, ...(fts ? [fts] : []));
   }
+  return { where, bind };
+}
+
+export async function listRecords(req: Request, env: Env) {
+  const u = new URL(req.url);
+  const { where, bind } = await buildRecordFilter(u.searchParams, env);
   const w = where.length ? "WHERE " + where.join(" AND ") : "";
+  const q = (u.searchParams.get("q") || "").trim();
+  const meta = metaMatch(q);
+  const fts = q ? ftsQuery(q) : null;
   const sort = u.searchParams.get("sort");
   let order = "r.featured DESC, r.created_at DESC";
   // Unexplained-vote count inside a trailing window; shared by the wtf_week /
@@ -312,16 +330,54 @@ async function relatedOf(env: Env, r: RecordRow, release: { no: number } | null)
     .filter((g) => g.records.length);
 }
 
-// Archive filter options with global counts (not narrowed by other filters).
-export async function recordFacets(_req: Request, env: Env) {
-  const [f, { total: shorts }] = await Promise.all([facetCounts(env), queryShorts(env, { limit: 1 })]);
+// Archive filter options with live counts: each dimension is narrowed by every
+// other active filter (faceted search), so the numbers always match the grid.
+// The Shorts chip counts live Shorts narrowed by q (the Shorts grid itself
+// only narrows by q — see Archive.tsx).
+export async function recordFacets(req: Request, env: Env) {
+  const u = new URL(req.url).searchParams;
+  // "shorts" isn't a record kind — on the Shorts tab it swaps the grid, so the
+  // facet counts ignore it and stay live under the other filters.
+  if (u.get("type") === "shorts") u.delete("type");
+  const dim = async (exclude: FacetDimension, select: string, group: string, notNull?: string) => {
+    const { where, bind } = await buildRecordFilter(u, env, new Set([exclude]));
+    if (notNull) where.push(notNull);
+    const w = where.length ? `WHERE ${where.join(" AND ")}` : "";
+    return env.DB.prepare(`SELECT ${select} FROM records r ${w} GROUP BY ${group} ORDER BY count DESC, 1`).bind(...bind)
+      .all<{ name: string; count: number } & { d: string | null; n: number }>();
+  };
+  const q = (u.get("q") || "").trim();
+  const [kinds, agencies, decadesRows, locations, flags, releases, { total: shorts }] = await Promise.all([
+    dim("type", "r.kind name, count(*) count", "r.kind"),
+    dim("agency", "r.agency name, count(*) count", "r.agency", "r.agency IS NOT NULL AND trim(r.agency) NOT IN ('','N/A')"),
+    dim("decade", "r.incident_date d, count(*) n", "r.incident_date"),
+    dim("location", "r.location name, count(*) count", "r.location", "r.location IS NOT NULL AND trim(r.location) NOT IN ('','N/A')"),
+    (async () => {
+      const { where, bind } = await buildRecordFilter(u, env, new Set(["has", "redacted"]));
+      const w = where.length ? `WHERE ${where.join(" AND ")}` : "";
+      return env.DB.prepare(
+        `SELECT sum(r.redacted=1) redacted, sum(r.redacted=0) unredacted, sum(r.ai_moments IS NOT NULL) moments,
+           sum(r.featured=1) featured,
+           sum(EXISTS(SELECT 1 FROM record_text t WHERE t.record_id=r.id)) text,
+           sum(EXISTS(SELECT 1 FROM record_text t WHERE t.record_id=r.id AND t.ai_summary IS NOT NULL)) ai
+         FROM records r ${w}`
+      ).bind(...bind).first<Record<"redacted" | "unredacted" | "moments" | "featured" | "text" | "ai", number>>();
+    })(),
+    wargovReleases(env, await buildRecordFilter(u, env, new Set(["release"]))),
+    queryShorts(env, { q, limit: 1 }),
+  ]);
+  const decades = new Map<number, number>();
+  for (const r of decadesRows.results) {
+    const dec = decadeOf(r.d);
+    if (dec) decades.set(dec, (decades.get(dec) ?? 0) + r.n);
+  }
   return json({
-    releases: f.releases.map(({ no, date, count }) => ({ no, date, count })),
-    kinds: f.kinds,
-    agencies: f.agencies,
-    decades: f.decades,
-    locations: f.locations,
-    flags: f.flags,
+    releases: releases.map(({ no, date, count }) => ({ no, date, count })),
+    kinds: kinds.results.map(({ name, count }) => ({ name, count })),
+    agencies: agencies.results.map(({ name, count }) => ({ name, count })),
+    decades: [...decades].sort(([a], [b]) => a - b).map(([decade, count]) => ({ decade, count })),
+    locations: locations.results.map(({ name, count }) => ({ name, count })),
+    flags: flags ?? { redacted: 0, unredacted: 0, moments: 0, featured: 0, text: 0, ai: 0 },
     shorts,
   });
 }

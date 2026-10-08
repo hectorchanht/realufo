@@ -9,11 +9,14 @@ export function isoDate(mdy: string): string | null {
 }
 
 // All war.gov releases, oldest first: no, ISO date, the raw doc_date strings
-// that map to it, and how many files it holds.
-export async function wargovReleases(env: Env) {
+// that map to it, and how many files it holds. `filter` (the archive listing's
+// WHERE, minus the release clause itself) narrows the counts to the active
+// filters — used by the faceted /api/records/facets.
+export async function wargovReleases(env: Env, filter?: { where: string[]; bind: unknown[] }) {
+  const extra = filter?.where.length ? ` AND ${filter.where.join(" AND ")}` : "";
   const rows = await env.DB.prepare(
-    "SELECT doc_date d, count(*) n FROM records WHERE archive='wargov' AND doc_date IS NOT NULL GROUP BY doc_date"
-  ).all<{ d: string; n: number }>();
+    `SELECT doc_date d, count(*) n FROM records r WHERE r.archive='wargov' AND r.doc_date IS NOT NULL${extra} GROUP BY r.doc_date`
+  ).bind(...(filter?.bind ?? [])).all<{ d: string; n: number }>();
   const byDate = new Map<string, { raw: string[]; count: number }>();
   for (const r of rows.results) {
     const date = isoDate(r.d);

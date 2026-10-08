@@ -87,6 +87,14 @@ const shareCard = (url: URL) => new URL("/og.png", url).href;
 const htmlResponse = (body: string, status = 200) =>
   new Response(body, { status, headers: { "content-type": "text/html;charset=utf-8" } });
 
+// page.boot: JSON the SPA takes as first-render data (e.g. useFeed's
+// initialData). `<` is unicode-escaped so no `</script>` can break out.
+const injectBoot = (html: string, boot: unknown) =>
+  html.replace(
+    "</body>",
+    () => `<script id="boot-data" type="application/json">${JSON.stringify(boot).replace(/</g, "\\u003c")}</script></body>`
+  );
+
 // Real 404 status (no soft-404s in search); the SPA still boots and shows its own not-found screen.
 const notFound = (html: string, url: URL) =>
   htmlResponse(
@@ -154,7 +162,8 @@ export async function serveWithMeta(req: Request, env: Env): Promise<Response> {
       // /ask?q= shows a live AI answer nobody reviewed (AI answers can be wrong): never indexed.
       // Decided here, not in the loader: the page memo is keyed by path, query ignored.
       const robots = url.pathname === "/ask" && url.searchParams.has("q") ? "noindex" : page.meta.robots;
-      return htmlResponse(injectBody(injectMeta(html, { ...page.meta, robots, image, url: canonical, jsonLd }), page.body, page.footer));
+      const out = injectBody(injectMeta(html, { ...page.meta, robots, image, url: canonical, jsonLd }), page.body, page.footer);
+      return htmlResponse(page.boot === undefined ? out : injectBoot(out, page.boot));
     }
     const res = await env.ASSETS.fetch(req);
     if (url.pathname !== "/index.html" && res.headers.get("content-type")?.startsWith("text/html")) return notFound(await res.text(), url);

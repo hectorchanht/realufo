@@ -186,7 +186,7 @@ const LEGACY_PATH = /^\/(argentina|brazil|canada|chile|geipan|italy|nara|peru|sp
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     try {
-      return await handleFetch(req, env, ctx);
+      return withSecurityHeaders(await handleFetch(req, env, ctx));
     } catch (e) {
       // Transient D1 overload (e.g. "D1 DB is overloaded. Requests queued for too
       // long."): retry once after a short backoff instead of surfacing an uncaught
@@ -194,19 +194,36 @@ export default {
       if (isD1Overload(e) && (req.method === "GET" || req.method === "HEAD")) {
         await new Promise((r) => setTimeout(r, 800));
         try {
-          return await handleFetch(req, env, ctx);
+          return withSecurityHeaders(await handleFetch(req, env, ctx));
         } catch {
           // fall through to the 500 below
         }
       }
       console.error("fetch uncaught", e instanceof Error ? e.message : e);
-      return error(500, "internal error");
+      return withSecurityHeaders(error(500, "internal error"));
     }
   },
   async scheduled(_c: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil(runTick(env));
   },
 } satisfies ExportedHandler<Env>;
+
+// Baseline security headers on every response (HTML, API, assets, feeds).
+// Deliberately NO X-Frame-Options / frame-ancestors: /embed/badge and
+// /embed/card/:id are designed to be iframed by third-party sites (see the
+// Developers page), so framing restrictions would break a feature. No CSP
+// either: inline scripts + third-party beacons/embeds need a report-only
+// phase first, not a blind enforce.
+const SECURITY_HEADERS: Record<string, string> = {
+  "strict-transport-security": "max-age=31536000; includeSubDomains",
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "strict-origin-when-cross-origin",
+};
+function withSecurityHeaders(res: Response): Response {
+  const h = new Headers(res.headers);
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) if (!h.has(k)) h.set(k, v);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+}
 
 // D1 overload signatures worth one retry: the database was momentarily saturated,
 // not a query bug. Matches "D1 DB is overloaded. Requests queued for too long."

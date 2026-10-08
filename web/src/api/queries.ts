@@ -114,8 +114,22 @@ export function useBootstrap() {
 }
 
 // index.html starts /api/feed before the bundle loads (homepage LCP image); api.get adopts it.
+// The SSR page also embeds the feed payload (#boot-data): the first render
+// takes it as initialData, so real clips/cards paint instantly instead of
+// skeletons; the query still refreshes in the background on mount.
+let bootFeed: Feed | undefined | null;
+function readBootFeed(): Feed | undefined {
+  if (bootFeed !== undefined) return bootFeed ?? undefined;
+  try {
+    const raw = document.getElementById("boot-data")?.textContent;
+    bootFeed = raw ? (JSON.parse(raw).feed as Feed | undefined) : null;
+  } catch {
+    bootFeed = null;
+  }
+  return bootFeed ?? undefined;
+}
 export function useFeed() {
-  return useQuery({ queryKey: qk.feed, queryFn: () => api.get<Feed>("/api/feed") });
+  return useQuery({ queryKey: qk.feed, queryFn: () => api.get<Feed>("/api/feed"), initialData: readBootFeed() });
 }
 
 // Shorts player queue / archive search strip, SHORTS_PAGE at a time (`data` =
@@ -153,10 +167,24 @@ export function useRecords(params: RecordsParams = {}, { enabled = true, keepPre
   });
 }
 
-export function useFacets() {
+// Archive facet counts, narrowed by the other active filters (faceted search):
+// every control shows real numbers live under the current filter context.
+export interface FacetParams {
+  q?: string; archive?: string; type?: string; agency?: string;
+  location?: string[]; decade?: string; year?: string;
+  release?: string; has?: string; redacted?: string;
+}
+export function useFacets(p: FacetParams = {}) {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(p)) {
+    if (k === "location" || !v) continue;
+    sp.set(k, v as string);
+  }
+  for (const l of p.location ?? []) if (l) sp.append("location", l);
+  const qs = sp.toString();
   return useQuery({
-    queryKey: qk.facets,
-    queryFn: () => api.get<RecordFacets>("/api/records/facets"),
+    queryKey: [...qk.facets, qs],
+    queryFn: () => api.get<RecordFacets>(qs ? `/api/records/facets?${qs}` : "/api/records/facets"),
     staleTime: 5 * 60_000,
   });
 }

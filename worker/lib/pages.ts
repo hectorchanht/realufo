@@ -11,6 +11,7 @@ import {
   section, docLinks, countList, docTitle, boardHref, docHref, hubBody, browseBody, hubHref, docMoments, snippet, askBody, distinctSummary, releasesBody,
 } from "./ssr";
 import { loadSharedAsk } from "../routes/ask";
+import { feedData } from "../routes/feed";
 import { askHref, askIdOf } from "./ask";
 import { PRIVACY_HTML } from "./privacy";
 import { TERMS_HTML } from "./terms";
@@ -35,7 +36,9 @@ import { CASE_STORY_TEXT } from "./caseStoryText";
 // canonicalPath: overrides the request path as the canonical URL (a shared
 // answer's duplicates point at the earliest copy).
 // noStore: a degraded fallback — served, but never memoized (meta.ts cachedPage).
-export type Page = { meta: Omit<MetaInput, "url">; body: string; footer?: Link[]; canonicalPath?: string; noStore?: boolean };
+// boot: JSON embedded in the page for the SPA's first render (e.g. useFeed's
+// initialData) — real content on first paint, no skeleton flash.
+export type Page = { meta: Omit<MetaInput, "url">; body: string; footer?: Link[]; canonicalPath?: string; noStore?: boolean; boot?: unknown };
 export type Loader = (env: Env, groups: Record<string, string>, url: URL) => Promise<Page | null>;
 // cacheKey: extra page-HTML memo key derived from the URL. Hub routes paginate
 // via ?page=N, so each page gets its own cached render.
@@ -89,24 +92,31 @@ const TAB = {
   },
 };
 
-const homePage: Loader = async (env, _g, url) => ({
-  meta: {
-    title: "Declassified UAP Archive",
-    description: DEFAULT_DESCRIPTION,
-    type: "website",
-    jsonLd: {
-      "@type": "WebSite",
-      name: "RealUFO",
-      publisher: { "@type": "Organization", name: "RealUFO", url: url.origin, sameAs: SOCIAL_PROFILES.map(([, u]) => u) },
-      potentialAction: {
-        "@type": "SearchAction",
-        target: `${url.origin}/archive?q={search_term_string}`,
-        "query-input": "required name=search_term_string",
+const homePage: Loader = async (env, _g, url) => {
+  // The feed payload doubles as SSR boot data: crawlers get real Short-clips
+  // cards in the pre-render, and the SPA takes it as useFeed() initialData so
+  // the first client paint shows content, not skeletons.
+  const [latestRows, feed] = await Promise.all([latest(env), feedData(env).catch(() => null)]);
+  return {
+    meta: {
+      title: "Declassified UAP Archive",
+      description: DEFAULT_DESCRIPTION,
+      type: "website",
+      jsonLd: {
+        "@type": "WebSite",
+        name: "RealUFO",
+        publisher: { "@type": "Organization", name: "RealUFO", url: url.origin, sameAs: SOCIAL_PROFILES.map(([, u]) => u) },
+        potentialAction: {
+          "@type": "SearchAction",
+          target: `${url.origin}/archive?q={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        },
       },
     },
-  },
-  body: homeBody(await latest(env)),
-});
+    body: homeBody(latestRows, feed?.clips ?? []),
+    ...(feed ? { boot: { feed } } : {}),
+  };
+};
 
 const archivePage: Loader = async (env, _g, url) => {
   const [agencies, recent, total] = await Promise.all([

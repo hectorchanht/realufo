@@ -281,8 +281,26 @@ export function injectBody(html: string, body: string, pageLinks: Link[] = []): 
 export const tabBody = (title: string, intro: string, ...sections: string[]) =>
   `<h1>${esc(title)}</h1>${paras(intro)}${sections.join("")}`;
 
-export const homeBody = (latest: RecordLink[]) =>
-  tabBody("RealUFO — Declassified UAP Archive", DEFAULT_DESCRIPTION, section("Latest files", docLinks(latest)));
+export const homeBody = (latest: RecordLink[], clips: SsrClip[] = []) =>
+  tabBody(
+    "RealUFO — Declassified UAP Archive",
+    DEFAULT_DESCRIPTION,
+    section("Latest files", docLinks(latest)),
+    clips.length ? `<section><h2>Short clips</h2>${clipsGrid(clips)}</section>` : ""
+  );
+
+// Shorts are just videos with static metadata, so the pre-render carries the
+// real cards (crawlers get links, first paint gets content, no skeleton flash).
+export type SsrClip = { id: string; title: string | null; thumb: string | null };
+const clipsGrid = (clips: SsrClip[]) =>
+  `<ul>${clips
+    .map(
+      (c) =>
+        `<li><a href="/shorts/${encodeURIComponent(c.id)}">${
+          c.thumb ? `<img src="${esc(c.thumb)}" alt="" loading="lazy" width="132" height="234">` : ""
+        }<span>${esc(c.title || c.id)}</span></a></li>`
+    )
+    .join("")}</ul>`;
 
 export type DocData = {
   record: {

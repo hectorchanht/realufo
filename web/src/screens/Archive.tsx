@@ -324,7 +324,17 @@ export function Archive() {
   const has = (filter.has ?? "").split(",").filter(Boolean);
   const hasParam = (next: string[]) => HAS_FLAGS.map(([k]) => k).filter((k) => next.includes(k)).join(",") || null;
   const release = filter.release ?? "";
-  const { data: facets } = useFacets();
+  // Facet counts are live under the other active filters (faceted search):
+  // every chip/select shows real numbers for the current context, not globals.
+  const { data: facets } = useFacets({
+    q: filter.q, archive: filter.archive, type: filter.type, redacted: filter.redacted,
+    has: filter.has, release: filter.release, agency: filter.agency,
+    decade: filter.decade, location: filter.location ? [filter.location] : undefined,
+  });
+  // A selected value can drop to zero under the other filters — keep it
+  // listed (honestly, as 0) so the select never blanks the user's choice.
+  const withCurrent = (opts: { value: string; label: string }[], cur: string) =>
+    cur && !opts.some((o) => o.value === cur) ? [...opts, { value: cur, label: `${cur} (0)` }] : opts;
   // One active tag filter that belongs to a hub → offer its landing page.
   const { data: hubsData } = useHubs();
   const tagHub = hubForFilters(
@@ -530,21 +540,21 @@ export function Archive() {
             label="Agency"
             all="All agencies"
             value={filter.agency ?? ""}
-            options={(facets?.agencies ?? []).map((a) => ({ value: a.name, label: `${a.name} (${a.count})` }))}
+            options={withCurrent((facets?.agencies ?? []).map((a) => ({ value: a.name, label: `${a.name} (${a.count})` })), filter.agency ?? "")}
             onChange={(v) => setParam("agency", v)}
           />
           <FacetSelect
             label="Decade"
             all="Any decade"
             value={filter.decade ?? ""}
-            options={(facets?.decades ?? []).map((d) => ({ value: String(d.decade), label: `${d.decade}s (${d.count})` }))}
+            options={withCurrent((facets?.decades ?? []).map((d) => ({ value: String(d.decade), label: `${d.decade}s (${d.count})` })), filter.decade ?? "")}
             onChange={(v) => setParam("decade", v)}
           />
           <FacetSelect
             label="Location"
             all="Any location"
             value={location}
-            options={(facets?.locations ?? []).map((l) => ({ value: l.name, label: `${l.name} (${l.count})` }))}
+            options={withCurrent((facets?.locations ?? []).map((l) => ({ value: l.name, label: `${l.name} (${l.count})` })), location)}
             onChange={(v) => setParam("location", v)}
           />
           <FacetSelect label={t("archive.sortLabel")} all={t("archive.sortFeatured")} value={filter.sort ?? ""} options={SORTS.map((o) => ({ value: o.value, label: t(o.key) }))} onChange={(v) => setParam("sort", v)} />
