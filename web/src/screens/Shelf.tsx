@@ -1,4 +1,4 @@
-// /shelf — the full 64-title reading, listening + watching shelf. Every affiliate pick with its
+// /shelf — the full 65-title reading, listening + watching shelf. Every affiliate pick with its
 // "why it matters here" blurb, the FTC disclosure, the email list, and the
 // Ko-fi support card. The funnel's landing page: doc/hub modules link here,
 // the email confirm page links back here.
@@ -14,12 +14,12 @@ const KOFI_URL =
   SOCIAL_PROFILES.find(([name]) => name === "Ko-fi")?.[1] ?? "https://ko-fi.com/realufo";
 
 export default function Shelf() {
-  useSetPageTitle("READING SHELF", "Sixty-four titles worth your shelf space");
+  useSetPageTitle("READING SHELF", "Sixty-five titles worth your shelf space");
   return (
     <div data-screen="shelf" className="mx-auto max-w-[720px]">
       <h1 className="font-mono text-[15px] font-bold text-ink">THE READING SHELF</h1>
       <p className="mb-4 mt-1 text-[13.5px] leading-[1.6] text-dim">
-        Sixty-four books, audiobooks and documentaries the researchers behind these files actually read — each one picked because it
+        Sixty-five books, audiobooks and documentaries the researchers behind these files actually read — each one picked because it
         illuminates something in the archive.{" "}
         {AMAZON_TAG
           ? "Buying through these links supports RealUFO at no extra cost to you."

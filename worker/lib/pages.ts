@@ -685,8 +685,8 @@ const comparePage: Loader = async () => ({
 // crawler gets the real book list, not just the SPA shell.
 const escAttr = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const shelfPage: Loader = async () => ({
-  meta: { title: "Reading Shelf", description: "Sixty-four books, audiobooks and documentaries the researchers behind these declassified UAP files actually read — RealUFO's recommended reading shelf.", type: "website" },
-  body: `<h1>Reading Shelf</h1><p>Sixty-four books, audiobooks and documentaries the researchers behind these files actually read — each one picked because it illuminates something in the archive.</p><ul>${ALL_PICKS.map((p) => `<li><a href="${escAttr(affiliateUrl(p))}" rel="sponsored nofollow">${escAttr(p.title)}</a> — ${escAttr(p.creator)}</li>`).join("")}</ul>`,
+  meta: { title: "Reading Shelf", description: "Sixty-five books, audiobooks and documentaries the researchers behind these declassified UAP files actually read — RealUFO's recommended reading shelf.", type: "website" },
+  body: `<h1>Reading Shelf</h1><p>Sixty-five books, audiobooks and documentaries the researchers behind these files actually read — each one picked because it illuminates something in the archive.</p><ul>${ALL_PICKS.map((p) => `<li><a href="${escAttr(affiliateUrl(p))}" rel="sponsored nofollow">${escAttr(p.title)}</a> — ${escAttr(p.creator)}</li>`).join("")}</ul>`,
 });
 
 // /newsletter is in sitemap.xml, so it must pre-render (not 404+noindex) — and the

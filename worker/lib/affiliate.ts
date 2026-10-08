@@ -488,9 +488,9 @@ const PICKS: AffiliatePick[] = [
   {
     title: "🎬 The Program (2024)",
     creator: "James Fox",
-    blurb: "Fox's latest — the bipartisan congressional push to uncover what intelligence agencies really know about UAP. Follows The Phenomenon with new witnesses and the D.C. disclosure beat.",
+    blurb: "Behind the congressional UAP hearings with high-level insiders, elected officials and whistleblowers on the alleged crash-retrieval program. The most current disclosure-era documentary.",
     query: "The Program James Fox documentary",
-    asin: "B0FSD45GRX",
+    asin: "B0DJB5P1WD",
     match: ["the program", "congress", "uap", "disclosure", "fox"],
   },
   {
@@ -503,15 +503,17 @@ const PICKS: AffiliatePick[] = [
   {
     title: "🎬 Moment of Contact (2022)",
     creator: "James Fox",
-    blurb: "The 1996 Varginha, Brazil incident — UFO crash, strange creatures, military cordon, and a policeman's mysterious death. Witness-by-witness investigation with Stanton Friedman and Brazilian Air Force officers.",
+    blurb: "The 1996 Varginha, Brazil incident — UFO crash, strange creatures, military cordon, and a policeman's mysterious death. Expanded edition with a Brazilian Air Force general and a neurosurgeon describing communication with a captured being.",
     query: "Moment of Contact James Fox documentary",
+    asin: "B0FR356D2V",
     match: ["varginha", "brazil", "moment of contact", "1996"],
   },
   {
-    title: "🎬 Bob Lazar: Area 51 & Flying Saucers (2018)",
-    creator: "Jeremy Corbell",
-    blurb: "Lazar's story in his own words — S-4, element 115, the saucers he claims to have worked on. Mickey Rourke narrates. Watch it, then read the archive's Area 51 files and decide for yourself.",
-    query: "Bob Lazar Area 51 Flying Saucers documentary",
+    title: "🎬 S4: The Bob Lazar Story (2026)",
+    creator: "Luigi Vendittelli",
+    blurb: "Lazar narrates his own story of reverse-engineering at S-4 near Area 51, with recreations and George Knapp interviews. Watch it, then read the archive's Area 51 files and decide for yourself.",
+    query: "S4 Bob Lazar Story documentary",
+    asin: "B0GL9JHLGW",
     match: ["lazar", "area 51", "s-4", "groom lake"],
   },
   {
@@ -522,6 +524,14 @@ const PICKS: AffiliatePick[] = [
     match: ["ariel", "zimbabwe", "school", "1994", "mack"],
   },
   {
+    title: "🎬 Hunt for the Skinwalker (2018)",
+    creator: "Jeremy Corbell",
+    blurb: "The scientific study of Skinwalker Ranch — Bigelow's NIDSci team, George Knapp, previously unreleased footage. Companion viewing for the archive's AAWSAP records; the book is already on this shelf.",
+    query: "Hunt for the Skinwalker documentary",
+    asin: "B07H5RJKXZ",
+    match: ["skinwalker", "aawsap", "bigelow", "nids"],
+  },
+  {
     title: "🎬 The Nimitz Encounters (2019)",
     creator: "Dave Beaty",
     blurb: "The 2004 Tic Tac incident from the carrier deck — Fravor, Dietrich, and the Princeton crew walk through the encounters that reopened the Pentagon's UAP investigation.",
@@ -530,7 +540,7 @@ const PICKS: AffiliatePick[] = [
   },
 ];
 
-// The full 64-title shelf (48 books + 10 audiobooks + 6 documentaries), in D1 affiliate_picks sort order.
+// The full 65-title shelf (48 books + 10 audiobooks + 7 documentaries), in D1 affiliate_picks sort order.
 export const ALL_PICKS: AffiliatePick[] = PICKS;
 
 // Topic hub pages: which picks show on each topic.
