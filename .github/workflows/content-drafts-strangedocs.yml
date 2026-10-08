@@ -1,0 +1,176 @@
+name: content-drafts-strangedocs
+
+# Pipeline 1 — weekly long-form article drafts for strangedocs.com.
+# Drafts land in hectorchanht/content-drafts (private). NOTHING auto-publishes.
+# DRAFT-FIRST + FACT-CHECK rules apply: Hector reviews every draft.
+
+on:
+  schedule:
+    - cron: "0 15 * * 1" # Mon 09:00 MDT (15:00 UTC)
+  workflow_dispatch:
+
+concurrency:
+  group: content-drafts-strangedocs
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: hectorchanht/content-drafts
+          ssh-key: ${{ secrets.CONTENT_DRAFTS_DEPLOY_KEY }}
+          path: drafts
+
+      - name: Generate 2 article drafts (Workers AI)
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, re, time, urllib.request
+          from datetime import date
+
+          CF_TOKEN = os.environ["CF_TOKEN"]
+          CF_ACCOUNT = os.environ["CF_ACCOUNT"]
+          MODEL = "@cf/qwen/qwen3-30b-a3b-fp8"
+          STATE = "drafts/_state/strangedocs.json"
+          OUTDIR = "drafts/strangedocs"
+          TODAY = date.today().isoformat()
+
+          TOPICS = [
+              ("operation-paperclip",
+               "Operation Paperclip: America's secret recruitment of Nazi scientists",
+               "Declassified Army and CIA files on Wernher von Braun and roughly 1,600 German "
+               "scientists brought to the US after WWII, and the whitewashed dossiers that made it possible."),
+              ("philadelphia-experiment",
+               "The Philadelphia Experiment: myth vs. the Navy's record",
+               "The legend of a 1943 naval invisibility experiment, weighed against what declassified "
+               "Navy documents actually say."),
+              ("project-stargate",
+               "Project Stargate: the Pentagon's remote-viewing program",
+               "Declassified CIA/DIA files on the two-decade program that tried to turn psychic spying "
+               "into an intelligence tool."),
+              ("operation-northwoods",
+               "Operation Northwoods: the false-flag plan a president rejected",
+               "The declassified 1962 Joint Chiefs proposal for staged attacks to justify invading Cuba "
+               "-- signed, then shelved."),
+              ("area-51-u2",
+               "Area 51: what the CIA actually admitted in 2013",
+               "The declassified CIA history that finally acknowledged the base -- and what it says was "
+               "really being tested there."),
+              ("manhattan-secret-cities",
+               "The Manhattan Project's secret cities",
+               "Oak Ridge, Hanford, Los Alamos: three cities built in secret, tens of thousands of "
+               "workers who didn't know what they were building."),
+              ("operation-gladio",
+               "Operation Gladio: NATO's secret stay-behind armies",
+               "Declassified parliamentary inquiries in Italy and Belgium on the Cold War stay-behind "
+               "networks -- and the questions that remain."),
+              ("family-jewels",
+               "The Family Jewels: the CIA's own confession file",
+               "The 1973 internal CIA report cataloguing assassination plots, domestic spying, and "
+               "break-ins -- compiled on the Director's orders."),
+              ("project-sunshine",
+               "Project Sunshine: the secret harvesting of human bodies",
+               "Declassified AEC documents on the Cold War program that collected human tissue worldwide "
+               "to study nuclear fallout."),
+              ("venona-project",
+               "Venona: the codebreakers who caught Soviet spies",
+               "The declassified NSA decrypts of Soviet cables that exposed espionage inside the "
+               "Manhattan Project and the US government."),
+              ("operation-seaspray",
+               "Operation Sea-Spray: when the US sprayed San Francisco",
+               "Declassified Navy records of the 1950 open-air bioweapon test over a US city -- and the "
+               "infections that followed."),
+              ("echelon-network",
+               "ECHELON: the surveillance network Snowden confirmed",
+               "From Duncan Campbell's 1988 expose to the Snowden files: the declassified record of "
+               "global signals interception."),
+          ]
+
+          SYSTEM = (
+              "You write for 'Strange Docs' (strangedocs.com), an evidence-first archive of "
+              "declassified documents. Tagline: DOCUMENTS, NOT RUMORS. Tone: sober, on-the-record, "
+              "file-dossier style. Structure every article: a punchy title line, a 2-3 sentence TL;DR, "
+              "then the story grounded in named programs, documents, and dates, then a final line "
+              "'Evidence status:' with one of: Confirmed by primary sources / Partially declassified / "
+              "Disputed -- be honest. Never invent document names, dates, quotes, or statistics. "
+              "If a detail is uncertain, say so plainly. No conspiracy speculation beyond the record. "
+              "Markdown formatting, no HTML."
+          )
+
+          def ai(system, user, retries=2):
+              url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT}/ai/run/{MODEL}"
+              body = json.dumps({"messages": [
+                  {"role": "system", "content": system},
+                  {"role": "user", "content": user + "\n/no_think"},
+              ]}).encode()
+              last = None
+              for _ in range(retries + 1):
+                  try:
+                      req = urllib.request.Request(url, data=body, headers={
+                          "Authorization": f"Bearer {CF_TOKEN}",
+                          "Content-Type": "application/json"})
+                      with urllib.request.urlopen(req, timeout=300) as r:
+                          out = json.loads(r.read())
+                      if not out.get("success", True):
+                          last = str(out.get("errors")); time.sleep(10); continue
+                      res = out.get("result", {})
+                      text = ""
+                      if isinstance(res, dict):
+                          text = res.get("response") or ""
+                          if not text:
+                              ch = res.get("choices") or []
+                              if ch:
+                                  text = ch[0].get("message", {}).get("content", "") or ""
+                      text = re.sub(r"<think>.*?</think>", "", str(text), flags=re.S).strip()
+                      if text:
+                          return text
+                      last = "empty response"
+                  except Exception as e:
+                      last = repr(e)
+                  time.sleep(10)
+              raise RuntimeError(f"Workers AI failed: {last}")
+
+          def main():
+              state = json.load(open(STATE))
+              used = set(state.get("used_topics", []))
+              fresh = [t for t in TOPICS if t[0] not in used]
+              if len(fresh) < 2:
+                  used = set(); fresh = list(TOPICS)
+              picks = fresh[:2]
+              os.makedirs(OUTDIR, exist_ok=True)
+              for slug, title, brief in picks:
+                  user = (f"Write a Strange Docs article, 800-1500 words.\nTopic: {title}\n"
+                          f"Background: {brief}\n"
+                          "Follow the house style exactly (title, TL;DR, evidence-grounded body, "
+                          "Evidence status line).")
+                  article = ai(SYSTEM, user)
+                  header = ("> AI DRAFT -- verify every claim before publishing (FACT-CHECK RULE).\n"
+                            f"> Pipeline: strangedocs-weekly | Date: {TODAY} | Topic: {title}\n\n")
+                  path = f"{OUTDIR}/{TODAY}-{slug}.md"
+                  open(path, "w").write(header + article.strip() + "\n")
+                  print("wrote", path, len(article), "chars")
+                  used.add(slug)
+              state["used_topics"] = sorted(used)
+              json.dump(state, open(STATE, "w"), indent=2)
+              print("state updated:", state["used_topics"])
+
+          main()
+          PYEOF
+
+      - name: Commit and push drafts
+        run: |
+          cd drafts
+          git config user.name "content-drafts-bot"
+          git config user.email "content-drafts-bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No new drafts."
+          else
+            git commit -m "drafts: strangedocs $(date -u +%F)"
+            git push origin HEAD:main
+          fi
