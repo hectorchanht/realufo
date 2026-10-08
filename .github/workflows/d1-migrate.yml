@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       migration:
-        description: "Migration file to apply, e.g. db/migrations/0048_post_images.sql (empty = diagnostic only)"
+        description: "Migration file to apply, e.g. db/migrations/0050_post_images.sql (empty = diagnostic only)"
         default: ""
 jobs:
   migrate:
