@@ -9,6 +9,7 @@ export const SITES_HTML = `
 <li><b>What happened:</b> July 1947 — the debris field outside Corona, the Army Air Force's "flying disc" press release and retraction. The incident that started it all.</li>
 <li><b>See:</b> the <a href="https://www.roswellufomuseum.com/" target="_blank" rel="noopener">International UFO Museum &amp; Research Center</a> (holds witness affidavits and press archives); the Roswell Incident memorial markers north of town.</li>
 <li><b>Archive link:</b> browse the 1947 wave and Roswell-related records in the <a href="/archive">archive</a>.</li>
+<li><b>See the history as it happened:</b> <a href="https://www.newspapers.com/" target="_blank" rel="noopener">Newspapers.com</a> holds the original July 1947 newspaper coverage — the "flying disc" headline, the retraction, and the weeks of follow-up reporting. Reading the contemporary press next to the declassified files is the closest thing to time travel this archive offers.</li>
 </ul>
 <h2>Area 51 &amp; Rachel, Nevada</h2>
 <ul>
@@ -43,6 +44,7 @@ export const SITES_HTML = `
 <ul>
 <li><b>What happened:</b> December 9, 1965 — a fireball crossed several states; witnesses in Kecksburg reported a crashed object removed by the military. NASA's records on it were the subject of a lawsuit.</li>
 <li><b>See:</b> the town's fire department hosts a re-creation of the "acorn" object; the annual festival marks the anniversary.</li>
+<li><b>Contemporary press:</b> the December 1965 fireball was front-page news across several states — <a href="https://www.newspapers.com/" target="_blank" rel="noopener">Newspapers.com</a> has the original coverage to read against the official record.</li>
 </ul>
 <h2>Before you go</h2>
 <ul>
