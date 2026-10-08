@@ -67,7 +67,7 @@ export default function FullText({
       <section aria-label={label} className="mb-[22px]">
         <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 font-mono">
           <h2 className="text-[11px] font-semibold tracking-[.5px] text-ink">{label}</h2>
-          <span className="text-[10px] text-amber">
+          <span className="text-[10px] text-faint">
             {kind === "image" ? "AI-generated from the image · may contain errors" : "AI-generated · may contain errors"}
           </span>
         </div>
@@ -122,7 +122,7 @@ export default function FullText({
         ) : (
           <h2 className="text-[11px] font-semibold tracking-[.5px] text-ink">FULL TEXT</h2>
         )}
-        <span className={`text-[10px] ${showSummary ? "text-amber" : "text-faint"}`}>
+        <span className="text-[10px] text-faint">
           {showSummary
             ? "AI-generated from OCR text · may contain errors"
             : `${all ? plural(pages.length, "page") : `${pages.length} of ${plural(data.total_pages, "page")}`} · OCR, may contain errors`}
