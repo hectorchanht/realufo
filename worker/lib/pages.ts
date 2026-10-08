@@ -17,6 +17,7 @@ import { PRIVACY_HTML } from "./privacy";
 import { TERMS_HTML } from "./terms";
 import { ABOUT_HTML } from "./about";
 import { FOIA_HTML } from "./foia";
+import { SITES_HTML } from "./sites";
 import { GLOSSARY_HTML } from "./glossary";
 import { CONTACT_HTML } from "./contact";
 import { FAQ_ITEMS, FAQ_HTML } from "./faq";
@@ -670,6 +671,11 @@ const foiaPage: Loader = async () => ({
   body: `<h1>FOIA</h1>${FOIA_HTML}`,
 });
 
+const sitesPage: Loader = async () => ({
+  meta: { title: "UFO Field Guide", description: "The places behind the files: Roswell, Area 51, Marfa, Socorro, Rendlesham, Skinwalker Ranch country and Kecksburg — what happened, what's worth the trip, and the archive records behind each.", type: "website" },
+  body: `<h1>UFO Field Guide</h1>${SITES_HTML}`,
+});
+
 const comparePage: Loader = async () => ({
   meta: { title: "Compare", description: "Two RealUFO records side by side — spot redactions, renames and new summaries between releases.", type: "website", robots: "noindex" },
   body: "<h1>Compare</h1>",
@@ -679,8 +685,8 @@ const comparePage: Loader = async () => ({
 // crawler gets the real book list, not just the SPA shell.
 const escAttr = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const shelfPage: Loader = async () => ({
-  meta: { title: "Reading Shelf", description: "Fifty-eight books and audiobooks the researchers behind these declassified UAP files actually read — RealUFO's recommended reading shelf.", type: "website" },
-  body: `<h1>Reading Shelf</h1><p>Fifty-eight books and audiobooks the researchers behind these files actually read — each one picked because it illuminates something in the archive.</p><ul>${ALL_PICKS.map((p) => `<li><a href="${escAttr(affiliateUrl(p))}" rel="sponsored nofollow">${escAttr(p.title)}</a> — ${escAttr(p.creator)}</li>`).join("")}</ul>`,
+  meta: { title: "Reading Shelf", description: "Sixty-four books, audiobooks and documentaries the researchers behind these declassified UAP files actually read — RealUFO's recommended reading shelf.", type: "website" },
+  body: `<h1>Reading Shelf</h1><p>Sixty-four books, audiobooks and documentaries the researchers behind these files actually read — each one picked because it illuminates something in the archive.</p><ul>${ALL_PICKS.map((p) => `<li><a href="${escAttr(affiliateUrl(p))}" rel="sponsored nofollow">${escAttr(p.title)}</a> — ${escAttr(p.creator)}</li>`).join("")}</ul>`,
 });
 
 // /newsletter is in sitemap.xml, so it must pre-render (not 404+noindex) — and the
@@ -750,6 +756,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader; cacheKey?: (url: URL) 
   { pattern: new URLPattern({ pathname: "/faq" }), load: faqPage },
   { pattern: new URLPattern({ pathname: "/glossary" }), load: glossaryPage },
   { pattern: new URLPattern({ pathname: "/foia" }), load: foiaPage },
+  { pattern: new URLPattern({ pathname: "/sites" }), load: sitesPage },
   { pattern: new URLPattern({ pathname: "/compare" }), load: comparePage },
   { pattern: new URLPattern({ pathname: "/shelf" }), load: shelfPage },
   { pattern: new URLPattern({ pathname: "/leaderboard" }), load: leaderboardPage },

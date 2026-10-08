@@ -1,4 +1,4 @@
-// /shelf — the reading-shelf funnel page: all 58 affiliate picks with the
+// /shelf — the reading-shelf funnel page: all 64 affiliate picks with the
 // Associates tag, the FTC disclosure, the Ko-fi support card, and email signup.
 import { describe, it, expect } from "vitest";
 import { screen } from "@testing-library/react";

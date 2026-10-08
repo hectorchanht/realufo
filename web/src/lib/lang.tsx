@@ -40,6 +40,7 @@ const STRINGS = {
   "footer.faq": ["FAQ", "常見問題"],
   "footer.glossary": ["Glossary", "術語表"],
   "footer.foia": ["FOIA", "資訊自由法"],
+  "footer.sites": ["Field Guide", "實地指南"],
   "footer.tracker": ["Tracker", "追蹤器"],
   "footer.compare": ["Compare", "比較"],
   "footer.leaderboard": ["Leaderboard", "排行榜"],

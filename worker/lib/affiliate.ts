@@ -485,9 +485,52 @@ const PICKS: AffiliatePick[] = [
     asin: "B07MTQRW1C",
     match: ["keel", "eighth tower", "ultraterrestrial", "superspectrum"],
   },
+  {
+    title: "🎬 The Program (2024)",
+    creator: "James Fox",
+    blurb: "Fox's latest — the bipartisan congressional push to uncover what intelligence agencies really know about UAP. Follows The Phenomenon with new witnesses and the D.C. disclosure beat.",
+    query: "The Program James Fox documentary",
+    asin: "B0FSD45GRX",
+    match: ["the program", "congress", "uap", "disclosure", "fox"],
+  },
+  {
+    title: "🎬 The Phenomenon (2020)",
+    creator: "James Fox · narrated by Peter Coyote",
+    blurb: "70 years of sightings through the Pentagon-videos lens — Kenneth Arnold, Roswell, Ariel School, Westall, Rendlesham, plus Harry Reid saying 'most of it hasn't seen the light of day.'",
+    query: "The Phenomenon James Fox documentary",
+    match: ["phenomenon", "harry reid", "ariel", "westall", "rendlesham"],
+  },
+  {
+    title: "🎬 Moment of Contact (2022)",
+    creator: "James Fox",
+    blurb: "The 1996 Varginha, Brazil incident — UFO crash, strange creatures, military cordon, and a policeman's mysterious death. Witness-by-witness investigation with Stanton Friedman and Brazilian Air Force officers.",
+    query: "Moment of Contact James Fox documentary",
+    match: ["varginha", "brazil", "moment of contact", "1996"],
+  },
+  {
+    title: "🎬 Bob Lazar: Area 51 & Flying Saucers (2018)",
+    creator: "Jeremy Corbell",
+    blurb: "Lazar's story in his own words — S-4, element 115, the saucers he claims to have worked on. Mickey Rourke narrates. Watch it, then read the archive's Area 51 files and decide for yourself.",
+    query: "Bob Lazar Area 51 Flying Saucers documentary",
+    match: ["lazar", "area 51", "s-4", "groom lake"],
+  },
+  {
+    title: "🎬 Ariel Phenomenon (2022)",
+    creator: "Randall Nickerson",
+    blurb: "September 1994, Ruwa, Zimbabwe — 62 schoolchildren describe the same landed craft and beings. John Mack's interviews anchor this careful revisit of one of the most witnessed close encounters on record.",
+    query: "Ariel Phenomenon documentary",
+    match: ["ariel", "zimbabwe", "school", "1994", "mack"],
+  },
+  {
+    title: "🎬 The Nimitz Encounters (2019)",
+    creator: "Dave Beaty",
+    blurb: "The 2004 Tic Tac incident from the carrier deck — Fravor, Dietrich, and the Princeton crew walk through the encounters that reopened the Pentagon's UAP investigation.",
+    query: "The Nimitz Encounters documentary",
+    match: ["nimitz", "tic tac", "fravor", "2004", "aawsap"],
+  },
 ];
 
-// The full 58-title shelf (48 books + 10 audiobooks), in D1 affiliate_picks sort order.
+// The full 64-title shelf (48 books + 10 audiobooks + 6 documentaries), in D1 affiliate_picks sort order.
 export const ALL_PICKS: AffiliatePick[] = PICKS;
 
 // Topic hub pages: which picks show on each topic.
