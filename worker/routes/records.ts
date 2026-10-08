@@ -343,7 +343,7 @@ export async function recordFacets(req: Request, env: Env) {
     const { where, bind } = await buildRecordFilter(u, env, new Set([exclude]));
     if (notNull) where.push(notNull);
     const w = where.length ? `WHERE ${where.join(" AND ")}` : "";
-    return env.DB.prepare(`SELECT ${select} FROM records r ${w} GROUP BY ${group} ORDER BY count DESC, 1`).bind(...bind)
+    return env.DB.prepare(`SELECT ${select} FROM records r ${w} GROUP BY ${group} ORDER BY 2 DESC, 1`).bind(...bind)
       .all<{ name: string; count: number } & { d: string | null; n: number }>();
   };
   const q = (u.get("q") || "").trim();
