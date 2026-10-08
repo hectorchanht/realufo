@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: content-drafts-gns-picks
+  group: content-drafts # shared: serialize all three pipelines so pushes never race
   cancel-in-progress: false
 
 jobs:
@@ -125,5 +125,13 @@ jobs:
             echo "No new drafts."
           else
             git commit -m "drafts: gns-story-picks $(date -u +%F)"
-            git push origin HEAD:main
+            git fetch origin main
+            git rebase origin/main || git rebase --abort
+            for i in 1 2 3; do
+              git push origin HEAD:main && break
+              echo "push attempt $i failed, refetching..."
+              sleep 10
+              git fetch origin main
+              git rebase origin/main || git rebase --abort
+            done
           fi
