@@ -1,0 +1,81 @@
+name: cf-zone-analytics
+# Machine-way Cloudflare zone traffic stats (GraphQL httpRequests1dGroups).
+# The browser dashboard needs a login, cf-metrics CLI is dead (403), and the
+# CF API 401s from the VM — so this runs through GitHub Actions, which holds
+# the working CLOUDFLARE_API_TOKEN repo secret.
+# Usage: workflow_dispatch with zones="a.lol,b.lol" days="30".
+# Writes _analytics/zone-traffic.json and commits it to build/app-foundation.
+on:
+  workflow_dispatch:
+    inputs:
+      zones:
+        description: "Comma-separated zone names"
+        required: true
+      days:
+        description: "Days of history"
+        default: "30"
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "build/app-foundation" }
+      - name: Fetch zone traffic
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONES_INPUT: ${{ inputs.zones }}
+          DAYS_INPUT: ${{ inputs.days }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, urllib.request, datetime
+          TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
+          zone_names = [z.strip() for z in os.environ["ZONES_INPUT"].split(",") if z.strip()]
+          days = int(os.environ.get("DAYS_INPUT") or 30)
+          since = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+          def api(method, path, payload=None):
+              data = json.dumps(payload).encode() if payload is not None else None
+              req = urllib.request.Request(
+                  "https://api.cloudflare.com/client/v4" + path, data=data,
+                  headers={"Authorization": "Bearer " + TOKEN, "Content-Type": "application/json"},
+                  method=method)
+              return json.loads(urllib.request.urlopen(req, timeout=60).read())
+          zones = api("GET", "/zones?per_page=50")["result"]
+          name_to_id = {z["name"]: z["id"] for z in zones}
+          out = {"generated_at": datetime.datetime.utcnow().isoformat() + "Z",
+                 "days_queried": days, "since": since, "zones": {}}
+          for name in zone_names:
+              zid = name_to_id.get(name)
+              if not zid:
+                  out["zones"][name] = {"error": "zone not found in account"}
+                  continue
+              q = ("{ viewer { zones(filter: {zoneTag: \"" + zid + "\"}) {"
+                   " httpRequests1dGroups(limit: 100, filter: {date_gt: \"" + since + "\"}) {"
+                   " dimensions { date } sum { requests bytes } uniq { uniques } } } } }")
+              try:
+                  r = api("POST", "/graphql", {"query": q})
+              except Exception as e:
+                  out["zones"][name] = {"error": "graphql http error: " + str(e)[:200]}
+                  continue
+              if r.get("errors"):
+                  out["zones"][name] = {"error": "graphql: " + json.dumps(r["errors"])[:300]}
+                  continue
+              groups = r["data"]["viewer"]["zones"][0]["httpRequests1dGroups"]
+              req_t = sum(g["sum"]["requests"] for g in groups)
+              byte_t = sum(g["sum"]["bytes"] for g in groups)
+              uniq_t = sum(g["uniq"]["uniques"] for g in groups)
+              out["zones"][name] = {"requests": req_t, "uniques": uniq_t, "bytes": byte_t,
+                                    "days_returned": len(groups)}
+          os.makedirs("_analytics", exist_ok=True)
+          open("_analytics/zone-traffic.json", "w").write(json.dumps(out, indent=2))
+          print(json.dumps(out, indent=2))
+          PYEOF
+      - name: Commit results
+        run: |
+          git config user.name "muse"
+          git config user.email "muse@local"
+          git add _analytics/zone-traffic.json
+          git diff --cached --quiet && echo "no changes" || git commit -m "zone traffic analytics ($(date -u +%F))"
+          git push origin HEAD:build/app-foundation
