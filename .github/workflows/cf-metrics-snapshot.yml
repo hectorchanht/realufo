@@ -1,0 +1,70 @@
+name: cf-metrics-snapshot
+
+# Daily read-only Cloudflare metrics snapshot for realufo.org.
+# Uses the repo's CLOUDFLARE_API_TOKEN (same secret as d1-migrate.yml).
+# Snapshots land on the ops/metrics branch (NOT build/app-foundation, so no
+# worker rebuild is triggered). The daily metrics cron + weekly cost-watch
+# cron read them from there instead of driving the browser dashboard.
+on:
+  schedule:
+    - cron: '30 13 * * *' # ~07:30 America/Edmonton daily, before the 08:14 metrics cron
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Manual trigger reason'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: build/app-foundation
+          path: repo
+          sparse-checkout: .github/scripts/cf_metrics_snapshot.py
+          sparse-checkout-cone-mode: false
+
+      - name: Collect Cloudflare metrics snapshot
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python3 repo/.github/scripts/cf_metrics_snapshot.py --out /tmp/cf-snapshot.json
+          cat /tmp/cf-snapshot.json
+
+      - name: Append to metrics history branch
+        env:
+          PUSH_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+        run: |
+          set -e
+          rm -rf data && mkdir data && cd data
+          git init -q
+          git config user.name "muse-metrics"
+          git config user.email "muse-metrics@users.noreply.github.com"
+          git remote add origin "$PUSH_URL"
+          if git fetch -q origin ops/metrics 2>/dev/null; then
+            git checkout -q -B ops/metrics origin/ops/metrics
+          else
+            git checkout -q --orphan ops/metrics
+          fi
+          SN=/tmp/cf-snapshot.json
+          touch cf-snapshots.jsonl
+          DATE=$(python3 -c "import json;print(json.load(open('$SN'))['date'])")
+          grep -v "\"date\": \"$DATE\"" cf-snapshots.jsonl > cf-snapshots.jsonl.tmp || true
+          mv cf-snapshots.jsonl.tmp cf-snapshots.jsonl
+          cat "$SN" >> cf-snapshots.jsonl
+          tail -n 120 cf-snapshots.jsonl > cf-snapshots.jsonl.tmp
+          mv cf-snapshots.jsonl.tmp cf-snapshots.jsonl
+          git add cf-snapshots.jsonl
+          if git diff --cached --quiet; then
+            echo "no changes to commit"
+          else
+            git commit -q -m "cf metrics snapshot $DATE"
+            git push -q -u origin ops/metrics
+          fi
