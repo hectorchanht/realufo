@@ -122,6 +122,9 @@ export default function SiteFooter() {
       <div className="mt-8 flex flex-wrap items-start justify-between gap-4 border-t border-line pt-4">
         <ul className="flex flex-wrap gap-x-4 gap-y-1">
           <li><a className={linkCls} href="mailto:hello@realufo.org">hello@realufo.org</a></li>
+          <li><Link className={linkCls} to="/about">{t("footer.about")}</Link></li>
+          <li><Link className={linkCls} to="/contact">{t("footer.contact")}</Link></li>
+          <li><Link className={linkCls} to="/faq">{t("footer.faq")}</Link></li>
           <li><Link className={linkCls} to="/developers">{t("footer.developers")}</Link></li>
           <li><Link className={linkCls} to="/privacy">{t("footer.privacy")}</Link></li>
           <li><Link className={linkCls} to="/terms">{t("footer.terms")}</Link></li>

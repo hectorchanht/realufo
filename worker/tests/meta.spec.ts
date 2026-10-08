@@ -454,6 +454,27 @@ describe("pre-rendered body", () => {
     expect(terms).toContain("<title>Terms · RealUFO</title>");
     expect(terms).toContain("<h1>Terms</h1>");
   });
+  it("about/contact/faq: native pages, no legacy 301 to release.realufo.org", async () => {
+    const f = fakeEnv();
+    for (const p of ["/about", "/contact", "/faq"]) {
+      const res = await worker.fetch(new Request("https://realufo.org" + p), f, createExecutionContext());
+      expect(res.status).toBe(200);
+      expect(res.headers.get("location")).toBeNull();
+    }
+    const about = await get("/about");
+    expect(about).toContain("<title>About · RealUFO</title>");
+    expect(about).toContain("<h1>About</h1>");
+    expect(about).toContain("independent, open-source archive");
+    const contact = await get("/contact");
+    expect(contact).toContain("<title>Contact · RealUFO</title>");
+    expect(contact).toContain("<h1>Contact</h1>");
+    expect(contact).toContain("hello@realufo.org");
+    const faq = await get("/faq");
+    expect(faq).toContain("<title>FAQ · RealUFO</title>");
+    expect(faq).toContain("<h1>FAQ</h1>");
+    expect(faq).toContain("What is RealUFO?");
+    expect(faq).toContain('"@type":"FAQPage"');
+  });
   it("doc: meta + body even with Accept */* (share scrapers)", async () => {
     const html = await get("/doc/FBI-UAP-D002");
     expect(html).toContain("<title>FBI-UAP-D002 — FD-1057, Unresolved UAP Report, Colorado Springs, 2022 · RealUFO</title>");

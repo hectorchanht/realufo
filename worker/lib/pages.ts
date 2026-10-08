@@ -14,6 +14,9 @@ import { loadSharedAsk } from "../routes/ask";
 import { askHref, askIdOf } from "./ask";
 import { PRIVACY_HTML } from "./privacy";
 import { TERMS_HTML } from "./terms";
+import { ABOUT_HTML } from "./about";
+import { CONTACT_HTML } from "./contact";
+import { FAQ_ITEMS, FAQ_HTML } from "./faq";
 import { SOCIAL_PROFILES } from "./profiles";
 import { ALL_PICKS, affiliateUrl } from "./affiliate";
 import { MAP_INTRO, RELEASES_DESCRIPTION, RELEASES_TITLE } from "./shared";
@@ -610,6 +613,41 @@ const developersPage: Loader = async () => ({
   body: "<h1>Developers</h1>",
 });
 
+const aboutPage: Loader = async (env, _g, url) => {
+  let stats = "hundreds of records across 9 archives";
+  try {
+    const [recs, agencies, d] = await Promise.all([
+      env.DB.prepare("SELECT count(*) c FROM records WHERE status='live'").first<{ c: number }>(),
+      env.DB.prepare("SELECT count(DISTINCT agency) c FROM records WHERE status='live' AND agency IS NOT NULL AND trim(agency)<>''").first<{ c: number }>(),
+      trackerData(env, url.origin).catch(() => null),
+    ]);
+    const parts: string[] = [];
+    if (recs?.c) parts.push(`${recs.c.toLocaleString("en-US")} records`);
+    if (agencies?.c) parts.push(`${agencies.c} agencies`);
+    if (d && d.series.length) parts.push(`${d.series.length} release tranches`);
+    if (parts.length) stats = parts.join(" · ");
+  } catch { /* keep the static fallback line */ }
+  return {
+    meta: { title: "About", description: "What RealUFO is: an independent, open-source archive of declassified UAP records, mirrored verbatim from official government sources.", type: "website" },
+    body: `<h1>About</h1>${ABOUT_HTML.replace("{{STATS}}", stats)}`,
+  };
+};
+
+const contactPage: Loader = async () => ({
+  meta: { title: "Contact", description: "Reach the RealUFO team: hello@realufo.org, GitHub issues, the anonymous file-request form, and RealUFO's social accounts.", type: "website" },
+  body: `<h1>Contact</h1>${CONTACT_HTML}`,
+});
+
+const faqPage: Loader = async () => ({
+  meta: {
+    title: "FAQ",
+    description: "Frequently asked questions about RealUFO: what the archive is, where the records come from, accounts, citing, downloads, and who runs it.",
+    type: "website",
+    faq: FAQ_ITEMS.map((f) => ({ q: f.q, a: f.aText })),
+  },
+  body: `<h1>FAQ</h1>${FAQ_HTML}`,
+});
+
 const comparePage: Loader = async () => ({
   meta: { title: "Compare", description: "Two RealUFO records side by side — spot redactions, renames and new summaries between releases.", type: "website", robots: "noindex" },
   body: "<h1>Compare</h1>",
@@ -685,6 +723,9 @@ export const ROUTES: { pattern: URLPattern; load: Loader; cacheKey?: (url: URL) 
   { pattern: new URLPattern({ pathname: "/terms" }), load: termsPage },
   { pattern: new URLPattern({ pathname: "/notifications" }), load: notificationsPage },
   { pattern: new URLPattern({ pathname: "/developers" }), load: developersPage },
+  { pattern: new URLPattern({ pathname: "/about" }), load: aboutPage },
+  { pattern: new URLPattern({ pathname: "/contact" }), load: contactPage },
+  { pattern: new URLPattern({ pathname: "/faq" }), load: faqPage },
   { pattern: new URLPattern({ pathname: "/compare" }), load: comparePage },
   { pattern: new URLPattern({ pathname: "/shelf" }), load: shelfPage },
   { pattern: new URLPattern({ pathname: "/leaderboard" }), load: leaderboardPage },
