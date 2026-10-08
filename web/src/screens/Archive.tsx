@@ -330,7 +330,7 @@ export function Archive() {
   const { data: facets } = useFacets({
     q: filter.q, archive: filter.archive, type: filter.type, redacted: filter.redacted,
     has: filter.has, release: filter.release, agency: filter.agency,
-    decade: filter.decade, location: filter.location ? [filter.location] : undefined,
+    decade: filter.decade, location: filter.location ? [filter.location].flat() : undefined,
   });
   // A selected value can drop to zero under the other filters — keep it
   // listed (honestly, as 0) so the select never blanks the user's choice.
