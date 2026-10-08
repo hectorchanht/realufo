@@ -1,0 +1,21 @@
+name: wrangler-run
+# Machine-way Cloudflare ops: run any read-only wrangler command with the
+# repo's working API token. For D1 writes use d1-migrate.yml instead.
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "Wrangler args (e.g. 'deployments list --name realufo')"
+        required: true
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "build/app-foundation" }
+      - run: npm i -g wrangler
+      - run: wrangler ${{ github.event.inputs.command }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
