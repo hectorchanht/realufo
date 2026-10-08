@@ -52,6 +52,20 @@ def graphql(token, query, variables):
     except (KeyError, IndexError, TypeError):
         return None, "unexpected shape: %s" % json.dumps(out)[:300]
 
+def graphql_zone(token, query, variables):
+    """Same as graphql() but unwraps viewer.zones[0] (zone-scoped queries)."""
+    out = req("POST", "/graphql", token,
+              {"query": query, "variables": variables})
+    if not out.get("success", True):
+        return None, "http %s: %s" % (out.get("http_status"),
+                                      json.dumps(out.get("body"))[:200])
+    if out.get("errors"):
+        return None, "graphql: %s" % json.dumps(out["errors"])[:300]
+    try:
+        return out["data"]["viewer"]["zones"][0], None
+    except (KeyError, IndexError, TypeError):
+        return None, "unexpected shape: %s" % json.dumps(out)[:300]
+
 
 Q_WORKER = """query($accountTag: string!, $scriptName: string!, $start: Time!, $end: Time!) {
   viewer { accounts(filter: {accountTag: $accountTag}) {
@@ -71,6 +85,14 @@ Q_R2 = """query($accountTag: string!, $bucket: string!, $start: Time!, $end: Tim
       filter: {bucketName: $bucket, datetime_geq: $start, datetime_leq: $end}) {
       max { payloadSize metadataSize objectCount }
       dimensions { datetime } } } } }"""
+
+Q_ZONE = """query($zoneTag: string!, $start: Time!, $end: Time!) {
+  viewer { zones(filter: {zoneTag: $zoneTag}) {
+    httpRequestsAdaptiveGroups(limit: 10000,
+      filter: {datetime_geq: $start, datetime_leq: $end}) {
+      sum { requests bytes cachedRequests threats pageViews }
+      uniq { uniques } } } } }"""
+
 
 
 def iso(dt):
@@ -103,22 +125,36 @@ def main():
         snap["errors"].append("zone lookup: %s" % json.dumps(z)[:200])
 
     if zone_id:
-        a = req("GET", "/zones/%s/analytics/dashboard?since=-1440" % zone_id,
-                token)
-        try:
-            t = a["result"]["totals"]
-            rq, bw = t["requests"], t["bandwidth"]
-            snap["zone_24h"] = {
-                "requests": rq["all"],
-                "visitors": t["uniques"]["all"],
-                "pageviews": t["pageviews"]["all"],
-                "bandwidth_gb": round(bw["all"] / 1e9, 3),
-                "cache_hit_pct": (round(rq["cached"] / rq["all"] * 100, 2)
-                                  if rq["all"] else 0),
-                "threats_blocked": t["threats"]["all"],
-            }
-        except (KeyError, TypeError):
-            snap["errors"].append("zone analytics: %s" % json.dumps(a)[:200])
+        # NOTE: /zones/{id}/analytics/dashboard rejects API tokens
+        # (error 1016: "Zone Analytics API only supports authentication using
+        # user-owned credentials"), so use GraphQL httpRequestsAdaptiveGroups
+        # which is token-compatible. No dimensions => single aggregate row
+        # over the trailing 24h window.
+        zdata, err = graphql_zone(token, Q_ZONE, {
+            "zoneTag": zone_id,
+            "start": iso(now - timedelta(hours=24)), "end": iso(now)})
+        if err:
+            snap["errors"].append("zone analytics: " + err)
+        else:
+            try:
+                rows = zdata["httpRequestsAdaptiveGroups"]
+                rq = sum((r["sum"]["requests"] or 0) for r in rows)
+                bw = sum((r["sum"]["bytes"] or 0) for r in rows)
+                cached = sum((r["sum"]["cachedRequests"] or 0) for r in rows)
+                threats = sum((r["sum"]["threats"] or 0) for r in rows)
+                pvs = sum((r["sum"]["pageViews"] or 0) for r in rows)
+                visitors = sum((r["uniq"]["uniques"] or 0) for r in rows)
+                snap["zone_24h"] = {
+                    "requests": rq,
+                    "visitors": visitors,
+                    "pageviews": pvs,
+                    "bandwidth_gb": round(bw / 1e9, 3),
+                    "cache_hit_pct": (round(cached / rq * 100, 2)
+                                      if rq else 0),
+                    "threats_blocked": threats,
+                }
+            except (KeyError, TypeError):
+                snap["errors"].append("zone analytics: empty result set")
 
     # 2. worker invocations / errors, trailing 24h
     acct, err = graphql(token, Q_WORKER, {
