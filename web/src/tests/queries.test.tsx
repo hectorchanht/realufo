@@ -120,19 +120,31 @@ describe("comment image uploads", () => {
     ["useAddComment", () => useAddComment("rec1"), "/api/records/rec1/comments"],
     ["useAddCaseComment", () => useAddCaseComment("roswell"), "/api/cases/roswell/comments"],
   ] as const) {
-    it(`${name} sends multipart FormData when an image is attached`, async () => {
+    it(`${name} sends multipart FormData when images are attached`, async () => {
       vi.mocked(api.post).mockClear().mockResolvedValue({ comment: { id: "c9" } });
       const qc = new QueryClient();
       const { result } = renderHook(hook, { wrapper: makeWrapper(qc) });
-      const image = new File([new Uint8Array([1])], "pic.png", { type: "image/png" });
+      const images = [new File([new Uint8Array([1])], "pic.png", { type: "image/png" })];
       await act(async () => {
-        await result.current.mutateAsync({ body: "look", stance: "analyst", image });
+        await result.current.mutateAsync({ body: "look", stance: "analyst", images });
       });
       const [calledPath, sent] = vi.mocked(api.post).mock.calls[0];
       expect(calledPath).toBe(path);
       expect(sent).toBeInstanceOf(FormData);
       expect((sent as FormData).get("body")).toBe("look");
       expect((sent as FormData).get("image")).toBeInstanceOf(File);
+    });
+
+    it(`${name} sends JSON (not FormData) when no images are attached`, async () => {
+      vi.mocked(api.post).mockClear().mockResolvedValue({ comment: { id: "c9" } });
+      const qc = new QueryClient();
+      const { result } = renderHook(hook, { wrapper: makeWrapper(qc) });
+      await act(async () => {
+        await result.current.mutateAsync({ body: "plain", stance: "analyst" });
+      });
+      const [, sent] = vi.mocked(api.post).mock.calls[0];
+      expect(sent).not.toBeInstanceOf(FormData);
+      expect(sent).toMatchObject({ body: "plain" });
     });
   }
 });

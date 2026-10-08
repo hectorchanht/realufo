@@ -46,6 +46,39 @@ describe("image uploads", () => {
     expect(after.thread.img_count).toBe(before.thread.img_count + 1);
   });
 
+  it("multiple images: all stored, first stays image_url, rest in image_urls", async () => {
+    const f = new FormData();
+    f.set("board", "uap");
+    f.set("op_body", "three pics");
+    for (let i = 0; i < 3; i++) f.append("image", new File([PNG], `p${i}.png`, { type: "image/png" }));
+    const r = await call("/api/threads", { method: "POST", headers: { "X-Anon-Id": "up-multi" }, body: f });
+    expect(r.status).toBe(201);
+    const { thread }: any = await r.json();
+    expect(thread.img_count).toBe(3);
+
+    const det: any = await (await call("/api/threads/" + thread.id)).json();
+    const post = det.posts[0];
+    expect(post.image_urls).toHaveLength(3);
+    expect(post.image_urls[0]).toBe(post.image_url);
+    expect(new Set(post.image_urls).size).toBe(3); // distinct R2 keys
+    for (const u of post.image_urls) expect(u).toMatch(/^\/api\/u\/[0-9a-f-]{36}\.png$/);
+
+    // thread card thumb still uses the first image
+    const board: any = await (await call("/api/boards/uap/threads")).json();
+    expect(board.threads.find((t: any) => t.id === thread.id).thumb).toBe(post.image_url);
+  });
+
+  it("caps at 4 images; extras are ignored", async () => {
+    const f = new FormData();
+    f.set("board", "uap");
+    f.set("op_body", "six pics");
+    for (let i = 0; i < 6; i++) f.append("image", new File([PNG], `q${i}.png`, { type: "image/png" }));
+    const r = await call("/api/threads", { method: "POST", headers: { "X-Anon-Id": "up-cap" }, body: f });
+    expect(r.status).toBe(201);
+    const { thread }: any = await r.json();
+    expect(thread.img_count).toBe(4);
+  });
+
   it("rejects non-images by content, ignoring claimed type", async () => {
     const svg = new TextEncoder().encode("<svg onload=alert(1)>");
     const r = await form({ board: "uap", op_body: "evil" }, svg, "image/png");

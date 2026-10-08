@@ -5,11 +5,11 @@ import { newId, newNo, postActor } from "../lib/anon";
 import { autoFollow, later } from "../lib/follows";
 import { pushActivity } from "../lib/push";
 import { allowWrite } from "../lib/ratelimit";
-import { readBody, putImage, uploadUrl } from "../lib/upload";
+import { readBody, putImages, splitKeys, uploadUrl, uploadUrls } from "../lib/upload";
 import { subscribeReply, notifyQuoted, validNotifyEmail } from "../lib/replyNotify";
 
 export async function createPost(req: Request, env: Env, p: Record<string, string>, ctx?: ExecutionContext) {
-  const { b, image } = await readBody(req);
+  const { b, images } = await readBody(req);
   const body = typeof b.body === "string" ? b.body.trim() : "";
   if (!body) return error(400, "empty body");
   if (!(await allowWrite(env, req, "post"))) return error(429, "slow down — too many posts");
@@ -25,19 +25,16 @@ export async function createPost(req: Request, env: Env, p: Record<string, strin
   // Opt-in reply notifications: the poster gave an email in the composer.
   // Anonymous posters (no email) get no notification — nothing to send to.
   const notifyEmail = validNotifyEmail(b.notify_email);
-  let imageKey: string | null = null;
-  if (image) {
-    const r = await putImage(env, image);
-    if (r instanceof Response) return r;
-    imageKey = r;
-  }
+  const keys = await putImages(env, images);
+  if (keys instanceof Response) return keys;
+  const { first: imageKey, rest: imageKeys } = splitKeys(keys);
   const imgKind = imageKey ? "upload" : null;
   const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
   await env.DB.batch([
     env.DB.prepare(
-      `INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,source_record_id,image_r2_key,image_kind,is_op,created_at,actor_id) VALUES(?,?,?,?,?,?,0,?,?,?,0,?,?)`
-    ).bind(id, no, p.id, body, handle, stance, src, imageKey, imgKind, created_at, actor),
-    env.DB.prepare("UPDATE threads SET reply_count=reply_count+1, img_count=img_count+? WHERE id=?").bind(imageKey ? 1 : 0, p.id),
+      `INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,source_record_id,image_r2_key,extra_images,image_kind,is_op,created_at,actor_id) VALUES(?,?,?,?,?,?,0,?,?,?,?,0,?,?)`
+    ).bind(id, no, p.id, body, handle, stance, src, imageKey, imageKeys, imgKind, created_at, actor),
+    env.DB.prepare("UPDATE threads SET reply_count=reply_count+1, img_count=img_count+? WHERE id=?").bind(keys.length, p.id),
   ]);
   await autoFollow(env, actor, "thread", p.id);
   await later(ctx, pushActivity(env, "thread", p.id, actor, body));
@@ -60,6 +57,7 @@ export async function createPost(req: Request, env: Env, p: Record<string, strin
         image_kind: imgKind,
         image_label: null,
         image_url: uploadUrl(env, imageKey),
+        image_urls: uploadUrls(env, imageKey, imageKeys),
         isOp: false,
         byOp: !!actor && actor === op?.actor_id,
         created_at,

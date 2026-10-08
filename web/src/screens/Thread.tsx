@@ -242,6 +242,19 @@ function PostRow({ post, sourceRecord, thread, nos, replies, onQuote }: PostRowP
           )}
         </button>
       )}
+      {/* extra attached images beyond the first — same viewer, one thumb each */}
+      {img?.kind === "upload" &&
+        (post.image_urls ?? []).slice(1).map((u) => (
+          <button
+            key={u}
+            type="button"
+            onClick={() => openViewer({ kind: "image", url: u, label: "attached image" })}
+            aria-label="open attached image"
+            className="relative float-left mb-2 mr-3 h-24 w-24 flex-none overflow-hidden rounded-[10px] border border-line2 bg-bg2 active:scale-[.96]"
+          >
+            <img src={u} alt="" loading="lazy" className="h-full w-full object-cover" />
+          </button>
+        ))}
 
       {/* body — prototype line 275 */}
       <div

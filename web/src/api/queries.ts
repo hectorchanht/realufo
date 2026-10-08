@@ -323,8 +323,8 @@ export function useShareAsk() {
 export function useAddComment(recordId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { body: string; stance?: Stance; handle?: string; image?: File }) =>
-      api.post<AddCommentResponse>(`/api/records/${recordId}/comments`, withImage(vars)),
+    mutationFn: (vars: { body: string; stance?: Stance; handle?: string; images?: File[] }) =>
+      api.post<AddCommentResponse>(`/api/records/${recordId}/comments`, withImages(vars)),
     onSuccess: (data) => {
       queryClient.setQueryData<CommentsResponse>(qk.comments(recordId), (old) => ({
         comments: [data.comment, ...(old?.comments ?? [])],
@@ -384,8 +384,8 @@ export function useCastPoll(slug: string) {
 export function useAddCaseComment(slug: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { body: string; stance?: Stance; handle?: string; image?: File }) =>
-      api.post<AddCommentResponse>(`/api/cases/${slug}/comments`, withImage(vars)),
+    mutationFn: (vars: { body: string; stance?: Stance; handle?: string; images?: File[] }) =>
+      api.post<AddCommentResponse>(`/api/cases/${slug}/comments`, withImages(vars)),
     onSuccess: (data) => {
       queryClient.setQueryData<CommentsResponse>(qk.caseComments(slug), (old) => ({
         comments: [data.comment, ...(old?.comments ?? [])],
@@ -397,11 +397,19 @@ export function useAddCaseComment(slug: string) {
   });
 }
 
-// With an image, send the same fields as multipart form data; otherwise JSON.
-function withImage(vars: { image?: File } & Record<string, unknown>): unknown {
-  if (!vars.image) return vars;
+// With images, send the same fields as multipart form data (one `image` field
+// per file, up to the server's MAX_IMAGES); otherwise JSON.
+function withImages(vars: { images?: File[] } & Record<string, unknown>): unknown {
+  if (!vars.images?.length) {
+    const { images: _drop, ...rest } = vars;
+    return rest;
+  }
   const f = new FormData();
-  for (const [k, v] of Object.entries(vars)) if (v !== undefined) f.set(k, v instanceof File ? v : String(v));
+  for (const [k, v] of Object.entries(vars)) {
+    if (v === undefined || k === "images") continue;
+    f.set(k, String(v));
+  }
+  for (const file of vars.images) f.append("image", file);
   return f;
 }
 
@@ -416,12 +424,12 @@ export function useCreateThread() {
       handle?: string;
       source_record_id?: string;
       case_slug?: string;
-      image?: File;
+      images?: File[];
       /** Name of an existing upload to reuse (promoted comment's image). */
       image_ref?: string;
       /** Opt-in reply-notification email for the OP. */
       notify_email?: string;
-    }) => api.post<CreateThreadResponse>("/api/threads", withImage(vars)),
+    }) => api.post<CreateThreadResponse>("/api/threads", withImages(vars)),
     onSettled: (data, _err, vars) => {
       void queryClient.invalidateQueries({ queryKey: qk.feed });
       if (data) {
@@ -440,10 +448,10 @@ export function useReply(threadId: string) {
       stance?: Stance;
       handle?: string;
       source_record_id?: string;
-      image?: File;
+      images?: File[];
       /** Opt-in reply-notification email (thread posts only). */
       notify_email?: string;
-    }) => api.post<CreatePostResponse>(`/api/threads/${threadId}/posts`, withImage(vars)),
+    }) => api.post<CreatePostResponse>(`/api/threads/${threadId}/posts`, withImages(vars)),
     onSuccess: (data) => {
       queryClient.setQueryData<ThreadDetail>(qk.thread(threadId), (old) =>
         old

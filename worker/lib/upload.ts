@@ -27,21 +27,25 @@ function sniff(b: Uint8Array): { mime: string; ext: string } | null {
   return null;
 }
 
+// Max attached images per comment/post — keeps a post's media strip readable
+// and bounds R2 writes per request.
+export const MAX_IMAGES = 4;
+
 // Body of a write: JSON, or multipart/form-data carrying the same fields plus
-// an optional `image` file.
-export async function readBody(req: Request): Promise<{ b: any; image: File | null }> {
+// up to MAX_IMAGES `image` files (extra files are ignored).
+export async function readBody(req: Request): Promise<{ b: any; images: File[] }> {
   if (!(req.headers.get("content-type") || "").startsWith("multipart/form-data")) {
-    return { b: await req.json<any>().catch(() => ({})), image: null };
+    return { b: await req.json<any>().catch(() => ({})), images: [] };
   }
   const form = await req.formData().catch(() => null);
-  if (!form) return { b: {}, image: null };
+  if (!form) return { b: {}, images: [] };
   const b: Record<string, string> = {};
-  let image: File | null = null;
+  const images: File[] = [];
   for (const [k, v] of form) {
     if (typeof v === "string") b[k] = v;
-    else if (k === "image" && v.size > 0) image = v;
+    else if (k === "image" && v.size > 0 && images.length < MAX_IMAGES) images.push(v);
   }
-  return { b, image };
+  return { b, images };
 }
 
 // Validate + store. Returns the R2 key, or an error Response to send back.
@@ -53,4 +57,41 @@ export async function putImage(env: Env, file: File): Promise<string | Response>
   const key = `uploads/${crypto.randomUUID()}.${t.ext}`;
   await env.MEDIA.put(key, stripMeta(bytes, t.ext), { httpMetadata: { contentType: t.mime } });
   return key;
+}
+
+// Validate + store every file, in order. Returns the R2 keys, or the first
+// error Response (nothing is stored after the failing file).
+export async function putImages(env: Env, files: File[]): Promise<string[] | Response> {
+  const keys: string[] = [];
+  for (const f of files) {
+    const r = await putImage(env, f);
+    if (r instanceof Response) return r;
+    keys.push(r);
+  }
+  return keys;
+}
+
+// Split stored keys across the two columns: the first keeps the legacy
+// image_r2_key slot (thread thumbs, feeds, social meta all read it), the
+// rest go in the extra_images JSON column. Either may be null.
+export function splitKeys(keys: string[]): { first: string | null; rest: string | null } {
+  return { first: keys[0] ?? null, rest: keys.length > 1 ? JSON.stringify(keys.slice(1)) : null };
+}
+
+// Every upload URL for a row, in attach order (first + extras).
+export function uploadUrls(env: Env, first: string | null, restJson: string | null): string[] {
+  const out: string[] = [];
+  const u = uploadUrl(env, first);
+  if (u) out.push(u);
+  if (restJson) {
+    try {
+      for (const k of JSON.parse(restJson)) {
+        const uu = uploadUrl(env, typeof k === "string" ? k : null);
+        if (uu) out.push(uu);
+      }
+    } catch {
+      // Corrupt JSON: the first image still shows.
+    }
+  }
+  return out;
 }

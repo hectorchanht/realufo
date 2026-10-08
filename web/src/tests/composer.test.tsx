@@ -122,7 +122,10 @@ describe("Composer", () => {
 
   it("shows a promoted comment's image and sends it as image_ref; ✕ drops it", () => {
     renderComposer({ mode: "newThread", boardId: "uap", presetBody: "orb", presetImageUrl: "https://cdn/x/abc.png" });
-    expect(screen.getByAltText("attached image preview")).toHaveAttribute("src", "https://cdn/x/abc.png");
+    expect(screen.getByRole("button", { name: "View attached image" }).querySelector("img")).toHaveAttribute(
+      "src",
+      "https://cdn/x/abc.png",
+    );
     fireEvent.click(screen.getByRole("button", { name: /post/i }));
     expect(mockCreateThreadMutate.mock.calls[0][0]).toMatchObject({ image_ref: "abc.png" });
 
@@ -136,10 +139,30 @@ describe("Composer", () => {
     renderComposer({ mode: "reply", threadId: "t1" });
     const file = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "timeline.png", { type: "image/png" });
     fireEvent.change(screen.getByLabelText(/attach image/i), { target: { files: [file] } });
-    expect(screen.getByAltText("attached image preview")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View attached image 1 of 1" })).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "see pic" } });
     fireEvent.click(screen.getByRole("button", { name: /post/i }));
-    expect(mockReplyMutate.mock.calls[0][0]).toMatchObject({ body: "see pic", image: file });
+    expect(mockReplyMutate.mock.calls[0][0]).toMatchObject({ body: "see pic", images: [file] });
+  });
+
+  it("attaches up to 4 images, lightbox previews each, posts them all", () => {
+    renderComposer({ mode: "reply", threadId: "t1" });
+    const files = [0, 1, 2].map((i) => new File([new Uint8Array([i])], `${i}.png`, { type: "image/png" }));
+    fireEvent.change(screen.getByLabelText(/attach images/i), { target: { files } });
+    expect(screen.getByRole("button", { name: "View attached image 1 of 3" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View attached image 3 of 3" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "View attached image 2 of 3" }));
+    expect(screen.getByAltText("attached image full size")).toBeInTheDocument();
+    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Next image" }));
+    expect(screen.getByText("3 / 3")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Close image viewer" }));
+    expect(screen.queryByAltText("attached image full size")).toBeNull();
+
+    fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "three pics" } });
+    fireEvent.click(screen.getByRole("button", { name: /post/i }));
+    expect(mockReplyMutate.mock.calls[0][0]).toMatchObject({ body: "three pics", images: files });
   });
 
   it("reply mode shows the reply-alert email field and sends it with the reply", () => {
@@ -179,16 +202,19 @@ describe("Composer", () => {
     const file = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "timeline.png", { type: "image/png" });
     fireEvent.change(screen.getByLabelText(/attach image/i), { target: { files: [file] } });
     expect(create).toHaveBeenCalledWith(file);
-    expect(screen.getByAltText("attached image preview")).toHaveAttribute("src", "blob:preview-1");
+    expect(screen.getByRole("button", { name: "View attached image 1 of 1" }).querySelector("img")).toHaveAttribute(
+      "src",
+      "blob:preview-1",
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: /remove image/i }));
-    expect(screen.queryByAltText("attached image preview")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Remove image 1" }));
+    expect(screen.queryByRole("button", { name: /View attached image/ })).toBeNull();
     expect(revoke).toHaveBeenCalledWith("blob:preview-1");
     expect(screen.getByLabelText(/attach image/i)).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "no pic" } });
     fireEvent.click(screen.getByRole("button", { name: /post/i }));
-    expect(mockReplyMutate.mock.calls[0][0].image).toBeUndefined();
+    expect(mockReplyMutate.mock.calls[0][0].images).toBeUndefined();
     create.mockRestore();
     revoke.mockRestore();
   });
@@ -199,7 +225,7 @@ describe("Composer", () => {
     fireEvent.change(screen.getByLabelText(/attach image/i), { target: { files: [file] } });
     fireEvent.change(screen.getByPlaceholderText(/Say your piece/i), { target: { value: "pic read" } });
     fireEvent.click(screen.getByRole("button", { name: /post/i }));
-    expect(mockAddCommentMutate.mock.calls[0][0]).toMatchObject({ body: "pic read", image: file });
+    expect(mockAddCommentMutate.mock.calls[0][0]).toMatchObject({ body: "pic read", images: [file] });
   });
 
   it("frees the preview blob URL when the composer closes", () => {

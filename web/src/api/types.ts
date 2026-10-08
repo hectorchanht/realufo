@@ -144,8 +144,6 @@ export interface ListRecordCard extends RecordCardBase {
   doc_date: string | null;
   /** Searching (`q`): best-matching page of the file's own text, with an excerpt. */
   match?: { page: number; text: string } | null;
-  /** WTF sorts (`wtf_week`/`wtf_month`): unexplained votes inside the window. */
-  wtfCount?: number | null;
 }
 
 /** Union of both RecordCard projections — narrow with `"commentN" in card` or `"location" in card`. */
@@ -369,6 +367,8 @@ export interface Comment {
   handleShow: string | null;
   /** Uploaded image (same-origin /api/u/… or the R2 CDN), else null. */
   image_url?: string | null;
+  /** All uploaded images, in attach order (first == image_url). */
+  image_urls?: string[];
 }
 
 export interface CommentsResponse {
@@ -451,6 +451,7 @@ export interface Post {
   image_kind: string | null;
   image_label: string | null;
   image_url?: string | null; // same-origin URL of a user-uploaded image
+  image_urls?: string[]; // all uploaded images, in attach order (first == image_url)
   reply_to?: string[]; // parsed from JSON; present on GET, absent on the POST echo
   is_op?: number; // 0|1 raw column; present on GET, absent on the POST echo
   isOp: boolean; // computed convenience boolean, present on both

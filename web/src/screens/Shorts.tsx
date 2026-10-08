@@ -17,7 +17,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from "reac
 import { QueuedError } from "../api/client";
 import { likeShort, useComments, useShorts } from "../api/queries";
 import type { Short } from "../api/types";
-import { UploadThumb } from "../components/UploadThumb";
+import { UploadThumbs } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { goBack } from "../components/navItems";
@@ -138,7 +138,7 @@ function CommentsSheet({ id, onClose, onCount }: { id: string; onClose: () => vo
                 <span className="ml-auto">{c.ago}</span>
               </div>
               <div className="text-[13px] leading-[1.5]" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{c.body}</div>
-              {c.image_url && <UploadThumb url={c.image_url} />}
+              {<UploadThumbs urls={c.image_urls} fallback={c.image_url} />}
               <div className="mt-1.5"><VoteButton targetType="comment" targetId={c.id} votes={c.votes} /></div>
             </li>
           ))}

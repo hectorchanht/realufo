@@ -12,7 +12,7 @@ import { useBootstrap, useCase, useCaseComments } from "../api/queries";
 import { caseStoryUrl } from "../../../worker/lib/shared";
 import { citeParts, type StoryView } from "../../../worker/lib/caseStories";
 import { useOverlay } from "../overlays/OverlayProvider";
-import { UploadThumb } from "../components/UploadThumb";
+import { UploadThumbs } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
 import { LoadError } from "../components/LoadError";
 import { FollowBell } from "../components/FollowBell";
@@ -211,7 +211,7 @@ export function Case() {
               <span className="ml-auto font-mono text-[9px] text-faint">{c.ago}</span>
             </div>
             <div className="whitespace-pre-wrap break-words text-[13px] leading-[1.55] text-ink">{c.body}</div>
-            {c.image_url && <UploadThumb url={c.image_url} />}
+            {<UploadThumbs urls={c.image_urls} fallback={c.image_url} />}
             <div className="mt-2.5 flex items-center gap-4">
               <VoteButton targetType="comment" targetId={c.id} votes={c.votes} />
               <button

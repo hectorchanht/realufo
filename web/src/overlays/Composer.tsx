@@ -15,7 +15,7 @@
 // small grab-bar element is added here purely to host that pointer handling
 // without stealing pointer capture from the header's close button or any
 // input inside the sheet.
-import { ImagePlus, BellRing, X, Send, Minus, Heart, HelpCircle, Microscope } from "lucide-react";
+import { ImagePlus, BellRing, X, Send, Minus, Heart, HelpCircle, Microscope, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAddComment, useAddCaseComment, useCreateThread, useReply } from "../api/queries";
@@ -76,17 +76,22 @@ export function Composer() {
     if (body.trim() || threadTitle.trim()) drafts.set(draftKey, { body, title: threadTitle });
     else drafts.delete(draftKey);
   }, [body, threadTitle, draftKey, drafts]);
-  const [img, setImg] = useState<File | null>(composer?.presetImage ?? null);
-  // A promoted comment's already-uploaded image, sent by name (image_ref) so the server reuses it.
+  // Attached images (up to MAX_ATTACH). A promoted comment's already-uploaded
+  // image arrives as presetImageUrl and is sent by name (image_ref) instead.
+  const MAX_ATTACH = 4;
+  const [imgs, setImgs] = useState<File[]>(composer?.presetImage ? [composer.presetImage] : []);
   const [imgUrl, setImgUrl] = useState<string | null>(composer?.presetImageUrl ?? null);
-  // Blob URL for the thumbnail; revoked when the image changes or the sheet unmounts.
-  const [preview, setPreview] = useState<string | null>(null);
+  // Blob URLs for the thumbnails; revoked when the selection changes or the sheet unmounts.
+  const [previews, setPreviews] = useState<string[]>([]);
   useEffect(() => {
-    if (!img) return setPreview(null);
-    const url = URL.createObjectURL(img);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [img]);
+    const urls = imgs.map((f) => URL.createObjectURL(f));
+    setPreviews(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [imgs]);
+  // Lightbox: index into [...previews, promotedImg?] — tap a thumbnail to inspect it full-size.
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const lightboxItems = [...previews, ...(imgUrl && !imgs.length ? [imgUrl] : [])];
+  const lightboxSrc = lightbox === null ? null : (lightboxItems[lightbox] ?? null);
 
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ startY: number; dragging: boolean }>({ startY: 0, dragging: false });
@@ -169,7 +174,7 @@ export function Composer() {
       // A comment targets either a cold case or a record.
       const mutation = composer!.caseSlug ? addCaseComment : addComment;
       mutation.mutate(
-        { body: trimmedBody, stance, handle: trimmedHandle, image: img ?? undefined },
+        { body: trimmedBody, stance, handle: trimmedHandle, images: imgs.length ? imgs : undefined },
         {
           onSuccess: () => {
             toast("Posted");
@@ -183,7 +188,7 @@ export function Composer() {
 
     if (composer!.mode === "reply") {
       reply.mutate(
-        { body: trimmedBody, stance, handle: trimmedHandle, image: img ?? undefined, notify_email: notifyEmail.trim() || undefined },
+        { body: trimmedBody, stance, handle: trimmedHandle, images: imgs.length ? imgs : undefined, notify_email: notifyEmail.trim() || undefined },
         {
           onSuccess: () => {
             toast("Posted");
@@ -207,8 +212,8 @@ export function Composer() {
         handle: trimmedHandle,
         source_record_id: composer!.sourceRecordId,
         case_slug: composer!.caseSlug,
-        image: img ?? undefined,
-        image_ref: !img && imgUrl ? imgUrl.split("/").pop() : undefined,
+        images: imgs.length ? imgs : undefined,
+        image_ref: !imgs.length && imgUrl ? imgUrl.split("/").pop() : undefined,
         notify_email: notifyEmail.trim() || undefined,
       },
       {
@@ -324,40 +329,76 @@ export function Composer() {
             placeholder="handle (optional)"
             className="min-w-0 flex-1 rounded-[10px] border border-line2 bg-surface px-[11px] py-[9px] font-mono text-xs text-ink outline-none"
           />
-          {img || imgUrl ? (
+          {(imgs.length > 0 || imgUrl) && (
             <div className="flex flex-none items-center gap-1.5">
-              {(preview || imgUrl) && (
-                <img
-                  src={preview ?? imgUrl!}
-                  alt="attached image preview"
-                  className="h-[38px] w-[38px] rounded-[8px] border border-line2 object-cover"
-                />
+              {previews.map((src, i) => (
+                <span key={src} className="relative flex-none">
+                  <button
+                    type="button"
+                    onClick={() => setLightbox(i)}
+                    aria-label={`View attached image ${i + 1} of ${previews.length}`}
+                    className="block h-[38px] w-[38px] overflow-hidden rounded-[8px] border border-line2 active:scale-[.94]"
+                  >
+                    <img src={src} alt="" className="h-full w-full object-cover" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImgs(imgs.filter((_, j) => j !== i))}
+                    aria-label={`Remove image ${i + 1}`}
+                    className="absolute -right-1.5 -top-1.5 grid h-[18px] w-[18px] place-items-center rounded-full border border-line2 bg-bg2 text-dim active:scale-[.94]"
+                  >
+                    <X size={10} strokeWidth={2.5} aria-hidden="true" />
+                  </button>
+                </span>
+              ))}
+              {imgUrl && !imgs.length && (
+                <span className="relative flex-none">
+                  <button
+                    type="button"
+                    onClick={() => setLightbox(previews.length)}
+                    aria-label="View attached image"
+                    className="block h-[38px] w-[38px] overflow-hidden rounded-[8px] border border-line2 active:scale-[.94]"
+                  >
+                    <img src={imgUrl} alt="" className="h-full w-full object-cover" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImgUrl(null)}
+                    aria-label="Remove image"
+                    className="absolute -right-1.5 -top-1.5 grid h-[18px] w-[18px] place-items-center rounded-full border border-line2 bg-bg2 text-dim active:scale-[.94]"
+                  >
+                    <X size={10} strokeWidth={2.5} aria-hidden="true" />
+                  </button>
+                </span>
               )}
-              <button
-                type="button"
-                onClick={() => {
-                  setImg(null);
-                  setImgUrl(null);
-                }}
-                aria-label="Remove image"
-                className="flex h-[38px] w-[30px] items-center justify-center rounded-[8px] border border-line2 text-dim active:scale-[.94]"
-              >
-                <X size={14} strokeWidth={2} aria-hidden="true" />
-              </button>
             </div>
-          ) : (
-            <label title="Attach image" className="flex-none cursor-pointer rounded-[10px] border border-dashed border-line2 px-3 py-[9px] text-dim active:scale-[.96]">
+          )}
+          {imgs.length < MAX_ATTACH && (
+            <label title="Attach images" className="flex-none cursor-pointer rounded-[10px] border border-dashed border-line2 px-3 py-[9px] text-dim active:scale-[.96]">
               <ImagePlus size={16} strokeWidth={1.75} aria-hidden="true" />
               <input
                 type="file"
-                aria-label="Attach image"
+                aria-label="Attach images"
                 accept="image/jpeg,image/png,image/gif,image/webp"
+                multiple
                 className="sr-only"
                 onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  e.target.value = ""; // allow re-picking the same file
-                  if (f && f.size > 8 * 1024 * 1024) return toast("image too large (max 8 MB)");
-                  setImg(f);
+                  const picked = Array.from(e.target.files ?? []);
+                  e.target.value = ""; // allow re-picking the same files
+                  const room = MAX_ATTACH - imgs.length;
+                  if (picked.length > room) toast(`up to ${MAX_ATTACH} images`);
+                  const ok: File[] = [];
+                  for (const f of picked.slice(0, room)) {
+                    if (f.size > 8 * 1024 * 1024) {
+                      toast("image too large (max 8 MB)");
+                      continue;
+                    }
+                    ok.push(f);
+                  }
+                  if (ok.length) {
+                    setImgs([...imgs, ...ok]);
+                    setImgUrl(null); // fresh uploads replace a promoted ref
+                  }
                 }}
               />
             </label>
@@ -395,6 +436,62 @@ export function Composer() {
           </button>
         </div>
       </div>
+
+      {/* Attachment lightbox — tap a thumbnail to inspect it full-size before posting.
+          Lives inside the composer (above the sheet) so the draft survives; Esc/backdrop closes. */}
+      {lightboxSrc && (
+        <div className="fixed inset-0 z-[90] flex animate-[fadein_.2s_ease] flex-col" style={{ background: "rgba(0,0,0,.94)" }} data-composer-lightbox>
+          <div className="flex flex-none items-center gap-[10px] px-4 py-[14px]">
+            <span className="flex-1 font-mono text-[11px] text-dim">
+              {lightboxItems.length > 1 ? `${(lightbox ?? 0) + 1} / ${lightboxItems.length}` : "attached image"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setLightbox(null)}
+              aria-label="Close image viewer"
+              className="grid h-9 w-9 flex-none place-items-center rounded-[10px] border border-line2 text-white active:scale-[.94]"
+            >
+              <X size={16} strokeWidth={2} aria-hidden="true" />
+            </button>
+          </div>
+          <div className="relative flex min-h-0 flex-1 items-center justify-center px-3 pb-3" onClick={() => setLightbox(null)}>
+            <img
+              src={lightboxSrc}
+              alt="attached image full size"
+              className="max-h-full max-w-full rounded-[10px] object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            {lightboxItems.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Previous image"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLightbox((i) => (i === null ? i : (i - 1 + lightboxItems.length) % lightboxItems.length));
+                  }}
+                  className="absolute left-3 top-1/2 grid h-[38px] w-[38px] -translate-y-1/2 place-items-center rounded-full border border-white/25 text-white active:scale-90"
+                  style={{ background: "rgba(0,0,0,.5)" }}
+                >
+                  <ChevronLeft size={20} strokeWidth={2} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Next image"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLightbox((i) => (i === null ? i : (i + 1) % lightboxItems.length));
+                  }}
+                  className="absolute right-3 top-1/2 grid h-[38px] w-[38px] -translate-y-1/2 place-items-center rounded-full border border-white/25 text-white active:scale-90"
+                  style={{ background: "rgba(0,0,0,.5)" }}
+                >
+                  <ChevronRight size={20} strokeWidth={2} aria-hidden="true" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

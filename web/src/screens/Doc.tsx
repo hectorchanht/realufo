@@ -57,7 +57,7 @@ import { parseAiMoments, parseKeyMoments } from "../lib/keyMoments";
 import { useMediaSkin } from "../lib/mediaSkin";
 import { openPdf } from "../lib/pwaNav";
 import { useVideoTransport } from "../lib/useVideoTransport";
-import { UploadThumb } from "../components/UploadThumb";
+import { UploadThumbs } from "../components/UploadThumb";
 import { VoteButton } from "../components/VoteButton";
 import FullText from "../components/FullText";
 import { useOverlay } from "../overlays/OverlayProvider";
@@ -1217,7 +1217,7 @@ export function Doc() {
             <div className="text-[13px] leading-[1.55] text-ink" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
               {media === "video" ? withMoments(c.body, seekTo) : c.body}
             </div>
-            {c.image_url && <UploadThumb url={c.image_url} />}
+            {<UploadThumbs urls={c.image_urls} fallback={c.image_url} />}
             <div className="mt-[9px] flex items-center gap-4">
               {/* Task 19 brief names VoteButton explicitly for this control —
                   the prototype's own comment-vote affordance (line 380) is a

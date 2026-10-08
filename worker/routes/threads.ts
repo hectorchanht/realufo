@@ -5,7 +5,7 @@ import { newId, newNo, postActor } from "../lib/anon";
 import { autoFollow } from "../lib/follows";
 import { subscribeReply, validNotifyEmail } from "../lib/replyNotify";
 import { allowWrite } from "../lib/ratelimit";
-import { readBody, putImage, uploadUrl, UPLOAD_NAME_RE, withThreadThumb } from "../lib/upload";
+import { readBody, putImages, splitKeys, uploadUrl, uploadUrls, UPLOAD_NAME_RE, withThreadThumb } from "../lib/upload";
 
 export async function getThread(_req: Request, env: Env, p: Record<string, string>) {
   const thread = await env.DB.prepare(
@@ -31,13 +31,14 @@ export async function getThread(_req: Request, env: Env, p: Record<string, strin
     .all<any>();
   // byOp: a reply posted from the OP's browser. actor_id itself stays server-side.
   const opActor = rows.results.find((x) => x.is_op)?.actor_id;
-  const posts = rows.results.map(({ actor_id, ...x }) => ({
+  const posts = rows.results.map(({ actor_id, extra_images, ...x }) => ({
     ...x,
     isOp: !!x.is_op,
     byOp: !x.is_op && !!opActor && actor_id === opActor,
     ago: relAgo(x.created_at),
     handleShow: x.handle ? "!" + x.handle : null,
     image_url: uploadUrl(env, x.image_r2_key),
+    image_urls: uploadUrls(env, x.image_r2_key, extra_images ?? null),
     reply_to: JSON.parse(x.reply_to || "[]"),
   }));
   return json({ thread, sourceRecord, sourceCase, posts });
@@ -62,24 +63,22 @@ export async function searchThreads(req: Request, env: Env) {
 }
 
 export async function createThread(req: Request, env: Env) {
-  const { b, image } = await readBody(req);
+  const { b, images } = await readBody(req);
   const op_body = typeof b.op_body === "string" ? b.op_body.trim() : "";
   if (!op_body) return error(400, "empty body");
   if (!(await allowWrite(env, req, "thread"))) return error(429, "slow down — too many posts");
   const board = b.board || "uap";
   const boardRow = await env.DB.prepare("SELECT slug, accent FROM boards WHERE id=?").bind(board).first<any>();
   if (!boardRow) return error(400, "unknown board");
-  let imageKey: string | null = null;
-  if (image) {
-    const r = await putImage(env, image);
-    if (r instanceof Response) return r;
-    imageKey = r;
-  } else if (typeof b.image_ref === "string" && UPLOAD_NAME_RE.test(b.image_ref)) {
+  let keys = await putImages(env, images);
+  if (keys instanceof Response) return keys;
+  if (keys.length === 0 && typeof b.image_ref === "string" && UPLOAD_NAME_RE.test(b.image_ref)) {
     // Promoting a comment: reuse its already-uploaded image instead of re-uploading.
     const key = "uploads/" + b.image_ref;
-    if (await env.MEDIA.head(key)) imageKey = key;
+    if (await env.MEDIA.head(key)) keys = [key];
   }
-  const imgCount = imageKey ? 1 : 0;
+  const { first: imageKey, rest: imageKeys } = splitKeys(keys);
+  const imgCount = keys.length;
   const src = b.source_record_id || null;
   const caseSlug = b.case_slug || null;
   const title = (String(b.title ?? "").trim() || op_body.split("\n")[0].slice(0, 70) || "Untitled thread").slice(0, 120);
@@ -95,8 +94,8 @@ export async function createThread(req: Request, env: Env) {
       `INSERT INTO threads(id,no,board_id,title,stance,op_body,op_handle,op_id,tags,votes,reply_count,img_count,source_record_id,case_slug,hot,created_at) VALUES(?,?,?,?,?,?,?,?,'[]',0,0,?,?,?,0,?)`
     ).bind(id, no, board, title, stance, op_body, handle, opId, imgCount, src, caseSlug, created_at),
     env.DB.prepare(
-      `INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,source_record_id,image_r2_key,image_kind,is_op,created_at,actor_id) VALUES(?,?,?,?,?,?,0,?,?,?,1,?,?)`
-    ).bind(opId, no, id, op_body, handle, stance, src, imageKey, imageKey && "upload", created_at, actor),
+      `INSERT INTO posts(id,no,thread_id,body,handle,stance,votes,source_record_id,image_r2_key,extra_images,image_kind,is_op,created_at,actor_id) VALUES(?,?,?,?,?,?,0,?,?,?,?,1,?,?)`
+    ).bind(opId, no, id, op_body, handle, stance, src, imageKey, imageKeys, imageKey && "upload", created_at, actor),
   ]);
   await autoFollow(env, actor, "thread", id);
   // OP opted into reply notifications with an email in the composer.
