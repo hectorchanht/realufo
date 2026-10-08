@@ -39,6 +39,8 @@ const STRINGS = {
   "footer.about": ["About", "關於"],
   "footer.contact": ["Contact", "聯絡"],
   "footer.faq": ["FAQ", "常見問題"],
+  "footer.glossary": ["Glossary", "術語表"],
+  "footer.foia": ["FOIA", "資訊自由法"],
   "footer.tracker": ["Tracker", "追蹤器"],
   "footer.compare": ["Compare", "比較"],
   "footer.leaderboard": ["Leaderboard", "排行榜"],

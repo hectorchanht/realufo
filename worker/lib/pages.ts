@@ -15,6 +15,8 @@ import { askHref, askIdOf } from "./ask";
 import { PRIVACY_HTML } from "./privacy";
 import { TERMS_HTML } from "./terms";
 import { ABOUT_HTML } from "./about";
+import { FOIA_HTML } from "./foia";
+import { GLOSSARY_HTML } from "./glossary";
 import { CONTACT_HTML } from "./contact";
 import { FAQ_ITEMS, FAQ_HTML } from "./faq";
 import { SOCIAL_PROFILES } from "./profiles";
@@ -648,6 +650,16 @@ const faqPage: Loader = async () => ({
   body: `<h1>FAQ</h1>${FAQ_HTML}`,
 });
 
+const glossaryPage: Loader = async () => ({
+  meta: { title: "Glossary", description: "UAP glossary: every term, agency and file reference used across the RealUFO archive — AARO, PURSUE, FOIA, VIRIN, Blue Book and more.", type: "website" },
+  body: `<h1>Glossary</h1>${GLOSSARY_HTML}`,
+});
+
+const foiaPage: Loader = async () => ({
+  meta: { title: "FOIA", description: "How to file freedom-of-information requests for UAP records: the US FOIA recipe, other jurisdictions, and tips that increase response rates.", type: "website" },
+  body: `<h1>FOIA</h1>${FOIA_HTML}`,
+});
+
 const comparePage: Loader = async () => ({
   meta: { title: "Compare", description: "Two RealUFO records side by side — spot redactions, renames and new summaries between releases.", type: "website", robots: "noindex" },
   body: "<h1>Compare</h1>",
@@ -726,6 +738,8 @@ export const ROUTES: { pattern: URLPattern; load: Loader; cacheKey?: (url: URL) 
   { pattern: new URLPattern({ pathname: "/about" }), load: aboutPage },
   { pattern: new URLPattern({ pathname: "/contact" }), load: contactPage },
   { pattern: new URLPattern({ pathname: "/faq" }), load: faqPage },
+  { pattern: new URLPattern({ pathname: "/glossary" }), load: glossaryPage },
+  { pattern: new URLPattern({ pathname: "/foia" }), load: foiaPage },
   { pattern: new URLPattern({ pathname: "/compare" }), load: comparePage },
   { pattern: new URLPattern({ pathname: "/shelf" }), load: shelfPage },
   { pattern: new URLPattern({ pathname: "/leaderboard" }), load: leaderboardPage },

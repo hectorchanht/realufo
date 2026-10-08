@@ -233,8 +233,8 @@ describe("serveWithMeta (via worker.fetch)", () => {
     for (const [from, to] of [
       ["https://realufo.org/stories/uk-overview/", "https://release.realufo.org/stories/uk-overview/"],
       ["https://realufo.org/stories/nara-overview/", "https://release.realufo.org/stories/nara-overview/"],
-      ["https://realufo.org/aaro", "https://release.realufo.org/aaro/"],
-      ["https://realufo.org/search/?q=x", "https://release.realufo.org/search/?q=x"],
+      ["https://realufo.org/brazil", "https://release.realufo.org/brazil/"],
+      ["https://realufo.org/aaro/gimbal.html", "https://release.realufo.org/aaro/gimbal.html/"],
     ]) {
       const res = await worker.fetch(new Request(from), fakeEnv, createExecutionContext());
       expect(res.status).toBe(301);
@@ -242,6 +242,21 @@ describe("serveWithMeta (via worker.fetch)", () => {
     }
     const map = await worker.fetch(new Request("https://realufo.org/map/"), fakeEnv, createExecutionContext());
     expect(map.headers.get("location")).toBe("https://realufo.org/map");
+  });
+
+  it("legacy bare paths 301 to their native equivalents (query preserved)", async () => {
+    const fakeEnv = { ...env, ASSETS: fakeAssets } as any;
+    for (const [from, to] of [
+      ["https://realufo.org/aaro", "https://realufo.org/agency/aaro"],
+      ["https://realufo.org/nasa/", "https://realufo.org/agency/nasa"],
+      ["https://realufo.org/stories", "https://realufo.org/cases"],
+      ["https://realufo.org/search/?q=x", "https://realufo.org/archive?q=x"],
+      ["https://realufo.org/whatsnew", "https://realufo.org/releases"],
+    ]) {
+      const res = await worker.fetch(new Request(from), fakeEnv, createExecutionContext());
+      expect(res.status).toBe(301);
+      expect(res.headers.get("location")).toBe(to);
+    }
   });
 
   it("moved stories 301 straight to their new page", async () => {

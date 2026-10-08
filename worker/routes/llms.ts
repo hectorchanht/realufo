@@ -46,6 +46,8 @@ export async function llms(req: Request, env: Env) {
     link("About", "/about", "what RealUFO is and isn't"),
     link("FAQ", "/faq", "frequently asked questions about the archive"),
     link("Contact", "/contact", "email, issue tracker and social accounts"),
+    link("Glossary", "/glossary", "UAP terms, agencies and file references"),
+    link("FOIA", "/foia", "how to file freedom-of-information requests"),
     link("Sitemap", "/sitemap.xml", "every file page"),
     link("Full text of every file", "/llms-full.txt", "llms-full.txt, about 6 MB of Markdown"),
     `- [Open dataset](${DATASET_URL}): record metadata and page text as JSONL on Hugging Face`,

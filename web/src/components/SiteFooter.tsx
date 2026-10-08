@@ -127,6 +127,8 @@ export default function SiteFooter() {
           <li><Link className={linkCls} to="/about">{t("footer.about")}</Link></li>
           <li><Link className={linkCls} to="/contact">{t("footer.contact")}</Link></li>
           <li><Link className={linkCls} to="/faq">{t("footer.faq")}</Link></li>
+          <li><Link className={linkCls} to="/glossary">{t("footer.glossary")}</Link></li>
+          <li><Link className={linkCls} to="/foia">{t("footer.foia")}</Link></li>
           <li><Link className={linkCls} to="/developers">{t("footer.developers")}</Link></li>
           <li><Link className={linkCls} to="/privacy">{t("footer.privacy")}</Link></li>
           <li><Link className={linkCls} to="/terms">{t("footer.terms")}</Link></li>

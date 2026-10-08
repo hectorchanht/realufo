@@ -169,7 +169,19 @@ const PENTAGON_PAPERS = /^\/doc\/NARA-Pentagon-Papers-[^/]+(\/text)?$/;
 
 // nara-overview stays on release.realufo.org: it describes NARA UFO holdings this archive doesn't have.
 const MOVED_OVERVIEWS: Record<string, string> = { "aaro-overview": "aaro", "nasa-overview": "nasa" };
-const LEGACY_PATH = /^\/(aaro|argentina|brazil|canada|chile|foia|geipan|glossary|italy|nara|nasa|peru|search|spain|stories|uk|whatsnew)(\/|$)/;
+// Legacy static pages with native equivalents (2026-10-07): bare path →
+// native target, query string preserved. /foia and /glossary are native
+// pages too (see pages.ts), not redirects.
+const NATIVE_BARE: Record<string, string> = {
+  aaro: "/agency/aaro",
+  nasa: "/agency/nasa",
+  stories: "/cases",
+  search: "/archive",
+  whatsnew: "/releases",
+};
+// What's left of the old static site: country archives and the NARA overview
+// have no native equivalent, so they stay on release.realufo.org.
+const LEGACY_PATH = /^\/(argentina|brazil|canada|chile|geipan|italy|nara|peru|spain|uk)(\/|$)/;
 
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -207,14 +219,25 @@ async function handleFetch(req: Request, env: Env, ctx: ExecutionContext): Promi
     const url = new URL(req.url);
     if (url.hostname.startsWith("www.")) return Response.redirect(`https://${url.hostname.slice(4)}${url.pathname}${url.search}`, 301);
     // The old static site moved to release.realufo.org; its realufo.org URLs are
-    // still in search indexes. /map, /timeline and /about stay: this app has
-    // its own (about/contact/faq are native pages since 2026-10-07).
+    // still in search indexes. /map, /timeline, /about, /contact, /faq,
+    // /glossary and /foia are native pages now (2026-10-07); bare /aaro, /nasa,
+    // /stories, /search and /whatsnew fold into their native equivalents below.
     // Stories folded into case pages (spec 2026-10-03-realufo-case-stories-design):
     // straight to /case, no apex → subdomain → apex chain.
     const moved = /^\/stories\/([a-z0-9-]+)\/?$/.exec(url.pathname)?.[1];
     if (moved && Object.hasOwn(CASE_STORY_TEXT, moved)) return Response.redirect(`${url.origin}/case/${moved}`, 301);
     // Overviews folded into agency hubs (spec 2026-10-03-realufo-case-stories-batch2-design).
     if (moved && Object.hasOwn(MOVED_OVERVIEWS, moved)) return Response.redirect(`${url.origin}/agency/${MOVED_OVERVIEWS[moved]}`, 301);
+    // Bare legacy paths with native equivalents go native (query preserved).
+    // Deeper legacy subpages (e.g. /aaro/gimbal.html, /stories/<unknown>)
+    // stay on the original static archive — no link rot.
+    const bare = /^\/([a-z]+)\/?$/.exec(url.pathname)?.[1];
+    const nativeTarget = bare && NATIVE_BARE[bare];
+    if (nativeTarget) return Response.redirect(`${url.origin}${nativeTarget}${url.search}`, 301);
+    if (/^\/(aaro|nasa|stories)\//.test(url.pathname)) {
+      const p = url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`;
+      return Response.redirect(`https://release.realufo.org${p}${url.search}`, 301);
+    }
     if (LEGACY_PATH.test(url.pathname)) {
       const p = url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`;
       return Response.redirect(`https://release.realufo.org${p}${url.search}`, 301);
