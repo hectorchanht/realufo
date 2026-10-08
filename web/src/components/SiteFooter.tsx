@@ -84,6 +84,8 @@ export default function SiteFooter() {
           )),
           // Record comparison tool (not a nav tab, but a site feature).
           <li key="compare"><Link className={linkCls} to="/compare">{t("footer.compare")}</Link></li>,
+          // WTF leaderboard (not a nav tab, but a site feature).
+          <li key="leaderboard"><Link className={linkCls} to="/leaderboard">{t("footer.leaderboard")}</Link></li>,
         ])}
         {GROUPS.map(([kind, key]) => {
           const group = hubs.filter((h) => h.kind === kind);

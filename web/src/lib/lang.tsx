@@ -41,6 +41,7 @@ const STRINGS = {
   "footer.faq": ["FAQ", "常見問題"],
   "footer.tracker": ["Tracker", "追蹤器"],
   "footer.compare": ["Compare", "比較"],
+  "footer.leaderboard": ["Leaderboard", "排行榜"],
   "footer.openDataset": ["Open dataset", "開放數據集"],
   "footer.original": ["Original archive ↗", "舊版檔案庫 ↗"],
   "lang.label": ["繁", "EN"],
