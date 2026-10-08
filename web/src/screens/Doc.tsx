@@ -50,7 +50,7 @@ import { DiscussionStarter } from "../components/DiscussionStarter";
 import { FollowBell } from "../components/FollowBell";
 import CiteButton from "../components/CiteButton";
 import { TldrCard } from "../components/TldrCard";
-import GoDeeper from "../components/GoDeeper";
+import GoDeeper, { pressRefFor } from "../components/GoDeeper";
 import FunnelStrip from "../components/FunnelStrip";
 import { picksForRecord } from "../../../worker/lib/affiliate";
 import { parseAiMoments, parseKeyMoments } from "../lib/keyMoments";
@@ -1036,7 +1036,7 @@ export function Doc() {
         {media === "video" ? keyMoments.prose : record.summary || ""}
       </p>
 
-      <GoDeeper picks={picksForRecord(record.title, record.summary || "")} note="Directly related to this file." />
+      <GoDeeper picks={picksForRecord(record.title, record.summary || "")} note="Directly related to this file." press={pressRefFor(record.incident_date, record.location)} />
 
       {/* OPEN ORIGINAL — prototype line 367. Icon + format glyph only
           (e.g. "⛶ PDF"); the English label lives in aria-label. */}

@@ -5,7 +5,7 @@
 // what makes people click.
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, ChevronDown, Coffee, Bell } from "lucide-react";
+import { BookOpen, ChevronDown, Coffee, Bell, Newspaper } from "lucide-react";
 import {
   AMAZON_TAG,
   affiliateUrl,
@@ -81,7 +81,28 @@ export function SupportStrip() {
   );
 }
 
-export default function GoDeeper({ picks, note }: { picks: AffiliatePick[]; note?: string }) {
+export interface PressRef {
+  year: number;
+  location: string;
+}
+
+// Contemporary press: link historical records to Newspapers.com so readers
+// can see the original newspaper coverage. Query = location + year + ufo.
+export function pressUrl(pr: PressRef): string {
+  const q = encodeURIComponent(`${pr.location} ${pr.year} ufo`.trim());
+  return `https://www.newspapers.com/search/?query=${q}`;
+}
+
+export function pressRefFor(incidentDate?: string | null, location?: string | null): PressRef | null {
+  if (!incidentDate) return null;
+  const m = incidentDate.match(/(\d{4})/);
+  if (!m) return null;
+  const year = parseInt(m[1], 10);
+  if (year >= 2000 || year < 1800) return null;
+  return { year, location: (location || "").trim() };
+}
+
+export default function GoDeeper({ picks, note, press }: { picks: AffiliatePick[]; note?: string; press?: PressRef | null }) {
   const [shelfOpen, setShelfOpen] = useState(false);
   const shown = new Set(picks.map((p) => p.title));
   const rest = ALL_PICKS.filter((p) => !shown.has(p.title));
@@ -108,6 +129,25 @@ export default function GoDeeper({ picks, note }: { picks: AffiliatePick[]; note
         <p className="mb-2 text-[12px] text-dim">
           Sixty-five books, audiobooks and documentaries the researchers behind these files actually read — start with the shelf.
         </p>
+      )}
+      {press && (
+        <a
+          href={pressUrl(press)}
+          target="_blank"
+          rel="noopener"
+          className="mt-2 flex items-center gap-2 rounded-xl border border-line p-3 hover:border-signal"
+        >
+          <Newspaper size={14} className="flex-none text-signal" />
+          <span className="min-w-0">
+            <span className="block text-[13px] font-medium text-ink">
+              Read the {press.year} newspaper coverage
+            </span>
+            <span className="block font-mono text-[10.5px] text-faint">
+              Contemporary press on Newspapers.com — see this case as the world saw it
+            </span>
+          </span>
+          <span className="ml-auto flex-none font-mono text-[10px] text-signal">Newspapers.com →</span>
+        </a>
       )}
       {rest.length > 0 && (
         <div className="mt-2 rounded-xl border border-line">
