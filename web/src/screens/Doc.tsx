@@ -672,9 +672,9 @@ export function Doc() {
           kicker (uapbrowser-style) so "DOW-UAP-D006" searches match the heading.
           Kicker only when the id isn't just the title respelled. */}
       <div className="flex items-start gap-2">
-        <h1 className="mb-3.5 min-w-0 flex-1 text-[19px] font-bold leading-[1.3] text-ink" style={{ overflowWrap: "anywhere" }}>
+        <h1 className="mb-3.5 min-w-0 flex-1 text-[19px] font-bold leading-[1.3] text-ink" style={{ overflowWrap: "break-word" }}> {/* break-word not anywhere: wrap at spaces, never mid-word (mobile squeeze fix) */}
           {tp!.showId && (
-            <span className="mb-2 block font-pixel text-[10px] font-normal leading-normal" style={{ color: dataInk(accent) }}>
+            <span className="mb-2 block truncate font-pixel text-[10px] font-normal leading-normal" style={{ color: dataInk(accent) }}> {/* truncate: id never wraps mid-id on narrow screens */}
               {tp!.id}
               <span className="sr-only">, </span>
             </span>
