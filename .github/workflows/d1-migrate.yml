@@ -1,0 +1,24 @@
+name: d1-migrate
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "true = show pending migrations only; false = apply them"
+        default: "true"
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "build/app-foundation" }
+      - run: npm i -g wrangler
+      - run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            wrangler d1 migrations list realufo-db --remote
+          else
+            wrangler d1 migrations apply realufo-db --remote
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
