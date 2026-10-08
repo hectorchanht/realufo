@@ -27,7 +27,7 @@
 // Loading/not-found: `record` is undefined both while `useRecord` hasn't
 // settled and if the id doesn't resolve to a real record — both cases render
 // the same simple safe states (no attempt to index into `undefined`).
-import { Expand, GitCompare, MessageCircle, MessageSquare, Send, X } from "lucide-react";
+import { Expand, GitCompare, MessageCircle, MessageSquarePlus, MessagesSquare, Send, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -1176,35 +1176,44 @@ export function Doc() {
         </a>
       </div>
 
-      {/* Discussion header + count — prototype line 368. The CTA deep-links
-          to the record's board thread when one exists, else opens the
-          new-thread composer prefilled with this file (same flow as the
-          "Start a board thread" button below). */}
-      <div className="mb-3 flex items-baseline justify-between gap-3">
-        <div className="font-pixel text-[9px] tracking-[1px] text-faint">◆ Discussion</div>
-        <div className="flex items-center gap-3">
-          {!(commentsError && !commentsData) && (
-            <span className="font-mono text-[10px] text-signal">{plural(comments.length, "comment")}</span>
-          )}
-          {promotedThreads.length > 0 ? (
-            <Link
-              to={`/thread/${promotedThreads[0].id}`}
-              className="flex items-center gap-1.5 font-mono text-[11px] font-semibold text-cyan active:scale-[.97]"
-            >
-              <MessageSquare size={13} aria-hidden="true" />
-              {t("doc.discussThread")}
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={handleFileThread}
-              className="flex items-center gap-1.5 font-mono text-[11px] font-semibold text-cyan active:scale-[.97]"
-            >
-              <MessageSquare size={13} aria-hidden="true" />
-              {t("doc.startDiscussion")}
-            </button>
-          )}
-        </div>
+      {/* Discussion header + count — prototype line 368. Icon-only: a speech
+          bubble with the comment count on the left, and a single icon button
+          on the right that deep-links to the record's board thread when one
+          exists, else opens the new-thread composer prefilled with this file
+          (same flow as the "Start a board thread" button below). English
+          labels survive as aria-label/title for screen readers and tooltips. */}
+      <div className="mb-3 flex items-center justify-between gap-3">
+        {!(commentsError && !commentsData) && (
+          <span
+            className="flex items-center gap-1.5"
+            role="img"
+            aria-label={plural(comments.length, "comment")}
+            title={plural(comments.length, "comment")}
+          >
+            <MessageCircle size={15} aria-hidden="true" className="text-faint" />
+            <span className="font-mono text-[11px] text-signal">{comments.length}</span>
+          </span>
+        )}
+        {promotedThreads.length > 0 ? (
+          <Link
+            to={`/thread/${promotedThreads[0].id}`}
+            aria-label={t("doc.discussThread")}
+            title={t("doc.discussThread")}
+            className="grid h-10 w-10 place-items-center rounded-full text-cyan transition hover:bg-panel active:scale-[.97]"
+          >
+            <MessagesSquare size={19} aria-hidden="true" />
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={handleFileThread}
+            aria-label={t("doc.startDiscussion")}
+            title={t("doc.startDiscussion")}
+            className="grid h-10 w-10 place-items-center rounded-full text-cyan transition hover:bg-panel active:scale-[.97]"
+          >
+            <MessageSquarePlus size={19} aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       {/* AI discussion starter — pinned prompt while the record is quiet
