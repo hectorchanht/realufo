@@ -1,0 +1,45 @@
+name: cf-zone-create
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: "Domain to add as a Cloudflare zone (full setup)"
+        required: true
+jobs:
+  create-zone:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ensure zone exists
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, sys, urllib.request
+          token = os.environ["CF_TOKEN"]
+          acct = os.environ["CF_ACCOUNT"]
+          domain = os.environ["DOMAIN"]
+          def api(method, path, data=None):
+              req = urllib.request.Request(
+                  "https://api.cloudflare.com/client/v4" + path,
+                  data=json.dumps(data).encode() if data is not None else None,
+                  headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"},
+                  method=method)
+              return json.load(urllib.request.urlopen(req, timeout=30))
+          r = api("GET", "/zones?name=" + domain)
+          if not r.get("success"):
+              print("CHECK_FAILED", json.dumps(r.get("errors")))
+              sys.exit(1)
+          if r["result"]:
+              z = r["result"][0]
+              print("EXISTS zone_id=" + z["id"] + " ns=" + ",".join(z["name_servers"]))
+          else:
+              r = api("POST", "/zones", {"name": domain, "account": {"id": acct}, "type": "full"})
+              if not r.get("success"):
+                  print("CREATE_FAILED", json.dumps(r.get("errors")))
+                  sys.exit(1)
+              z = r["result"]
+              print("CREATED zone_id=" + z["id"] + " ns=" + ",".join(z["name_servers"]))
+          PYEOF
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DOMAIN: ${{ github.event.inputs.domain }}
