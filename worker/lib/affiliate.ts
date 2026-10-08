@@ -316,7 +316,6 @@ const PICKS: AffiliatePick[] = [
     query: "Faded Giant Robert Salas",
     asin: "1419603418",
     match: ["malmstrom", "missile", "oscar flight", "salas", "1967"],
-    topics: ["nuclear-sites"],
   },
   {
     title: "The Andreasson Affair",
@@ -357,7 +356,6 @@ const PICKS: AffiliatePick[] = [
     query: "In Plain Sight Ross Coulthart",
     asin: "B09B7ZJ9TP",
     match: ["coulthart", "disclosure", "wilson", "crash retrieval", "uap"],
-    topics: ["congress"],
   },
   {
     title: "Encounters",
@@ -406,7 +404,6 @@ const PICKS: AffiliatePick[] = [
     query: "The Braxton County Monster Feschino",
     asin: "0578128837",
     match: ["flatwoods", "braxton", "1952", "monster", "west virginia"],
-    topics: ["project-blue-book"],
   },
 ];
 
@@ -415,11 +412,11 @@ export const ALL_PICKS: AffiliatePick[] = PICKS;
 
 // Topic hub pages: which picks show on each topic.
 const TOPIC_PICKS: Record<string, string[]> = {
-  "project-blue-book": ["The UFO Experience", "The Hynek UFO Report", "Project Blue Book Declassified", "The Report on Unidentified Flying Objects"],
+  "project-blue-book": ["The UFO Experience", "The Hynek UFO Report", "Project Blue Book Declassified", "The Report on Unidentified Flying Objects", "The Braxton County Monster"],
   "flying-discs": ["The Coming of the Saucers", "Flying Saucers Are Real"],
-  "nuclear-sites": ["UFOs and Nukes"],
+  "nuclear-sites": ["UFOs and Nukes", "Faded Giant"],
   "aawsap": ["Skinwalkers at the Pentagon", "Hunt for the Skinwalker"],
-  "congress": ["Imminent", "UFO: The Inside Story", "UFOs: Generals, Pilots, and Government Officials Go on the Record", "A.D. After Disclosure"],
+  "congress": ["Imminent", "UFO: The Inside Story", "UFOs: Generals, Pilots, and Government Officials Go on the Record", "A.D. After Disclosure", "In Plain Sight"],
   "fbi-62-hq-83894": ["The FBI-CIA-UFO Connection"],
 };
 
