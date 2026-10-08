@@ -80,6 +80,7 @@ const STRINGS = {
   "leaderboard.emptyLine1": ["no votes yet.", "暫時未有人投票。"],
   "leaderboard.emptyLine2": ["be the first to call it.", "做第一個投票嘅人。"],
   "leaderboard.link": ["Leaderboard", "排行榜"],
+  "leaderboard.votes": ["unexplained votes", "無法解釋票數"],
   "archive.emptyLine1": ["no records match.", "搵唔到相關檔案。"],
   "archive.emptyLine2": ["the truth is elsewhere.", "真相喺第二度。"],
   // doc screen share row

@@ -81,6 +81,9 @@ export default function Leaderboard() {
                 #{i + 1}
               </span>
               <DocCard record={record} variant="grid" />
+              <p className="mt-1 font-mono text-[10.5px] text-dim">
+                <b className="text-signal">{record.wtfCount ?? 0}</b> {t("leaderboard.votes")}
+              </p>
             </div>
           ))}
         </div>

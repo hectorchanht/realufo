@@ -49,7 +49,7 @@ export interface RecordsParams {
   redacted?: string;
   /** Comma list of record flags that must all hold: ai,text,moments,featured. */
   has?: string;
-  /** new | old | recent | az; unset = featured first. */
+  /** new | old | recent | az | discussed | release | random | wtf_week | wtf_month; unset = featured first. */
   sort?: string;
   q?: string;
   release?: string;
