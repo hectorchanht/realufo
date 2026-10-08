@@ -1,0 +1,31 @@
+{
+  "generated_at": "2026-10-08T19:19:43.094740Z",
+  "days_queried": 30,
+  "since": "2026-09-08",
+  "zones": {
+    "moneyrate.lol": {
+      "requests": 106179,
+      "uniques": 4769,
+      "bytes": 832459827,
+      "days_returned": 30
+    },
+    "clipbin.lol": {
+      "requests": 2153,
+      "uniques": 255,
+      "bytes": 84008092,
+      "days_returned": 2
+    },
+    "openmusic.lol": {
+      "requests": 113642,
+      "uniques": 2173,
+      "bytes": 3662637962,
+      "days_returned": 30
+    },
+    "holdr.lol": {
+      "requests": 13080,
+      "uniques": 954,
+      "bytes": 166073502,
+      "days_returned": 3
+    }
+  }
+}
