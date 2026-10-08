@@ -96,4 +96,18 @@ describe("TldrCard", () => {
     fireEvent.click(screen.getByRole("button", { name: /boring version/i }));
     expect(onBoring).toHaveBeenCalled();
   });
+
+  it("the conclusion line starts blurred and reveals on tap", () => {
+    render(<TldrCard tldr={{ ...T, bullets: [T.bullets[0], T.bullets[1], "Conclusion: AARO found no anomalous performance"] }} title="t" onBoring={() => {}} />);
+    const el = screen.getByText("AARO found no anomalous performance");
+    expect(el).toHaveClass("blur-[3px]");
+    fireEvent.click(el);
+    expect(el).not.toHaveClass("blur-[3px]");
+  });
+
+  it("the no-official-conclusion chip is not blurred", () => {
+    render(<TldrCard tldr={T} title="t" onBoring={() => {}} />);
+    const chip = screen.getByText("No official conclusion");
+    expect(chip.className).not.toMatch(/blur/);
+  });
 });

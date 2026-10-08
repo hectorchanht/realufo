@@ -4,6 +4,7 @@
 // → small chips, 2 = what it reports → the headline, 3 = the file's conclusion → one quiet line.
 // The joke one-liner stays in the data (feed, og:description) but not here.
 // import { Share2 } from "lucide-react";
+import { useState } from "react";
 import type { Tldr } from "../api/types";
 // import { useOverlay } from "../overlays/OverlayProvider";
 
@@ -26,6 +27,9 @@ export function TldrCard({ tldr, title, onBoring }: { tldr?: Tldr | null; title:
   // const { toast } = useOverlay();
   if (!tldr) return null;
   const { tags, headline, conclusion } = tldrParts(tldr);
+  // The third line is the file's conclusion: it reads too sharp at a glance,
+  // so it stays blurred until the reader hovers (desktop) or taps (touch).
+  const [revealed, setRevealed] = useState(false);
 
   // const share = async () => {
   //   // ?v=<card hash>: WhatsApp & co cache a preview per URL, so a re-rendered card
@@ -69,7 +73,13 @@ export function TldrCard({ tldr, title, onBoring }: { tldr?: Tldr | null; title:
             </span>
           ) : (
             conclusion && (
-              <p className="font-sans text-[13px] font-normal leading-[1.45] text-signal">
+              <p
+                onClick={() => setRevealed((r) => !r)}
+                title="Reveal the finding"
+                className={`cursor-pointer select-none font-sans text-[13px] font-normal leading-[1.45] text-signal transition-[filter] duration-200 ${
+                  revealed ? "" : "blur-[3px] hover:blur-none active:blur-none"
+                }`}
+              >
                 {/* <span className="mr-1.5 font-mono text-[10px] uppercase tracking-[.4px] text-faint">Finding</span> */}
                 {conclusion}
               </p>
