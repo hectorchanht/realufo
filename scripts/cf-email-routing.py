@@ -76,6 +76,14 @@ def existing_to_addrs(rules_resp):
 
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "status"
+    if mode == "mx":
+        # usage: cf-email-routing.py mx <domain>  -> list MX records
+        zones = (api("GET", "/zones?per_page=50").get("result") or [])
+        zid = zone_id(sys.argv[2], zones)
+        recs = api("GET", f"/zones/{zid}/dns_records?type=MX&per_page=20")
+        for r in (recs.get("result") or []):
+            print(f"  MX {r.get('priority')} {r.get('content')} (id={r.get('id')})")
+        return
     tok = api("GET", "/user/tokens/verify")
     print("== token verify ==", json.dumps(tok.get("result", tok.get("_error")))[:300])
     addrs = dest_addresses()
