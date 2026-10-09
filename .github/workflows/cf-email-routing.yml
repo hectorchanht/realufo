@@ -1,0 +1,20 @@
+name: cf-email-routing
+# Machine-way Cloudflare Email Routing ops (API token lives in repo secrets).
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "status (read-only) or apply (enable routing + create routes)"
+        required: true
+        default: "status"
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "build/app-foundation" }
+      - run: python3 scripts/cf-email-routing.py ${{ github.event.inputs.mode }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
