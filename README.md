@@ -87,3 +87,9 @@ The source code in this repository is licensed under the
 The declassified government documents mirrored by this project are works of
 the U.S. federal government and are in the public domain (17 U.S.C. § 105).
 Files from other governments follow their publishers' terms, noted per record.
+
+## Contact
+
+- hello@realufo.org
+- tips@realufo.org (UAP tips)
+- press@realufo.org (media)
