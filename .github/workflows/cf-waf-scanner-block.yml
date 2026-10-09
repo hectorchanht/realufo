@@ -47,8 +47,15 @@ jobs:
               if not zones:
                   raise RuntimeError("zone not found")
               zid = zones[0]["id"]
-              ep = api("GET", "/zones/%s/rulesets/phases/http_request_firewall_custom/entrypoint" % zid)["result"]
-              rules = ep.get("rules") or []
+              try:
+                  ep = api("GET", "/zones/%s/rulesets/phases/http_request_firewall_custom/entrypoint" % zid)["result"]
+                  rules = ep.get("rules") or []
+                  ep_id = ep["id"]
+              except RuntimeError as e:
+                  if "10003" not in str(e):
+                      raise
+                  out["note"] = "no entrypoint yet, creating phase ruleset"
+                  rules, ep_id = [], None
               out["existing_rules"] = [r.get("description") for r in rules]
               DESC = "Block vulnerability scanners"
               if any(r.get("description") == DESC for r in rules):
@@ -72,7 +79,12 @@ jobs:
                           "enabled": r.get("enabled", True),
                       })
                   payload_rules.append(new_rule)
-                  r = api("PUT", "/zones/%s/rulesets/%s" % (zid, ep["id"]), {"rules": payload_rules})
+                  if ep_id:
+                      r = api("PUT", "/zones/%s/rulesets/%s" % (zid, ep_id), {"rules": payload_rules})
+                  else:
+                      r = api("POST", "/zones/%s/rulesets" % zid,
+                              {"name": "Custom rules", "kind": "zone",
+                               "phase": "http_request_firewall_custom", "rules": payload_rules})
                   out["changed"] = True
                   out["rules_now"] = len((r["result"].get("rules") or []))
           except Exception as e:
