@@ -1,0 +1,71 @@
+name: cf-zone-setting
+# Machine-way Cloudflare zone setting flip (cf-mcp CLI flaky 403, direct API 401s from VM).
+# Usage: workflow_dispatch with zone="moneyrate.lol" setting="bot_fight_mode" value='"on"'.
+# value is parsed as JSON: '"on"' (string), 'true' (bool), '10' (number).
+on:
+  workflow_dispatch:
+    inputs:
+      zone:
+        description: "Zone name, e.g. moneyrate.lol"
+        required: true
+      setting:
+        description: "Setting key, e.g. bot_fight_mode"
+        required: true
+      value:
+        description: 'JSON value, e.g. '"'"'"on"'"'"' or true'
+        required: true
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "build/app-foundation" }
+      - name: Flip setting
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE_INPUT: ${{ inputs.zone }}
+          SETTING_INPUT: ${{ inputs.setting }}
+          VALUE_INPUT: ${{ inputs.value }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, urllib.request
+          TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
+          def api(method, path, payload=None):
+              data = json.dumps(payload).encode() if payload is not None else None
+              req = urllib.request.Request(
+                  "https://api.cloudflare.com/client/v4" + path, data=data,
+                  headers={"Authorization": "Bearer " + TOKEN, "Content-Type": "application/json"},
+                  method=method)
+              return json.loads(urllib.request.urlopen(req, timeout=60).read())
+          zone_name = os.environ["ZONE_INPUT"]
+          setting = os.environ["SETTING_INPUT"]
+          value = json.loads(os.environ["VALUE_INPUT"])
+          zones = api("GET", "/zones?per_page=50&name=" + zone_name)["result"]
+          out = {"zone": zone_name, "setting": setting, "requested": value}
+          if not zones:
+              out["error"] = "zone not found"
+          else:
+              zid = zones[0]["id"]
+              cur = api("GET", "/zones/%s/settings/%s" % (zid, setting))
+              out["before"] = cur["result"].get("value")
+              if cur["result"].get("value") == value:
+                  out["changed"] = False
+              else:
+                  r = api("PUT", "/zones/%s/settings/%s" % (zid, setting), {"value": value})
+                  out["changed"] = bool(r.get("success"))
+                  out["after"] = r["result"].get("value")
+                  out["api_success"] = r.get("success")
+          os.makedirs("_analytics", exist_ok=True)
+          fn = "_analytics/zone-setting-%s-%s.json" % (zone_name, setting)
+          open(fn, "w").write(json.dumps(out, indent=2))
+          print(json.dumps(out, indent=2))
+          PYEOF
+      - name: Commit result
+        run: |
+          git config user.name "muse"
+          git config user.email "muse@local"
+          git add _analytics/zone-setting-*.json
+          git diff --cached --quiet && echo "no changes" || git commit -m "cf zone setting flip ($(date -u +%F))" && git push origin build/app-foundation
