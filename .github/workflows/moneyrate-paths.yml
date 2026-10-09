@@ -1,0 +1,58 @@
+name: moneyrate-paths
+# One-off: top request paths for moneyrate.lol (30d) to inform the
+# positioning rethink. Writes _analytics/moneyrate-paths.json.
+on:
+  workflow_dispatch:
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "build/app-foundation" }
+      - name: Fetch top paths
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, urllib.request, datetime
+          TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
+          since = (datetime.date.today() - datetime.timedelta(days=30)).isoformat()
+          def api(method, path, payload=None):
+              data = json.dumps(payload).encode() if payload is not None else None
+              req = urllib.request.Request(
+                  "https://api.cloudflare.com/client/v4" + path, data=data,
+                  headers={"Authorization": "Bearer " + TOKEN, "Content-Type": "application/json"},
+                  method=method)
+              return json.loads(urllib.request.urlopen(req, timeout=60).read())
+          zones = api("GET", "/zones?per_page=50")["result"]
+          zid = {z["name"]: z["id"] for z in zones}.get("moneyrate.lol")
+          out = {"generated_at": datetime.datetime.utcnow().isoformat() + "Z", "zone": "moneyrate.lol"}
+          if not zid:
+              out["error"] = "zone not found"
+          else:
+              q = ("{ viewer { zones(filter: {zoneTag: \"" + zid + "\"}) {"
+                   " httpRequestsAdaptiveGroups(limit: 40, filter: {date_gt: \"" + since + "\"}) {"
+                   " dimensions { clientRequestPath } sum { requests } } } } }")
+              try:
+                  r = api("POST", "/graphql", {"query": q})
+                  if r.get("errors"):
+                      out["error"] = json.dumps(r["errors"])[:500]
+                  else:
+                      groups = r["data"]["viewer"]["zones"][0]["httpRequestsAdaptiveGroups"]
+                      out["paths"] = [{"path": g["dimensions"]["clientRequestPath"],
+                                       "requests": g["sum"]["requests"]} for g in groups]
+              except Exception as e:
+                  out["error"] = "http: " + str(e)[:300]
+          os.makedirs("_analytics", exist_ok=True)
+          open("_analytics/moneyrate-paths.json", "w").write(json.dumps(out, indent=2))
+          print(json.dumps(out, indent=2)[:3000])
+          PYEOF
+      - name: Commit results
+        run: |
+          git config user.name "muse"
+          git config user.email "muse@local"
+          git add _analytics/moneyrate-paths.json
+          git diff --cached --quiet && echo "no changes" || git commit -m "moneyrate top paths ($(date -u +%F))" && git push origin build/app-foundation
