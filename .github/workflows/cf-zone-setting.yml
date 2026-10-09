@@ -31,29 +31,33 @@ jobs:
           VALUE_INPUT: ${{ inputs.value }}
         run: |
           python3 - <<'PYEOF'
-          import json, os, urllib.request
+          import json, os, urllib.request, traceback
           TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
-          def api(method, path, payload=None):
-              data = json.dumps(payload).encode() if payload is not None else None
-              req = urllib.request.Request(
-                  "https://api.cloudflare.com/client/v4" + path, data=data,
-                  headers={"Authorization": "Bearer " + TOKEN, "Content-Type": "application/json"},
-                  method=method)
-              return json.loads(urllib.request.urlopen(req, timeout=60).read())
-          zone_name = os.environ["ZONE_INPUT"]
-          setting = os.environ["SETTING_INPUT"]
-          raw = os.environ["VALUE_INPUT"].strip()
+          out = {"zone": os.environ["ZONE_INPUT"], "setting": os.environ["SETTING_INPUT"]}
           try:
-              value = json.loads(raw)
-          except Exception:
-              value = {"on": True, "off": False, "true": True, "false": False}.get(raw.lower(), raw)
-              if setting == "bot_fight_mode":
-                  value = "on" if value is True else ("off" if value is False else value)
-          zones = api("GET", "/zones?per_page=50&name=" + zone_name)["result"]
-          out = {"zone": zone_name, "setting": setting, "requested": value}
-          if not zones:
-              out["error"] = "zone not found"
-          else:
+              def api(method, path, payload=None):
+                  data = json.dumps(payload).encode() if payload is not None else None
+                  req = urllib.request.Request(
+                      "https://api.cloudflare.com/client/v4" + path, data=data,
+                      headers={"Authorization": "Bearer " + TOKEN, "Content-Type": "application/json"},
+                      method=method)
+                  r = json.loads(urllib.request.urlopen(req, timeout=60).read())
+                  if not r.get("success"):
+                      raise RuntimeError("api success=false: " + json.dumps(r.get("errors"))[:300] + " @ " + path)
+                  return r
+              zone_name = os.environ["ZONE_INPUT"]
+              setting = os.environ["SETTING_INPUT"]
+              raw = os.environ["VALUE_INPUT"].strip()
+              try:
+                  value = json.loads(raw)
+              except Exception:
+                  value = {"on": True, "off": False, "true": True, "false": False}.get(raw.lower(), raw)
+                  if setting == "bot_fight_mode":
+                      value = "on" if value is True else ("off" if value is False else value)
+              out["requested"] = value
+              zones = api("GET", "/zones?per_page=50&name=" + zone_name)["result"]
+              if not zones:
+                  raise RuntimeError("zone not found: " + zone_name)
               zid = zones[0]["id"]
               cur = api("GET", "/zones/%s/settings/%s" % (zid, setting))
               out["before"] = cur["result"].get("value")
@@ -61,13 +65,13 @@ jobs:
                   out["changed"] = False
               else:
                   r = api("PUT", "/zones/%s/settings/%s" % (zid, setting), {"value": value})
-                  out["changed"] = bool(r.get("success"))
+                  out["changed"] = True
                   out["after"] = (r.get("result") or {}).get("value")
-                  out["api_success"] = r.get("success")
-                  if not r.get("success"):
-                      out["api_errors"] = r.get("errors")
+          except Exception as e:
+              out["error"] = str(e)[:500]
+              out["traceback"] = traceback.format_exc()[-800:]
           os.makedirs("_analytics", exist_ok=True)
-          fn = "_analytics/zone-setting-%s-%s.json" % (zone_name, setting)
+          fn = "_analytics/zone-setting-%s-%s.json" % (out["zone"], out["setting"])
           open(fn, "w").write(json.dumps(out, indent=2))
           print(json.dumps(out, indent=2))
           PYEOF
