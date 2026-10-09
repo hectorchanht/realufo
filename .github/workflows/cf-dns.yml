@@ -1,0 +1,55 @@
+name: cf-dns
+# Machine-way Cloudflare DNS ops: idempotently ensure DNS records on a zone.
+# Usage: workflow_dispatch with inputs zone + records_json (array of
+# {type, name, content, ttl, proxied}). Existing same-name+type records are
+# replaced. Uses the repo's working CLOUDFLARE_API_TOKEN secret.
+on:
+  workflow_dispatch:
+    inputs:
+      zone:
+        description: "Zone name (e.g. moneyrate.lol)"
+        required: true
+      records_json:
+        description: 'JSON array of {type,name,content,ttl,proxied}'
+        required: true
+jobs:
+  dns:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Ensure DNS records
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE: ${{ github.event.inputs.zone }}
+          RECORDS_JSON: ${{ github.event.inputs.records_json }}
+        run: |
+          set -euo pipefail
+          zid=$(curl -s -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones?name=$ZONE" \
+            | python3 -c "import json,sys; print(json.load(sys.stdin)['result'][0]['id'])")
+          echo "zone $ZONE -> $zid"
+          python3 - "$zid" <<'PY'
+          import json, os, sys, urllib.request
+          zid = sys.argv[1]
+          token = os.environ["CF_TOKEN"]
+          zone = os.environ["ZONE"]
+          want = json.loads(os.environ["RECORDS_JSON"])
+          def api(method, path, body=None):
+              req = urllib.request.Request(
+                  "https://api.cloudflare.com/client/v4" + path,
+                  data=json.dumps(body).encode() if body is not None else None,
+                  headers={"Authorization": f"Bearer {token}",
+                           "Content-Type": "application/json"},
+                  method=method)
+              return json.load(urllib.request.urlopen(req, timeout=30))
+          for r in want:
+              fqdn = r["name"] if r["name"].endswith(zone) else r["name"] + "." + zone
+              existing = api("GET", f"/zones/{zid}/dns_records?type={r['type']}&name={fqdn}")["result"]
+              for e in existing:
+                  api("DELETE", f"/zones/{zid}/dns_records/{e['id']}")
+                  print("deleted", e["type"], e["name"], e["id"])
+              created = api("POST", f"/zones/{zid}/dns_records", {
+                  "type": r["type"], "name": fqdn, "content": r["content"],
+                  "ttl": r.get("ttl", 300), "proxied": r.get("proxied", False)})
+              print("created", r["type"], fqdn, created["result"]["id"])
+          PY
