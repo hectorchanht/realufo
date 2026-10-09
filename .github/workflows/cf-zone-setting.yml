@@ -1,7 +1,7 @@
 name: cf-zone-setting
 # Machine-way Cloudflare zone setting flip (cf-mcp CLI flaky 403, direct API 401s from VM).
-# Usage: workflow_dispatch with zone="moneyrate.lol" setting="bot_fight_mode" value='"on"'.
-# value is parsed as JSON: '"on"' (string), 'true' (bool), '10' (number).
+# Usage: workflow_dispatch with zone="moneyrate.lol" setting="bot_fight_mode" value="on".
+# value is parsed as JSON on the runner: use on / true / 10 (bare words also accepted).
 on:
   workflow_dispatch:
     inputs:
@@ -12,7 +12,7 @@ on:
         description: "Setting key, e.g. bot_fight_mode"
         required: true
       value:
-        description: 'JSON value, e.g. '"'"'"on"'"'"' or true'
+        description: "New value: on, off, true, false, or a number"
         required: true
 jobs:
   run:
@@ -42,7 +42,13 @@ jobs:
               return json.loads(urllib.request.urlopen(req, timeout=60).read())
           zone_name = os.environ["ZONE_INPUT"]
           setting = os.environ["SETTING_INPUT"]
-          value = json.loads(os.environ["VALUE_INPUT"])
+          raw = os.environ["VALUE_INPUT"].strip()
+          try:
+              value = json.loads(raw)
+          except Exception:
+              value = {"on": True, "off": False, "true": True, "false": False}.get(raw.lower(), raw)
+              if setting == "bot_fight_mode":
+                  value = "on" if value is True else ("off" if value is False else value)
           zones = api("GET", "/zones?per_page=50&name=" + zone_name)["result"]
           out = {"zone": zone_name, "setting": setting, "requested": value}
           if not zones:
@@ -56,8 +62,10 @@ jobs:
               else:
                   r = api("PUT", "/zones/%s/settings/%s" % (zid, setting), {"value": value})
                   out["changed"] = bool(r.get("success"))
-                  out["after"] = r["result"].get("value")
+                  out["after"] = (r.get("result") or {}).get("value")
                   out["api_success"] = r.get("success")
+                  if not r.get("success"):
+                      out["api_errors"] = r.get("errors")
           os.makedirs("_analytics", exist_ok=True)
           fn = "_analytics/zone-setting-%s-%s.json" % (zone_name, setting)
           open(fn, "w").write(json.dumps(out, indent=2))
