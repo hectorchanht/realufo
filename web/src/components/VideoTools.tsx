@@ -99,7 +99,7 @@ export function VideoTransport({
       <div data-scroll className="flex items-center gap-2 overflow-x-auto pb-1">
       {/* transport group: play/pause + timecode + frame stepper as one compact unit */}
       <span role="group" aria-label="Playback" className={`${tgroup} flex-none`}>
-        <button type="button" aria-label={playing ? "Pause" : "Play"} title={`${playing ? "Pause" : "Play"} (Space)`} onClick={ctl.togglePlay} className={`${chip} ${off}`}>
+        <button type="button" aria-label={playing ? "Pause" : "Play"} title={`${playing ? "Pause" : "Play"} (Space/K)`} onClick={ctl.togglePlay} className={`${chip} ${off}`}>
           {playing ? <Pause {...ico} /> : <Play {...ico} />}
         </button>
         <span className="whitespace-nowrap px-1 font-mono text-[10px] tabular-nums text-dim">

@@ -1,6 +1,6 @@
 // Full-bleed doc / video / placeholder viewer. Ported from
 // realufo-handoff/RealUFO.dc.html lines 404-414 (`sc-if value="{{ viewer }}"`).
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { MouseEvent } from "react";
 import { X } from "lucide-react";
 import { useOverlay } from "./OverlayProvider";
@@ -11,7 +11,42 @@ import { useMediaQuery } from "../lib/useMediaQuery";
 export function MediaViewer() {
   const { viewer, closeViewer } = useOverlay();
   const imgRef = useRef<HTMLImageElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
+
+  // Viewer-video shortcuts (YouTube convention). The Doc's keys are ALL off
+  // while an overlay is open (Doc.tsx + VideoTransport skip when viewer is
+  // set), so F / L / ← / → are conflict-free here; Esc stays with the overlay
+  // host, which closes the viewer.
+  useEffect(() => {
+    if (viewer?.kind !== "video") return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const el = document.activeElement as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable)) return;
+      const v = videoRef.current;
+      if (!v) return;
+      const k = e.key.toLowerCase();
+      // a focused button (the close X) fires on Space itself — don't double up
+      if (k === " " && (el?.tagName === "BUTTON" || el?.tagName === "A")) return;
+      if (k === " " || k === "k") {
+        if (v.paused) v.play().catch(() => {});
+        else v.pause();
+      } else if (k === "j") v.currentTime = Math.max(0, v.currentTime - 10);
+      else if (k === "l") v.currentTime = Math.min(v.duration || Infinity, v.currentTime + 10);
+      else if (k === "m") v.muted = !v.muted;
+      else if (k === "f") {
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+        else if (v.requestFullscreen) v.requestFullscreen().catch(() => {});
+        else (v as HTMLVideoElement & { webkitEnterFullscreen?: () => void }).webkitEnterFullscreen?.(); // iPhone Safari
+      } else if (e.key === "ArrowLeft") v.currentTime = Math.max(0, v.currentTime - 5);
+      else if (e.key === "ArrowRight") v.currentTime = Math.min(v.duration || Infinity, v.currentTime + 5);
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [viewer?.kind]);
   if (!viewer) return null;
 
   // A click on the backdrop, or on the image's letterbox, closes the viewer.
@@ -50,7 +85,7 @@ export function MediaViewer() {
 
       <div className="flex min-h-0 flex-1 items-center justify-center px-3 pb-3" onClick={closeOutside}>
         {viewer.kind === "video" && (
-          <video src={viewer.url} controls playsInline className="max-h-full max-w-full rounded-[10px] bg-black" />
+          <video ref={videoRef} src={viewer.url} controls playsInline className="max-h-full max-w-full rounded-[10px] bg-black" />
         )}
 
         {viewer.kind === "image" && (

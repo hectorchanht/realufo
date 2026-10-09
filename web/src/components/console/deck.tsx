@@ -13,10 +13,10 @@ export function deckPress(p: ConsoleProps): { center: WheelPress; top: WheelPres
   const rotate = () => onView({ ...view, rot: ((view.rot + 90) % 360) as typeof view.rot });
   if (p.media === "video" && video) {
     return {
-      center: { label: video.playing ? "Pause" : "Play", title: "Play / pause (Space)", Icon: video.playing ? Pause : Play, onPress: video.togglePlay, active: video.playing },
+      center: { label: video.playing ? "Pause" : "Play", title: "Play / pause (Space/K)", Icon: video.playing ? Pause : Play, onPress: video.togglePlay, active: video.playing },
       left: { label: "Previous frame", title: "Previous frame (,)", Icon: StepBack, onPress: () => video.stepFrame(-1) },
       right: { label: "Next frame", title: "Next frame (.)", Icon: StepForward, onPress: () => video.stepFrame(1) },
-      top: { label: `Speed ${video.rate}×`, title: "Speed", Icon: Gauge, onPress: video.cycleRate },
+      top: { label: `Speed ${video.rate}×`, title: "Speed ([ ])", Icon: Gauge, onPress: video.cycleRate },
       bottom: { label: video.abLabel, title: `${video.abLabel} (A)`, Icon: Repeat1, onPress: video.markAb, active: !!video.ab },
     };
   }

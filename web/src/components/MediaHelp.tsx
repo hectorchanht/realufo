@@ -126,6 +126,16 @@ const HELP: { title: string; only?: Kind; rows: Row[] }[] = [
     ],
   },
   {
+    title: "In the full-screen viewer",
+    only: "video",
+    rows: [
+      { Icon: Play, name: "Play or pause", what: "In the viewer.", keys: ["Space", "K"] },
+      { Icon: ArrowLeftRight, name: "Skip", what: "J / L jump 10 seconds, ← / → 5 seconds, in the viewer.", keys: ["J", "L", "←", "→"] },
+      { Icon: VolumeX, name: "Sound", what: "In the viewer.", keys: ["M"] },
+      { Icon: Maximize, name: "Full screen", what: "In the viewer.", keys: ["F"] },
+    ],
+  },
+  {
     title: "Move between files",
     rows: [
       { Icon: ArrowLeftRight, name: "Next or previous file", what: "", keys: ["←", "→"], touch: "Swipe sideways" },
