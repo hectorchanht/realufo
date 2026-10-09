@@ -1,0 +1,79 @@
+name: cf-botfight
+# Toggle Cloudflare Bot Fight Mode via PUT /zones/{id}/bot_management {"fight_mode": bool}.
+# NOTE: /settings/bot_fight_mode does NOT exist (1006). bot_management needs PUT (PATCH 405)
+# and a partial body (echoing the whole object 400s). Verifies via re-GET because the
+# free plan may silently ignore fight_mode.
+# Usage: workflow_dispatch zone="moneyrate.lol" mode="on"
+on:
+  workflow_dispatch:
+    inputs:
+      zone:
+        description: "Zone name, e.g. moneyrate.lol"
+        required: true
+      mode:
+        description: "on or off"
+        required: true
+        default: "on"
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "build/app-foundation" }
+      - name: Toggle bot fight mode
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE_INPUT: ${{ inputs.zone }}
+          MODE_INPUT: ${{ inputs.mode }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, urllib.request, traceback
+          TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
+          out = {"zone": os.environ["ZONE_INPUT"], "mode": os.environ["MODE_INPUT"]}
+          try:
+              def api(method, path, payload=None):
+                  data = json.dumps(payload).encode() if payload is not None else None
+                  req = urllib.request.Request(
+                      "https://api.cloudflare.com/client/v4" + path, data=data,
+                      headers={"Authorization": "Bearer " + TOKEN, "Content-Type": "application/json"},
+                      method=method)
+                  try:
+                      raw = urllib.request.urlopen(req, timeout=60).read()
+                  except urllib.request.HTTPError as he:
+                      body = he.read().decode()[:500]
+                      raise RuntimeError("HTTP %d @ %s %s: %s" % (he.code, method, path, body))
+                  r = json.loads(raw)
+                  if not r.get("success"):
+                      raise RuntimeError("api success=false: " + json.dumps(r.get("errors"))[:300] + " @ " + path)
+                  return r
+              zones = api("GET", "/zones?per_page=50&name=" + out["zone"])["result"]
+              if not zones:
+                  raise RuntimeError("zone not found: " + out["zone"])
+              zid = zones[0]["id"]
+              before = api("GET", "/zones/%s/bot_management" % zid)["result"]
+              out["before"] = {"fight_mode": before.get("fight_mode"), "enable_js": before.get("enable_js")}
+              want = out["mode"] == "on"
+              if before.get("fight_mode") != want:
+                  api("PUT", "/zones/%s/bot_management" % zid, {"fight_mode": want})
+                  out["put_sent"] = True
+              else:
+                  out["put_sent"] = False
+              after = api("GET", "/zones/%s/bot_management" % zid)["result"]
+              out["after"] = {"fight_mode": after.get("fight_mode"), "enable_js": after.get("enable_js")}
+              out["stuck"] = after.get("fight_mode") == want
+          except Exception as e:
+              out["error"] = str(e)[:600]
+          os.makedirs("_analytics", exist_ok=True)
+          fn = "_analytics/botfight-%s.json" % out["zone"]
+          open(fn, "w").write(json.dumps(out, indent=2))
+          print(json.dumps(out, indent=2))
+          PYEOF
+      - name: Commit result
+        run: |
+          git config user.name "muse"
+          git config user.email "muse@local"
+          git add _analytics/botfight-*.json
+          git diff --cached --quiet && echo "no changes" || git commit -m "cf botfight toggle ($(date -u +%F))" && git push origin build/app-foundation
