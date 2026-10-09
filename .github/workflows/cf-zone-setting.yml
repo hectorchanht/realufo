@@ -41,7 +41,12 @@ jobs:
                       "https://api.cloudflare.com/client/v4" + path, data=data,
                       headers={"Authorization": "Bearer " + TOKEN, "Content-Type": "application/json"},
                       method=method)
-                  r = json.loads(urllib.request.urlopen(req, timeout=60).read())
+                  try:
+                      raw = urllib.request.urlopen(req, timeout=60).read()
+                  except urllib.request.HTTPError as he:
+                      body = he.read().decode()[:500]
+                      raise RuntimeError("HTTP %d @ %s %s: %s" % (he.code, method, path, body))
+                  r = json.loads(raw)
                   if not r.get("success"):
                       raise RuntimeError("api success=false: " + json.dumps(r.get("errors"))[:300] + " @ " + path)
                   return r
@@ -59,12 +64,18 @@ jobs:
               if not zones:
                   raise RuntimeError("zone not found: " + zone_name)
               zid = zones[0]["id"]
-              cur = api("GET", "/zones/%s/settings/%s" % (zid, setting))
-              out["before"] = cur["result"].get("value")
-              if cur["result"].get("value") == value:
+              alls = api("GET", "/zones/%s/settings" % zid)["result"]
+              cur_val = None
+              for s in alls:
+                  if s.get("id") == setting:
+                      cur_val = s.get("value")
+                      break
+              out["before"] = cur_val
+              out["setting_known"] = cur_val is not None
+              if cur_val == value:
                   out["changed"] = False
               else:
-                  r = api("PUT", "/zones/%s/settings/%s" % (zid, setting), {"value": value})
+                  r = api("PATCH", "/zones/%s/settings/%s" % (zid, setting), {"value": value})
                   out["changed"] = True
                   out["after"] = (r.get("result") or {}).get("value")
           except Exception as e:
