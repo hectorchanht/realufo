@@ -84,6 +84,19 @@ def main():
         for r in (recs.get("result") or []):
             print(f"  MX {r.get('priority')} {r.get('content')} (id={r.get('id')})")
         return
+    if mode == "delmx":
+        # usage: cf-email-routing.py delmx <domain> -> delete NON-Cloudflare MX records
+        zones = (api("GET", "/zones?per_page=50").get("result") or [])
+        zid = zone_id(sys.argv[2], zones)
+        recs = api("GET", f"/zones/{zid}/dns_records?type=MX&per_page=20")
+        for r in (recs.get("result") or []):
+            content = r.get("content", "")
+            if "mx.cloudflare.net" in content:
+                print(f"  keep CF MX {content}")
+                continue
+            d = api("DELETE", f"/zones/{zid}/dns_records/{r.get('id')}")
+            print(f"  delete MX {r.get('priority')} {content}: {d.get('success')} {err_str(d)}")
+        return
     tok = api("GET", "/user/tokens/verify")
     print("== token verify ==", json.dumps(tok.get("result", tok.get("_error")))[:300])
     addrs = dest_addresses()
