@@ -1,4 +1,7 @@
 {
   "zone": "moneyrate.lol",
-  "error": "HTTP 404 @ GET /zones/b6ddd8b221e277e8a25a02d48d55b490/rulesets/phases/http_request_firewall_custom/entrypoint: {\n  \"result\": null,\n  \"success\": false,\n  \"errors\": [\n    {\n      \"code\": 10003,\n      \"message\": \"could not find entrypoint ruleset in the http_request_firewall_custom phase\"\n    }\n  ],\n  \"messages\": []\n}\n"
+  "note": "no entrypoint yet, creating phase ruleset",
+  "existing_rules": [],
+  "changed": true,
+  "rules_now": 1
 }
