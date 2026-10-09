@@ -1,7 +1,7 @@
 name: r2-export-manifest
 # One-shot helper: mint a scoped read-only R2 API token, list every object in
 # the bucket, and upload the manifest (+ S3 creds) as an artifact for the VM
-# to download. Revoke the token after the VM finishes (DELETE /user/tokens).
+# to download. Revoke the token after the VM finishes (DELETE /accounts/{id}/tokens/{token_id}).
 on:
   workflow_dispatch:
     inputs:
@@ -17,6 +17,29 @@ jobs:
         run: |
           curl -fsSL https://rclone.org/install.sh | sudo bash
           rclone version
+      - name: Inspect bucket + permission groups
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BUCKET: ${{ inputs.bucket }}
+        run: |
+          echo "--- bucket info ---"
+          curl -s "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/r2/buckets/${BUCKET}" \
+            -H "Authorization: Bearer $CF_TOKEN" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          print('success:', d.get('success'))
+          r=d.get('result') or {}
+          print('jurisdiction:', r.get('jurisdiction'), '| name:', r.get('name'))
+          for e in d.get('errors', []): print('error:', e)"
+          echo "--- R2 permission groups ---"
+          curl -s "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/tokens/permission_groups" \
+            -H "Authorization: Bearer $CF_TOKEN" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          for g in d.get('result', []):
+              if 'R2' in g.get('name',''):
+                  print(g['id'], '|', g['name'])"
       - name: Mint scoped token and list objects
         env:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -24,15 +47,25 @@ jobs:
           BUCKET: ${{ inputs.bucket }}
         run: |
           set -e
+          JUR=$(curl -s "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/r2/buckets/${BUCKET}" \
+            -H "Authorization: Bearer $CF_TOKEN" | python3 -c "
+          import json,sys; d=json.load(sys.stdin); print((d.get('result') or {}).get('jurisdiction') or 'default')")
+          echo "jurisdiction=$JUR"
+          PGID=$(curl -s "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/tokens/permission_groups" \
+            -H "Authorization: Bearer $CF_TOKEN" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          ids=[g['id'] for g in d.get('result',[]) if g.get('name')=='Workers R2 Storage Bucket Item Read']
+          print(ids[0] if ids else '')")
+          echo "permission_group=$PGID"
           BODY=$(python3 -c "
-          import json, os
-          acct = os.environ['CF_ACCOUNT']; bucket = os.environ['BUCKET']
+          import json
           print(json.dumps({
             'name': 'muse-r2-export',
             'policies': [{
               'effect': 'allow',
-              'resources': {f'com.cloudflare.edge.r2.bucket.{acct}_default_{bucket}': '*'},
-              'permission_groups': [{'id': '6a018a9f2fc74eb6b293b0c548f38b39'}]
+              'resources': {'com.cloudflare.edge.r2.bucket.${CF_ACCOUNT}_${JUR}_${BUCKET}': '*'},
+              'permission_groups': [{'id': '${PGID}'}]
             }]
           }))")
           RESP=$(curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/tokens" \
@@ -55,10 +88,18 @@ jobs:
             echo "tid=$TID"
             echo "sak=$SAK"
           } >> "$GITHUB_ENV"
+          echo "token id: $TID (waiting 20s for propagation)"
+          sleep 20
           rclone config create r2remote s3 provider=Cloudflare \
             access_key_id="$TID" secret_access_key="$SAK" endpoint="$EP" \
             --non-interactive --quiet
-          rclone lsf "r2remote:${BUCKET}" --recursive --format "ps" --separator "|" > objects.txt
+          for i in 1 2 3; do
+            if rclone lsf "r2remote:${BUCKET}" --recursive --format "ps" --separator "|" > objects.txt 2>lsf.err; then
+              break
+            fi
+            echo "lsf attempt $i failed, retrying in 15s"; sleep 15
+          done
+          if [ ! -s objects.txt ]; then echo "LSF_FAILED"; cat lsf.err; exit 1; fi
           wc -l objects.txt
           python3 -c "
           import json, os
