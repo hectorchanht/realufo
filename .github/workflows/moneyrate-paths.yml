@@ -20,35 +20,66 @@ jobs:
           import json, os, urllib.request, datetime
           TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
           since = (datetime.date.today() - datetime.timedelta(days=30)).isoformat()
-          def api(method, path, payload=None):
-              data = json.dumps(payload).encode() if payload is not None else None
+          def gql(query):
               req = urllib.request.Request(
-                  "https://api.cloudflare.com/client/v4" + path, data=data,
+                  "https://api.cloudflare.com/client/v4/graphql",
+                  data=json.dumps({"query": query}).encode(),
                   headers={"Authorization": "Bearer " + TOKEN, "Content-Type": "application/json"},
-                  method=method)
+                  method="POST")
               return json.loads(urllib.request.urlopen(req, timeout=60).read())
+          def api(method, path):
+              req = urllib.request.Request(
+                  "https://api.cloudflare.com/client/v4" + path,
+                  headers={"Authorization": "Bearer " + TOKEN}, method=method)
+              return json.loads(urllib.request.urlopen(req, timeout=60).read())
+          out = {"generated_at": datetime.datetime.utcnow().isoformat() + "Z", "zone": "moneyrate.lol"}
           zones = api("GET", "/zones?per_page=50")["result"]
           zid = {z["name"]: z["id"] for z in zones}.get("moneyrate.lol")
-          out = {"generated_at": datetime.datetime.utcnow().isoformat() + "Z", "zone": "moneyrate.lol"}
           if not zid:
               out["error"] = "zone not found"
           else:
-              q = ("{ viewer { zones(filter: {zoneTag: \"" + zid + "\"}) {"
-                   " httpRequestsAdaptiveGroups(limit: 40, filter: {date_gt: \"" + since + "\"}) {"
-                   " dimensions { clientRequestPath } sum { requests } } } } }")
-              try:
-                  r = api("POST", "/graphql", {"query": q})
+              # introspect the adaptive-groups node for a usable metric field
+              insp = gql("{ __type(name: \"ZoneHttpRequestsAdaptiveGroups\") { fields { name } } }")
+              t = (insp.get("data") or {}).get("__type")
+              node_fields = [f["name"] for f in t["fields"]] if t else []
+              out["node_fields"] = node_fields
+              metric = None
+              if "count" in node_fields:
+                  metric, sel = "count", "count"
+              else:
+                  # introspect the sum type
+                  s = gql("{ g: __type(name: \"ZoneHttpRequestsAdaptiveGroups\") { fields { name type { name ofType { name } } } } }")
+                  sum_type = None
+                  for f in s["data"]["g"]["fields"]:
+                      if f["name"] == "sum":
+                          sum_type = f["type"]["name"] or (f["type"]["ofType"] or {}).get("name")
+                  si = gql("{ __type(name: \"" + sum_type + "\") { fields { name } } }") if sum_type else {}
+                  sum_fields = [f["name"] for f in (si.get("data") or {}).get("__type", {}).get("fields", [])]
+                  out["sum_fields"] = sum_fields
+                  for cand in ("requests", "visits", "pageViews"):
+                      if cand in sum_fields:
+                          metric, sel = cand, "sum { %s }" % cand
+                          break
+              if not metric:
+                  out["error"] = "no usable metric field found"
+              else:
+                  q = ("{ viewer { zones(filter: {zoneTag: \"" + zid + "\"}) {"
+                       " httpRequestsAdaptiveGroups(limit: 40, filter: {date_gt: \"" + since + "\"},"
+                       " orderBy: [%s_DESC]) { dimensions { clientRequestPath } %s } } } }"
+                       % ("count" if metric == "count" else "sum_" + metric, sel))
+                  r = gql(q)
                   if r.get("errors"):
                       out["error"] = json.dumps(r["errors"])[:500]
                   else:
                       groups = r["data"]["viewer"]["zones"][0]["httpRequestsAdaptiveGroups"]
-                      out["paths"] = [{"path": g["dimensions"]["clientRequestPath"],
-                                       "requests": g["sum"]["requests"]} for g in groups]
-              except Exception as e:
-                  out["error"] = "http: " + str(e)[:300]
+                      def val(g):
+                          return g["count"] if metric == "count" else g["sum"][metric]
+                      out["paths"] = sorted(
+                          [{"path": g["dimensions"]["clientRequestPath"], "n": val(g)} for g in groups],
+                          key=lambda x: -x["n"])[:30]
           os.makedirs("_analytics", exist_ok=True)
           open("_analytics/moneyrate-paths.json", "w").write(json.dumps(out, indent=2))
-          print(json.dumps(out, indent=2)[:3000])
+          print(json.dumps(out, indent=2)[:3500])
           PYEOF
       - name: Commit results
         run: |
