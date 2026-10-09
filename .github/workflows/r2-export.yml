@@ -1,0 +1,84 @@
+name: r2-export-manifest
+# One-shot helper: mint a scoped read-only R2 API token, list every object in
+# the bucket, and upload the manifest (+ S3 creds) as an artifact for the VM
+# to download. Revoke the token after the VM finishes (DELETE /user/tokens).
+on:
+  workflow_dispatch:
+    inputs:
+      bucket:
+        description: "R2 bucket name"
+        default: "realufo"
+jobs:
+  manifest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Install rclone
+        run: |
+          curl -fsSL https://rclone.org/install.sh | sudo bash
+          rclone version
+      - name: Mint scoped token and list objects
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BUCKET: ${{ inputs.bucket }}
+        run: |
+          set -e
+          BODY=$(python3 -c "
+          import json, os
+          acct = os.environ['CF_ACCOUNT']; bucket = os.environ['BUCKET']
+          print(json.dumps({
+            'name': 'muse-r2-export',
+            'policies': [{
+              'effect': 'allow',
+              'resources': {f'com.cloudflare.edge.r2.bucket.{acct}_default_{bucket}': '*'},
+              'permission_groups': [{'id': '6a018a9f2fc74eb6b293b0c548f38b39'}]
+            }]
+          }))")
+          RESP=$(curl -s -X POST "https://api.cloudflare.com/client/v4/user/tokens" \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "$BODY")
+          python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          print('token success:', d.get('success'))
+          for e in d.get('errors', []): print('token error:', e)
+          " <<< "$RESP"
+          TID=$(python3 -c "import json,sys; print(json.load(sys.stdin)['result']['id'])" <<< "$RESP")
+          TVAL=$(python3 -c "import json,sys; print(json.load(sys.stdin)['result']['value'])" <<< "$RESP")
+          SAK=$(printf '%s' "$TVAL" | sha256sum | cut -d' ' -f1)
+          EP="https://${CF_ACCOUNT}.r2.cloudflarestorage.com"
+          {
+            echo "endpoint=$EP"
+            echo "bucket=$BUCKET"
+            echo "tid=$TID"
+            echo "sak=$SAK"
+          } >> "$GITHUB_ENV"
+          rclone config create r2remote s3 provider=Cloudflare \
+            access_key_id="$TID" secret_access_key="$SAK" endpoint="$EP" \
+            --non-interactive --quiet
+          rclone lsf "r2remote:${BUCKET}" --recursive --format "ps" --separator "|" > objects.txt
+          wc -l objects.txt
+          python3 -c "
+          import json, os
+          objs=[]; total=0
+          with open('objects.txt') as f:
+              for line in f:
+                  line=line.rstrip(chr(10))
+                  if '|' in line:
+                      p,s=line.rsplit('|',1)
+                      try: sz=int(s)
+                      except ValueError: sz=0
+                      objs.append({'key':p,'size':sz}); total+=sz
+          man={'endpoint':os.environ['endpoint'],'bucket':os.environ['bucket'],
+               'access_key_id':os.environ['tid'],'secret_access_key':os.environ['sak'],
+               'object_count':len(objs),'total_bytes':total,'objects':objs}
+          json.dump(man, open('manifest.json','w'))
+          print('objects:',len(objs),'bytes:',total)
+          "
+      - name: Upload manifest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: r2-manifest
+          path: manifest.json
