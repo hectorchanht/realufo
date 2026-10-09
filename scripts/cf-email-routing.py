@@ -42,6 +42,13 @@ def api(method, path, body=None):
     except urllib.error.HTTPError as e:
         return {"_error": e.code, "_body": e.read().decode()[:600]}
 
+def err_str(r):
+    if not r.get("_error"):
+        return ""
+    errs = r.get("errors") or []
+    msg = "; ".join(e.get("message", "") for e in errs)
+    return f"{r['_error']} {msg} {r.get('_body','')[:200]}".strip()
+
 def dest_addresses():
     return api("GET", f"/accounts/{ACCT}/email/routing/addresses")
 
@@ -97,27 +104,34 @@ def main():
         want = PLAN.get(d, [])
         print(f"  {d}: routing_enabled={enabled} have={sorted(have)} want={want}")
         if mode == "apply" and d in PLAN:
-            # realufo.org mail goes to its dedicated Gmail; everything else to his main Gmail
-            dest = (dest_by_email.get("realufo.org@gmail.com") if d == "realufo.org"
-                    else dest_by_email.get("f147259@gmail.com")) or verified_uuid
-            if not dest:
+            # forward actions take the destination EMAIL, not the UUID (UUID -> 422)
+            dest_email = ("realufo.org@gmail.com" if d == "realufo.org"
+                          else "f147259@gmail.com")
+            if dest_email not in dest_by_email:
+                dest_email = next((e for e, v in dest_by_email.items() if v), None)
+            if not dest_email:
                 print("    SKIP: no verified destination address"); continue
             if not enabled:
                 r = api("POST", f"/zones/{zid}/email/routing/enable", {"enabled": True})
-                print("    enable:", r.get("success"), r.get("_error", ""))
+                print("    enable:", r.get("success"), err_str(r))
+                st = routing_status(zid)
+                enabled = (st.get("result") or {}).get("enabled")
             dns = api("POST", f"/zones/{zid}/email/routing/dns", {"enabled": True})
-            print("    dns records:", dns.get("success"), dns.get("_error", ""))
+            print("    dns records:", dns.get("success"), err_str(dns))
+            prio = len((routing_rules(zid).get("result") or []))
             for lp in want:
                 if lp in have:
                     print(f"    {lp}@ exists, skip"); continue
                 r = api("POST", f"/zones/{zid}/email/routing/rules", {
-                    "name": f"{lp}@ -> verified destination",
+                    "name": f"{lp}@ -> {dest_email}",
                     "enabled": True,
+                    "priority": prio,
                     "matchers": [{"type": "literal", "field": "to", "value": f"{lp}@{d}"}],
-                    "actions": [{"type": "forward", "value": [dest]}],
+                    "actions": [{"type": "forward", "value": [dest_email]}],
                 })
-                print(f"    create {lp}@{d}:", r.get("success"), r.get("_error", ""),
-                      (r.get("errors") or [{}])[0].get("message", "") if not r.get("success") else "")
+                print(f"    create {lp}@{d}:", r.get("success"), err_str(r))
+                if r.get("success"):
+                    prio += 1
 
 if __name__ == "__main__":
     main()
