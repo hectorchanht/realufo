@@ -91,6 +91,80 @@ export async function podcastEpisodes(req: Request, env: Env) {
   return json({ episodes: await fetchPodcastEpisodes() });
 }
 
+// Self-hosted podcast RSS for directories (YouTube, Apple, Spotify).
+// GET /podcast/feed.xml — the muse.ai feed can't carry an owner email, which
+// YouTube's ingestion requires ("Missing owner email for RSS feed"), so this
+// feed is generated here with a proper itunes:owner tag. Episode data comes
+// from the muse.ai feed (source of truth); enclosures are same-origin
+// R2-backed audio (/api/podcast/audio/:slug) so directories never depend on
+// a third-party host. Add one AUDIO_BYTES line per episode when publishing.
+const FEED_OWNER_EMAIL = "realufo.org@gmail.com";
+const AUDIO_BYTES: Record<string, number> = {
+  roswell: 2521957,
+};
+
+const escXml = (s: string) =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+export async function podcastFeedXml(): Promise<Response> {
+  const eps = await fetchPodcastEpisodes();
+  const items = eps
+    .map((e) => {
+      const audio = e.caseSlug
+        ? `https://realufo.org/api/podcast/audio/${e.caseSlug}`
+        : e.audioUrl;
+      const len = e.caseSlug ? AUDIO_BYTES[e.caseSlug] : 0;
+      const link = e.caseSlug
+        ? `https://realufo.org/case/${e.caseSlug}`
+        : "https://realufo.org/podcast";
+      // e.pubDate is YYYY-MM-DD (feed parse); time of day unknown → noon UTC.
+      const pubDate = e.pubDate
+        ? new Date(e.pubDate + "T12:00:00Z").toUTCString()
+        : new Date().toUTCString();
+      return `    <item>
+      <title>${escXml(e.title)}</title>
+      <link>${link}</link>
+      <description><![CDATA[${e.description}]]></description>
+      <pubDate>${pubDate}</pubDate>
+      <guid isPermaLink="false">${escXml(e.guid || audio)}</guid>
+      <enclosure url="${escXml(audio)}"${len ? ` length="${len}"` : ""} type="audio/mpeg"/>
+      <itunes:duration>${e.durationSecs || 0}</itunes:duration>
+      <itunes:explicit>no</itunes:explicit>
+    </item>`;
+    })
+    .join("\n");
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>RealUFO Case Files</title>
+    <link>https://realufo.org/podcast</link>
+    <language>en</language>
+    <description>One declassified UFO case file every week, in audio. The same case as the Friday email — listen or read, your pick.</description>
+    <atom:link href="https://realufo.org/podcast/feed.xml" rel="self" type="application/rss+xml"/>
+    <itunes:author>RealUFO</itunes:author>
+    <itunes:owner>
+      <itunes:name>RealUFO</itunes:name>
+      <itunes:email>${FEED_OWNER_EMAIL}</itunes:email>
+    </itunes:owner>
+    <itunes:image href="https://realufo.org/podcast-cover.webp"/>
+    <itunes:category text="Science"/>
+    <itunes:explicit>no</itunes:explicit>
+${items}
+  </channel>
+</rss>
+`;
+  return new Response(xml, {
+    headers: {
+      "content-type": "application/rss+xml; charset=utf-8",
+      "cache-control": "public, max-age=3600",
+    },
+  });
+}
+
 // Lazy mirror: first request for an episode's audio fetches the feed
 // enclosure into R2 (podcast/<slug>.mp3); every request after that is
 // served from R2 with byte-range support for mobile players.
