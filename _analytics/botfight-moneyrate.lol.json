@@ -1,0 +1,14 @@
+{
+  "zone": "moneyrate.lol",
+  "mode": "on",
+  "before": {
+    "fight_mode": true,
+    "enable_js": true
+  },
+  "put_sent": false,
+  "after": {
+    "fight_mode": true,
+    "enable_js": true
+  },
+  "stuck": true
+}
