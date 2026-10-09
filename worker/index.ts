@@ -92,7 +92,6 @@ on("GET", "/api/email/confirm", emailConfirm);
 on("GET", "/api/email/unsubscribe", emailUnsubscribe);
 on("GET", "/api/newsletter/issues", newsletterIssues);
 on("GET", "/api/podcast/episodes", podcastEpisodes);
-on("GET", "/podcast/feed.xml", podcastFeedXml);
 on("GET", "/api/podcast/audio/:slug", podcastAudio);
 on("GET", "/api/follows", getFollow);
 on("POST", "/api/follows", toggleFollow);
@@ -279,6 +278,7 @@ async function handleFetch(req: Request, env: Env, ctx: ExecutionContext): Promi
     if (url.pathname === "/__tg") return tgWebhook(req, env);
     if (url.pathname === "/__job") return jobRoute(req, env);
     if (url.pathname === "/sitemap.xml") return sitemap(req, env);
+    if (url.pathname === "/podcast/feed.xml") return podcastFeedXml();
     if (/^\/(rss(\.xml)?|feed(\.xml)?)$/.test(url.pathname)) return rss(req, env);
     if (url.pathname === "/llms.txt") return llms(req, env);
     if (url.pathname === "/llms-full.txt") return llmsFull(req, env);
