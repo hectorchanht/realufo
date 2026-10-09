@@ -1,5 +1,135 @@
 {
-  "generated_at": "2026-10-09T06:08:35.683109Z",
+  "generated_at": "2026-10-09T06:10:39.854733Z",
   "zone": "moneyrate.lol",
-  "error": "[{\"message\": \"unknown field \\\"requests\\\"\", \"path\": null, \"extensions\": {\"timestamp\": \"2026-10-09T06:08:35.772486611Z\", \"ray_id\": \"a47b362f2d591a42-SEA\"}}]"
+  "node_fields": [
+    "avg",
+    "confidence",
+    "count",
+    "dimensions",
+    "quantiles",
+    "ratio",
+    "sum"
+  ],
+  "paths": [
+    {
+      "path": "/",
+      "n": 9564
+    },
+    {
+      "path": "/_next/image",
+      "n": 1332
+    },
+    {
+      "path": "/.env",
+      "n": 1158
+    },
+    {
+      "path": "/v1/graphql",
+      "n": 864
+    },
+    {
+      "path": "/admin",
+      "n": 837
+    },
+    {
+      "path": "/__vite_rsc_findSourceMapURL",
+      "n": 815
+    },
+    {
+      "path": "/login",
+      "n": 785
+    },
+    {
+      "path": "/.env.local",
+      "n": 754
+    },
+    {
+      "path": "/dashboard",
+      "n": 748
+    },
+    {
+      "path": "/robots.txt",
+      "n": 689
+    },
+    {
+      "path": "/.env.production",
+      "n": 680
+    },
+    {
+      "path": "/@fs/.env",
+      "n": 649
+    },
+    {
+      "path": "/register",
+      "n": 639
+    },
+    {
+      "path": "/read-document",
+      "n": 619
+    },
+    {
+      "path": "/index.php",
+      "n": 548
+    },
+    {
+      "path": "/signin",
+      "n": 542
+    },
+    {
+      "path": "/api/graphql",
+      "n": 535
+    },
+    {
+      "path": "/api/designer/v1/file-content",
+      "n": 527
+    },
+    {
+      "path": "/account",
+      "n": 518
+    },
+    {
+      "path": "/userfiles",
+      "n": 510
+    },
+    {
+      "path": "/api/templates/preview",
+      "n": 483
+    },
+    {
+      "path": "/src/.env",
+      "n": 482
+    },
+    {
+      "path": "/signup",
+      "n": 482
+    },
+    {
+      "path": "/config.env",
+      "n": 452
+    },
+    {
+      "path": "/feast/read-document",
+      "n": 440
+    },
+    {
+      "path": "/.env.development",
+      "n": 432
+    },
+    {
+      "path": "/auth/callback",
+      "n": 426
+    },
+    {
+      "path": "/@fs/app/.env",
+      "n": 421
+    },
+    {
+      "path": "/favicon.ico",
+      "n": 413
+    },
+    {
+      "path": "/sitemap.xml",
+      "n": 398
+    }
+  ]
 }
