@@ -1,0 +1,90 @@
+name: cf-waf-scanner-block
+# WAF custom rule blocking vulnerability-scanner paths (.env, /admin, /login, wp-, .php,
+# graphql probes...). moneyrate.lol has no auth/backend, so none of these can be legit.
+# Idempotent: skips if a rule with the same description already exists.
+# Usage: workflow_dispatch zone="moneyrate.lol"
+on:
+  workflow_dispatch:
+    inputs:
+      zone:
+        description: "Zone name, e.g. moneyrate.lol"
+        required: true
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "build/app-foundation" }
+      - name: Add scanner-block rule
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE_INPUT: ${{ inputs.zone }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, urllib.request
+          TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
+          out = {"zone": os.environ["ZONE_INPUT"]}
+          try:
+              def api(method, path, payload=None):
+                  data = json.dumps(payload).encode() if payload is not None else None
+                  req = urllib.request.Request(
+                      "https://api.cloudflare.com/client/v4" + path, data=data,
+                      headers={"Authorization": "Bearer " + TOKEN, "Content-Type": "application/json"},
+                      method=method)
+                  try:
+                      raw = urllib.request.urlopen(req, timeout=60).read()
+                  except urllib.request.HTTPError as he:
+                      body = he.read().decode()[:500]
+                      raise RuntimeError("HTTP %d @ %s %s: %s" % (he.code, method, path, body))
+                  r = json.loads(raw)
+                  if not r.get("success"):
+                      raise RuntimeError("api success=false: " + json.dumps(r.get("errors"))[:300] + " @ " + path)
+                  return r
+              zones = api("GET", "/zones?per_page=50&name=" + out["zone"])["result"]
+              if not zones:
+                  raise RuntimeError("zone not found")
+              zid = zones[0]["id"]
+              ep = api("GET", "/zones/%s/rulesets/phases/http_request_firewall_custom/entrypoint" % zid)["result"]
+              rules = ep.get("rules") or []
+              out["existing_rules"] = [r.get("description") for r in rules]
+              DESC = "Block vulnerability scanners"
+              if any(r.get("description") == DESC for r in rules):
+                  out["changed"] = False
+                  out["note"] = "rule already exists"
+              else:
+                  needles = [".env", "graphql", "/admin", "__vite", "/login", "/signin",
+                             "/register", "/dashboard", "/account", "read-document", ".php",
+                             "wp-", "xmlrpc", "/@fs/", "/userfiles", "/api/designer",
+                             "/api/templates", "phpmyadmin", ".git/"]
+                  expr = " or ".join('(http.request.uri.path contains "%s")' % n for n in needles)
+                  new_rule = {"description": DESC, "expression": expr,
+                              "action": "block", "enabled": True}
+                  payload_rules = []
+                  for r in rules:
+                      payload_rules.append({
+                          "id": r.get("id"),
+                          "description": r.get("description"),
+                          "expression": r.get("expression"),
+                          "action": r.get("action"),
+                          "enabled": r.get("enabled", True),
+                      })
+                  payload_rules.append(new_rule)
+                  r = api("PUT", "/zones/%s/rulesets/%s" % (zid, ep["id"]), {"rules": payload_rules})
+                  out["changed"] = True
+                  out["rules_now"] = len((r["result"].get("rules") or []))
+          except Exception as e:
+              out["error"] = str(e)[:600]
+          os.makedirs("_analytics", exist_ok=True)
+          fn = "_analytics/waf-scanner-block-%s.json" % out["zone"]
+          open(fn, "w").write(json.dumps(out, indent=2))
+          print(json.dumps(out, indent=2))
+          PYEOF
+      - name: Commit result
+        run: |
+          git config user.name "muse"
+          git config user.email "muse@local"
+          git add _analytics/waf-scanner-block-*.json
+          git diff --cached --quiet && echo "no changes" || git commit -m "cf waf scanner block ($(date -u +%F))" && git push origin build/app-foundation
