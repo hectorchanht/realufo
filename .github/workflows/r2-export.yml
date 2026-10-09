@@ -35,7 +35,7 @@ jobs:
               'permission_groups': [{'id': '6a018a9f2fc74eb6b293b0c548f38b39'}]
             }]
           }))")
-          RESP=$(curl -s -X POST "https://api.cloudflare.com/client/v4/user/tokens" \
+          RESP=$(curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/tokens" \
             -H "Authorization: Bearer $CF_TOKEN" \
             -H "Content-Type: application/json" \
             --data "$BODY")
