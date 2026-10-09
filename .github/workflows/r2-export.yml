@@ -102,7 +102,8 @@ jobs:
           if [ ! -s objects.txt ]; then echo "LSF_FAILED"; cat lsf.err; exit 1; fi
           wc -l objects.txt
           python3 -c "
-          import json, os
+          import json, sys
+          ep, bucket, tid, sak = sys.argv[1:5]
           objs=[]; total=0
           with open('objects.txt') as f:
               for line in f:
@@ -112,12 +113,12 @@ jobs:
                       try: sz=int(s)
                       except ValueError: sz=0
                       objs.append({'key':p,'size':sz}); total+=sz
-          man={'endpoint':os.environ['endpoint'],'bucket':os.environ['bucket'],
-               'access_key_id':os.environ['tid'],'secret_access_key':os.environ['sak'],
+          man={'endpoint':ep,'bucket':bucket,
+               'access_key_id':tid,'secret_access_key':sak,
                'object_count':len(objs),'total_bytes':total,'objects':objs}
           json.dump(man, open('manifest.json','w'))
           print('objects:',len(objs),'bytes:',total)
-          "
+          " "$EP" "$BUCKET" "$TID" "$SAK"
       - name: Upload manifest artifact
         uses: actions/upload-artifact@v4
         with:
