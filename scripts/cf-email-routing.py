@@ -69,17 +69,20 @@ def existing_to_addrs(rules_resp):
 
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "status"
+    tok = api("GET", "/user/tokens/verify")
+    print("== token verify ==", json.dumps(tok.get("result", tok.get("_error")))[:300])
     addrs = dest_addresses()
     print("== destination addresses ==")
-    verified_uuid = None
+    dest_by_email, verified_uuid = {}, None
     for a in (addrs.get("result") or []):
         print(f"  {a.get('email')} verified={a.get('verified')} id={a.get('id')}")
+        dest_by_email[a.get("email")] = a.get("id")
         if a.get("verified"):
             verified_uuid = a.get("id")
     if addrs.get("_error"):
         print("  ERROR:", addrs); return
 
-    zones = (api("GET", f"/accounts/{ACCT}/zones?per_page=50").get("result") or [])
+    zones = (api("GET", "/zones?per_page=50").get("result") or [])
     print(f"\n== zones found: {len(zones)} ==")
     for d in DOMAINS:
         zid = zone_id(d, zones)
@@ -94,7 +97,10 @@ def main():
         want = PLAN.get(d, [])
         print(f"  {d}: routing_enabled={enabled} have={sorted(have)} want={want}")
         if mode == "apply" and d in PLAN:
-            if not verified_uuid:
+            # realufo.org mail goes to its dedicated Gmail; everything else to his main Gmail
+            dest = (dest_by_email.get("realufo.org@gmail.com") if d == "realufo.org"
+                    else dest_by_email.get("f147259@gmail.com")) or verified_uuid
+            if not dest:
                 print("    SKIP: no verified destination address"); continue
             if not enabled:
                 r = api("POST", f"/zones/{zid}/email/routing/enable", {"enabled": True})
@@ -108,7 +114,7 @@ def main():
                     "name": f"{lp}@ -> verified destination",
                     "enabled": True,
                     "matchers": [{"type": "literal", "field": "to", "value": f"{lp}@{d}"}],
-                    "actions": [{"type": "forward", "value": [verified_uuid]}],
+                    "actions": [{"type": "forward", "value": [dest]}],
                 })
                 print(f"    create {lp}@{d}:", r.get("success"), r.get("_error", ""),
                       (r.get("errors") or [{}])[0].get("message", "") if not r.get("success") else "")
