@@ -185,7 +185,7 @@
     .horizon {
       position: absolute;
       z-index: 2;
-      inset: auto -8vw 16% 8%;
+      inset: auto -8vw 0 8%;
       height: 42%;
       background: var(--bg);
       border-top: 2px solid var(--ink);
@@ -203,7 +203,8 @@
     .sun-label {
       position: absolute;
       z-index: 3;
-      right: 0;
+      left: 50%;
+      transform: translateX(-50%);
       bottom: 12%;
       width: 230px;
       margin: 0;
@@ -213,6 +214,7 @@
       text-transform: uppercase;
       letter-spacing: .08em;
       color: var(--ink);
+      text-align: center;
     }
 
     .catalog-head {
@@ -542,7 +544,7 @@
       .hero { min-height: auto; grid-template-columns: 1fr; gap: 20px; padding-top: 56px; }
       .sun-stage { min-height: 310px; }
       .sun { width: 300px; right: 7%; }
-      .sun-label { right: 3%; bottom: 5%; }
+      .sun-label { right: auto; bottom: 8%; }
       .project {
         grid-template-columns: 1fr;
         gap: 18px;
@@ -569,8 +571,8 @@
       .button { width: 100%; }
       .sun-stage { min-height: 255px; }
       .sun { width: 240px; right: 3%; }
-      .horizon { inset: auto -20vw 13% 0; }
-      .sun-label { width: 180px; right: 0; bottom: 1%; font-size: .63rem; }
+      .horizon { inset: auto -20vw 0 0; }
+      .sun-label { width: 180px; right: auto; bottom: 8%; font-size: .63rem; }
       .catalog-head { grid-template-columns: 1fr; gap: 18px; padding-top: 48px; }
       .count { justify-self: start; }
       .project { grid-template-columns: 1fr; gap: 14px; min-height: 0; }
