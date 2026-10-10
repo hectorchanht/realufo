@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f7f8f5" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0d0e10" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" href="data:," />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <title>Dawn Studio</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f8f5;
+      --surface: #ffffff;
+      --ink: #111214;
+      --muted: #555b62;
+      --line: #c9cdd0;
+      --line-strong: #111214;
+      --amber: #f3a23b;
+      --coral: #eb6048;
+      --blue: #3d7df2;
+      --green: #35a66f;
+      --violet: #8458d8;
+      --teal: #2e9c95;
+      --shadow: 0 18px 50px rgba(17, 18, 20, .10);
+      --max: 1180px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d0e10;
+        --surface: #15171a;
+        --ink: #f4f5ef;
+        --muted: #b5bac0;
+        --line: #383c40;
+        --line-strong: #f4f5ef;
+        --amber: #ffb34d;
+        --coral: #ff715b;
+        --blue: #6b9cff;
+        --green: #52c28c;
+        --violet: #aa84f2;
+        --teal: #55bdb5;
+        --shadow: 0 20px 60px rgba(0, 0, 0, .34);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "DM Sans", "Noto Sans TC", sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+      overflow-x: hidden;
+    }
+    button, a { font: inherit; }
+    a { color: inherit; }
+    svg { display: block; }
+
+    .page {
+      width: min(100% - 32px, var(--max));
+      margin-inline: auto;
+    }
+
+    .utility {
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .utility-note {
+      margin: 0;
+      color: var(--muted);
+      font: 500 .72rem/1.2 "IBM Plex Mono", monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .lang-switch {
+      display: inline-flex;
+      padding: 3px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+    }
+    .lang-switch button {
+      min-width: 48px;
+      min-height: 34px;
+      padding: 5px 12px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .lang-switch button[aria-pressed="true"] {
+      background: var(--ink);
+      color: var(--bg);
+    }
+
+    .hero {
+      position: relative;
+      min-height: 610px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr);
+      align-items: center;
+      gap: 44px;
+      padding-block: 72px 64px;
+      border-bottom: 1px solid var(--line-strong);
+      overflow: hidden;
+    }
+    .hero-copy { position: relative; z-index: 2; }
+    .hero h1 {
+      max-width: 760px;
+      margin: 0;
+      font-size: clamp(3.3rem, 8.2vw, 7.2rem);
+      line-height: .88;
+      letter-spacing: -.072em;
+      font-weight: 700;
+    }
+    .hero h1 .accent { color: var(--coral); }
+    .hero p {
+      max-width: 610px;
+      margin: 32px 0 0;
+      font-size: clamp(1.08rem, 1.8vw, 1.36rem);
+      line-height: 1.55;
+      color: var(--muted);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 36px;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 12px 18px;
+      border: 1px solid var(--ink);
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 650;
+      transition: background-color .18s ease, color .18s ease, transform .18s ease;
+    }
+    .button.primary { background: var(--ink); color: var(--bg); }
+    .button.secondary { background: transparent; }
+    .button:hover { transform: translateY(-2px); }
+    .button.secondary:hover { background: var(--surface); }
+
+    .sun-stage {
+      position: relative;
+      min-height: 420px;
+      isolation: isolate;
+    }
+    .sun {
+      position: absolute;
+      width: min(390px, 80vw);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      right: 2%;
+      top: 8%;
+      background: var(--amber);
+      box-shadow: var(--shadow);
+    }
+    .sun::before,
+    .sun::after {
+      content: "";
+      position: absolute;
+      inset: 13%;
+      border: 1px solid rgba(17, 18, 20, .34);
+      border-radius: 50%;
+    }
+    .sun::after { inset: 28%; }
+    .horizon {
+      position: absolute;
+      z-index: 2;
+      inset: auto -8vw 16% 8%;
+      height: 42%;
+      background: var(--bg);
+      border-top: 2px solid var(--ink);
+    }
+    .rays {
+      position: absolute;
+      z-index: -1;
+      width: 120%;
+      height: 120%;
+      top: -10%;
+      left: -8%;
+      background: repeating-conic-gradient(from -5deg at 50% 48%, transparent 0 12deg, color-mix(in srgb, var(--amber) 26%, transparent) 12deg 13deg);
+      opacity: .75;
+    }
+    .sun-label {
+      position: absolute;
+      z-index: 3;
+      right: 0;
+      bottom: 12%;
+      width: 230px;
+      margin: 0;
+      padding-top: 12px;
+      border-top: 1px solid var(--ink);
+      font: 500 .72rem/1.6 "IBM Plex Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--ink);
+    }
+
+    .catalog-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: end;
+      gap: 28px;
+      padding-block: 64px 28px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .catalog-head h2 {
+      margin: 0;
+      font-size: clamp(2.2rem, 5vw, 4.8rem);
+      line-height: .95;
+      letter-spacing: -.055em;
+    }
+    .catalog-head p {
+      margin: 10px 0 0;
+      max-width: 620px;
+      color: var(--muted);
+    }
+    .count {
+      font: 500 .75rem/1 "IBM Plex Mono", monospace;
+      letter-spacing: .1em;
+      white-space: nowrap;
+    }
+
+    .project {
+      --project-color: var(--amber);
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(340px, .92fr);
+      gap: 32px;
+      align-items: center;
+      min-height: 360px;
+      padding-block: 38px;
+      border-bottom: 1px solid var(--line);
+    }
+    .project-copy { grid-column: 1; grid-row: 1; }
+    .project-visual { grid-column: 2; grid-row: 1; }
+    .project:nth-of-type(even) .project-visual { order: -1; grid-column: 1; }
+    .project:nth-of-type(even) .project-copy { grid-column: 2; }
+    .project-copy { min-width: 0; }
+    .project-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font: 500 .72rem/1.3 "IBM Plex Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .project-meta .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--project-color);
+    }
+    .project h3 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.8rem);
+      line-height: 1;
+      letter-spacing: -.05em;
+    }
+    .project-copy > p {
+      max-width: 580px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 24px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .tags li {
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      font-size: .78rem;
+      font-weight: 600;
+    }
+    .project-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin-top: 28px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid currentColor;
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .project-link svg { transition: transform .18s ease; }
+    .project-link:hover svg { transform: translate(3px, -3px); }
+
+    .project-visual {
+      min-width: 0;
+      min-height: 276px;
+      padding: 24px;
+      position: relative;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      background: var(--project-color);
+      color: #101113;
+      box-shadow: 8px 8px 0 color-mix(in srgb, var(--ink) 22%, transparent);
+    }
+    .visual-window {
+      width: min(100%, 390px);
+      border: 1.5px solid #101113;
+      border-radius: 9px;
+      background: #f8f8f4;
+      box-shadow: 0 14px 28px rgba(17, 18, 20, .16);
+      overflow: hidden;
+    }
+    .window-top {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 10px;
+      border-bottom: 1px solid #101113;
+    }
+    .window-top i { width: 6px; height: 6px; border: 1px solid #101113; border-radius: 50%; }
+    .window-body { padding: 16px; }
+
+    .rate-row {
+      display: grid;
+      grid-template-columns: 46px 1fr auto;
+      align-items: center;
+      gap: 11px;
+      padding: 10px 0;
+      border-bottom: 1px solid #c5c6c0;
+      font: 600 .82rem/1.2 "IBM Plex Mono", monospace;
+    }
+    .rate-row:last-child { border-bottom: 0; }
+    .rate-code {
+      display: grid;
+      place-items: center;
+      height: 30px;
+      border: 1px solid #101113;
+      border-radius: 4px;
+      background: var(--amber);
+    }
+    .rate-line { height: 8px; border-radius: 2px; background: #d6d7d2; }
+    .rate-arrow { width: 20px; height: 20px; }
+
+    .music-scene {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 18px;
+      align-items: center;
+    }
+    .record {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: repeating-radial-gradient(circle, #161719 0 5px, #36383c 6px 8px);
+      position: relative;
+    }
+    .record::before {
+      content: "";
+      position: absolute;
+      inset: 40%;
+      border-radius: 50%;
+      background: var(--coral);
+      border: 5px solid #f8f8f4;
+    }
+    .track-line { height: 9px; margin: 11px 0; border-radius: 2px; background: #d3d4cf; }
+    .track-line:nth-child(2) { width: 76%; }
+    .track-line:nth-child(3) { width: 88%; }
+    .track-line.active { background: #101113; }
+    .equalizer { display: flex; align-items: end; gap: 4px; height: 40px; margin-top: 18px; }
+    .equalizer i { width: 6px; background: var(--coral); border: 1px solid #101113; }
+    .equalizer i:nth-child(1) { height: 45%; }
+    .equalizer i:nth-child(2) { height: 90%; }
+    .equalizer i:nth-child(3) { height: 62%; }
+    .equalizer i:nth-child(4) { height: 100%; }
+    .equalizer i:nth-child(5) { height: 35%; }
+
+    .clip-stack { position: relative; width: min(100%, 300px); height: 210px; }
+    .clip-card {
+      position: absolute;
+      width: 215px;
+      min-height: 116px;
+      padding: 16px;
+      border: 1.5px solid #101113;
+      border-radius: 7px;
+      background: #f8f8f4;
+      box-shadow: 6px 6px 0 rgba(17, 18, 20, .15);
+    }
+    .clip-card:nth-child(1) { left: 4%; top: 56px; transform: rotate(-6deg); }
+    .clip-card:nth-child(2) { right: 1%; top: 12px; transform: rotate(5deg); }
+    .clip-card:nth-child(3) { left: 19%; bottom: 0; transform: rotate(1deg); }
+    .paperclip {
+      width: 24px;
+      height: 45px;
+      position: absolute;
+      right: 16px;
+      top: -16px;
+      border: 3px solid #101113;
+      border-radius: 14px 14px 8px 8px;
+      border-bottom-color: transparent;
+    }
+    .scribble { height: 7px; margin: 9px 0; border-radius: 3px; background: #c6c7c3; }
+    .scribble.short { width: 62%; }
+
+    .holdr-chart { width: min(100%, 400px); }
+    .holdr-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+    .coin-stack { display: flex; }
+    .coin-stack i {
+      width: 38px; height: 38px; margin-left: -7px;
+      display: grid; place-items: center;
+      border: 1px solid #101113; border-radius: 50%;
+      background: #f8f8f4;
+      font: 600 .7rem/1 "IBM Plex Mono", monospace;
+    }
+    .coin-stack i:first-child { margin-left: 0; }
+    .graph { margin-top: 20px; border-top: 1px solid #c8c9c4; border-bottom: 1px solid #c8c9c4; }
+    .graph svg { width: 100%; height: 115px; }
+    .legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+    .legend span { display: flex; align-items: center; gap: 5px; font: 500 .64rem/1.2 "IBM Plex Mono", monospace; }
+    .legend i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+
+    .queue { width: min(100%, 390px); display: grid; gap: 10px; }
+    .question {
+      display: grid;
+      grid-template-columns: 38px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 11px;
+      border: 1.5px solid #101113;
+      border-radius: 8px;
+      background: #f8f8f4;
+      box-shadow: 3px 3px 0 rgba(17, 18, 20, .13);
+    }
+    .q-rank { font: 700 .78rem/1 "IBM Plex Mono", monospace; }
+    .q-lines i { display: block; height: 6px; border-radius: 3px; background: #c7c8c3; }
+    .q-lines i + i { width: 65%; margin-top: 6px; }
+    .votes { min-width: 38px; text-align: center; padding: 5px; border: 1px solid #101113; border-radius: 5px; font: 600 .68rem/1 "IBM Plex Mono", monospace; }
+
+    .funds { width: min(100%, 390px); }
+    .fund-ring {
+      width: 122px;
+      height: 122px;
+      margin: 0 auto 18px;
+      padding: 14px;
+      border-radius: 50%;
+      background: conic-gradient(#1c706c 0 25%, #f3a23b 25% 50%, #2f77d0 50% 75%, #d95248 75% 100%);
+      border: 1.5px solid #101113;
+    }
+    .fund-ring::after { content: ""; display: block; width: 100%; height: 100%; border: 1.5px solid #101113; border-radius: 50%; background: #f8f8f4; }
+    .fund-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .fund-grid span { padding: 9px; border: 1px solid #101113; border-radius: 5px; background: #f8f8f4; font: 600 .66rem/1.25 "IBM Plex Mono", monospace; }
+
+
+    .project[data-product] { cursor: pointer; }
+    .product-home-link { color: inherit; text-decoration: none; }
+    .product-home-link:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
+    .product-page { padding-block: 34px 84px; }
+    .product-back { display: inline-block; margin-bottom: 44px; color: var(--muted); text-decoration: none; border-bottom: 1px solid currentColor; font-weight: 600; }
+    .product-hero { display: grid; grid-template-columns: minmax(0, .9fr) minmax(340px, 1.1fr); gap: 64px; align-items: center; min-height: 570px; border-bottom: 1px solid var(--line-strong); }
+    .product-kicker { margin: 0 0 14px; color: var(--muted); font: 500 .75rem/1.4 "IBM Plex Mono", monospace; letter-spacing: .09em; text-transform: uppercase; }
+    .product-page h1 { margin: 0; font-size: clamp(3.6rem, 6.6vw, 6rem); line-height: .88; letter-spacing: -.065em; }
+    .product-pitch { max-width: 610px; margin: 28px 0 0; color: var(--muted); font-size: clamp(1.08rem, 1.8vw, 1.35rem); }
+    .product-art .project-visual { grid-column: auto; grid-row: auto; min-height: 380px; margin: 0; }
+    .product-features { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, .85fr); gap: 70px; padding-top: 64px; }
+    .product-features h2 { margin: 0; font-size: clamp(2.2rem, 5vw, 4.4rem); line-height: .95; letter-spacing: -.055em; }
+    .product-features p { max-width: 650px; margin: 22px 0 0; color: var(--muted); font-size: 1.08rem; }
+    .product-features ul { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line-strong); }
+    .product-features li { padding: 17px 0; border-bottom: 1px solid var(--line); font-weight: 650; }
+    body.product-route main > .hero, body.product-route #apps, body.product-route #studio { display: none; }
+    body.product-route .product-page { display: block; }
+
+    .studio-note {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr);
+      gap: 72px;
+      align-items: end;
+      padding-block: 88px;
+    }
+    .studio-note h2 {
+      max-width: 830px;
+      margin: 0;
+      font-size: clamp(2.5rem, 6vw, 6rem);
+      line-height: .95;
+      letter-spacing: -.06em;
+    }
+    .studio-note h2 span { color: var(--coral); }
+    .principles {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border-top: 1px solid var(--line-strong);
+    }
+    .principles li {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+      font-weight: 600;
+    }
+    .principles em { color: var(--muted); font: 400 .72rem/1.6 "IBM Plex Mono", monospace; font-style: normal; }
+
+    footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding-block: 26px 34px;
+      border-top: 1px solid var(--line-strong);
+      color: var(--muted);
+      font-size: .85rem;
+    }
+    footer p { margin: 0; }
+    .back-top { text-decoration: none; border-bottom: 1px solid currentColor; }
+
+    @media (max-width: 900px) {
+      .hero { min-height: auto; grid-template-columns: 1fr; gap: 20px; padding-top: 56px; }
+      .sun-stage { min-height: 310px; }
+      .sun { width: 300px; right: 7%; }
+      .sun-label { right: 3%; bottom: 5%; }
+      .project {
+        grid-template-columns: 1fr;
+        gap: 18px;
+        padding-block: 34px 44px;
+      }
+      .project-copy, .project-visual,
+      .project:nth-of-type(even) .project-copy,
+      .project:nth-of-type(even) .project-visual { grid-column: 1; order: initial; }
+      .project-visual { grid-row: 2; margin-top: 12px; }
+      .product-hero { grid-template-columns: 1fr; gap: 36px; min-height: 0; padding-bottom: 58px; }
+      .product-art .project-visual { min-height: 320px; }
+      .product-features { grid-template-columns: 1fr; gap: 36px; }
+      .studio-note { grid-template-columns: 1fr; gap: 40px; }
+    }
+
+    @media (max-width: 620px) {
+      .page { width: min(100% - 22px, var(--max)); }
+      .utility { min-height: 56px; }
+      .utility-note { max-width: 185px; line-height: 1.45; }
+      .hero { padding-block: 48px 42px; }
+      .hero h1 { font-size: clamp(3.15rem, 16vw, 5.2rem); }
+      .hero p { margin-top: 24px; font-size: 1rem; }
+      .hero-actions { display: grid; grid-template-columns: 1fr; }
+      .button { width: 100%; }
+      .sun-stage { min-height: 255px; }
+      .sun { width: 240px; right: 3%; }
+      .horizon { inset: auto -20vw 13% 0; }
+      .sun-label { width: 180px; right: 0; bottom: 1%; font-size: .63rem; }
+      .catalog-head { grid-template-columns: 1fr; gap: 18px; padding-top: 48px; }
+      .count { justify-self: start; }
+      .project { grid-template-columns: 1fr; gap: 14px; min-height: 0; }
+      .project-copy, .project-visual,
+      .project:nth-of-type(even) .project-copy,
+      .project:nth-of-type(even) .project-visual { grid-column: 1; grid-row: auto; }
+      .project-visual { min-height: 240px; padding: 16px; }
+      .music-scene { grid-template-columns: 90px 1fr; gap: 13px; }
+      .record { width: 90px; height: 90px; }
+      .clip-stack { transform: scale(.88); }
+      .product-page { padding-block: 24px 58px; }
+      .product-back { margin-bottom: 34px; }
+      .product-page h1 { font-size: clamp(3.3rem, 17vw, 5.5rem); }
+      .product-art .project-visual { min-height: 240px; }
+      .product-features { padding-top: 46px; }
+      .studio-note { padding-block: 64px; }
+      footer { align-items: flex-start; flex-direction: column; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body id="top">
+  <div class="page">
+    <div class="utility" aria-label="Page controls">
+      <p class="utility-note" data-i18n="utility">Independent software</p>
+      <div class="lang-switch" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="zh" aria-pressed="false">繁中</button>
+      </div>
+    </div>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <h1 id="hero-title" data-i18n-html="heroTitle">Small tools.<br><span class="accent">Real life.</span></h1>
+          <p data-i18n="heroBody">Dawn Studio builds focused apps for currency conversion, music, clipboard capture, portfolio tracking, live Q&amp;A and investment education.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#apps">
+              <span data-i18n="explore">Explore the apps</span>
+              <svg width="17" height="17" viewBox="0 0 17 17" aria-hidden="true"><path d="M8.5 2v12M3.5 9l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a class="button secondary" href="#studio" data-i18n="principlesButton">Our principles</a>
+          </div>
+        </div>
+        <div class="sun-stage" aria-hidden="true">
+          <div class="rays"></div>
+          <div class="sun"></div>
+          <div class="horizon"></div>
+          <p class="sun-label" data-i18n-html="sunLabel">One person<br>Useful apps<br>Built with care</p>
+        </div>
+      </section>
+
+      <section id="apps" aria-labelledby="apps-title">
+        <div class="catalog-head">
+          <div>
+            <h2 id="apps-title" data-i18n="appsTitle">The app shelf</h2>
+            <p data-i18n="appsIntro">Each app solves one clear problem. Open any of them in your browser and start using it.</p>
+          </div>
+        </div>
+
+        <article class="project" data-product="moneyrate" style="--project-color: var(--amber);">
+          <div class="project-copy">
+            <div class="project-meta"><span class="dot"></span><span data-i18n="moneyMeta">Currency toolkit · Web</span></div>
+            <h3><a class="product-home-link" href="#moneyrate" data-product-link="moneyrate">MoneyRate</a></h3>
+            <p data-i18n="moneyDesc">A fast converter for people who live across currencies. Compare fiat, crypto and commodities, follow charts, set alerts, plan a trip, check a quote or convert a whole list at once.</p>
+            <ul class="tags">
+              <li data-i18n="moneyTag1">30 languages</li><li data-i18n="moneyTag2">Rate alerts</li><li data-i18n="moneyTag3">Batch + trip tools</li>
+            </ul>
+            <a class="project-link" href="https://moneyrate.lol" target="_blank" rel="noopener">
+              <span data-i18n="openMoney">Open MoneyRate</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M6 4h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+          <div class="project-visual" aria-hidden="true">
+            <div class="visual-window">
+              <div class="window-top"><i></i><i></i><i></i></div>
+              <div class="window-body">
+                <div class="rate-row"><span class="rate-code">CAD</span><span class="rate-line"></span><svg class="rate-arrow" viewBox="0 0 20 20"><path d="M4 7h12m-3-3 3 3-3 3M16 13H4m3 3-3-3 3-3" fill="none" stroke="#101113" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                <div class="rate-row"><span class="rate-code">HKD</span><span class="rate-line"></span><svg class="rate-arrow" viewBox="0 0 20 20"><path d="M4 7h12m-3-3 3 3-3 3M16 13H4m3 3-3-3 3-3" fill="none" stroke="#101113" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                <div class="rate-row"><span class="rate-code">USD</span><span class="rate-line"></span><svg class="rate-arrow" viewBox="0 0 20 20"><path d="M4 7h12m-3-3 3 3-3 3M16 13H4m3 3-3-3 3-3" fill="none" stroke="#101113" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="project" data-product="openmusic" style="--project-color: var(--coral);">
+          <div class="project-copy">
+            <div class="project-meta"><span class="dot"></span><span data-i18n="musicMeta">Music player · Web + Android</span></div>
+            <h3><a class="product-home-link" href="#openmusic" data-product-link="openmusic">OpenMusic</a></h3>
+            <p data-i18n="musicDesc">One mobile-first player for music across Chinese and independent sources. Search once, play instantly, build a library and explore regional charts, artist discographies and ready-made year packs.</p>
+            <ul class="tags">
+              <li data-i18n="musicTag1">Multi-source search</li><li data-i18n="musicTag2">15 languages</li><li data-i18n="musicTag3">Background play</li>
+            </ul>
+            <a class="project-link" href="https://openmusic.lol" target="_blank" rel="noopener">
+              <span data-i18n="openMusic">Open OpenMusic</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M6 4h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+          <div class="project-visual" aria-hidden="true">
+            <div class="visual-window"><div class="window-top"><i></i><i></i><i></i></div><div class="window-body music-scene">
+              <div class="record"></div>
+              <div><div class="track-line active"></div><div class="track-line"></div><div class="track-line"></div><div class="equalizer"><i></i><i></i><i></i><i></i><i></i></div></div>
+            </div></div>
+          </div>
+        </article>
+
+        <article class="project" data-product="clipbin" style="--project-color: var(--blue);">
+          <div class="project-copy">
+            <div class="project-meta"><span class="dot"></span><span data-i18n="clipMeta">Clipboard desk · Web</span></div>
+            <h3><a class="product-home-link" href="#clipbin" data-product-link="clipbin">ClipBin</a></h3>
+            <p data-i18n="clipDesc">A compact home for the text and images you do not want to lose. Type, paste, drop, upload or save what is already on your clipboard, then bring it back in a tap.</p>
+            <ul class="tags">
+              <li data-i18n="clipTag1">Text + images</li><li data-i18n="clipTag2">One-tap capture</li><li data-i18n="clipTag3">Fast retrieval</li>
+            </ul>
+            <a class="project-link" href="https://clipbin.lol" target="_blank" rel="noopener">
+              <span data-i18n="openClip">Open ClipBin</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M6 4h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+          <div class="project-visual" aria-hidden="true">
+            <div class="clip-stack">
+              <div class="clip-card"><span class="paperclip"></span><div class="scribble"></div><div class="scribble short"></div></div>
+              <div class="clip-card"><span class="paperclip"></span><div class="scribble short"></div><div class="scribble"></div></div>
+              <div class="clip-card"><span class="paperclip"></span><div class="scribble"></div><div class="scribble short"></div></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="project" data-product="holdr" style="--project-color: var(--green);">
+          <div class="project-copy">
+            <div class="project-meta"><span class="dot"></span><span data-i18n="holdrMeta">Portfolio tracker · Web</span></div>
+            <h3><a class="product-home-link" href="#holdr" data-product-link="holdr">Holdr</a></h3>
+            <p data-i18n="holdrDesc">A clear view of your holdings across manual entries and broker data. See allocation, cost basis, gains and performance history together, with multi-currency display and AI-assisted analysis.</p>
+            <ul class="tags">
+              <li data-i18n="holdrTag1">Broker sync</li><li data-i18n="holdrTag2">Performance history</li><li data-i18n="holdrTag3">Multi-currency</li>
+            </ul>
+            <a class="project-link" href="https://holdr.lol" target="_blank" rel="noopener">
+              <span data-i18n="openHoldr">Open Holdr</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M6 4h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+          <div class="project-visual" aria-hidden="true">
+            <div class="visual-window"><div class="window-top"><i></i><i></i><i></i></div><div class="window-body holdr-chart">
+              <div class="holdr-top"><div class="coin-stack"><i>STK</i><i>ETF</i><i>FX</i></div><svg width="34" height="34" viewBox="0 0 34 34"><circle cx="17" cy="17" r="13" fill="none" stroke="#c8c9c4" stroke-width="6"/><path d="M17 4a13 13 0 0 1 12 8" fill="none" stroke="#101113" stroke-width="6" stroke-linecap="round"/></svg></div>
+              <div class="graph"><svg viewBox="0 0 340 115" preserveAspectRatio="none"><path d="M0 93 C28 88 40 72 69 78 S111 48 140 57 188 35 220 44 270 17 340 24" fill="none" stroke="#101113" stroke-width="3"/><path d="M0 93 C28 88 40 72 69 78 S111 48 140 57 188 35 220 44 270 17 340 24 V115 H0Z" fill="#35a66f" opacity=".18"/></svg></div>
+              <div class="legend"><span><i></i>stocks</span><span><i></i>funds</span><span><i></i>cash</span></div>
+            </div></div>
+          </div>
+        </article>
+
+        <article class="project" data-product="openq" style="--project-color: var(--violet);">
+          <div class="project-copy">
+            <div class="project-meta"><span class="dot"></span><span data-i18n="openqMeta">Live Q&amp;A · Web</span></div>
+            <h3><a class="product-home-link" href="#openq" data-product-link="openq">OpenQ</a></h3>
+            <p data-i18n="openqDesc">A forum in a queue for events, teams and rooms. Open a Q, share the QR code, let people ask and upvote from their phones, then work through the best questions in present mode.</p>
+            <ul class="tags">
+              <li data-i18n="openqTag1">No signup to join</li><li data-i18n="openqTag2">Host controls</li><li data-i18n="openqTag3">Polls + export</li>
+            </ul>
+            <a class="project-link" href="https://openq.hectorchan.com/" target="_blank" rel="noopener">
+              <span data-i18n="openQ">Open OpenQ</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M6 4h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+          <div class="project-visual" aria-hidden="true">
+            <div class="queue">
+              <div class="question"><span class="q-rank">01</span><span class="q-lines"><i></i><i></i></span><span class="votes">▲ 8</span></div>
+              <div class="question"><span class="q-rank">02</span><span class="q-lines"><i></i><i></i></span><span class="votes">▲ 5</span></div>
+              <div class="question"><span class="q-rank">03</span><span class="q-lines"><i></i><i></i></span><span class="votes">▲ 3</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="project" data-product="pennyvest" style="--project-color: var(--teal);">
+          <div class="project-copy">
+            <div class="project-meta"><span class="dot"></span><span data-i18n="pennyMeta">Investment education · Web</span></div>
+            <h3><a class="product-home-link" href="#pennyvest" data-product-link="pennyvest">Pennyvest</a></h3>
+            <p data-i18n="pennyDesc">A bilingual place to learn how portfolios are put together. Explore four themed model strategies, compare risk and allocation, follow simulated performance and understand news through AI-assisted context.</p>
+            <ul class="tags">
+              <li data-i18n="pennyTag1">English + 繁中</li><li data-i18n="pennyTag2">4 model strategies</li><li data-i18n="pennyTag3">News context</li>
+            </ul>
+            <a class="project-link" href="https://pennyvest.space" target="_blank" rel="noopener">
+              <span data-i18n="openPenny">Open Pennyvest</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M6 4h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+          <div class="project-visual" aria-hidden="true">
+            <div class="visual-window"><div class="window-top"><i></i><i></i><i></i></div><div class="window-body funds">
+              <div class="fund-ring"></div>
+              <div class="fund-grid"><span>FUTURE TECH</span><span>TRADITIONAL</span><span>COMMODITIES</span><span>CRYPTO</span></div>
+            </div></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="studio-note" id="studio" aria-labelledby="studio-title">
+        <h2 id="studio-title" data-i18n-html="studioTitle">One builder.<br>Useful software.<br><span>No theatre.</span></h2>
+        <ul class="principles">
+          <li><span data-i18n="principle1">Useful first</span><em>01</em></li>
+          <li><span data-i18n="principle2">Honest by default</span><em>02</em></li>
+          <li><span data-i18n="principle3">Priced fairly</span><em>03</em></li>
+          <li><span data-i18n="principle4">Built to stay simple</span><em>04</em></li>
+        </ul>
+      </section>
+
+      <section class="product-page" id="product-page" aria-labelledby="product-title" hidden>
+        <a class="product-back" href="#apps" data-i18n="backStudio">← Back to the app shelf</a>
+        <div class="product-hero">
+          <div class="product-hero-copy">
+            <p class="product-kicker" id="product-kicker"></p>
+            <h1 id="product-title"></h1>
+            <p class="product-pitch" id="product-pitch"></p>
+            <div class="hero-actions">
+              <a class="button primary" id="product-open" target="_blank" rel="noopener"></a>
+              <a class="button secondary" id="product-tip" target="_blank" rel="noopener"></a>
+            </div>
+          </div>
+          <div class="product-art" id="product-art" aria-hidden="true"></div>
+        </div>
+        <div class="product-features">
+          <div>
+            <h2 data-i18n="featuresTitle">What it does</h2>
+            <p id="product-detail"></p>
+          </div>
+          <ul id="product-feature-list"></ul>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p data-i18n="footer">Dawn Studio · Independent software.</p>
+      <a class="back-top" href="#top" data-i18n="backTop">Back to top ↑</a>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var copy = {
+        en: {
+          utility: "Independent software",
+          heroTitle: "Small tools.<br><span class=\"accent\">Real life.</span>",
+          heroBody: "Dawn Studio builds focused apps for currency conversion, music, clipboard capture, portfolio tracking, live Q&A and investment education.",
+          explore: "Explore the apps",
+          principlesButton: "Our principles",
+          backStudio: "← Back to the app shelf",
+          featuresTitle: "What it does",
+          sunLabel: "One person<br>Useful apps<br>Built with care",
+          appsTitle: "The app shelf",
+          appsIntro: "Each app solves one clear problem. Open any of them in your browser and start using it.",
+          moneyMeta: "Currency toolkit · Web",
+          moneyDesc: "A fast converter for people who live across currencies. Compare fiat, crypto and commodities, follow charts, set alerts, plan a trip, check a quote or convert a whole list at once.",
+          moneyTag1: "30 languages", moneyTag2: "Rate alerts", moneyTag3: "Batch + trip tools", openMoney: "Open MoneyRate",
+          musicMeta: "Music player · Web + Android",
+          musicDesc: "One mobile-first player for music across Chinese and independent sources. Search once, play instantly, build a library and explore regional charts, artist discographies and ready-made year packs.",
+          musicTag1: "Multi-source search", musicTag2: "15 languages", musicTag3: "Background play", openMusic: "Open OpenMusic",
+          clipMeta: "Clipboard desk · Web",
+          clipDesc: "A compact home for the text and images you do not want to lose. Type, paste, drop, upload or save what is already on your clipboard, then bring it back in a tap.",
+          clipTag1: "Text + images", clipTag2: "One-tap capture", clipTag3: "Fast retrieval", openClip: "Open ClipBin",
+          holdrMeta: "Portfolio tracker · Web",
+          holdrDesc: "A clear view of your holdings across manual entries and broker data. See allocation, cost basis, gains and performance history together, with multi-currency display and AI-assisted analysis.",
+          holdrTag1: "Broker sync", holdrTag2: "Performance history", holdrTag3: "Multi-currency", openHoldr: "Open Holdr",
+          openqMeta: "Live Q&A · Web",
+          openqDesc: "A forum in a queue for events, teams and rooms. Open a Q, share the QR code, let people ask and upvote from their phones, then work through the best questions in present mode.",
+          openqTag1: "No signup to join", openqTag2: "Host controls", openqTag3: "Polls + export", openQ: "Open OpenQ",
+          pennyMeta: "Investment education · Web",
+          pennyDesc: "A bilingual place to learn how portfolios are put together. Explore four themed model strategies, compare risk and allocation, follow simulated performance and understand news through AI-assisted context.",
+          pennyTag1: "English + 繁中", pennyTag2: "4 model strategies", pennyTag3: "News context", openPenny: "Open Pennyvest",
+          studioTitle: "One builder.<br>Useful software.<br><span>No theatre.</span>",
+          principle1: "Useful first", principle2: "Honest by default", principle3: "Priced fairly", principle4: "Built to stay simple",
+          footer: "Dawn Studio · Independent software.", backTop: "Back to top ↑"
+        },
+        zh: {
+          utility: "獨立軟件工作室",
+          heroTitle: "細小工具。<br><span class=\"accent\">真實生活。</span>",
+          heroBody: "Dawn Studio 製作專注實用的 app，涵蓋貨幣換算、音樂、剪貼板、投資組合追蹤、即場問答與投資教育。",
+          explore: "探索全部 app",
+          principlesButton: "我們的原則",
+          backStudio: "← 返回 App 一覽",
+          featuresTitle: "主要功能",
+          sunLabel: "一人工作室<br>實用 app<br>用心製作",
+          appsTitle: "App 一覽",
+          appsIntro: "每款 app 都只專心解決一個清晰問題。打開瀏覽器，就可以直接開始用。",
+          moneyMeta: "貨幣工具 · Web",
+          moneyDesc: "為跨貨幣生活而設的快速換算器。比較法幣、加密貨幣與商品，查看走勢、設定提示、規劃旅程、檢查報價，亦可一次過批量換算。",
+          moneyTag1: "30 種語言", moneyTag2: "匯率提示", moneyTag3: "批量 + 旅程工具", openMoney: "開啟 MoneyRate",
+          musicMeta: "音樂播放器 · Web + Android",
+          musicDesc: "一個集合華語及獨立音樂來源的 mobile-first 播放器。搜尋一次即可播放、建立收藏，並探索地區榜單、歌手完整作品與年度歌單包。",
+          musicTag1: "多來源搜尋", musicTag2: "15 種語言", musicTag3: "背景播放", openMusic: "開啟 OpenMusic",
+          clipMeta: "剪貼板工具 · Web",
+          clipDesc: "把不想遺失的文字與圖片集中放好。輸入、貼上、拖放、上載，或者直接儲存剪貼板內容，需要時一按取回。",
+          clipTag1: "文字 + 圖片", clipTag2: "一按擷取", clipTag3: "快速找回", openClip: "開啟 ClipBin",
+          holdrMeta: "投資組合追蹤 · Web",
+          holdrDesc: "把手動持倉與券商資料放在同一個清晰畫面。一次查看配置、成本、盈虧與歷史表現，支援多種顯示貨幣及 AI 輔助分析。",
+          holdrTag1: "券商同步", holdrTag2: "歷史表現", holdrTag3: "多種貨幣", openHoldr: "開啟 Holdr",
+          openqMeta: "即場問答 · Web",
+          openqDesc: "為活動、團隊與現場而設的排隊式 forum。開一個 Q、分享 QR code，參加者用手機提問及投票，再用 present mode 逐一處理熱門問題。",
+          openqTag1: "參加毋須登記", openqTag2: "主持工具", openqTag3: "投票 + 匯出", openQ: "開啟 OpenQ",
+          pennyMeta: "投資教育 · Web",
+          pennyDesc: "以中英雙語學習投資組合如何建立。探索四個主題模擬策略、比較風險與配置、追蹤模擬表現，並用 AI 輔助理解新聞脈絡。",
+          pennyTag1: "English + 繁中", pennyTag2: "4 個模擬策略", pennyTag3: "新聞脈絡", openPenny: "開啟 Pennyvest",
+          studioTitle: "一個人。<br>實用軟件。<br><span>不做門面功夫。</span>",
+          principle1: "實用行先", principle2: "誠實為本", principle3: "合理定價", principle4: "保持簡單",
+          footer: "Dawn Studio · 獨立軟件工作室。", backTop: "返回頂部 ↑"
+        }
+      };
+
+
+      var products = {
+        moneyrate: {
+          name: "MoneyRate", color: "var(--amber)", url: "https://moneyrate.lol", tip: "https://dawnlimited.gumroad.com/l/moneyrate-tip",
+          en: { kicker: "Currency toolkit · Web", pitch: "Move between currencies without the friction.", detail: "Compare fiat, crypto and commodities in one focused toolkit, then move from a quick conversion to charts, alerts, trip planning and batch work without changing apps.", features: ["Fast currency conversion", "Charts and rate alerts", "Batch and trip tools"], open: "Open MoneyRate", tipText: "Support MoneyRate" },
+          zh: { kicker: "貨幣工具 · Web", pitch: "簡單直接，處理每一次跨貨幣需要。", detail: "在同一套專注工具比較法幣、加密貨幣及商品，由即時換算延伸至走勢、提示、旅程規劃及批量處理。", features: ["快速貨幣換算", "走勢與匯率提示", "批量及旅程工具"], open: "開啟 MoneyRate", tipText: "支持 MoneyRate" }
+        },
+        openmusic: {
+          name: "OpenMusic", color: "var(--coral)", url: "https://openmusic.lol", tip: "https://dawnlimited.gumroad.com/l/openmusic-tip",
+          en: { kicker: "Music player · Web + Android", pitch: "One player for music across sources.", detail: "Search Chinese and independent music sources together, play immediately, keep a library and move through regional charts, artist discographies and curated year packs.", features: ["Multi-source music search", "Library and background play", "Regional charts and discography packs"], open: "Open OpenMusic", tipText: "Support OpenMusic" },
+          zh: { kicker: "音樂播放器 · Web + Android", pitch: "跨來源音樂，一個播放器就夠。", detail: "同時搜尋華語及獨立音樂來源，即時播放及建立收藏，再探索地區榜單、歌手完整作品與年度歌單包。", features: ["多來源音樂搜尋", "收藏及背景播放", "地區榜單與作品集"], open: "開啟 OpenMusic", tipText: "支持 OpenMusic" }
+        },
+        clipbin: {
+          name: "ClipBin", color: "var(--blue)", url: "https://clipbin.lol", tip: "https://dawnlimited.gumroad.com/l/clipbin-tip",
+          en: { kicker: "Clipboard desk · Web", pitch: "Catch what matters before it disappears.", detail: "Keep pasted text and images together in a compact workspace. Capture by typing, pasting, dropping or uploading, then retrieve what you need in a tap.", features: ["Text and image capture", "Paste, drop or upload", "Fast retrieval"], open: "Open ClipBin", tipText: "Support ClipBin" },
+          zh: { kicker: "剪貼板工具 · Web", pitch: "重要內容消失之前，先把它留低。", detail: "把文字與圖片集中在一個簡潔工作空間。輸入、貼上、拖放或上載，之後一按就可以取回。", features: ["文字與圖片擷取", "貼上、拖放或上載", "快速找回"], open: "開啟 ClipBin", tipText: "支持 ClipBin" }
+        },
+        holdr: {
+          name: "Holdr", color: "var(--green)", url: "https://holdr.lol", tip: "https://dawnlimited.gumroad.com/l/holdr-tip",
+          en: { kicker: "Portfolio tracker · Web", pitch: "Your whole portfolio, made legible.", detail: "Bring manual holdings and broker data into one view. Understand allocation, cost basis, gains and history across currencies, with AI-assisted context when you want it.", features: ["Manual holdings and broker sync", "Allocation and performance history", "Multi-currency display"], open: "Open Holdr", tipText: "Support Holdr" },
+          zh: { kicker: "投資組合追蹤 · Web", pitch: "把整個投資組合看得清清楚楚。", detail: "把手動持倉與券商資料放在同一畫面，了解配置、成本、盈虧及跨貨幣歷史表現，需要時再加入 AI 輔助脈絡。", features: ["手動持倉與券商同步", "配置與歷史表現", "多種貨幣顯示"], open: "開啟 Holdr", tipText: "支持 Holdr" }
+        },
+        openq: {
+          name: "OpenQ", color: "var(--violet)", url: "https://openq.hectorchan.com/", tip: "https://dawnlimited.gumroad.com/l/openq-tip",
+          en: { kicker: "Live Q&A · Web", pitch: "Let the best question rise to the top.", detail: "Open a room, share its QR code and let people ask or upvote from their phones. Hosts keep control and work through the queue in a clean presentation view.", features: ["No signup for participants", "Questions, upvotes and polls", "Host controls and export"], open: "Open OpenQ", tipText: "Support OpenQ" },
+          zh: { kicker: "即場問答 · Web", pitch: "讓最值得回答的問題自然浮上來。", detail: "開一個房間、分享 QR code，參加者即可用手機提問及投票。主持人保留控制，再用清晰的展示模式逐一回應。", features: ["參加者毋須登記", "提問、投票與 polls", "主持工具與匯出"], open: "開啟 OpenQ", tipText: "支持 OpenQ" }
+        },
+        pennyvest: {
+          name: "Pennyvest", color: "var(--teal)", url: "https://pennyvest.space", tip: "https://dawnlimited.gumroad.com/l/pennyvest-tip",
+          en: { kicker: "Investment education · Web", pitch: "Learn portfolios by seeing how they fit together.", detail: "Explore themed model strategies in English or Traditional Chinese. Compare allocation and risk, follow simulated performance and add context to market news.", features: ["English and Traditional Chinese", "Themed model strategies", "Risk, allocation and news context"], open: "Open Pennyvest", tipText: "Support Pennyvest" },
+          zh: { kicker: "投資教育 · Web", pitch: "由組合結構開始，真正理解投資。", detail: "以英文或繁中探索主題模擬策略，比較配置與風險、追蹤模擬表現，並補充市場新聞的背景脈絡。", features: ["英文與繁中", "主題模擬策略", "風險、配置與新聞脈絡"], open: "開啟 Pennyvest", tipText: "支持 Pennyvest" }
+        }
+      };
+      var currentLanguage = "en";
+
+      function renderProduct(slug) {
+        var product = products[slug];
+        var page = document.getElementById("product-page");
+        if (!product) {
+          document.body.classList.remove("product-route");
+          page.hidden = true;
+          return;
+        }
+        var text = product[currentLanguage];
+        document.body.classList.add("product-route");
+        page.hidden = false;
+        document.getElementById("product-kicker").textContent = text.kicker;
+        document.getElementById("product-title").textContent = product.name;
+        document.getElementById("product-pitch").textContent = text.pitch;
+        document.getElementById("product-detail").textContent = text.detail;
+        var featureList = document.getElementById("product-feature-list");
+        featureList.innerHTML = "";
+        text.features.forEach(function (feature) {
+          var li = document.createElement("li"); li.textContent = feature; featureList.appendChild(li);
+        });
+        var open = document.getElementById("product-open"); open.href = product.url; open.textContent = text.open;
+        var tip = document.getElementById("product-tip"); tip.href = product.tip; tip.textContent = text.tipText;
+        var sourceVisual = document.querySelector('[data-product="' + slug + '"] .project-visual');
+        var art = document.getElementById("product-art"); art.innerHTML = "";
+        art.style.setProperty("--project-color", product.color);
+        if (sourceVisual) art.appendChild(sourceVisual.cloneNode(true));
+        window.scrollTo(0, 0);
+        window.requestAnimationFrame(function () { window.scrollTo(0, 0); });
+      }
+
+      function route() {
+        var slug = location.hash.slice(1).toLowerCase();
+        renderProduct(products[slug] ? slug : "");
+      }
+
+      function setLanguage(lang) {
+        currentLanguage = lang;
+        var strings = copy[lang] || copy.en;
+        document.documentElement.lang = lang === "zh" ? "zh-Hant" : "en";
+        document.querySelectorAll("[data-i18n]").forEach(function (el) {
+          var key = el.getAttribute("data-i18n");
+          if (strings[key]) el.textContent = strings[key];
+        });
+        document.querySelectorAll("[data-i18n-html]").forEach(function (el) {
+          var key = el.getAttribute("data-i18n-html");
+          if (strings[key]) el.innerHTML = strings[key];
+        });
+        document.querySelectorAll("[data-lang]").forEach(function (button) {
+          button.setAttribute("aria-pressed", button.getAttribute("data-lang") === lang ? "true" : "false");
+        });
+        route();
+      }
+
+      document.querySelectorAll("[data-lang]").forEach(function (button) {
+        button.addEventListener("click", function () { setLanguage(button.getAttribute("data-lang")); });
+      });
+      document.querySelectorAll(".project[data-product]").forEach(function (card) {
+        card.addEventListener("click", function (event) {
+          if (event.target.closest("a")) return;
+          location.hash = card.getAttribute("data-product");
+        });
+      });
+      window.addEventListener("hashchange", route);
+      route();
+    }());
+  </script>
+</body>
+</html>

@@ -14,7 +14,8 @@ BASE = "https://api.cloudflare.com/client/v4"
 
 DOMAINS = ["hectorchan.com", "moneyrate.lol", "pennyvest.space", "realufo.org",
            "openmusic.lol", "ownerledgr.com", "globalnewsshorts.com", "holdr.lol",
-           "clipbin.lol", "watchthenight.com", "strangedocs.com"]
+           "clipbin.lol", "watchthenight.com", "strangedocs.com",
+           "dawnstudio.app"]
 
 # local-part plan per domain (pennyvest.space: parked, skipped)
 PLAN = {
@@ -28,6 +29,7 @@ PLAN = {
     "clipbin.lol": ["hello"],
     "holdr.lol": ["hello", "support"],
     "ownerledgr.com": ["hello"],
+    "dawnstudio.app": ["hello"],
 }
 
 def api(method, path, body=None):

@@ -1,0 +1,45 @@
+name: cf-api
+# Generic Cloudflare API caller (API token lives in repo secrets).
+# For zone/Pages/DNS/email-routing ops that wrangler doesn't cover.
+on:
+  workflow_dispatch:
+    inputs:
+      method:
+        description: "HTTP method: GET, POST, PUT, PATCH, DELETE"
+        required: true
+        default: "GET"
+      path:
+        description: "API path, e.g. /zones?per_page=50"
+        required: true
+      body:
+        description: "JSON body for POST/PUT/PATCH ({} for none)"
+        required: false
+        default: "{}"
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: python3 - <<'PYEOF'
+          import json, os, urllib.request, urllib.error
+          method = os.environ["CF_METHOD"]
+          path = os.environ["CF_PATH"]
+          body_s = os.environ.get("CF_BODY", "").strip()
+          body = json.loads(body_s) if body_s else None
+          token = os.environ["CLOUDFLARE_API_TOKEN"]
+          req = urllib.request.Request(
+              "https://api.cloudflare.com/client/v4" + path,
+              data=(json.dumps(body).encode() if body is not None else None),
+              headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+              method=method)
+          try:
+              with urllib.request.urlopen(req, timeout=60) as r:
+                  print(r.read().decode()[:6000])
+          except urllib.error.HTTPError as e:
+              print(f"HTTPError {e.code}: {e.read().decode()[:2000]}")
+        PYEOF
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_METHOD: ${{ github.event.inputs.method }}
+          CF_PATH: ${{ github.event.inputs.path }}
+          CF_BODY: ${{ github.event.inputs.body }}
