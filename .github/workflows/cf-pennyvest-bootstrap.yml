@@ -30,8 +30,20 @@ jobs:
       # NOTE: pennyvest has no package-lock.json committed, so npm ci is not usable here.
       - run: npm install --no-audit --no-fund
         working-directory: app
+      # Build-time page-data collection imports route modules (Neon Auth
+      # throws on a missing cookie secret). These dummies are server-only and
+      # never reach client bundles; real values come from Worker secrets at
+      # runtime. NEXT_PUBLIC_APP_URL is inlined at build time, so set it here.
       - run: npm run build:worker
         working-directory: app
+        env:
+          DATABASE_URL: postgres://build:build@localhost:5432/build
+          NEON_AUTH_BASE_URL: https://build.invalid
+          NEON_AUTH_COOKIE_SECRET: build-only-dummy-secret-32-chars-min
+          OPENROUTER_API_KEY: build-dummy
+          FINNHUB_API_KEY: build-dummy
+          COINGECKO_API_KEY: build-dummy
+          NEXT_PUBLIC_APP_URL: https://pennyvest.space
       - run: npx wrangler deploy
         working-directory: app
         env:
