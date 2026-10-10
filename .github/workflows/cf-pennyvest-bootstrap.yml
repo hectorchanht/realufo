@@ -41,6 +41,9 @@ jobs:
           FINNHUB_API_KEY: build-dummy
           COINGECKO_API_KEY: build-dummy
           NEXT_PUBLIC_APP_URL: https://pennyvest.space
+          # PostHog product analytics (public client key — safe to hardcode).
+          NEXT_PUBLIC_POSTHOG_KEY: phc_Dn2EebGR8eVrLKfQwArtfwxE4cUKQq2NPhwMRph4LqUf
+          NEXT_PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
       - run: npx wrangler deploy
         working-directory: app
         env:
