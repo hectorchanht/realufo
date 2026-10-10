@@ -10,7 +10,10 @@ database_name = "dawn-admin-db"
 database_id = "c48df30e-42f5-412c-b382-4379be3ba561"
 
 [vars]
-MAGIC_LINK_FROM = "Dawn Studio <login@hectorchan.com>"
+# REQUIRED by Hector: magic-link From. NOTE: dawnstudio.app is NOT yet a verified
+# Resend sending domain (Free plan 3/3 slots full) — sending stays pending until
+# he frees a slot or upgrades. Do NOT fall back to another domain.
+MAGIC_LINK_FROM = "Dawn Studio <login@dawnstudio.app>"
 
 # Route attached after the dawnstudio.app zone exists (Worker route beats Pages):
 # routes = [ { pattern = "dawnstudio.app/admin*", zone_name = "dawnstudio.app" } ]

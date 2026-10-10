@@ -110,7 +110,7 @@ async function rateLimit(env: Env, key: string, max: number, windowMs: number): 
 // ---------- email (Resend) ----------
 
 async function sendMagicLinkEmail(env: Env, to: string, link: string): Promise<void> {
-  const from = env.MAGIC_LINK_FROM || 'Dawn Studio <login@hectorchan.com>';
+  const from = env.MAGIC_LINK_FROM || 'Dawn Studio <login@dawnstudio.app>';
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
@@ -537,3 +537,5 @@ async function loadSales(pid) {
 }
 loadApps(); loadKeys(); loadGum();
 </script>`;
+
+}
