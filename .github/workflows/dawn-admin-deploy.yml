@@ -1,0 +1,27 @@
+name: dawn-admin-deploy
+# Deploy the Dawn Studio admin portal (Worker + D1) with the repo's API token.
+# Source lives in workers/dawn-admin/ on branch build/app-foundation.
+on:
+  workflow_dispatch:
+    inputs:
+      skip_schema:
+        description: "Skip D1 schema apply (true/false)"
+        default: "false"
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "build/app-foundation" }
+      - run: npm i -g wrangler
+      - run: |
+          if [ "${{ github.event.inputs.skip_schema }}" != "true" ]; then
+            echo "=== applying D1 schema ==="
+            wrangler d1 execute dawn-admin-db --remote --file=workers/dawn-admin/schema.sql
+          fi
+          echo "=== deploying worker ==="
+          wrangler deploy --config workers/dawn-admin/wrangler.toml
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -1,0 +1,16 @@
+# Dawn Studio Admin — Cloudflare Worker + D1.
+# Deployed via .github/workflows/dawn-admin-deploy.yml (repo holds the API token).
+name = "dawn-studio-admin"
+main = "src/index.ts"
+compatibility_date = "2025-06-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dawn-admin-db"
+database_id = "c48df30e-42f5-412c-b382-4379be3ba561"
+
+[vars]
+MAGIC_LINK_FROM = "Dawn Studio <login@hectorchan.com>"
+
+# Route attached after the dawnstudio.app zone exists (Worker route beats Pages):
+# routes = [ { pattern = "dawnstudio.app/admin*", zone_name = "dawnstudio.app" } ]
