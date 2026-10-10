@@ -6,6 +6,7 @@
 
 export interface Env {
   DB: D1Database;
+  ANALYTICS_DB?: D1Database;
   RESEND_API_KEY?: string;
   MAGIC_LINK_FROM?: string;
 }
@@ -236,6 +237,8 @@ export default {
 
     // Pages
     if ((path === '/' || path === '') && method === 'GET') return html(dashboardHTML(base, email));
+    if (path === '/analytics' && method === 'GET') return html(analyticsHTML(base, email));
+    if (path === '/api/analytics/summary' && method === 'GET') return handleAnalyticsSummary(env);
     if (path === '/api/logout' && method === 'POST') return handleLogout(req, env);
     if (path === '/api/me' && method === 'GET') return json({ email });
 
@@ -338,6 +341,48 @@ async function gumroadFetchRaw(token: string, path: string): Promise<any> {
   return data;
 }
 
+// ---------- OpenMusic analytics (D1 play_events) ----------
+
+async function handleAnalyticsSummary(env: Env): Promise<Response> {
+  const adb = env.ANALYTICS_DB;
+  if (!adb) return json({ error: 'Analytics database is not bound.' }, 500);
+  try {
+    const days = await adb.prepare(
+      `SELECT substr(played_at,1,10) AS day, COUNT(*) AS plays, COUNT(DISTINCT anon_id) AS users
+       FROM play_events WHERE played_at >= date('now','-30 days') GROUP BY day ORDER BY day`
+    ).all();
+    const totals = await adb.prepare(
+      `SELECT COUNT(*) AS plays, COUNT(DISTINCT anon_id) AS users FROM play_events`
+    ).first();
+    const totals30 = await adb.prepare(
+      `SELECT COUNT(*) AS plays, COUNT(DISTINCT anon_id) AS users FROM play_events WHERE played_at >= date('now','-30 days')`
+    ).first();
+    const topSongs = await adb.prepare(
+      `SELECT title, artist, source, COUNT(*) AS plays, COUNT(DISTINCT anon_id) AS users
+       FROM play_events GROUP BY song_id, title, artist, source ORDER BY plays DESC LIMIT 20`
+    ).all();
+    const bySource = await adb.prepare(
+      `SELECT source, COUNT(*) AS plays FROM play_events GROUP BY source ORDER BY plays DESC`
+    ).all();
+    const byCountry = await adb.prepare(
+      `SELECT country, COUNT(*) AS plays, COUNT(DISTINCT anon_id) AS users FROM play_events GROUP BY country ORDER BY plays DESC LIMIT 20`
+    ).all();
+    const byPlatform = await adb.prepare(
+      `SELECT platform, COUNT(*) AS plays FROM play_events GROUP BY platform ORDER BY plays DESC`
+    ).all();
+    const byDevice = await adb.prepare(
+      `SELECT device_type, COUNT(*) AS plays FROM play_events GROUP BY device_type ORDER BY plays DESC`
+    ).all();
+    return json({
+      days: days.results, totals, totals30,
+      topSongs: topSongs.results, bySource: bySource.results,
+      byCountry: byCountry.results, byPlatform: byPlatform.results, byDevice: byDevice.results,
+    });
+  } catch (e: any) {
+    return json({ error: 'Analytics query failed: ' + String(e?.message || e).slice(0, 200) }, 500);
+  }
+}
+
 // ---------- UI ----------
 
 const CSS = `
@@ -410,7 +455,7 @@ document.getElementById('f').addEventListener('submit', async (e) => {
 function dashboardHTML(base: string, email: string): string {
   return `
 <div class="wrap">
-<header><h1>Dawn Studio Admin</h1><div><span class="who">${email}</span><button class="btn ghost" id="logout">Log out</button></div></header>
+<header><h1>Dawn Studio Admin</h1><div><span class="who">${email}</span><a class="btn ghost" href="${base}/analytics" style="text-decoration:none;margin-right:8px">Analytics</a><button class="btn ghost" id="logout">Log out</button></div></header>
 
 <div class="card"><h2>Apps — paying status</h2><div id="apps" class="grid"><p class="note">Loading…</p></div></div>
 
@@ -538,4 +583,70 @@ async function loadSales(pid) {
 loadApps(); loadKeys(); loadGum();
 </script>`;
 
+}
+
+function analyticsHTML(base: string, email: string): string {
+  return `
+<div class="wrap">
+<header><h1><a href="${base}/" style="color:#e8eaed;text-decoration:none">Dawn Studio Admin</a></h1><div><span class="who">${email}</span><button class="btn ghost" id="logout">Log out</button></div></header>
+
+<div class="card"><h2>OpenMusic — usage analytics</h2><div id="stats" class="grid"><p class="note">Loading…</p></div>
+<p class="note">Distinct users counts anonymous browser IDs (one per browser). It resets if a user clears site data, so treat it as an approximation, not an exact headcount.</p></div>
+
+<div class="card"><h2>Plays per day — last 30 days</h2><div id="chart"><p class="note">Loading…</p></div></div>
+
+<div class="card"><h2>Top songs</h2><div id="topsongs"><p class="note">Loading…</p></div></div>
+
+<div class="grid">
+<div class="card"><h2>By source</h2><div id="bysource"><p class="note">Loading…</p></div></div>
+<div class="card"><h2>By country</h2><div id="bycountry"><p class="note">Loading…</p></div></div>
+<div class="card"><h2>By platform</h2><div id="byplatform"><p class="note">Loading…</p></div></div>
+<div class="card"><h2>By device</h2><div id="bydevice"><p class="note">Loading…</p></div></div>
+</div>
+</div>
+<script>
+const B = ${JSON.stringify(base)};
+const api = (p, o) => fetch(B + p, { credentials: 'same-origin', ...(o || {}) });
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+document.getElementById('logout').onclick = async () => { await api('/api/logout', { method: 'POST' }); location.href = B + '/login'; };
+
+function statCard(label, val) {
+  return '<div class="card app"><h3 style="font-size:28px">' + (val ?? 0) + '</h3><p>' + esc(label) + '</p></div>';
+}
+function kvTable(rows, k, v) {
+  rows = rows || [];
+  if (!rows.length) return '<p class="note">No data yet.</p>';
+  return '<table><tbody>' + rows.map((x) => '<tr><td>' + esc(x[k] || '—') + '</td><td style="text-align:right">' + x[v] + '</td></tr>').join('') + '</tbody></table>';
+}
+async function load() {
+  let d;
+  try { d = await (await api('/api/analytics/summary')).json(); }
+  catch { document.getElementById('stats').innerHTML = '<p class="err">Failed to load.</p>'; return; }
+  if (!d || d.error) { document.getElementById('stats').innerHTML = '<p class="err">' + esc((d && d.error) || 'Failed to load.') + '</p>'; return; }
+  const t = d.totals || {}, t30 = d.totals30 || {};
+  document.getElementById('stats').innerHTML =
+    statCard('Total plays', t.plays) + statCard('Distinct users', t.users) +
+    statCard('Plays (30 days)', t30.plays) + statCard('Users (30 days)', t30.users);
+  const days = d.days || [];
+  const max = Math.max(1, ...days.map((x) => x.plays));
+  document.getElementById('chart').innerHTML = days.length ? days.map((x) =>
+    '<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:12px">' +
+    '<span style="width:48px;color:#9aa0a6">' + esc(String(x.day).slice(5)) + '</span>' +
+    '<div style="flex:1;background:#0d1117;border-radius:4px;height:14px"><div style="height:100%;width:' +
+    Math.max(2, Math.round((x.plays / max) * 100)) + '%;background:#1f6feb;border-radius:4px"></div></div>' +
+    '<span style="width:110px;text-align:right;white-space:nowrap">' + x.plays + ' plays · ' + x.users + ' users</span></div>').join('')
+    : '<p class="note">No plays yet.</p>';
+  const ts = d.topSongs || [];
+  document.getElementById('topsongs').innerHTML = ts.length ?
+    '<table><thead><tr><th>Song</th><th>Artist</th><th>Source</th><th>Plays</th><th>Users</th></tr></thead><tbody>' +
+    ts.map((x) => '<tr><td>' + esc(x.title || x.song_id || '—') + '</td><td>' + esc(x.artist || '—') + '</td><td>' + esc(x.source || '—') +
+    '</td><td>' + x.plays + '</td><td>' + x.users + '</td></tr>').join('') + '</tbody></table>'
+    : '<p class="note">No plays yet.</p>';
+  document.getElementById('bysource').innerHTML = kvTable(d.bySource, 'source', 'plays');
+  document.getElementById('bycountry').innerHTML = kvTable(d.byCountry, 'country', 'plays');
+  document.getElementById('byplatform').innerHTML = kvTable(d.byPlatform, 'platform', 'plays');
+  document.getElementById('bydevice').innerHTML = kvTable(d.byDevice, 'device_type', 'plays');
+}
+load();
+</script>`;
 }

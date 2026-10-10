@@ -9,6 +9,11 @@ binding = "DB"
 database_name = "dawn-admin-db"
 database_id = "c48df30e-42f5-412c-b382-4379be3ba561"
 
+[[d1_databases]]
+binding = "ANALYTICS_DB"
+database_name = "openmusic-analytics"
+database_id = "0c644f30-410a-4658-b184-9582077750e6"
+
 [vars]
 # REQUIRED by Hector: magic-link From. NOTE: dawnstudio.app is NOT yet a verified
 # Resend sending domain (Free plan 3/3 slots full) — sending stays pending until
