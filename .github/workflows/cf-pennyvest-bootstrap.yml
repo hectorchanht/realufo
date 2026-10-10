@@ -1,0 +1,39 @@
+name: cf-pennyvest-bootstrap
+# One-time + on-demand deploy of the Pennyvest OpenNext Worker.
+# The pennyvest repo holds no Cloudflare token; this workflow builds the
+# OpenNext Worker bundle from hectorchanht/pennyvest@main and deploys it with
+# the repo's full-access CLOUDFLARE_API_TOKEN. Secrets must exist on the Worker
+# first (set via `wrangler secret put --name pennyvest` through wrangler-run.yml
+# once values are available) — this workflow does not carry secret values.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "pennyvest ref to deploy (default: main)"
+        required: false
+        default: "main"
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: hectorchanht/pennyvest
+          ref: ${{ github.event.inputs.ref || 'main' }}
+          path: app
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      # NOTE: pennyvest has no package-lock.json committed, so npm ci is not usable here.
+      - run: npm install --no-audit --no-fund
+        working-directory: app
+      - run: npm run build:worker
+        working-directory: app
+      - run: npx wrangler deploy
+        working-directory: app
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
