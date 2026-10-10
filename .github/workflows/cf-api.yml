@@ -20,7 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - run: python3 - <<'PYEOF'
+      - name: Call Cloudflare API
+        run: |
+          python3 - <<'PYEOF'
           import json, os, urllib.request, urllib.error
           method = os.environ["CF_METHOD"]
           path = os.environ["CF_PATH"]
@@ -30,14 +32,14 @@ jobs:
           req = urllib.request.Request(
               "https://api.cloudflare.com/client/v4" + path,
               data=(json.dumps(body).encode() if body is not None else None),
-              headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+              headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"},
               method=method)
           try:
               with urllib.request.urlopen(req, timeout=60) as r:
                   print(r.read().decode()[:6000])
           except urllib.error.HTTPError as e:
-              print(f"HTTPError {e.code}: {e.read().decode()[:2000]}")
-        PYEOF
+              print("HTTPError " + str(e.code) + ": " + e.read().decode()[:2000])
+          PYEOF
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_METHOD: ${{ github.event.inputs.method }}
