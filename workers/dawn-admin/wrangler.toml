@@ -16,4 +16,6 @@ database_id = "c48df30e-42f5-412c-b382-4379be3ba561"
 MAGIC_LINK_FROM = "Dawn Studio <login@dawnstudio.app>"
 
 # Route attached after the dawnstudio.app zone exists (Worker route beats Pages):
-# routes = [ { pattern = "dawnstudio.app/admin*", zone_name = "dawnstudio.app" } ]
+routes = [
+  { pattern = "dawnstudio.app/admin*", zone_name = "dawnstudio.app" },
+]
