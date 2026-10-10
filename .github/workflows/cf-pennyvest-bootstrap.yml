@@ -23,10 +23,7 @@ jobs:
           ref: ${{ github.event.inputs.ref || 'main' }}
           path: app
       - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: app/package-lock.json
+        with: { node-version: 24 }
       # NOTE: pennyvest has no package-lock.json committed, so npm ci is not usable here.
       - run: npm install --no-audit --no-fund
         working-directory: app
