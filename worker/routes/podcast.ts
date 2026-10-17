@@ -21,6 +21,7 @@ export interface PodcastEpisode {
 // is updated (one line per episode) when each episode is approved for publish.
 const EPISODE_CASE_SLUG: Record<string, string> = {
   "ep-01658671-5677-4bd6-8d8c-5ba9477fe5ea": "roswell",
+  "ep-3b94c296-5198-41f1-b1b1-4be9f5e32836": "kaikoura",
 };
 
 const unesc = (s: string) =>
