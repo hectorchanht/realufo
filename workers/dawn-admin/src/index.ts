@@ -7,6 +7,7 @@
 export interface Env {
   DB: D1Database;
   ANALYTICS_DB?: D1Database;
+  ACCOUNTS_DB?: D1Database;
   RESEND_API_KEY?: string;
   MAGIC_LINK_FROM?: string;
 }
@@ -373,10 +374,66 @@ async function handleAnalyticsSummary(env: Env): Promise<Response> {
     const byDevice = await adb.prepare(
       `SELECT device_type, COUNT(*) AS plays FROM play_events GROUP BY device_type ORDER BY plays DESC`
     ).all();
+    // ---------- likes & downloads (quick-261023-like-dl) ----------
+    // PII-side openmusic-accounts DB (tables like_events, download_events), deliberately
+    // NOT the no-PII openmusic-analytics above. Degrades to null when the binding is
+    // absent (older deploy) — the page renders the plays section anyway.
+    let likes = null;
+    const cdb = env.ACCOUNTS_DB;
+    if (cdb) {
+      const likeDays = await cdb.prepare(
+        `SELECT substr(liked_at,1,10) AS day,
+           SUM(CASE WHEN action='like' THEN 1 ELSE 0 END) AS likes,
+           SUM(CASE WHEN action='unlike' THEN 1 ELSE 0 END) AS unlikes,
+           COUNT(DISTINCT user_id) AS users, COUNT(DISTINCT anon_id) AS devices
+         FROM like_events WHERE liked_at >= date('now','-30 days') GROUP BY day ORDER BY day`
+      ).all();
+      const dlDays = await cdb.prepare(
+        `SELECT substr(downloaded_at,1,10) AS day, COUNT(*) AS downloads,
+           COUNT(DISTINCT user_id) AS users, COUNT(DISTINCT anon_id) AS devices,
+           COALESCE(SUM(bytes),0) AS bytes
+         FROM download_events WHERE downloaded_at >= date('now','-30 days') GROUP BY day ORDER BY day`
+      ).all();
+      const likeTotals = await cdb.prepare(
+        `SELECT SUM(CASE WHEN action='like' THEN 1 ELSE 0 END) AS likes,
+           SUM(CASE WHEN action='unlike' THEN 1 ELSE 0 END) AS unlikes,
+           COUNT(DISTINCT user_id) AS users, COUNT(DISTINCT anon_id) AS devices FROM like_events`
+      ).first();
+      const dlTotals = await cdb.prepare(
+        `SELECT COUNT(*) AS downloads, COUNT(DISTINCT user_id) AS users,
+           COUNT(DISTINCT anon_id) AS devices, COALESCE(SUM(bytes),0) AS bytes FROM download_events`
+      ).first();
+      const topLiked = await cdb.prepare(
+        `SELECT title, artist, source, COUNT(*) AS likes
+         FROM like_events WHERE action='like' GROUP BY song_id, title, artist, source ORDER BY likes DESC LIMIT 20`
+      ).all();
+      const topDownloaded = await cdb.prepare(
+        `SELECT title, artist, source, COUNT(*) AS downloads, COALESCE(SUM(bytes),0) AS bytes
+         FROM download_events GROUP BY song_id, title, artist, source ORDER BY downloads DESC LIMIT 20`
+      ).all();
+      // Emails via JOIN users — shown only on this private, session-gated page (Hector-only).
+      const topLikeUsers = await cdb.prepare(
+        `SELECT u.email AS email, COUNT(*) AS likes
+         FROM like_events e JOIN users u ON u.id = e.user_id
+         WHERE e.action='like' GROUP BY u.email ORDER BY likes DESC LIMIT 20`
+      ).all();
+      const topDlUsers = await cdb.prepare(
+        `SELECT u.email AS email, COUNT(*) AS downloads, COALESCE(SUM(e.bytes),0) AS bytes
+         FROM download_events e JOIN users u ON u.id = e.user_id
+         GROUP BY u.email ORDER BY downloads DESC LIMIT 20`
+      ).all();
+      likes = {
+        likeDays: likeDays.results, dlDays: dlDays.results,
+        likeTotals, dlTotals,
+        topLiked: topLiked.results, topDownloaded: topDownloaded.results,
+        topLikeUsers: topLikeUsers.results, topDlUsers: topDlUsers.results,
+      };
+    }
     return json({
       days: days.results, totals, totals30,
       topSongs: topSongs.results, bySource: bySource.results,
       byCountry: byCountry.results, byPlatform: byPlatform.results, byDevice: byDevice.results,
+      likes,
     });
   } catch (e: any) {
     return json({ error: 'Analytics query failed: ' + String(e?.message || e).slice(0, 200) }, 500);
@@ -603,6 +660,20 @@ function analyticsHTML(base: string, email: string): string {
 <div class="card"><h2>By platform</h2><div id="byplatform"><p class="note">Loading…</p></div></div>
 <div class="card"><h2>By device</h2><div id="bydevice"><p class="note">Loading…</p></div></div>
 </div>
+
+<div class="card"><h2>Likes & downloads</h2><div id="stats2" class="grid"><p class="note">Loading…</p></div>
+<p class="note">Signed-in users are identified by account (emails below — this page is private). Logged-out events count anonymous device IDs, the same approximation as plays.</p></div>
+
+<div class="card"><h2>Likes / downloads per day — last 30 days</h2><div id="chart2"><p class="note">Loading…</p></div></div>
+
+<div class="card"><h2>Top liked songs</h2><div id="topliked"><p class="note">Loading…</p></div></div>
+
+<div class="card"><h2>Top downloaded songs</h2><div id="topdl"><p class="note">Loading…</p></div></div>
+
+<div class="grid">
+<div class="card"><h2>Top users by likes</h2><div id="topusers"><p class="note">Loading…</p></div></div>
+<div class="card"><h2>Top users by downloads</h2><div id="topdlusers"><p class="note">Loading…</p></div></div>
+</div>
 </div>
 <script>
 const B = ${JSON.stringify(base)};
@@ -617,6 +688,13 @@ function kvTable(rows, k, v) {
   rows = rows || [];
   if (!rows.length) return '<p class="note">No data yet.</p>';
   return '<table><tbody>' + rows.map((x) => '<tr><td>' + esc(x[k] || '—') + '</td><td style="text-align:right">' + x[v] + '</td></tr>').join('') + '</tbody></table>';
+}
+function fmtBytes(n) {
+  n = Number(n) || 0;
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+  if (n < 1073741824) return (n / 1048576).toFixed(1) + ' MB';
+  return (n / 1073741824).toFixed(2) + ' GB';
 }
 async function load() {
   let d;
@@ -646,6 +724,51 @@ async function load() {
   document.getElementById('bycountry').innerHTML = kvTable(d.byCountry, 'country', 'plays');
   document.getElementById('byplatform').innerHTML = kvTable(d.byPlatform, 'platform', 'plays');
   document.getElementById('bydevice').innerHTML = kvTable(d.byDevice, 'device_type', 'plays');
+  const L = d.likes;
+  if (!L) {
+    document.getElementById('stats2').innerHTML = '<p class="note">Accounts DB not bound on this deploy.</p>';
+    document.getElementById('chart2').innerHTML = '<p class="note">Accounts DB not bound on this deploy.</p>';
+  } else {
+    const lt = L.likeTotals || {}, dt = L.dlTotals || {};
+    document.getElementById('stats2').innerHTML =
+      statCard('Total likes', lt.likes) + statCard('Total unlikes', lt.unlikes) +
+      statCard('Total downloads', dt.downloads) + statCard('Downloaded bytes', fmtBytes(dt.bytes)) +
+      statCard('Likers (signed-in)', lt.users) + statCard('Downloaders (signed-in)', dt.users);
+    const merged = {};
+    (L.likeDays || []).forEach((x) => { merged[x.day] = merged[x.day] || {}; merged[x.day].likes = x.likes; });
+    (L.dlDays || []).forEach((x) => { merged[x.day] = merged[x.day] || {}; merged[x.day].downloads = x.downloads; });
+    const days2 = Object.keys(merged).sort();
+    const max2 = Math.max(1, ...days2.map((k) => Math.max(merged[k].likes || 0, merged[k].downloads || 0)));
+    document.getElementById('chart2').innerHTML = days2.length ? days2.map((k) => {
+      const m = merged[k];
+      const lw = Math.max(2, Math.round(((m.likes || 0) / max2) * 100));
+      const dw = Math.max(2, Math.round(((m.downloads || 0) / max2) * 100));
+      return '<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:12px">' +
+        '<span style="width:48px;color:#9aa0a6">' + esc(String(k).slice(5)) + '</span>' +
+        '<div style="flex:1;background:#0d1117;border-radius:4px;height:14px">' +
+        '<div style="height:50%;width:' + lw + '%;background:#3fb950;border-radius:4px 4px 0 0"></div>' +
+        '<div style="height:50%;width:' + dw + '%;background:#1f6feb;border-radius:0 0 4px 4px"></div></div>' +
+        '<span style="width:170px;text-align:right;white-space:nowrap">' + (m.likes || 0) + ' likes · ' + (m.downloads || 0) + ' downloads</span></div>';
+    }).join('') : '<p class="note">No likes or downloads yet.</p>';
+    const tl = L.topLiked || [];
+    document.getElementById('topliked').innerHTML = tl.length ?
+      '<table><thead><tr><th>Song</th><th>Artist</th><th>Source</th><th>Likes</th></tr></thead><tbody>' +
+      tl.map((x) => '<tr><td>' + esc(x.title || '—') + '</td><td>' + esc(x.artist || '—') + '</td><td>' + esc(x.source || '—') +
+      '</td><td>' + x.likes + '</td></tr>').join('') + '</tbody></table>' : '<p class="note">No likes yet.</p>';
+    const td = L.topDownloaded || [];
+    document.getElementById('topdl').innerHTML = td.length ?
+      '<table><thead><tr><th>Song</th><th>Artist</th><th>Source</th><th>Downloads</th><th>Bytes</th></tr></thead><tbody>' +
+      td.map((x) => '<tr><td>' + esc(x.title || '—') + '</td><td>' + esc(x.artist || '—') + '</td><td>' + esc(x.source || '—') +
+      '</td><td>' + x.downloads + '</td><td>' + fmtBytes(x.bytes) + '</td></tr>').join('') + '</tbody></table>' : '<p class="note">No downloads yet.</p>';
+    const tu = L.topLikeUsers || [];
+    document.getElementById('topusers').innerHTML = tu.length ?
+      '<table><tbody>' + tu.map((x) => '<tr><td>' + esc(x.email || '—') + '</td><td style="text-align:right">' + x.likes + ' likes</td></tr>').join('') + '</tbody></table>'
+      : '<p class="note">No signed-in likes yet.</p>';
+    const tdu = L.topDlUsers || [];
+    document.getElementById('topdlusers').innerHTML = tdu.length ?
+      '<table><tbody>' + tdu.map((x) => '<tr><td>' + esc(x.email || '—') + '</td><td style="text-align:right">' + x.downloads + ' · ' + fmtBytes(x.bytes) + '</td></tr>').join('') + '</tbody></table>'
+      : '<p class="note">No signed-in downloads yet.</p>';
+  }
 }
 load();
 </script>`;

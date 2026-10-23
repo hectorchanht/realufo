@@ -14,6 +14,15 @@ binding = "ANALYTICS_DB"
 database_name = "openmusic-analytics"
 database_id = "0c644f30-410a-4658-b184-9582077750e6"
 
+# quick-261023-like-dl: like/download identity events live in the PII-side
+# openmusic-accounts DB (tables like_events, download_events), NOT the no-PII
+# openmusic-analytics above. Email addresses are only shown on this private
+# admin page (session-gated, Hector-only).
+[[d1_databases]]
+binding = "ACCOUNTS_DB"
+database_name = "openmusic-accounts"
+database_id = "16b53d6d-5ec1-46b9-97ec-69671b5f42fe"
+
 [vars]
 # REQUIRED by Hector: magic-link From. NOTE: dawnstudio.app is NOT yet a verified
 # Resend sending domain (Free plan 3/3 slots full) — sending stays pending until
