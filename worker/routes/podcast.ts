@@ -22,6 +22,7 @@ export interface PodcastEpisode {
 const EPISODE_CASE_SLUG: Record<string, string> = {
   "ep-01658671-5677-4bd6-8d8c-5ba9477fe5ea": "roswell",
   "ep-3b94c296-5198-41f1-b1b1-4be9f5e32836": "kaikoura",
+  "ep-3a251d97-42eb-4e2a-a0f6-104999b730f6": "jal-1628",
 };
 
 const unesc = (s: string) =>
