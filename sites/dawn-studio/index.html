@@ -981,6 +981,11 @@
       });
       window.addEventListener("hashchange", route);
       route();
+      // Hidden admin shortcut: double-click the footer tagline → /admin. No visual change.
+      var footerTag = document.querySelector('footer p[data-i18n="footer"]');
+      if (footerTag) {
+        footerTag.addEventListener("dblclick", function () { window.location.href = "/admin"; });
+      }
     }());
   </script>
 </body>
