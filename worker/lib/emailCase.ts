@@ -38,7 +38,6 @@ export function renderCaseNewsletter(slug: string, unsub: string): string {
   const url = `https://realufo.org/case/${encodeURIComponent(slug)}`;
   const body = `
     <p style="font-size:13px;letter-spacing:1px;color:#4df0a6">🛸 THIS WEEK'S DECLASSIFIED CASE FILE</p>
-    <h2 style="font-size:24px;line-height:1.3;color:#fff;margin:8px 0 4px">${esc(story.title)}</h2>
     <h3 style="font-size:16px;color:#9aa3ad;margin:0 0 8px">${esc(sec.heading)}</h3>
     ${hook}${quote}
     <h3 style="font-size:16px;color:#9aa3ad;margin:16px 0 4px">Key moments</h3>
