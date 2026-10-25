@@ -3,7 +3,9 @@ CREATE TABLE IF NOT EXISTS magic_tokens (
   token_hash TEXT PRIMARY KEY,
   email TEXT NOT NULL,
   expires_at INTEGER NOT NULL,
-  used_at INTEGER
+  used_at INTEGER,
+  code_hash TEXT,
+  code_attempts INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS sessions (
   token_hash TEXT PRIMARY KEY,

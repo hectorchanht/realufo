@@ -111,16 +111,16 @@ async function rateLimit(env: Env, key: string, max: number, windowMs: number): 
 
 // ---------- email (Resend) ----------
 
-async function sendMagicLinkEmail(env: Env, to: string, link: string): Promise<void> {
+async function sendMagicLinkEmail(env: Env, to: string, link: string, code: string): Promise<void> {
   const from = env.MAGIC_LINK_FROM || 'Dawn Studio <login@dawnstudio.app>';
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from, to,
-      subject: 'Your Dawn Studio Admin login link',
-      html: `<p>Click the link below to log in to the Dawn Studio admin portal. It expires in 15 minutes and can only be used once.</p><p><a href="${link}">Log in to Dawn Studio Admin</a></p><p>If you didn't request this, just ignore this email.</p>`,
-      text: `Log in to Dawn Studio Admin (expires in 15 minutes, single use): ${link}`,
+      subject: 'Your Dawn Studio Admin sign-in link and code',
+      html: `<p>Hi there,</p><p>Click the button below to sign in to the Dawn Studio admin portal. It expires in 15 minutes and can only be used once.</p><p><a href="${link}" style="display:inline-block;background:#1f6feb;color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none">Sign in to Dawn Studio Admin</a></p><p>Or enter this 6-digit code on the sign-in page:</p><p style="font-size:28px;font-weight:700;letter-spacing:6px">${code}</p><p>The link and the code are the same sign-in — using either one uses it up. If you didn't request this, just ignore this email.</p><p style="color:#888;font-size:12px">This message was sent to ${to} at your request. Dawn Studio Admin · dawnstudio.app</p>`,
+      text: `Sign in to Dawn Studio Admin (expires in 15 minutes, single use): ${link}\n\nOr enter this 6-digit code on the sign-in page: ${code}\n\nThe link and the code are the same sign-in — using either one uses it up.`,
     }),
   });
   if (!res.ok) throw new Error(`Resend HTTP ${res.status}`);
@@ -167,21 +167,64 @@ async function handleMagicLink(req: Request, env: Env): Promise<Response> {
 
   if (!env.RESEND_API_KEY) return json({ error: 'Email sending is not configured yet.' }, 500);
 
+  await ensureFullMagic(env);
   const token = randomToken(32);
   const tokenHash = await sha256hex('magic:' + token);
-  await env.DB.prepare('INSERT INTO magic_tokens (token_hash, email, expires_at) VALUES (?, ?, ?)')
-    .bind(tokenHash, email, Date.now() + MAGIC_TTL_MS).run();
+  const rb = new Uint32Array(1); crypto.getRandomValues(rb);
+  const code = String(100000 + (rb[0] % 900000));
+  const codeHash = await sha256hex('code:' + code);
+  await env.DB.prepare('INSERT INTO magic_tokens (token_hash, email, expires_at, code_hash, code_attempts) VALUES (?, ?, ?, ?, 0)')
+    .bind(tokenHash, email, Date.now() + MAGIC_TTL_MS, codeHash).run();
 
   const url = new URL(req.url);
   const base = url.origin + (url.pathname.startsWith('/admin') ? '/admin' : '');
   const link = `${base}/api/verify?token=${token}`;
   try {
-    await sendMagicLinkEmail(env, email, link);
+    await sendMagicLinkEmail(env, email, link, code);
   } catch {
     await env.DB.prepare('DELETE FROM magic_tokens WHERE token_hash = ?').bind(tokenHash).run();
     return json({ error: 'Could not send the email. Try again later.' }, 500);
   }
   return json({ ok: true });
+}
+
+async function ensureFullMagic(env: Env): Promise<void> {
+  try { await env.DB.prepare('ALTER TABLE magic_tokens ADD COLUMN code_hash TEXT').run(); } catch {}
+  try { await env.DB.prepare('ALTER TABLE magic_tokens ADD COLUMN code_attempts INTEGER NOT NULL DEFAULT 0').run(); } catch {}
+}
+
+async function handleVerifyCode(req: Request, env: Env): Promise<Response> {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: 'Invalid JSON.' }, 400); }
+  const email = String(body.email || '').trim().toLowerCase();
+  const code = String(body.code || '').trim();
+  if (!isValidEmail(email) || !/^\d{6}$/.test(code)) return json({ error: 'Enter the 6-digit code from your email.' }, 400);
+  if (!ALLOWLIST.has(email)) return json({ error: 'That code is invalid or expired.' }, 400);
+  await ensureFullMagic(env);
+  const codeHash = await sha256hex('code:' + code);
+  const rows = await env.DB.prepare('SELECT token_hash, expires_at, code_attempts FROM magic_tokens WHERE email = ? AND used_at IS NULL AND code_hash = ? ORDER BY expires_at DESC')
+    .bind(email, codeHash).all<{ token_hash: string; expires_at: number; code_attempts: number }>();
+  const now = Date.now();
+  for (const row of rows.results || []) {
+    if (row.expires_at >= now) {
+      // Using the code burns the link too (same login intent).
+      await env.DB.prepare('UPDATE magic_tokens SET used_at = ? WHERE token_hash = ?').bind(now, row.token_hash).run();
+      const sess = await createSession(env, email);
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json', 'Set-Cookie': sessionCookie(sess) } });
+    }
+  }
+  // Wrong code: count the attempt against the newest live token; 5 wrong burns it.
+  const live = await env.DB.prepare('SELECT token_hash, code_attempts FROM magic_tokens WHERE email = ? AND used_at IS NULL AND code_hash IS NOT NULL ORDER BY expires_at DESC LIMIT 1')
+    .bind(email).first<{ token_hash: string; code_attempts: number }>();
+  if (live) {
+    const attempts = (live.code_attempts || 0) + 1;
+    if (attempts >= 5) {
+      await env.DB.prepare('UPDATE magic_tokens SET used_at = ?, code_attempts = ? WHERE token_hash = ?').bind(now, attempts, live.token_hash).run();
+    } else {
+      await env.DB.prepare('UPDATE magic_tokens SET code_attempts = ? WHERE token_hash = ?').bind(attempts, live.token_hash).run();
+    }
+  }
+  return json({ error: 'That code is invalid or expired.' }, 400);
 }
 
 async function handleVerify(req: Request, env: Env): Promise<Response> {
@@ -227,6 +270,7 @@ export default {
     if (path === '/login' && method === 'GET') return html(LOGIN_HTML.replace('<!--MSG-->', ''));
     if (path === '/api/magic-link' && method === 'POST') return handleMagicLink(req, env);
     if (path === '/api/verify' && method === 'GET') return handleVerify(req, env);
+    if (path === '/api/verify-code' && method === 'POST') return handleVerifyCode(req, env);
 
     // Session gate
     const email = await getSessionEmail(req, env);
@@ -668,8 +712,9 @@ label{font-size:13px;color:#9aa0a6;display:block;margin:10px 0 5px}
 const LOGIN_HTML = `
 <div class="login-wrap"><div class="card login-card">
 <h1>Dawn Studio Admin</h1>
-<p class="sub">Private admin portal. Sign in with a magic link.</p>
-<form id="f"><label for="email">Email</label><input id="email" type="email" required autocomplete="email" placeholder="you@example.com"><div style="margin-top:14px"><button class="btn" type="submit" style="width:100%">Send login link</button></div></form>
+<p class="sub">Private admin portal. Sign in with a magic link — or the 6-digit code from the same email.</p>
+<form id="f"><label for="email">Email</label><input id="email" type="email" required autocomplete="email" placeholder="you@example.com"><div style="margin-top:14px"><button class="btn" type="submit" style="width:100%">Send sign-in email</button></div></form>
+<form id="f2" class="hidden" style="margin-top:16px"><label for="code">6-digit code</label><input id="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="123456" style="font-size:20px;letter-spacing:6px;text-align:center"><div style="margin-top:14px"><button class="btn" type="submit" style="width:100%">Sign in with code</button></div></form>
 <div id="msg" class="msg"></div><!--MSG-->
 </div></div>
 <script>
@@ -681,7 +726,19 @@ document.getElementById('f').addEventListener('submit', async (e) => {
     const r = await fetch('api/magic-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('email').value }) });
     const d = await r.json();
     if (!r.ok) { m.className = 'msg err'; m.textContent = d.error || 'Failed.'; return; }
-    m.className = 'msg ok'; m.textContent = "If this email is registered, you'll receive a login link shortly.";
+    m.className = 'msg ok'; m.textContent = "If this email is registered, you'll receive an email with a sign-in link and a 6-digit code shortly.";
+    document.getElementById('f2').classList.remove('hidden');
+  } catch { m.className = 'msg err'; m.textContent = 'Network error.'; }
+});
+document.getElementById('f2').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const m = document.getElementById('msg');
+  m.className = 'msg'; m.textContent = 'Checking…';
+  try {
+    const r = await fetch('api/verify-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('email').value, code: document.getElementById('code').value }) });
+    const d = await r.json();
+    if (!r.ok) { m.className = 'msg err'; m.textContent = d.error || 'Failed.'; return; }
+    location.href = (location.pathname.startsWith('/admin') ? '/admin' : '') + '/';
   } catch { m.className = 'msg err'; m.textContent = 'Network error.'; }
 });
 </script>`;
