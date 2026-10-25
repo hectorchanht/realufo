@@ -32,3 +32,27 @@ CREATE TABLE IF NOT EXISTS rate_limits (
 );
 CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_magic_expires ON magic_tokens(expires_at);
+
+CREATE TABLE IF NOT EXISTS spends_recurring (
+  id TEXT PRIMARY KEY,
+  vendor TEXT NOT NULL,
+  amount REAL,
+  currency TEXT,
+  cadence TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  category TEXT,
+  last_charged TEXT,
+  next_renewal TEXT,
+  notes TEXT,
+  created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS spends_oneoff (
+  id TEXT PRIMARY KEY,
+  spent_on TEXT,
+  vendor TEXT NOT NULL,
+  amount REAL,
+  currency TEXT,
+  category TEXT,
+  subject TEXT,
+  created_at INTEGER NOT NULL
+);

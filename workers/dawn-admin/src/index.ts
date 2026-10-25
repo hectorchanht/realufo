@@ -240,6 +240,12 @@ export default {
     if ((path === '/' || path === '') && method === 'GET') return html(dashboardHTML(base, email));
     if (path === '/analytics' && method === 'GET') return html(analyticsHTML(base, email));
     if (path === '/api/analytics/summary' && method === 'GET') return handleAnalyticsSummary(env);
+    if (path === '/spends' && method === 'GET') return html(spendsHTML(base, email));
+    if (path === '/api/spends' && method === 'GET') return handleSpendsList(env);
+    if (path === '/api/spends/recurring' && method === 'POST') return handleSpendsCreate(req, env, 'recurring');
+    if (path === '/api/spends/oneoff' && method === 'POST') return handleSpendsCreate(req, env, 'oneoff');
+    const spendsMatch = path.match(/^\/api\/spends\/(recurring|oneoff)\/([A-Za-z0-9_-]+)$/);
+    if (spendsMatch && (method === 'PATCH' || method === 'DELETE')) return handleSpendsModify(req, env, spendsMatch[1], spendsMatch[2], method);
     if (path === '/api/logout' && method === 'POST') return handleLogout(req, env);
     if (path === '/api/me' && method === 'GET') return json({ email });
 
@@ -440,6 +446,177 @@ async function handleAnalyticsSummary(env: Env): Promise<Response> {
   }
 }
 
+
+// ---------- Spends (Hector's own recurring + one-off, seeded from verified sources) ----------
+
+const SPENDS_SEED_RECURRING: any[] = [
+  { vendor: 'Cloudflare', amount: 5, currency: 'USD', cadence: 'monthly', status: 'active', category: 'Hosting', last_charged: '2026-10-09', next_renewal: 'Monthly (~9th)', notes: 'Workers Paid US$5 fixed + usage. Latest invoice IN-82964257 US$7.25 (incl. R2/AI usage), paid.' },
+  { vendor: 'Google One — Google AI Plus 2 TB', amount: 799, currency: 'HKD', cadence: 'yearly', status: 'active', category: 'Storage / AI', last_charged: '2026-07-18', next_renewal: '2027-07-18', notes: 'Auto-renewing. Order SOP.3398-6124-1713-45134.' },
+  { vendor: 'Porkbun domains (12)', amount: null, currency: 'USD', cadence: 'yearly', status: 'active', category: 'Domains', last_charged: '', next_renewal: 'moneyrate.lol expires 2026-11-10', notes: 'Auto-renew ON: moneyrate.lol, realufo.org (2027-05-21), ownerledgr.com, globalnewsshorts.com, watchthenight.com, strangedocs.com, dawnstudio.app, hectorchan.com. OFF: pennyvest.space, openmusic.lol, holdr.lol, clipbin.lol. Renewal amounts not in audit — verify per domain.' },
+  { vendor: 'X Developer Platform', amount: 10, currency: 'USD', cadence: 'monthly', status: 'unverified', category: 'API', last_charged: '2026-10-02', next_renewal: '', notes: 'US$10 paid 2026-10-02 (receipt 1724-5095, ~CA$14.62). Recurring plan vs pay-per-use credits UNVERIFIED. X bot paused.' },
+  { vendor: 'ElevenLabs Starter', amount: 6, currency: 'USD', cadence: 'monthly', status: 'cancelled', category: 'AI voice', last_charged: '2026-10-03', next_renewal: '', notes: 'Cancelled after the Oct 2026 subscription audit. First month was US$1.05 promo.' },
+];
+const SPENDS_SEED_ONEOFF: any[] = [
+  { spent_on: '2026-10-07', vendor: 'Visions Electronics', amount: 284.30, currency: 'CAD', category: 'other', subject: 'Visions Electronics Electronic Invoice' },
+  { spent_on: '2026-10-08', vendor: 'Epic Games', amount: 0, currency: 'HKD', category: 'Games', subject: 'Your Epic Games Receipt - TerraScape' },
+  { spent_on: '2026-10-08', vendor: 'Epic Games', amount: 0, currency: 'HKD', category: 'Games', subject: 'Your Epic Games Receipt - Out of Sight' },
+  { spent_on: '2026-10-09', vendor: 'Cloudflare', amount: 7.25, currency: 'USD', category: 'Hosting', subject: 'Your invoice is available' },
+  { spent_on: '2026-10-17', vendor: 'Epic Games', amount: 0, currency: 'HKD', category: 'Games', subject: 'Your Epic Games Receipt - Bad Cheese' },
+  { spent_on: '2026-10-17', vendor: 'Epic Games', amount: 0, currency: 'HKD', category: 'Games', subject: 'Your Epic Games Receipt - Agent A: A puzzle in disguise' },
+  { spent_on: '2026-10-24', vendor: 'Pizza 73', amount: 31.39, currency: 'CAD', category: 'Food', subject: 'Pizza 73 Order Confirmation' },
+];
+
+async function ensureSpends(env: Env): Promise<void> {
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS spends_recurring (id TEXT PRIMARY KEY, vendor TEXT NOT NULL, amount REAL, currency TEXT, cadence TEXT, status TEXT NOT NULL DEFAULT 'active', category TEXT, last_charged TEXT, next_renewal TEXT, notes TEXT, created_at INTEGER NOT NULL)`).run();
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS spends_oneoff (id TEXT PRIMARY KEY, spent_on TEXT, vendor TEXT NOT NULL, amount REAL, currency TEXT, category TEXT, subject TEXT, created_at INTEGER NOT NULL)`).run();
+  const c: any = await env.DB.prepare('SELECT COUNT(*) AS n FROM spends_recurring').first();
+  if (!c || !c.n) {
+    for (const r of SPENDS_SEED_RECURRING) {
+      await env.DB.prepare('INSERT INTO spends_recurring (id, vendor, amount, currency, cadence, status, category, last_charged, next_renewal, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(randomToken(12), r.vendor, r.amount, r.currency, r.cadence, r.status, r.category, r.last_charged, r.next_renewal, r.notes, Date.now()).run();
+    }
+  }
+  const c2: any = await env.DB.prepare('SELECT COUNT(*) AS n FROM spends_oneoff').first();
+  if (!c2 || !c2.n) {
+    for (const r of SPENDS_SEED_ONEOFF) {
+      await env.DB.prepare('INSERT INTO spends_oneoff (id, spent_on, vendor, amount, currency, category, subject, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(randomToken(12), r.spent_on, r.vendor, r.amount, r.currency, r.category, r.subject, Date.now()).run();
+    }
+  }
+}
+
+async function handleSpendsList(env: Env): Promise<Response> {
+  await ensureSpends(env);
+  const rec = await env.DB.prepare('SELECT * FROM spends_recurring ORDER BY status, vendor').all();
+  const one = await env.DB.prepare('SELECT * FROM spends_oneoff ORDER BY spent_on DESC, created_at DESC').all();
+  return json({ recurring: rec.results, oneoff: one.results });
+}
+
+async function handleSpendsCreate(req: Request, env: Env, kind: string): Promise<Response> {
+  await ensureSpends(env);
+  let body: any; try { body = await req.json(); } catch { return json({ error: 'Invalid JSON.' }, 400); }
+  const vendor = String(body.vendor || '').trim().slice(0, 160);
+  if (!vendor) return json({ error: 'Vendor required.' }, 400);
+  const amount = body.amount === null || body.amount === '' || body.amount === undefined ? null : Number(body.amount);
+  const id = randomToken(12);
+  if (kind === 'recurring') {
+    await env.DB.prepare('INSERT INTO spends_recurring (id, vendor, amount, currency, cadence, status, category, last_charged, next_renewal, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, vendor, amount, String(body.currency || 'USD').slice(0, 8), String(body.cadence || 'monthly').slice(0, 20), String(body.status || 'active').slice(0, 20), String(body.category || '').slice(0, 60), String(body.last_charged || '').slice(0, 40), String(body.next_renewal || '').slice(0, 80), String(body.notes || '').slice(0, 600), Date.now()).run();
+  } else {
+    await env.DB.prepare('INSERT INTO spends_oneoff (id, spent_on, vendor, amount, currency, category, subject, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, String(body.spent_on || '').slice(0, 20), vendor, amount, String(body.currency || 'CAD').slice(0, 8), String(body.category || '').slice(0, 60), String(body.subject || '').slice(0, 300), Date.now()).run();
+  }
+  return json({ ok: true, id });
+}
+
+async function handleSpendsModify(req: Request, env: Env, kind: string, id: string, method: string): Promise<Response> {
+  await ensureSpends(env);
+  const table = kind === 'recurring' ? 'spends_recurring' : 'spends_oneoff';
+  if (method === 'DELETE') {
+    await env.DB.prepare(`DELETE FROM ${table} WHERE id = ?`).bind(id).run();
+    return json({ ok: true });
+  }
+  let body: any; try { body = await req.json(); } catch { return json({ error: 'Invalid JSON.' }, 400); }
+  if (kind === 'recurring') {
+    let amt: any = null; let hasAmt = false;
+    if (body.amount !== undefined) { hasAmt = true; amt = (body.amount === null || body.amount === '') ? null : Number(body.amount); }
+    else { const cur: any = await env.DB.prepare('SELECT amount FROM spends_recurring WHERE id = ?').bind(id).first(); amt = cur ? cur.amount : null; hasAmt = true; }
+    await env.DB.prepare('UPDATE spends_recurring SET status = COALESCE(?, status), amount = ?, vendor = COALESCE(?, vendor), notes = COALESCE(?, notes), next_renewal = COALESCE(?, next_renewal) WHERE id = ?')
+      .bind(body.status !== undefined ? String(body.status).slice(0, 20) : null, hasAmt ? amt : null, body.vendor !== undefined ? String(body.vendor).slice(0, 160) : null, body.notes !== undefined ? String(body.notes).slice(0, 600) : null, body.next_renewal !== undefined ? String(body.next_renewal).slice(0, 80) : null, id).run();
+  } else {
+    await env.DB.prepare('UPDATE spends_oneoff SET vendor = COALESCE(?, vendor), category = COALESCE(?, category), spent_on = COALESCE(?, spent_on) WHERE id = ?')
+      .bind(body.vendor !== undefined ? String(body.vendor).slice(0, 160) : null, body.category !== undefined ? String(body.category).slice(0, 60) : null, body.spent_on !== undefined ? String(body.spent_on).slice(0, 20) : null, id).run();
+  }
+  return json({ ok: true });
+}
+
+function spendsHTML(base: string, email: string): string {
+  return `
+<div class="wrap">
+<header><h1><a href="${base}/" style="color:#e8eaed;text-decoration:none">Dawn Studio Admin</a></h1><div><span class="who">${email}</span><a class="btn ghost" href="${base}/analytics" style="text-decoration:none;margin-right:8px">Analytics</a><button class="btn ghost" id="logout">Log out</button></div></header>
+
+<div class="card"><h2>Spends — summary</h2><div id="summary" class="grid"><p class="note">Loading…</p></div>
+<p class="note">Totals are kept per currency — never merged into a fake single number. Recurring amounts marked unverified are excluded from the monthly burn.</p></div>
+
+<div class="card"><h2>Recurring</h2>
+<div class="toolbar"><button class="btn" id="newRec">Add recurring</button></div>
+<div id="recForm" class="hidden" style="margin-bottom:14px;border:1px solid #30363d;border-radius:8px;padding:14px">
+<div class="row"><div><label>Vendor</label><input id="rVendor"></div><div><label>Amount (blank = unknown)</label><input id="rAmount" type="number" step="0.01"></div><div><label>Currency</label><input id="rCur" value="USD"></div><div><label>Cadence</label><select id="rCad"><option>monthly</option><option>yearly</option></select></div><div><label>Category</label><input id="rCat"></div></div>
+<label>Notes</label><textarea id="rNotes"></textarea>
+<div style="margin-top:10px;display:flex;gap:10px"><button class="btn" id="rCreate">Save</button><button class="btn ghost" id="rCancel">Cancel</button></div><div id="rMsg" class="msg"></div></div>
+<table><thead><tr><th>Vendor</th><th>Amount</th><th>Cadence</th><th>Status</th><th>Category</th><th>Last charged</th><th>Next</th><th>Notes</th><th></th></tr></thead><tbody id="rec"><tr><td colspan="9" class="note">Loading…</td></tr></tbody></table></div>
+
+<div class="card"><h2>One-off expenses</h2>
+<p class="note">Seeded from the Expense Sheet (RealUFO Daily Metrics → Expenses tab, Gmail receipt logger). Source: <a href="https://docs.google.com/spreadsheets/d/1o3y2iz12kGobrWH3ZonwUrIJb444Sqy9u38hBoDbKN8/edit#gid=1003729128" target="_blank" rel="noopener">open the sheet</a></p>
+<div class="toolbar"><button class="btn" id="newOne">Add expense</button></div>
+<div id="oneForm" class="hidden" style="margin-bottom:14px;border:1px solid #30363d;border-radius:8px;padding:14px">
+<div class="row"><div><label>Date</label><input id="oDate" type="date"></div><div><label>Vendor</label><input id="oVendor"></div><div><label>Amount</label><input id="oAmount" type="number" step="0.01"></div><div><label>Currency</label><input id="oCur" value="CAD"></div><div><label>Category</label><input id="oCat"></div></div>
+<label>Subject / note</label><input id="oSubject">
+<div style="margin-top:10px;display:flex;gap:10px"><button class="btn" id="oCreate">Save</button><button class="btn ghost" id="oCancel">Cancel</button></div><div id="oMsg" class="msg"></div></div>
+<table><thead><tr><th>Date</th><th>Vendor</th><th>Amount</th><th>Category</th><th>Subject</th><th></th></tr></thead><tbody id="one"><tr><td colspan="6" class="note">Loading…</td></tr></tbody></table></div>
+</div>
+<script>
+const B = ${JSON.stringify(base)};
+const api = (p, o) => fetch(B + p, { credentials: 'same-origin', ...(o || {}) });
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (a, c) => a === null || a === undefined ? '— (' + esc(c || '') + ', unknown)' : Number(a).toFixed(2) + ' ' + esc(c || '');
+document.getElementById('logout').onclick = async () => { await api('/api/logout', { method: 'POST' }); location.href = B + '/login'; };
+let DATA = { recurring: [], oneoff: [] };
+function statCard(label, val) { return '<div class="card app"><h3 style="font-size:22px">' + esc(val) + '</h3><p>' + esc(label) + '</p></div>'; }
+async function load() {
+  try { DATA = await (await api('/api/spends')).json(); } catch {}
+  const rec = DATA.recurring || [], one = DATA.oneoff || [];
+  const burn = {};
+  rec.filter((r) => r.status === 'active' && r.amount !== null && r.amount !== undefined).forEach((r) => {
+    const m = r.cadence === 'yearly' ? r.amount / 12 : r.amount;
+    burn[r.currency] = (burn[r.currency] || 0) + m;
+  });
+  const oneTot = {};
+  one.forEach((r) => { if (r.amount) oneTot[r.currency] = (oneTot[r.currency] || 0) + Number(r.amount); });
+  document.getElementById('summary').innerHTML =
+    Object.keys(burn).map((c) => statCard('Monthly burn (' + c + ', active recurring, yearly spread /12)', burn[c].toFixed(2) + ' ' + c)).join('') +
+    statCard('Active recurring', String(rec.filter((r) => r.status === 'active').length)) +
+    statCard('One-off logged', String(one.length)) +
+    Object.keys(oneTot).map((c) => statCard('One-off total (' + c + ')', oneTot[c].toFixed(2) + ' ' + c)).join('');
+  document.getElementById('rec').innerHTML = rec.length ? rec.map((r) =>
+    '<tr><td>' + esc(r.vendor) + '</td><td>' + fmt(r.amount, r.currency) + '</td><td>' + esc(r.cadence) + '</td>' +
+    '<td><span class="pill ' + (r.status === 'active' ? 'ok' : r.status === 'cancelled' ? '' : 'warn') + '">' + esc(r.status) + '</span></td><td>' + esc(r.category || '—') + '</td><td>' + esc(r.last_charged || '—') + '</td><td>' + esc(r.next_renewal || '—') + '</td><td>' + esc(r.notes || '—') + '</td>' +
+    '<td style="white-space:nowrap">' + (r.status !== 'cancelled' ? '<button class="btn ghost" data-k="rec" data-act="cancel" data-id="' + r.id + '">Cancel sub</button> ' : '') + '<button class="btn danger" data-k="rec" data-act="del" data-id="' + r.id + '">Delete</button></td></tr>').join('')
+    : '<tr><td colspan="9" class="note">None.</td></tr>';
+  document.getElementById('one').innerHTML = one.length ? one.map((r) =>
+    '<tr><td>' + esc(r.spent_on || '—') + '</td><td>' + esc(r.vendor) + '</td><td>' + fmt(r.amount, r.currency) + '</td><td>' + esc(r.category || '—') + '</td><td>' + esc(r.subject || '—') + '</td>' +
+    '<td><button class="btn danger" data-k="one" data-act="del" data-id="' + r.id + '">Delete</button></td></tr>').join('')
+    : '<tr><td colspan="6" class="note">None.</td></tr>';
+  document.querySelectorAll('button[data-id]').forEach((b) => b.onclick = async () => {
+    const kind = b.dataset.k === 'rec' ? 'recurring' : 'oneoff';
+    if (b.dataset.act === 'del' && !confirm('Delete this row permanently?')) return;
+    if (b.dataset.act === 'cancel') {
+      if (!confirm('Mark this subscription cancelled in the portal only? This does NOT cancel it with the provider.')) return;
+      await api('/api/spends/' + kind + '/' + b.dataset.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'cancelled' }) });
+    } else {
+      await api('/api/spends/' + kind + '/' + b.dataset.id, { method: 'DELETE' });
+    }
+    load();
+  });
+}
+document.getElementById('newRec').onclick = () => document.getElementById('recForm').classList.toggle('hidden');
+document.getElementById('rCancel').onclick = () => document.getElementById('recForm').classList.add('hidden');
+document.getElementById('rCreate').onclick = async () => {
+  const r = await api('/api/spends/recurring', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vendor: document.getElementById('rVendor').value, amount: document.getElementById('rAmount').value === '' ? null : document.getElementById('rAmount').value, currency: document.getElementById('rCur').value, cadence: document.getElementById('rCad').value, category: document.getElementById('rCat').value, notes: document.getElementById('rNotes').value }) });
+  if (!r.ok) { document.getElementById('rMsg').textContent = 'Failed.'; return; }
+  document.getElementById('recForm').classList.add('hidden'); load();
+};
+document.getElementById('newOne').onclick = () => document.getElementById('oneForm').classList.toggle('hidden');
+document.getElementById('oCancel').onclick = () => document.getElementById('oneForm').classList.add('hidden');
+document.getElementById('oCreate').onclick = async () => {
+  const r = await api('/api/spends/oneoff', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spent_on: document.getElementById('oDate').value, vendor: document.getElementById('oVendor').value, amount: document.getElementById('oAmount').value, currency: document.getElementById('oCur').value, category: document.getElementById('oCat').value, subject: document.getElementById('oSubject').value }) });
+  if (!r.ok) { document.getElementById('oMsg').textContent = 'Failed.'; return; }
+  document.getElementById('oneForm').classList.add('hidden'); load();
+};
+load();
+</script>`;
+}
+
 // ---------- UI ----------
 
 const CSS = `
@@ -512,7 +689,7 @@ document.getElementById('f').addEventListener('submit', async (e) => {
 function dashboardHTML(base: string, email: string): string {
   return `
 <div class="wrap">
-<header><h1>Dawn Studio Admin</h1><div><span class="who">${email}</span><a class="btn ghost" href="${base}/analytics" style="text-decoration:none;margin-right:8px">Analytics</a><button class="btn ghost" id="logout">Log out</button></div></header>
+<header><h1>Dawn Studio Admin</h1><div><span class="who">${email}</span><a class="btn ghost" href="${base}/analytics" style="text-decoration:none;margin-right:8px">Analytics</a><a class="btn ghost" href="${base}/spends" style="text-decoration:none;margin-right:8px">Spends</a><button class="btn ghost" id="logout">Log out</button></div></header>
 
 <div class="card"><h2>Apps — paying status</h2><div id="apps" class="grid"><p class="note">Loading…</p></div></div>
 
