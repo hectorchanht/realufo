@@ -1,6 +1,6 @@
 /**
  * Dawn Studio Admin — private admin portal (Worker + D1).
- * 6-digit auth-code login (allowlist only), manual license-key CRUD, Gumroad sales view, spends portal.
+ * Magic-link login (allowlist only), manual license-key CRUD, Gumroad sales view.
  * Serves both workers.dev root and dawnstudio.app/admin* (path prefix stripped).
  */
 
@@ -15,9 +15,8 @@ export interface Env {
 const ALLOWLIST = new Set(['f147259@gmail.com']);
 const SESSION_COOKIE = '__ds_admin';
 const SESSION_TTL_S = 30 * 24 * 3600;
-const CODE_TTL_MS = 15 * 60 * 1000;
-const CODE_MAX_ATTEMPTS = 5;
-const CODE_RATE_PER_HOUR = 5;
+const MAGIC_TTL_MS = 15 * 60 * 1000;
+const MAGIC_RATE_PER_HOUR = 5;
 
 // The six Dawn Studio apps + their Gumroad tip-jar permalinks.
 const APPS = [
@@ -112,16 +111,16 @@ async function rateLimit(env: Env, key: string, max: number, windowMs: number): 
 
 // ---------- email (Resend) ----------
 
-async function sendAuthCodeEmail(env: Env, to: string, code: string): Promise<void> {
+async function sendMagicLinkEmail(env: Env, to: string, link: string): Promise<void> {
   const from = env.MAGIC_LINK_FROM || 'Dawn Studio <login@dawnstudio.app>';
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from, to,
-      subject: 'Your Dawn Studio Admin sign-in code',
-      html: `<p>Your sign-in code for the Dawn Studio admin portal is:</p><p style="font-size:28px;font-weight:700;letter-spacing:6px">${code}</p><p>It expires in 15 minutes and can only be used once. If you didn't request this, just ignore this email.</p>`,
-      text: `Your Dawn Studio Admin sign-in code is ${code}. It expires in 15 minutes and can only be used once.`,
+      subject: 'Your Dawn Studio Admin login link',
+      html: `<p>Click the link below to log in to the Dawn Studio admin portal. It expires in 15 minutes and can only be used once.</p><p><a href="${link}">Log in to Dawn Studio Admin</a></p><p>If you didn't request this, just ignore this email.</p>`,
+      text: `Log in to Dawn Studio Admin (expires in 15 minutes, single use): ${link}`,
     }),
   });
   if (!res.ok) throw new Error(`Resend HTTP ${res.status}`);
@@ -152,65 +151,54 @@ async function gumroadFetch(env: Env, path: string, init?: RequestInit): Promise
 
 // ---------- handlers ----------
 
-async function ensureAuthCodes(env: Env): Promise<void> {
-  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS auth_codes (email TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL)`).run();
-}
-
-async function handleAuthCode(req: Request, env: Env): Promise<Response> {
+async function handleMagicLink(req: Request, env: Env): Promise<Response> {
   let body: any;
   try { body = await req.json(); } catch { return json({ error: 'Invalid JSON.' }, 400); }
   const email = String(body.email || '').trim().toLowerCase();
   if (!isValidEmail(email)) return json({ error: 'Enter a valid email address.' }, 400);
+
   const ip = clientIp(req);
-  if (!(await rateLimit(env, `ac:ip:${ip}`, CODE_RATE_PER_HOUR, 3600_000))) {
+  if (!(await rateLimit(env, `ml:ip:${ip}`, MAGIC_RATE_PER_HOUR, 3600_000))) {
     return json({ error: 'Too many requests — try again later.' }, 429);
   }
-  // No enumeration: always respond ok. Only the allowlisted email gets a real code.
+
+  // No enumeration: always respond ok. Only the allowlisted email gets a real link.
   if (!ALLOWLIST.has(email)) return json({ ok: true });
+
   if (!env.RESEND_API_KEY) return json({ error: 'Email sending is not configured yet.' }, 500);
-  await ensureAuthCodes(env);
-  const rb = new Uint32Array(1); crypto.getRandomValues(rb); const code = String(100000 + (rb[0] % 900000));
-  // Salt the hash with a server-side random stored nowhere else: hash of email+code is
-  // sufficient here given 15-min expiry, 5-attempt burn and per-IP rate limits.
-  const codeHash = await sha256hex('code:' + email + ':' + code);
-  await env.DB.prepare('INSERT OR REPLACE INTO auth_codes (email, code_hash, expires_at, attempts, created_at) VALUES (?, ?, ?, 0, ?)')
-    .bind(email, codeHash, Date.now() + CODE_TTL_MS, Date.now()).run();
+
+  const token = randomToken(32);
+  const tokenHash = await sha256hex('magic:' + token);
+  await env.DB.prepare('INSERT INTO magic_tokens (token_hash, email, expires_at) VALUES (?, ?, ?)')
+    .bind(tokenHash, email, Date.now() + MAGIC_TTL_MS).run();
+
+  const url = new URL(req.url);
+  const base = url.origin + (url.pathname.startsWith('/admin') ? '/admin' : '');
+  const link = `${base}/api/verify?token=${token}`;
   try {
-    await sendAuthCodeEmail(env, email, code);
+    await sendMagicLinkEmail(env, email, link);
   } catch {
-    await env.DB.prepare('DELETE FROM auth_codes WHERE email = ?').bind(email).run();
+    await env.DB.prepare('DELETE FROM magic_tokens WHERE token_hash = ?').bind(tokenHash).run();
     return json({ error: 'Could not send the email. Try again later.' }, 500);
   }
   return json({ ok: true });
 }
 
-async function handleVerifyCode(req: Request, env: Env): Promise<Response> {
-  let body: any;
-  try { body = await req.json(); } catch { return json({ error: 'Invalid JSON.' }, 400); }
-  const email = String(body.email || '').trim().toLowerCase();
-  const code = String(body.code || '').trim();
-  if (!isValidEmail(email) || !/^\d{6}$/.test(code)) return json({ error: 'Enter the 6-digit code from your email.' }, 400);
-  if (!ALLOWLIST.has(email)) return json({ error: 'That code is invalid or expired.' }, 400);
-  await ensureAuthCodes(env);
-  const row = await env.DB.prepare('SELECT code_hash, expires_at, attempts FROM auth_codes WHERE email = ?').bind(email).first<{ code_hash: string; expires_at: number; attempts: number }>();
-  if (!row || row.expires_at < Date.now() || row.attempts >= CODE_MAX_ATTEMPTS) {
-    return json({ error: 'That code is invalid or expired.' }, 400);
+async function handleVerify(req: Request, env: Env): Promise<Response> {
+  const url = new URL(req.url);
+  const token = url.searchParams.get('token') || '';
+  const base = url.pathname.startsWith('/admin') ? '/admin' : '';
+  if (!token) return html(LOGIN_HTML.replace('<!--MSG-->', '<p class="err">Missing token.</p>'), 400);
+  const tokenHash = await sha256hex('magic:' + token);
+  const row = await env.DB.prepare('SELECT email, expires_at, used_at FROM magic_tokens WHERE token_hash = ?').bind(tokenHash).first<{ email: string; expires_at: number; used_at: number | null }>();
+  if (!row || row.used_at || row.expires_at < Date.now() || !ALLOWLIST.has(row.email)) {
+    return html(LOGIN_HTML.replace('<!--MSG-->', '<p class="err">This link is invalid or expired.</p>'), 400);
   }
-  const codeHash = await sha256hex('code:' + email + ':' + code);
-  if (codeHash !== row.code_hash) {
-    const attempts = row.attempts + 1;
-    if (attempts >= CODE_MAX_ATTEMPTS) {
-      await env.DB.prepare('DELETE FROM auth_codes WHERE email = ?').bind(email).run();
-    } else {
-      await env.DB.prepare('UPDATE auth_codes SET attempts = ? WHERE email = ?').bind(attempts, email).run();
-    }
-    return json({ error: 'That code is invalid or expired.' }, 400);
-  }
-  await env.DB.prepare('DELETE FROM auth_codes WHERE email = ?').bind(email).run();
-  const sess = await createSession(env, email);
-  return new Response(JSON.stringify({ ok: true }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json', 'Set-Cookie': sessionCookie(sess) },
+  await env.DB.prepare('UPDATE magic_tokens SET used_at = ? WHERE token_hash = ?').bind(Date.now(), tokenHash).run();
+  const sess = await createSession(env, row.email);
+  return new Response(null, {
+    status: 302,
+    headers: { Location: `${base}/`, 'Set-Cookie': sessionCookie(sess) },
   });
 }
 
@@ -237,8 +225,8 @@ export default {
 
     // Public auth endpoints
     if (path === '/login' && method === 'GET') return html(LOGIN_HTML.replace('<!--MSG-->', ''));
-    if (path === '/api/auth/code' && method === 'POST') return handleAuthCode(req, env);
-    if (path === '/api/auth/verify-code' && method === 'POST') return handleVerifyCode(req, env);
+    if (path === '/api/magic-link' && method === 'POST') return handleMagicLink(req, env);
+    if (path === '/api/verify' && method === 'GET') return handleVerify(req, env);
 
     // Session gate
     const email = await getSessionEmail(req, env);
@@ -680,35 +668,20 @@ label{font-size:13px;color:#9aa0a6;display:block;margin:10px 0 5px}
 const LOGIN_HTML = `
 <div class="login-wrap"><div class="card login-card">
 <h1>Dawn Studio Admin</h1>
-<p class="sub">Private admin portal. Sign in with a 6-digit code sent to your email.</p>
-<form id="f"><label for="email">Email</label><input id="email" type="email" required autocomplete="email" placeholder="you@example.com"><div style="margin-top:14px"><button class="btn" type="submit" style="width:100%">Send sign-in code</button></div></form>
-<form id="f2" class="hidden" style="margin-top:16px"><label for="code">6-digit code</label><input id="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="123456" style="font-size:20px;letter-spacing:6px;text-align:center"><div style="margin-top:14px"><button class="btn" type="submit" style="width:100%">Sign in</button></div></form>
+<p class="sub">Private admin portal. Sign in with a magic link.</p>
+<form id="f"><label for="email">Email</label><input id="email" type="email" required autocomplete="email" placeholder="you@example.com"><div style="margin-top:14px"><button class="btn" type="submit" style="width:100%">Send login link</button></div></form>
 <div id="msg" class="msg"></div><!--MSG-->
 </div></div>
 <script>
-const B = location.pathname.startsWith('/admin') ? '/admin' : '';
 document.getElementById('f').addEventListener('submit', async (e) => {
   e.preventDefault();
   const m = document.getElementById('msg');
   m.className = 'msg'; m.textContent = 'Sending…';
   try {
-    const r = await fetch('api/auth/code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('email').value }) });
+    const r = await fetch('api/magic-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('email').value }) });
     const d = await r.json();
     if (!r.ok) { m.className = 'msg err'; m.textContent = d.error || 'Failed.'; return; }
-    m.className = 'msg ok'; m.textContent = "If this email is registered, you'll receive a 6-digit code shortly. It expires in 15 minutes.";
-    document.getElementById('f2').classList.remove('hidden');
-    document.getElementById('code').focus();
-  } catch { m.className = 'msg err'; m.textContent = 'Network error.'; }
-});
-document.getElementById('f2').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const m = document.getElementById('msg');
-  m.className = 'msg'; m.textContent = 'Checking…';
-  try {
-    const r = await fetch('api/auth/verify-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('email').value, code: document.getElementById('code').value }) });
-    const d = await r.json();
-    if (!r.ok) { m.className = 'msg err'; m.textContent = d.error || 'Failed.'; return; }
-    location.href = B + '/';
+    m.className = 'msg ok'; m.textContent = "If this email is registered, you'll receive a login link shortly.";
   } catch { m.className = 'msg err'; m.textContent = 'Network error.'; }
 });
 </script>`;
