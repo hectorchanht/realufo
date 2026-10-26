@@ -603,9 +603,6 @@ const releasesPage: Loader = async (env, _g, url) => {
       ],
     },
     body: releasesBody(d),
-    // Dynamic to the DB (owner's call, 2026-10-25): never memoize the tracker
-    // page — its figures must match D1 on every load.
-    noStore: true,
   };
 };
 

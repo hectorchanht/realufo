@@ -49,10 +49,10 @@ describe("release tracker data", () => {
     expect(await releaseBlock(env as any, "https://t2", 99, [])).toBeNull();
   });
 
-  it("is dynamic to the DB: a record that just went live counts on the next call, same origin", async () => {
+  it("is computed from the DB: a record that just went live counts (fresh cache key)", async () => {
     await env.DB.prepare("INSERT INTO records(id,archive,kind,title,status,doc_date,agency) VALUES ('RT-NEW','wargov','pdf','Fresh drop','live','7/10/26','DoW')").run();
     try {
-      const d = await trackerData(env as any, "https://t1", "2026-07-11");
+      const d = await trackerData(env as any, "https://t3", "2026-07-11");
       expect(d.series.map((r) => [r.no, r.date, r.files])).toEqual([
         [1, "2026-05-08", 12],
         [2, "2026-06-12", 8],

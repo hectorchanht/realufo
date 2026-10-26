@@ -1,10 +1,11 @@
 // Release tracker data (spec 2026-10-03-realufo-release-tracker-design). One
-// grouped query + wargovReleases(), read straight from D1 on every call —
-// the tracker figures must be real and dynamic to the DB (owner's call,
-// 2026-10-25), never a memoized snapshot: a release that just went live
-// counts immediately.
+// grouped query + wargovReleases(), memoized 5 min per colo: the figures are
+// always computed from D1 (owner's call, 2026-10-25 — real + dynamic to the
+// DB, with a short cache allowed), so a release that just went live counts
+// within minutes, never from a stale snapshot an hour old.
 import type { Env } from "../env";
 import { json } from "../lib/json";
+import { cachedJson } from "../lib/cache";
 import { wargovReleases } from "../lib/facets";
 import { AGENCY_HUBS } from "../lib/hubs";
 import {
@@ -12,16 +13,18 @@ import {
   type CountRow, type ReleaseBlock, type ReleaseInfo, type TrackerData,
 } from "../lib/releases";
 
-export const loadSeries = async (env: Env, _origin: string): Promise<ReleaseInfo[]> => {
-  // Both entries are promises before Promise.all sees them: a synchronous
-  // prepare() throw must not orphan the other (unhandled) rejection.
-  const counts = async () =>
-    (await env.DB.prepare(
-      "SELECT doc_date, agency, kind, count(*) n FROM records WHERE archive='wargov' AND status='live' AND doc_date IS NOT NULL GROUP BY 1,2,3"
-    ).all<CountRow>()).results;
-  const [releases, rows] = await Promise.all([wargovReleases(env), counts()]);
-  return releaseSeries(releases, rows, AGENCY_HUBS);
-};
+const SERIES_TTL = 300; // 5 min: dynamic to the DB, without a D1 hit per request
+export const loadSeries = async (env: Env, origin: string): Promise<ReleaseInfo[]> =>
+  (await cachedJson(`${origin}/__releases`, async () => {
+    // Both entries are promises before Promise.all sees them: a synchronous
+    // prepare() throw must not orphan the other (unhandled) rejection.
+    const counts = async () =>
+      (await env.DB.prepare(
+        "SELECT doc_date, agency, kind, count(*) n FROM records WHERE archive='wargov' AND status='live' AND doc_date IS NOT NULL GROUP BY 1,2,3"
+      ).all<CountRow>()).results;
+    const [releases, rows] = await Promise.all([wargovReleases(env), counts()]);
+    return releaseSeries(releases, rows, AGENCY_HUBS);
+  }, SERIES_TTL)) ?? [];
 
 export async function trackerData(env: Env, origin: string, today = todayIso()): Promise<TrackerData> {
   const series = await loadSeries(env, origin);
