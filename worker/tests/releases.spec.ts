@@ -28,7 +28,7 @@ describe("release tracker data", () => {
   it("GET /api/releases serves the same shape, publicly cacheable", async () => {
     const res = await call("/api/releases");
     expect(res.status).toBe(200);
-    expect(res.headers.get("cache-control")).toBe("public, max-age=300");
+    expect(res.headers.get("cache-control")).toBe("public, max-age=60");
     const d: any = await res.json();
     expect(d.series).toHaveLength(2);
     expect(d.window.next).toBe(3);
@@ -47,5 +47,19 @@ describe("release tracker data", () => {
     expect(first.next).toEqual({ no: 2, date: "2026-06-12" });
     expect(first.upcoming).toBeNull();
     expect(await releaseBlock(env as any, "https://t2", 99, [])).toBeNull();
+  });
+
+  it("is dynamic to the DB: a record that just went live counts on the next call, same origin", async () => {
+    await env.DB.prepare("INSERT INTO records(id,archive,kind,title,status,doc_date,agency) VALUES ('RT-NEW','wargov','pdf','Fresh drop','live','7/10/26','DoW')").run();
+    try {
+      const d = await trackerData(env as any, "https://t1", "2026-07-11");
+      expect(d.series.map((r) => [r.no, r.date, r.files])).toEqual([
+        [1, "2026-05-08", 12],
+        [2, "2026-06-12", 8],
+        [3, "2026-07-10", 1],
+      ]);
+    } finally {
+      await env.DB.prepare("DELETE FROM records WHERE id='RT-NEW'").run();
+    }
   });
 });

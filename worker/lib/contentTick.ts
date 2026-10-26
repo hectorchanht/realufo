@@ -1,12 +1,14 @@
 // worker/lib/contentTick.ts
 // Production producers for the Telegram Admin Portal v2 (the universal content gate).
 //
-// The ingest crawler no longer publishes directly:
-// - new records are inserted with status='pending' (crawler/ingest/d1.py);
+// The ingest crawler inserts new records with status='pending'
+// (crawler/ingest/d1.py). Since 2026-10-25 (owner's call) RELEASE RECORDS SHIP
+// AUTOMATICALLY: this tick flips pending records live with no Telegram
+// round-trip, so a new war.gov release is on the site as soon as ingest lands.
 // - vertical Shorts twins are rendered to clips-staging/ (crawler/ingest/clips.py),
-//   invisible to the /shorts listing (it reads clips-v/ straight from R2).
-// This tick (runs on the worker cron) offers each one to the owner through
-// queueContent(); nothing goes live without the owner's tap in Telegram.
+//   invisible to the /shorts listing (it reads clips-v/ straight from R2), and
+//   still go through queueContent() — the Telegram gate still covers Shorts
+//   and social posts; only archive records are auto-published.
 //
 // Content strategy: ONE curated Short per day — at most one open short job at a
 // time and at most one posted per 24 h. No batch auto-posting.
@@ -104,9 +106,18 @@ async function dropSkippedStaging(env: Env): Promise<void> {
   }
 }
 
+// Records ship automatically (owner's call, 2026-10-25): every pending record
+// goes live on the tick, whatever the Telegram gate says. Returns rows flipped.
+export async function flipPendingRecords(env: Env): Promise<number> {
+  const r = await env.DB.prepare("UPDATE records SET status='live' WHERE status='pending'").run();
+  const n = (r as { meta?: { changes?: number } }).meta?.changes ?? 0;
+  if (n) log({ autoLive: "records", count: n });
+  return n;
+}
+
 // Gate off = the pre-portal behavior: publish directly, no Telegram round-trip.
 async function publishDirect(env: Env): Promise<void> {
-  await env.DB.prepare("UPDATE records SET status='live' WHERE status='pending'").run();
+  await flipPendingRecords(env);
   for (const o of await listStaged(env)) {
     const parts = o.key.slice(STAGE_PREFIX.length).split("/");
     const id = parts.pop()!.replace(/\.mp4$/, "");
@@ -124,8 +135,9 @@ async function publishDirect(env: Env): Promise<void> {
 export async function contentTick(env: Env): Promise<void> {
   const logErr = (e: unknown) => log({ crashed: errLine(e) });
   try {
+    // Records first, always: a new release must never wait on a Telegram tap.
+    await flipPendingRecords(env).catch(logErr);
     if (gateOn(env)) {
-      await queueStagedRecords(env).catch(logErr);
       await queueStagedShort(env).catch(logErr);
       await dropSkippedStaging(env).catch(logErr);
     } else {

@@ -81,7 +81,7 @@ describe("staged shorts (R2 staging)", () => {
     expect(j).toHaveLength(1);
     expect(j[0]).toMatchObject({ kind: "short", stream: "short", ref: "CT-V1", status: "post_wait" });
     expect(JSON.parse(j[0].payload)).toEqual({ r2move: { from: "clips-staging/wargov/CT-V1.mp4", to: "clips-v/wargov/CT-V1.mp4" } });
-    expect(tg.map((t) => t.method)).toEqual(["sendVideo", "sendMessage"]); // the owner curates by watching
+    expect(tg.map((t) => t.method)).toEqual(["sendChatAction", "sendVideo", "sendMessage"]); // the owner curates by watching
     expect(await queueStagedShort(E())).toBe(0); // one at a time in the gate
   });
   it("promotes the clip on approval and enforces one posted short per 24h", async () => {
@@ -107,6 +107,19 @@ describe("staged shorts (R2 staging)", () => {
 });
 
 describe("contentTick", () => {
+  it("gate ON still auto-publishes records (owner's call 2026-10-25); only shorts stay gated", async () => {
+    await env.DB.prepare("INSERT INTO records(id,archive,kind,title,status) VALUES ('CT-A1','wargov','pdf','Auto doc','pending')").run();
+    await env.DB.prepare("INSERT INTO records(id,archive,kind,title,status) VALUES ('CT-A2','wargov','video','Auto vid','pending')").run();
+    await env.MEDIA.put("clips-staging/wargov/CT-A2.mp4", new Uint8Array(100), { httpMetadata: { contentType: "video/mp4" } });
+    await contentTick(E());
+    expect((await env.DB.prepare("SELECT status FROM records WHERE id='CT-A1'").first<any>()).status).toBe("live");
+    expect((await env.DB.prepare("SELECT status FROM records WHERE id='CT-A2'").first<any>()).status).toBe("live");
+    const j = await jobs();
+    expect(j.filter((x) => x.stream === "record")).toHaveLength(0); // no Telegram approval for records
+    expect(j.filter((x) => x.stream === "short")).toHaveLength(1); // the short twin is still curated
+    expect(tg.map((t) => t.method)).toEqual(["sendChatAction", "sendVideo", "sendMessage"]); // only the short's preview reaches Telegram
+  });
+
   it("gate off publishes directly (pre-portal behavior)", async () => {
     expect(gateOn(E({ FEATURE_GATE: "off" }))).toBe(false);
     await env.DB.prepare("INSERT INTO records(id,archive,kind,title,status) VALUES ('CT-D1','wargov','pdf','Direct','pending')").run();
