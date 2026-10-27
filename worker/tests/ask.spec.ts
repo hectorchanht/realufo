@@ -160,6 +160,43 @@ describe("GET /api/ask", () => {
     expect(llm.input.messages[1].content).toContain("Presidential Unsealing and Reporting System for UAP Encounters");
   });
 
+  it("grounds archive-about questions in the /pursue explainer sections", async () => {
+    // Questions about the archive itself (provenance, tranche dates,
+    // resolved-vs-unresolved) are answered by NO record — the grounding is
+    // the site explainer (lib/pursue.ts, source war.gov/UFO), attached to
+    // the top keyword chunk; with no vector hits, citable sources fall back
+    // to real PURSUE (wargov) records, newest first.
+    matches = [];
+    const ctxOf = () => aiCalls.find((c) => c.model.includes("qwen3"))!.input.messages[1].content as string;
+    // Distinct anon ids per question: this test spends 4 asks and must not
+    // eat the shared "asker" rate budget the later tests in this file need.
+
+    const prov = await body(await ask("Where does RealUFO's data come from?", {}, "explainer-1"));
+    expect(prov.answer).not.toBe(NOT_COVERED);
+    expect(prov.sources.length).toBeGreaterThan(0);
+    expect(ctxOf()).toContain("Site explainer (source: war.gov/UFO)");
+    expect(ctxOf()).toContain("mirrors every file verbatim");
+
+    aiCalls = [];
+    const files = await body(await ask("Where do these files come from?", {}, "explainer-2"));
+    expect(files.answer).not.toBe(NOT_COVERED);
+    expect(ctxOf()).toContain("Site explainer (source: war.gov/UFO)");
+
+    aiCalls = [];
+    const tranche = await body(await ask("When was the first PURSUE tranche released?", {}, "explainer-3"));
+    expect(tranche.answer).not.toBe(NOT_COVERED);
+    expect(tranche.sources.length).toBeGreaterThan(0);
+    expect(ctxOf()).toContain("first tranche was released on May 8, 2026");
+    const trec = await env.DB.prepare("SELECT archive FROM records WHERE id=?").bind(tranche.sources[0].record_id).first<{ archive: string }>();
+    expect(trec?.archive).toBe("wargov");
+
+    aiCalls = [];
+    const unres = await body(await ask("Are these cases resolved or unresolved?", {}, "explainer-4"));
+    expect(unres.answer).not.toBe(NOT_COVERED);
+    expect(unres.sources.length).toBeGreaterThan(0);
+    expect(ctxOf()).toContain("cannot make a definitive determination");
+  });
+
   it("not-covered answers are not cached, so they recover once the index fills in", async () => {
     matches = [];
     expect((await body(await ask("gulf of oman orbs"))).answer).toBe(NOT_COVERED);

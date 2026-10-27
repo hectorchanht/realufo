@@ -59,6 +59,7 @@ export const routes: RouteObject[] = [
           { path: "/contact", lazy: screen(() => import("./screens/Contact")) },
           { path: "/faq", lazy: screen(() => import("./screens/Faq")) },
           { path: "/glossary", lazy: screen(() => import("./screens/Glossary")) },
+          { path: "/pursue", lazy: screen(() => import("./screens/Pursue")) },
           { path: "/foia", lazy: screen(() => import("./screens/Foia")) },
           { path: "/sites", lazy: screen(() => import("./screens/Sites")) },
           { path: "/compare", lazy: screen(() => import("./screens/Compare")) },

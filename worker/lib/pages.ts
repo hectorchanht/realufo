@@ -19,6 +19,7 @@ import { ABOUT_HTML } from "./about";
 import { FOIA_HTML } from "./foia";
 import { SITES_HTML } from "./sites";
 import { GLOSSARY_HTML } from "./glossary";
+import { PURSUE_HTML } from "./pursue";
 import { CONTACT_HTML } from "./contact";
 import { FAQ_ITEMS, FAQ_HTML } from "./faq";
 import { SOCIAL_PROFILES } from "./profiles";
@@ -666,6 +667,11 @@ const glossaryPage: Loader = async () => ({
   body: `<h1>Glossary</h1>${GLOSSARY_HTML}`,
 });
 
+const pursuePage: Loader = async () => ({
+  meta: { title: "What is PURSUE?", description: "PURSUE explained: the Department of War's Presidential Unsealing and Reporting System for UAP Encounters at war.gov/UFO — the rolling release tranches behind RealUFO's files, why the cases are unresolved, and where RealUFO fits.", type: "website" },
+  body: `<h1>What is PURSUE?</h1>${PURSUE_HTML}`,
+});
+
 const foiaPage: Loader = async () => ({
   meta: { title: "FOIA", description: "How to file freedom-of-information requests for UAP records: the US FOIA recipe, other jurisdictions, and tips that increase response rates.", type: "website" },
   body: `<h1>FOIA</h1>${FOIA_HTML}`,
@@ -755,6 +761,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader; cacheKey?: (url: URL) 
   { pattern: new URLPattern({ pathname: "/contact" }), load: contactPage },
   { pattern: new URLPattern({ pathname: "/faq" }), load: faqPage },
   { pattern: new URLPattern({ pathname: "/glossary" }), load: glossaryPage },
+  { pattern: new URLPattern({ pathname: "/pursue" }), load: pursuePage },
   { pattern: new URLPattern({ pathname: "/foia" }), load: foiaPage },
   { pattern: new URLPattern({ pathname: "/sites" }), load: sitesPage },
   { pattern: new URLPattern({ pathname: "/compare" }), load: comparePage },

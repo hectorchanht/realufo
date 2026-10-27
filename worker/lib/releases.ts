@@ -179,7 +179,7 @@ export function trackerFaq(series: ReleaseInfo[], w: NextWindow | null): FaqItem
     },
     {
       q: "Where do the UFO files come from?",
-      a: "The U.S. Department of War publishes them at war.gov/UFO. RealUFO mirrors every file with its full text, summaries and video tools.",
+      a: "The U.S. Department of War publishes them at war.gov/UFO. RealUFO mirrors every file with its full text, summaries and video tools. The programme behind the releases is PURSUE — RealUFO's explainer page covers what it is and why the cases are unresolved.",
       link: { href: "https://www.war.gov/UFO/", text: "war.gov/UFO" },
     },
     {

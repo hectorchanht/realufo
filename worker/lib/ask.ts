@@ -141,6 +141,32 @@ export function glossaryMatches(entries: GlossaryEntry[], keywords: string[]): G
   });
 }
 
+// Site explainer sections (lib/pursue.ts PURSUE_SECTIONS) -> Ask grounding,
+// the second static source beside the glossary. Questions about the archive
+// itself — what PURSUE is, where the files come from, when a tranche landed,
+// whether the cases are resolved — are answered by the site's own explainer
+// page (/pursue, sourced from war.gov/UFO), not by any record: a record can
+// show a case, never explain the programme that released it. A section
+// matches when at least one of its keys is among the question's keywords;
+// matches are ordered by how many keys hit, capped so the LLM context stays
+// focused.
+export interface ExplainerSection {
+  id: string;
+  keys: string[];
+  text: string;
+}
+
+export function explainerMatches(sections: ExplainerSection[], keywords: string[], cap = 2): ExplainerSection[] {
+  if (!keywords.length) return [];
+  const kw = new Set(keywords.map((k) => k.toLowerCase()));
+  return sections
+    .map((s) => ({ s, n: s.keys.filter((k) => kw.has(k.toLowerCase())).length }))
+    .filter((x) => x.n > 0)
+    .sort((a, b) => b.n - a.n)
+    .slice(0, cap)
+    .map((x) => x.s);
+}
+
 // Shared answer URLs (Spec 8 §1.4): /ask/123-what-did-radar-see. The worker is
 // the only place that builds them; web and crawler use the url it returns.
 export const askSlug = (q: string) =>

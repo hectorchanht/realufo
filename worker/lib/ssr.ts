@@ -176,6 +176,7 @@ export function releasesBody(d: TrackerData): string {
     `<h1>${esc(RELEASES_TITLE)}</h1>`,
     `<p><strong>${esc(d.status.headline)}</strong></p>`,
     d.status.basis ? `<p>${esc(d.status.basis)}</p>` : "",
+    `<p>New to the programme? ${a({ href: "/pursue", text: "What PURSUE is — and where these files come from" })}</p>`,
     `<ul>${facts.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>`,
     `<table><thead><tr><th>Release</th><th>Date</th><th>Files</th><th>Gap (days)</th><th>Agencies</th></tr></thead><tbody>${rows}</tbody></table>`,
     faqHtml(d.faq),

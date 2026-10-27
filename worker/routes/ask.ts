@@ -9,9 +9,10 @@ import { listHubsCached } from "./hubs";
 import {
   ASK_EMBED_MODEL, ASK_LLM_MODEL, ASK_RERANK_MODEL, ASK_TOP_K, ASK_POOL, ASK_PER_RECORD, NOT_COVERED, RESTING,
   askHref, askIdOf, normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, aiSourceOf,
-  glossaryEntries, glossaryMatches, type AskChunk,
+  glossaryEntries, glossaryMatches, explainerMatches, type AskChunk,
 } from "../lib/ask";
 import { GLOSSARY_HTML } from "../lib/glossary";
+import { PURSUE_SECTIONS } from "../lib/pursue";
 
 type Hydrated = { id: string; title: string; kind: string; thumb: string | null };
 const notCovered = () => ({ answer: NOT_COVERED, sources: [] as unknown[] });
@@ -23,10 +24,11 @@ export async function ask(req: Request, env: Env) {
   const q = normalizeQuestion(new URL(req.url).searchParams.get("q"));
   if (!q) return error(400, "question must be 3–300 characters");
   // Threshold and prompt version are part of the key so re-tuning either never serves stale answers.
-  // p4: keyword retrieval also searches archive labels/agencies and attaches
-  // site-glossary definitions (the PURSUE fix) — p3 answers predate both.
+  // p5: keyword retrieval also grounds answers in the /pursue explainer
+  // sections (provenance, tranches, unresolved) — p4 answers predate it.
+  // (p4: archive labels/agencies + site-glossary definitions, the PURSUE fix.)
   const min = Number(env.ASK_MIN_SCORE) || 0.45;
-  const key = `${min}|p4|${cacheKey(q)}`;
+  const key = `${min}|p5|${cacheKey(q)}`;
 
   const hit = await env.DB.prepare("SELECT answer FROM ask_cache WHERE key=? AND created_at >= datetime('now','-7 days')")
     .bind(key)
@@ -197,6 +199,13 @@ async function answer(env: Env, q: string, min: number) {
 // definition — the only place the site actually defines the term — is
 // attached to the top chunk, labelled as glossary text, so the LLM has a
 // source that answers "what is X" instead of a pile of the programme's files.
+//
+// Same trick, second static source: the /pursue explainer's sections
+// (lib/pursue.ts) cover the questions ABOUT the archive — provenance, the
+// tranche cadence/dates, resolved-vs-unresolved — which no record answers.
+// Matched sections ride on the top chunk under their own source label; if
+// no record text matches at all, the fallback below still grounds the
+// answer in real records (the glossary term's archive, else PURSUE's).
 const ASK_STOPWORDS = new Set(
   "what is the a an of and or to in on for with as by at from that this these those it its be are was were who which whose whom how why when where do does did can could should would will shall there their them they we you your our ours his her him she he i me my mine our the this that these those am is are was were be been being have has had having do does did doing will would shall should may might must can could".split(" ")
 );
@@ -209,6 +218,7 @@ async function keywordChunks(env: Env, q: string): Promise<{ record_id: string; 
   )).slice(0, 6);
   if (!kws.length) return [];
   const defs = glossaryMatches(glossaryEntries(GLOSSARY_HTML), kws);
+  const sections = explainerMatches(PURSUE_SECTIONS, kws);
   const hay =
     "lower(r.title || ' ' || coalesce(r.summary,'') || ' ' || coalesce(t.ai_summary,'') || ' ' || coalesce(a.label,'') || ' ' || coalesce(r.agency_full, r.agency, ''))";
   const ors = kws.map(() => `(${hay} LIKE ? ESCAPE '\\')`).join(" OR ");
@@ -231,11 +241,13 @@ async function keywordChunks(env: Env, q: string): Promise<{ record_id: string; 
     .sort((a, b) => b.n - a.n)
     .slice(0, 12);
   let picked: KwRow[] = hits.map((x) => x.r);
-  if (!picked.length && defs.length) {
-    // No record text mentions the term at all, but the glossary defines it:
-    // ground the answer in the term's own archive/agency records (newest
-    // first) so there is a real, citable source for the definition.
-    const term = `%${escLike(defs[0].term.toLowerCase())}%`;
+  if (!picked.length && (defs.length || sections.length)) {
+    // No record text matches, but a static source answers the question (the
+    // glossary defines the term / the explainer covers the topic): ground
+    // the answer in the term's own archive/agency records (newest first) —
+    // for explainer topics that's PURSUE's wargov archive — so there is a
+    // real, citable source for the static text.
+    const term = `%${escLike((defs[0]?.term ?? "pursue").toLowerCase())}%`;
     const reps = await env.DB.prepare(
       `SELECT r.id record_id, r.title title,
          coalesce(t.ai_summary, r.summary, '') summary,
@@ -249,14 +261,16 @@ async function keywordChunks(env: Env, q: string): Promise<{ record_id: string; 
       .all<KwRow>();
     picked = reps.results;
   }
+  // Static grounding rides on the top chunk only, each source under its own
+  // label, so the LLM can attribute provenance/definition claims properly.
+  const grounding =
+    (defs.length ? `\nSite glossary: ${defs.map((d) => `${d.term} — ${d.text}`).join(" ")}` : "") +
+    (sections.length ? `\nSite explainer (source: war.gov/UFO): ${sections.map((s) => s.text).join(" ")}` : "");
   return picked.map((r, i) => ({
     record_id: r.record_id,
     page: 0,
     // Same "<title> — AI summary" head the indexer uses, so aiSourceOf labels it.
-    // The glossary definition rides on the top chunk only, under its own label.
-    text:
-      `${r.title} — AI summary\n${r.summary.slice(0, 1500)}` +
-      (i === 0 && defs.length ? `\nSite glossary: ${defs.map((d) => `${d.term} — ${d.text}`).join(" ")}` : ""),
+    text: `${r.title} — AI summary\n${r.summary.slice(0, 1500)}` + (i === 0 ? grounding : ""),
   }));
 }
 

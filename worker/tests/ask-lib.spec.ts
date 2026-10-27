@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, NOT_COVERED, askSlug, askHref, askIdOf, aiSourceOf, glossaryEntries, glossaryMatches } from "../lib/ask";
+import { normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, NOT_COVERED, askSlug, askHref, askIdOf, aiSourceOf, glossaryEntries, glossaryMatches, explainerMatches } from "../lib/ask";
 import { GLOSSARY_HTML } from "../lib/glossary";
+import { PURSUE_SECTIONS } from "../lib/pursue";
 
 describe("ask helpers", () => {
   it("normalizes whitespace and enforces 3–300 chars", () => {
@@ -116,5 +117,36 @@ describe("glossary retrieval helpers", () => {
     expect(terms).not.toContain("AARO");
     expect(glossaryMatches(entries, ["radar", "orbs"])).toEqual([]);
     expect(glossaryMatches(entries, [])).toEqual([]);
+  });
+});
+
+describe("explainer retrieval helpers", () => {
+  // The keyword lists below are what routes/ask.ts extracts from each
+  // question (stopwords removed) — the four archive-about questions the
+  // /pursue explainer exists to ground.
+  it("matches the section a question is about, strongest first, capped at 2", () => {
+    const ids = (kws: string[]) => explainerMatches(PURSUE_SECTIONS, kws).map((s) => s.id);
+    expect(ids(["pursue", "program"])).toContain("program");
+    expect(ids(["realufo", "data", "come"])[0]).toBe("provenance");
+    expect(ids(["files", "come"])[0]).toBe("provenance");
+    expect(ids(["first", "pursue", "tranche", "released"])[0]).toBe("tranches");
+    expect(ids(["cases", "resolved", "unresolved"])).toEqual(["unresolved"]);
+    expect(ids(["pursue", "program"]).length).toBeLessThanOrEqual(2);
+  });
+
+  it("no keyword overlap -> no grounding; empty keywords -> no grounding", () => {
+    expect(explainerMatches(PURSUE_SECTIONS, ["radar", "orbs"])).toEqual([]);
+    expect(explainerMatches(PURSUE_SECTIONS, [])).toEqual([]);
+  });
+
+  it("the sections carry the war.gov facts the questions ask for", () => {
+    const byId = Object.fromEntries(PURSUE_SECTIONS.map((s) => [s.id, s.text]));
+    expect(byId.program).toContain("Presidential Unsealing and Reporting System for UAP Encounters");
+    expect(byId.program).toContain("February 19, 2026");
+    expect(byId.tranches).toContain("May 8, 2026");
+    expect(byId.tranches).toContain("October 23, 2026");
+    expect(byId.unresolved).toContain("cannot make a definitive determination");
+    expect(byId.provenance).toContain("war.gov/UFO");
+    expect(byId.provenance).toContain("not a government website");
   });
 });

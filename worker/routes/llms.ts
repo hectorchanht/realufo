@@ -47,6 +47,7 @@ export async function llms(req: Request, env: Env) {
     link("FAQ", "/faq", "frequently asked questions about the archive"),
     link("Contact", "/contact", "email, issue tracker and social accounts"),
     link("Glossary", "/glossary", "UAP terms, agencies and file references"),
+    link("What is PURSUE?", "/pursue", "the Department of War release programme at war.gov/UFO behind the files: tranches, unresolved cases, provenance"),
     link("FOIA", "/foia", "how to file freedom-of-information requests"),
     link("UFO Field Guide", "/sites", "the places behind the files: Roswell, Area 51, Marfa, Socorro, Rendlesham and more"),
     link("WTF Leaderboard", "/leaderboard", "the files the crowd finds hardest to explain, ranked by unexplained votes"),

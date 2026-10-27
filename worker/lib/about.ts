@@ -2,7 +2,7 @@
 // (worker/lib/pages.ts) and the SPA screen (web/src/screens/About.tsx).
 // {{STATS}} is replaced by the page loader with live D1 counts.
 export const ABOUT_HTML = `
-<p>RealUFO is an independent, open-source archive of declassified UAP records. Every file is mirrored verbatim from official government sources — from the U.S. Department of War's PURSUE release tranches to holdings from NARA, NASA, the FBI, the CIA and others.</p>
+<p>RealUFO is an independent, open-source archive of declassified UAP records. Every file is mirrored verbatim from official government sources — from the U.S. Department of War's <a href="/pursue">PURSUE</a> release tranches to holdings from NARA, NASA, the FBI, the CIA and others.</p>
 <p>The archive is fully searchable and filterable: read the original PDFs in the built-in viewer, get an AI summary of any record, vote on the WTF-meter, discuss on the <a href="/boards">boards</a>, track new release tranches as they drop, and <a href="/ask">ask the archive</a> anything — answers are grounded in the records themselves.</p>
 <h2>What this is not</h2>
 <ul>

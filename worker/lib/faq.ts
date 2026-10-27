@@ -15,8 +15,8 @@ export const FAQ_ITEMS: { q: string; aHtml: string; aText: string }[] = [
   },
   {
     q: "Where do the records come from?",
-    aHtml: `Official sources only: <a href="https://www.war.gov/UFO/">war.gov/UFO</a> (the PURSUE releases), NARA, NASA, the FBI, the CIA, the DOE and other agencies. Files are mirrored verbatim; where a source is unreachable we link back through the Wayback Machine.`,
-    aText: `Official sources only: war.gov/UFO (the PURSUE releases), NARA, NASA, the FBI, the CIA, the DOE and other agencies. Files are mirrored verbatim; where a source is unreachable we link back through the Wayback Machine.`,
+    aHtml: `Official sources only: <a href="https://www.war.gov/UFO/">war.gov/UFO</a> (the PURSUE releases), NARA, NASA, the FBI, the CIA, the DOE and other agencies. Files are mirrored verbatim; where a source is unreachable we link back through the Wayback Machine. New to PURSUE? Start with <a href="/pursue">what PURSUE is</a>.`,
+    aText: `Official sources only: war.gov/UFO (the PURSUE releases), NARA, NASA, the FBI, the CIA, the DOE and other agencies. Files are mirrored verbatim; where a source is unreachable we link back through the Wayback Machine. See /pursue for what PURSUE is.`,
   },
   {
     q: "Does RealUFO say whether UFOs are extraterrestrial?",

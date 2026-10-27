@@ -40,7 +40,7 @@ export const GLOSSARY_HTML = `
 <ul>
 <li><b>PAN</b> — Phénomène Aérospatial Non identifié. French equivalent of UAP; GEIPAN classifies cases PAN A (identified) through PAN D (unexplained).</li>
 <li><b>Project Blue Book</b> — U.S. Air Force UFO investigation programme, 1952–1969. Its files are held by NARA.</li>
-<li><b>PURSUE</b> — Presidential Unsealing and Reporting System for UAP Encounters. The Department of War's UAP release programme; tranches 01–06 are tracked at <a href="/releases">/releases</a>.</li>
+<li><b>PURSUE</b> — Presidential Unsealing and Reporting System for UAP Encounters. The Department of War's UAP release programme; tranches 01–07 are tracked at <a href="/releases">/releases</a>. See <a href="/pursue">what PURSUE is</a>.</li>
 </ul>
 <h2>S</h2>
 <ul>
