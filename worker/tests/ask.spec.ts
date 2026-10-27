@@ -205,7 +205,7 @@ describe("GET /api/ask", () => {
     matches = [hit("CIA-UAP-017", 2)];
     rerank = (t) => (t.includes("Site explainer") ? -10 : 0);
     llmOut = { response: "RealUFO mirrors official government sources [1]." };
-    const b = await body(await ask("Where does RealUFO's data come from?"));
+    const b = await body(await ask("Where does RealUFO's data come from?", {}, "pin-asker"));
     expect(b.answer).not.toBe(NOT_COVERED);
     const llm = aiCalls.find((c) => c.model.includes("qwen3"))!;
     const ctx = llm.input.messages[1].content as string;
@@ -213,6 +213,21 @@ describe("GET /api/ask", () => {
     // The grounded chunk leads the source list, not buried after reranking.
     expect(ctx.indexOf("Site explainer")).toBeLessThan(ctx.indexOf("[2]") === -1 ? Number.MAX_SAFE_INTEGER : ctx.indexOf("[2]") + 1);
     expect(b.sources[0].record_id).toBeDefined();
+  });
+
+  it("grounding survives a vector hit on the same record (dedupe transplant)", async () => {
+    // Regression (2026-10-27 live verify): when the keyword-top record also
+    // has a strong vector chunk, dedupe-by-record used to drop the keyword
+    // chunk — and the glossary/explainer grounding riding on it — so the LLM
+    // never saw the definition and answered not-covered.
+    matches = [hit("CIA-UAP-017", 2)];
+    llmOut = { response: "PURSUE is the release programme [1]." };
+    const b = await body(await ask("What is the PURSUE program?", {}, "transplant-asker"));
+    expect(b.answer).not.toBe(NOT_COVERED);
+    const llm = aiCalls.find((c) => c.model.includes("qwen3"))!;
+    const ctx = llm.input.messages[1].content as string;
+    expect(ctx).toContain("Presidential Unsealing and Reporting System for UAP Encounters");
+    expect(b.sources[0].record_id).toBe("CIA-UAP-017");
   });
 
   it("not-covered answers are not cached, so they recover once the index fills in", async () => {

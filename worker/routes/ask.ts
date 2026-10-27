@@ -26,9 +26,12 @@ export async function ask(req: Request, env: Env) {
   // Threshold and prompt version are part of the key so re-tuning either never serves stale answers.
   // p5: keyword retrieval also grounds answers in the /pursue explainer
   // sections (provenance, tranches, unresolved) — p4 answers predate it.
+  // p6: grounding is transplanted onto vector chunks on dedupe collisions
+  // and leads the grounded chunk — p5 cached some answers the LLM built
+  // without ever seeing the explainer (and two with wrong attribution).
   // (p4: archive labels/agencies + site-glossary definitions, the PURSUE fix.)
   const min = Number(env.ASK_MIN_SCORE) || 0.45;
-  const key = `${min}|p5|${cacheKey(q)}`;
+  const key = `${min}|p6|${cacheKey(q)}`;
 
   const hit = await env.DB.prepare("SELECT answer FROM ask_cache WHERE key=? AND created_at >= datetime('now','-7 days')")
     .bind(key)
@@ -145,6 +148,22 @@ async function answer(env: Env, q: string, min: number) {
   }));
   const seen = new Set(vec.map((r) => r.record_id));
   const kw = await keywordChunks(env, q).catch(() => [] as { record_id: string; page: number; text: string }[]);
+  // Dedupe by record drops the keyword chunk when the same record also has a
+  // vector chunk — and with it the glossary/explainer grounding riding on it
+  // (proven 2026-10-27: "What is the PURSUE program?" with a vector hit on
+  // the keyword-top record lost the definition entirely; "Where does
+  // RealUFO's data come from?" failed live the same way). Transplant the
+  // grounding lines onto the vector chunk instead of dropping them.
+  for (const k of kw) {
+    if (!seen.has(k.record_id)) continue;
+    const g = k.text.match(/\n(Site (?:glossary:|explainer \(source: war\.gov\/UFO\):)[^\n]*(?:\nSite (?:glossary:|explainer \(source: war\.gov\/UFO\):)[^\n]*)*)/);
+    if (!g) continue;
+    const v = vec.find((r) => r.record_id === k.record_id)!;
+    if (!v.text.includes(g[1])) {
+      const nl = v.text.indexOf("\n");
+      v.text = nl === -1 ? `${v.text}\n${g[1]}` : `${v.text.slice(0, nl)}\n${g[1]}${v.text.slice(nl)}`;
+    }
+  }
   const raw = [...vec, ...kw.filter((r) => !seen.has(r.record_id))];
   if (!raw.length) return notCovered();
 
@@ -274,14 +293,18 @@ async function keywordChunks(env: Env, q: string): Promise<{ record_id: string; 
   }
   // Static grounding rides on the top chunk only, each source under its own
   // label, so the LLM can attribute provenance/definition claims properly.
-  const grounding =
-    (defs.length ? `\nSite glossary: ${defs.map((d) => `${d.term} — ${d.text}`).join(" ")}` : "") +
-    (sections.length ? `\nSite explainer (source: war.gov/UFO): ${sections.map((s) => s.text).join(" ")}` : "");
+  const grounding = [
+    ...(defs.length ? [`Site glossary: ${defs.map((d) => `${d.term} — ${d.text}`).join(" ")}`] : []),
+    ...(sections.length ? [`Site explainer (source: war.gov/UFO): ${sections.map((s) => s.text).join(" ")}`] : []),
+  ].join("\n");
   return picked.map((r, i) => ({
     record_id: r.record_id,
     page: 0,
-    // Same "<title> — AI summary" head the indexer uses, so aiSourceOf labels it.
-    text: `${r.title} — AI summary\n${r.summary.slice(0, 1500)}` + (i === 0 ? grounding : ""),
+    // Same "<title> — AI summary" head the indexer uses, so aiSourceOf labels
+    // it (it reads the first line only). Grounding sits directly under the
+    // head, BEFORE the summary body: appended at the end of a 1,500-char
+    // summary it was easy for the LLM to miss (2026-10-27 live verify).
+    text: `${r.title} — AI summary\n` + (i === 0 && grounding ? `${grounding}\n` : "") + r.summary.slice(0, 1500),
   }));
 }
 
