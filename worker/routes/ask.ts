@@ -159,8 +159,19 @@ async function answer(env: Env, q: string, min: number) {
   const pool = raw.filter((r) => byId.has(r.record_id));
   if (!pool.length) return notCovered();
 
+  // Static-source grounding (glossary definition / explainer section) rides
+  // on ONE keyword chunk, appended after a record summary the reranker may
+  // score low against the question — for "Where does RealUFO's data come
+  // from?" the live reranker dropped it from the top 8 and the LLM rightly
+  // said not-covered (2026-10-27 live verify). The match was deterministic
+  // (the question's own keywords hit the glossary/explainer keys), so pin
+  // that chunk as source [1] and rerank only the rest.
+  const grounded = pool.find((c) => c.text.includes("Site glossary:") || c.text.includes("Site explainer (source:"));
+  const ranked = await rerank(env, q, grounded ? pool.filter((c) => c !== grounded) : pool);
+  const ordered = grounded ? [grounded, ...ranked] : ranked;
+
   const perRecord = new Map<string, number>();
-  const chunks: AskChunk[] = (await rerank(env, q, pool))
+  const chunks: AskChunk[] = ordered
     .filter((c) => {
       const k = (perRecord.get(c.record_id) ?? 0) + 1;
       perRecord.set(c.record_id, k);

@@ -197,6 +197,24 @@ describe("GET /api/ask", () => {
     expect(ctxOf()).toContain("cannot make a definitive determination");
   });
 
+  it("pins the explainer-grounded chunk as source [1] even when the reranker scores it last", async () => {
+    // Live-verify regression (2026-10-27): "Where does RealUFO's data come
+    // from?" came back not-covered because the chunk carrying the explainer
+    // text — a keyword hit whose record summary is generic — was reranked
+    // out of the top 8. The fake reranker here scores it below everything.
+    matches = [hit("CIA-UAP-017", 2)];
+    rerank = (t) => (t.includes("Site explainer") ? -10 : 0);
+    llmOut = { response: "RealUFO mirrors official government sources [1]." };
+    const b = await body(await ask("Where does RealUFO's data come from?"));
+    expect(b.answer).not.toBe(NOT_COVERED);
+    const llm = aiCalls.find((c) => c.model.includes("qwen3"))!;
+    const ctx = llm.input.messages[1].content as string;
+    expect(ctx).toContain("Site explainer (source: war.gov/UFO):");
+    // The grounded chunk leads the source list, not buried after reranking.
+    expect(ctx.indexOf("Site explainer")).toBeLessThan(ctx.indexOf("[2]") === -1 ? Number.MAX_SAFE_INTEGER : ctx.indexOf("[2]") + 1);
+    expect(b.sources[0].record_id).toBeDefined();
+  });
+
   it("not-covered answers are not cached, so they recover once the index fills in", async () => {
     matches = [];
     expect((await body(await ask("gulf of oman orbs"))).answer).toBe(NOT_COVERED);
