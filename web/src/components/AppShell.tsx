@@ -56,16 +56,18 @@ export function AppShell() {
   // navItems.ts's canBackForPath doc comment.
   const canBack = canBackForPath(pathname);
 
-  // Nav auto-hide (all form factors): the bars slide away in proportion to
-  // scroll travel — down hides gradually, up brings them back, near the top
-  // they always show (useHideOnScroll returns a 0..1 progress, not a toggle).
+  // Nav auto-hide (MOBILE only): the AppBar/BottomTab slide away in
+  // proportion to scroll travel — down hides gradually, up brings them back,
+  // near the top they always show (useHideOnScroll returns a 0..1 progress,
+  // not a toggle). DESKTOP TopNav is ALWAYS visible (Hector 2026-10-27:
+  // "nav should be shown in desktop all the time") — it gets hideProgress 0
+  // below, never the hook's progress.
   // BottomTab is an overlay (absolute, not in flow) so hiding it never
   // reflows <main> — a resizing scroll container clamps scrollTop and would
   // feed a fake "scroll up" back into the hook. Its measured height is
   // published as --bnav-h (screen bottom padding) and --bnav-y (what sticky
   // bottom bars like Thread's reply bar offset by: the *visible* part of the
-  // tab bar, shrinking with the hide progress). Desktop's TopNav is in flow,
-  // so it collapses its own margin as it slides (see TopNav).
+  // tab bar, shrinking with the hide progress).
   const scrollRef = useRef<HTMLElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const bnavRef = useRef<HTMLDivElement>(null);
@@ -119,7 +121,7 @@ export function AppShell() {
             style={{ "--bnav-y": `calc(var(--bnav-h, 0px) * ${(1 - navHide.progress).toFixed(3)})` } as CSSProperties}
           >
             {isDesktop && (
-              <TopNav activeTab={activeTab} hideProgress={navHide.progress} />
+              <TopNav activeTab={activeTab} hideProgress={0} />
             )}
 
             <main

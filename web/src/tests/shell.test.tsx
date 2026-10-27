@@ -225,7 +225,7 @@ describe("AppShell", () => {
     expect(appbar().hasAttribute("data-hidden")).toBe(false);
   });
 
-  it("desktop: TopNav slides away on scroll down and returns on scroll up", async () => {
+  it("desktop: TopNav stays fully visible at every scroll position (Hector 2026-10-27)", async () => {
     stubDesktopMatchMedia();
     renderAppAt("/");
     await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
@@ -240,15 +240,16 @@ describe("AppShell", () => {
         fireEvent.scroll(main);
       });
 
-    scrollTo(300);
-    expect(topnav.hasAttribute("data-hidden")).toBe(true);
-    expect(topnav.style.transform).toBe("translateY(-100%)");
+    scrollTo(300); // deep scroll down: desktop nav must NOT hide
+    expect(topnav.hasAttribute("data-hidden")).toBe(false);
+    expect(topnav.style.transform).toBe("");
     scrollTo(200);
     expect(topnav.hasAttribute("data-hidden")).toBe(false);
     expect(topnav.style.transform).toBe("");
     scrollTo(400);
-    scrollTo(10); // near the top always shows
+    scrollTo(10);
     expect(topnav.hasAttribute("data-hidden")).toBe(false);
+    expect(topnav.style.transform).toBe("");
   });
 
   it("mobile: tabs reopen their last URL and each URL gets its scroll back", async () => {
