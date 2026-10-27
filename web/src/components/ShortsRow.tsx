@@ -56,7 +56,19 @@ export function ShortsRow({ shorts, loading = false, grid = false, href }: { sho
             aria-label={t.title}
             className={`relative aspect-[9/16] overflow-hidden rounded-[14px] border border-line bg-bg2 ${grid ? "" : "w-[132px] shrink-0 snap-start"}`}
           >
-            <video src={s.clip} poster={s.thumb ?? undefined} muted loop playsInline preload="none" aria-hidden="true" className="h-full w-full object-cover" />
+            {/* Backing placeholder: until the poster paints (and the muted
+                preview starts), a bare <video preload="none"> is a blank
+                dark tile — the 2026-10-18 scrutiny complaint, and it outlasts
+                the skeleton on the homepage row. The shimmer + play badge sit
+                BEHIND the video; the video paints over them when ready. */}
+            <span aria-hidden="true" className="skel absolute inset-0">
+              <span className="absolute inset-0 grid place-items-center text-dim opacity-90">
+                <span className="grid place-items-center rounded-full border border-line bg-surface2/70 p-2.5">
+                  <Play size={22} aria-hidden="true" />
+                </span>
+              </span>
+            </span>
+            <video src={s.clip} poster={s.thumb ?? undefined} muted loop playsInline preload="none" aria-hidden="true" className="relative h-full w-full object-cover" />
             {/* Grid cards say what they are (the row's cards stay bare). */}
             {grid && (
               <span aria-hidden="true" className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-2 pb-2 pt-8 text-white">
