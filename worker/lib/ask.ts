@@ -95,6 +95,52 @@ export function cleanCitations(answer: string, max: number): { text: string; cit
   return { text, cited: [...cited].sort((a, b) => a - b) };
 }
 
+// Site glossary (lib/glossary.ts) -> Ask chunks. The archive's own programme
+// and agency names (PURSUE, AAWSAP, …) are defined ONLY in the site's static
+// pages — no record's title/summary ever spells them out (a record is just
+// one file *of* the programme), and they are not in the Vectorize index
+// either. So a "What is the PURSUE program?" question can only be answered
+// if retrieval also looks at the glossary: routes/ask.ts attaches a matched
+// entry's definition to the top keyword chunk for the term's records.
+export interface GlossaryEntry {
+  term: string;
+  text: string;
+}
+
+const stripTags = (s: string) =>
+  s
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** Parse `<li><b>TERM</b> — definition</li>` entries out of GLOSSARY_HTML. */
+export function glossaryEntries(html: string): GlossaryEntry[] {
+  const out: GlossaryEntry[] = [];
+  for (const m of html.matchAll(/<li><b>([^<]+)<\/b>\s*—\s*([\s\S]*?)<\/li>/g)) {
+    const term = stripTags(m[1]);
+    const text = stripTags(m[2]);
+    if (term && text) out.push({ term, text });
+  }
+  return out;
+}
+
+/** Entries a question is about: the entry's term is one of the question's
+ * keywords (PURSUE, AARO, …), or every keyword appears in the entry. */
+export function glossaryMatches(entries: GlossaryEntry[], keywords: string[]): GlossaryEntry[] {
+  if (!keywords.length) return [];
+  const kw = new Set(keywords.map((k) => k.toLowerCase()));
+  return entries.filter((e) => {
+    if (kw.has(e.term.toLowerCase())) return true;
+    const hay = `${e.term} ${e.text}`.toLowerCase();
+    return keywords.every((k) => hay.includes(k.toLowerCase()));
+  });
+}
+
 // Shared answer URLs (Spec 8 §1.4): /ask/123-what-did-radar-see. The worker is
 // the only place that builds them; web and crawler use the url it returns.
 export const askSlug = (q: string) =>

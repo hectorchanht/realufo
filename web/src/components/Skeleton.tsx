@@ -1,6 +1,10 @@
 // Placeholder boxes while a screen's first fetch is in flight (the Feed's
 // pattern): they reserve roughly the space the content will take, so nothing
 // jumps when it lands, and never show raw "loading…" text, which reads as broken.
+// Surfaces use the `.skel` shimmer (index.css) — a visible light sweep — after
+// the 2026-10-18 scrutiny found the old opacity-pulse boxes read as blank
+// dark cards on the dark theme. Card placeholders also carry text bars so
+// they read as *cards loading*, not empty tiles.
 // `cards` = DocCard-shaped boxes in the standard card grid; otherwise a column
 // of `h`-px rows (thread/board rows, a doc body…).
 export function Skeleton({ rows = 4, h = 72, cards = false }: { rows?: number; h?: number; cards?: boolean }) {
@@ -12,12 +16,16 @@ export function Skeleton({ rows = 4, h = 72, cards = false }: { rows?: number; h
     >
       {Array.from({ length: rows }, (_, i) =>
         cards ? (
-          <div key={i} aria-hidden="true" className="overflow-hidden rounded-[15px] border border-line bg-surface motion-safe:animate-pulse">
+          <div key={i} aria-hidden="true" className="skel overflow-hidden rounded-[15px] border border-line">
             <div className="aspect-[4/3] border-b border-line bg-bg2" />
-            <div className="h-[100px]" />
+            <div className="flex h-[100px] flex-col gap-2 p-3">
+              <div className="h-3 w-3/4 rounded bg-surface2" />
+              <div className="h-3 w-1/2 rounded bg-surface2" />
+              <div className="mt-auto h-2.5 w-1/3 rounded bg-surface2" />
+            </div>
           </div>
         ) : (
-          <div key={i} aria-hidden="true" style={{ height: h }} className="rounded-[14px] border border-line bg-surface motion-safe:animate-pulse" />
+          <div key={i} aria-hidden="true" style={{ height: h }} className="skel rounded-[14px] border border-line" />
         ),
       )}
     </div>

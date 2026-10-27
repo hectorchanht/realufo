@@ -132,12 +132,16 @@ export function Feed() {
           className="grid grid-flow-row-dense grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]"
         >
           {feedLoading
-            ? // Card-sized placeholders (the feed returns 6): reserving the grid's height
+            ? // Card-sized shimmer placeholders (the feed returns 6): reserving the grid's height
               // keeps everything below it from jumping when /api/feed lands (was CLS 0.47).
               Array.from({ length: 6 }, (_, i) => (
-                <div key={i} aria-hidden="true" className="overflow-hidden rounded-[15px] border border-line bg-surface motion-safe:animate-pulse">
+                <div key={i} aria-hidden="true" className="skel overflow-hidden rounded-[15px] border border-line">
                   <div className="aspect-[4/3] border-b border-line bg-bg2" />
-                  <div className="h-[100px]" />
+                  <div className="flex h-[100px] flex-col gap-2 p-3">
+                    <div className="h-3 w-3/4 rounded bg-surface2" />
+                    <div className="h-3 w-1/2 rounded bg-surface2" />
+                    <div className="mt-auto h-2.5 w-1/3 rounded bg-surface2" />
+                  </div>
                 </div>
               ))
             : feedFailed
@@ -159,10 +163,10 @@ export function Feed() {
       {feedFailed ? null : (
         <div aria-busy={feedLoading} className="mb-[26px] flex flex-col gap-[10px]">
           {feedLoading
-            ? // Row-sized placeholders (the feed returns 4): this list sits above the
+            ? // Row-sized shimmer placeholders (the feed returns 4): this list sits above the
               // card grid, so a one-line loader here would shove the grid down on load.
               Array.from({ length: 4 }, (_, i) => (
-                <div key={i} aria-hidden="true" className="h-[136px] rounded-[14px] border border-line bg-surface motion-safe:animate-pulse" />
+                <div key={i} aria-hidden="true" className="skel h-[136px] rounded-[14px] border border-line" />
               ))
             : hot.map((thread) => <ThreadRow key={thread.id} thread={thread} />)}
         </div>

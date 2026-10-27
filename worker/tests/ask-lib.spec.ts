@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, NOT_COVERED, askSlug, askHref, askIdOf, aiSourceOf } from "../lib/ask";
+import { normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, NOT_COVERED, askSlug, askHref, askIdOf, aiSourceOf, glossaryEntries, glossaryMatches } from "../lib/ask";
+import { GLOSSARY_HTML } from "../lib/glossary";
 
 describe("ask helpers", () => {
   it("normalizes whitespace and enforces 3–300 chars", () => {
@@ -94,5 +95,26 @@ describe("shared answer URLs", () => {
     expect(askIdOf("12abc")).toBeNull();
     expect(askIdOf("0")).toBeNull();
     expect(askIdOf("")).toBeNull();
+  });
+});
+
+describe("glossary retrieval helpers", () => {
+  it("parses the site glossary's entries, tags stripped", () => {
+    const entries = glossaryEntries(GLOSSARY_HTML);
+    const pursue = entries.find((e) => e.term === "PURSUE");
+    expect(pursue?.text).toContain("Presidential Unsealing and Reporting System for UAP Encounters");
+    expect(pursue?.text).not.toContain("<a");
+    expect(entries.length).toBeGreaterThan(15);
+  });
+
+  it("matches an entry when the question names the term outright", () => {
+    const entries = glossaryEntries(GLOSSARY_HTML);
+    // PURSUE matches by term; DoW also matches (its definition names the
+    // PURSUE programme) — both are legitimate context for the question.
+    const terms = glossaryMatches(entries, ["pursue", "program"]).map((e) => e.term);
+    expect(terms).toContain("PURSUE");
+    expect(terms).not.toContain("AARO");
+    expect(glossaryMatches(entries, ["radar", "orbs"])).toEqual([]);
+    expect(glossaryMatches(entries, [])).toEqual([]);
   });
 });

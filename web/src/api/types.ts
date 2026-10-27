@@ -181,6 +181,8 @@ export interface RecordFacets {
   releases: { no: number; date: string; count: number }[];
   /** Per records.kind ("pdf", "video", "image"). */
   kinds: { name: string; count: number }[];
+  /** All-types total in the same faceted context as `kinds` (the "All" chip's count). Optional: older cached responses predate it. */
+  total?: number;
   agencies: { name: string; count: number }[];
   decades: { decade: number; count: number }[];
   locations: { name: string; count: number }[];

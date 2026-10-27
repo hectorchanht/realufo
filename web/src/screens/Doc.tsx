@@ -831,6 +831,7 @@ export function Doc() {
             <span
               aria-hidden="true"
               data-lens-hide
+              data-fs-hide
               className={`absolute bottom-[11px] right-3 rounded-[7px] px-[9px] py-1 font-mono text-[10px] text-white ${fade}`}
               style={{ background: "rgba(0,0,0,.6)" }}
             >

@@ -2,33 +2,43 @@
 // realufo-handoff/RealUFO.dc.html lines 393-400 (the prototype's fake
 // home-indicator strip, line 401, is dropped — real phones draw their own). Nav buttons are react-router `Link`s (see TopNav.tsx for
 // why). Each tab has a 44px min-height tap target per the task requirement.
-import type { Ref } from "react";
+import { useState, type Ref } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { MoreMenu } from "./MoreMenu";
 import { retapTab, tabHref, useNavItems, type NavTab } from "./navItems";
 
 export interface BottomTabProps {
   activeTab: NavTab;
-  /** Slid down out of view (AppShell's scroll-down auto-hide). Keyboard focus brings it back. */
-  hidden?: boolean;
+  /** Scroll-linked hide progress 0..1 (AppShell's useHideOnScroll): the bar
+   *  slides down in proportion to scroll travel. Keyboard focus brings it back. */
+  hideProgress?: number;
   /** Wrapper ref — AppShell measures it to publish --bnav-h. */
   ref?: Ref<HTMLDivElement>;
 }
 
 // Overlays the bottom of the shell (absolute) rather than sitting in flow, so
 // sliding it out never resizes the scroll container — see AppShell.
-export function BottomTab({ activeTab, hidden = false, ref }: BottomTabProps) {
+export function BottomTab({ activeTab, hideProgress = 0, ref }: BottomTabProps) {
   // Four icon tabs + More; only the active one shows its label.
   const { tabs, more } = useNavItems();
   const here = useLocation();
+  const [focusWithin, setFocusWithin] = useState(false);
+  const p = focusWithin ? 0 : hideProgress;
   return (
     <div
       ref={ref}
-      data-hidden={hidden || undefined}
+      data-hidden={p >= 0.999 || undefined}
+      onFocusCapture={() => setFocusWithin(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusWithin(false);
+      }}
       className={
-        "absolute inset-x-0 bottom-0 z-30 transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)] focus-within:translate-y-0 motion-reduce:transition-none" +
-        (hidden ? " translate-y-full" : "")
+        "absolute inset-x-0 bottom-0 z-30 motion-reduce:transition-none" +
+        // Scroll-driven movement is transform-only (no transition — the bar
+        // tracks the finger); only the focus reveal animates.
+        (focusWithin ? " transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)]" : "")
       }
+      style={{ transform: p ? `translateY(${p * 100}%)` : undefined }}
     >
       <div
         data-bottomtab

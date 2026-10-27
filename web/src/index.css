@@ -13,10 +13,41 @@
   pointer-events: none;
 }
 
+/* Fullscreen cleanup: elements whose job is done once the media panel IS
+   fullscreen (the bottom-right "open ⤢" chip on Doc's media stage) leave the
+   fullscreen view entirely instead of floating over the picture. */
+:fullscreen [data-fs-hide] {
+  display: none !important;
+}
+
 /* One look and one behaviour for every tag chip (doc chips, cited-in, hubs, feed, browse):
    a link with the same border, size and hover everywhere. */
 @layer components {
   .tag {
     @apply rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px] text-dim hover:border-signal hover:text-signal;
   }
+}
+
+/* Skeleton placeholder surface: --surface base + the shimmer sweep
+   (keyframes in theme.css). The sweep uses --ink at low alpha so it reads
+   on both the dark and light themes. Reduced-motion: theme.css's global
+   rule collapses the animation, leaving a static placeholder. */
+.skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+}
+.skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    100deg,
+    transparent 25%,
+    color-mix(in srgb, var(--ink) 11%, transparent) 50%,
+    transparent 75%
+  );
+  animation: shimmer 1.5s ease-in-out infinite;
+  pointer-events: none;
 }

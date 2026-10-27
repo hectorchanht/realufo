@@ -142,6 +142,24 @@ describe("GET /api/ask", () => {
     expect(aiCalls.map((c) => c.model)).toEqual(["@cf/baai/bge-m3"]);
   });
 
+  it("answers a programme-name question (PURSUE) via the archive label + glossary definition", async () => {
+    // No vector hits and no record text contains the word PURSUE: it lives
+    // only in the wargov archive's label ("War.gov · PURSUE") and in the
+    // site glossary's definition. Regression test for the 2026-10-08/18
+    // audits, where this question always came back not-covered.
+    matches = [];
+    llmOut = { response: "PURSUE is the Department of War's UAP release programme [1]." };
+    const b = await body(await ask("What is the PURSUE program?"));
+    expect(b.answer).not.toBe(NOT_COVERED);
+    expect(b.sources.length).toBeGreaterThan(0);
+    // The cited source is a real record from the PURSUE (wargov) archive.
+    const rec = await env.DB.prepare("SELECT archive FROM records WHERE id=?").bind(b.sources[0].record_id).first<{ archive: string }>();
+    expect(rec?.archive).toBe("wargov");
+    // And the LLM was actually given the glossary's definition to answer from.
+    const llm = aiCalls.find((c) => c.model.includes("qwen3"))!;
+    expect(llm.input.messages[1].content).toContain("Presidential Unsealing and Reporting System for UAP Encounters");
+  });
+
   it("not-covered answers are not cached, so they recover once the index fills in", async () => {
     matches = [];
     expect((await body(await ask("gulf of oman orbs"))).answer).toBe(NOT_COVERED);
@@ -153,7 +171,10 @@ describe("GET /api/ask", () => {
 
   it("drops sources whose record no longer exists; none left -> not covered", async () => {
     matches = [hit("DELETED-RECORD", 1)];
-    const b = await body(await ask("ghost record question"));
+    // Keywords chosen to hit nothing in the keyword fallback either (since
+    // 2026-10-08 it always merges with the vector pool — a question whose
+    // words match a real record's summary would legitimately answer from it).
+    const b = await body(await ask("zzqx wobble framis"));
     expect(b).toMatchObject({ answer: NOT_COVERED, sources: [] });
     expect(aiCalls.some((c) => c.model.includes("qwen3"))).toBe(false);
   });

@@ -187,13 +187,68 @@ describe("AppShell", () => {
 
     scrollTo(300);
     expect(hidden()).toEqual([true, true]);
-    scrollTo(303); // under the jitter threshold: no change
+    scrollTo(303); // a few px more: still fully hidden, no flicker back
     expect(hidden()).toEqual([true, true]);
     scrollTo(200);
     expect(hidden()).toEqual([false, false]);
     scrollTo(400);
     scrollTo(20); // near the top always shows
     expect(hidden()).toEqual([false, false]);
+  });
+
+  it("mobile: bars move proportionally with scroll travel, not in one jump", async () => {
+    renderAppAt("/");
+    await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
+
+    const main = document.querySelector<HTMLElement>("main[data-scroll]")!;
+    Object.defineProperty(main, "scrollHeight", { configurable: true, value: 2000 });
+    Object.defineProperty(main, "clientHeight", { configurable: true, value: 800 });
+    const scrollTo = (y: number) =>
+      act(() => {
+        main.scrollTop = y;
+        fireEvent.scroll(main);
+      });
+    const appbar = () => document.querySelector<HTMLElement>("[data-appbar]")!;
+    const tabbar = () => document.querySelector<HTMLElement>("[data-bottomtab]")!.parentElement!;
+
+    scrollTo(30); // still in the always-show zone near the top
+    expect(appbar().style.transform).toBe("");
+    scrollTo(66); // 36px of downward travel = half the 72px hide range
+    expect(appbar().style.transform).toBe("translateY(-50%)");
+    expect(tabbar().style.transform).toBe("translateY(50%)");
+    expect(appbar().hasAttribute("data-hidden")).toBe(false);
+    scrollTo(102); // another 36px: fully hidden
+    expect(appbar().style.transform).toBe("translateY(-100%)");
+    expect(appbar().hasAttribute("data-hidden")).toBe(true);
+    scrollTo(66); // scrolling back up reappears by the same proportion
+    expect(appbar().style.transform).toBe("translateY(-50%)");
+    expect(appbar().hasAttribute("data-hidden")).toBe(false);
+  });
+
+  it("desktop: TopNav slides away on scroll down and returns on scroll up", async () => {
+    stubDesktopMatchMedia();
+    renderAppAt("/");
+    await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
+    const topnav = document.querySelector<HTMLElement>("[data-topnav]")!;
+
+    const main = document.querySelector<HTMLElement>("main[data-scroll]")!;
+    Object.defineProperty(main, "scrollHeight", { configurable: true, value: 4000 });
+    Object.defineProperty(main, "clientHeight", { configurable: true, value: 900 });
+    const scrollTo = (y: number) =>
+      act(() => {
+        main.scrollTop = y;
+        fireEvent.scroll(main);
+      });
+
+    scrollTo(300);
+    expect(topnav.hasAttribute("data-hidden")).toBe(true);
+    expect(topnav.style.transform).toBe("translateY(-100%)");
+    scrollTo(200);
+    expect(topnav.hasAttribute("data-hidden")).toBe(false);
+    expect(topnav.style.transform).toBe("");
+    scrollTo(400);
+    scrollTo(10); // near the top always shows
+    expect(topnav.hasAttribute("data-hidden")).toBe(false);
   });
 
   it("mobile: tabs reopen their last URL and each URL gets its scroll back", async () => {

@@ -7,6 +7,7 @@
 // the PageTitleProvider context (Task 23b — lib/pageTitle.tsx), not props:
 // the AppShell-mounted provider is the single source of truth screens push
 // their contextual title into, and AppBar just reads it.
+import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Saucer } from "./Saucer";
 import { usePageTitle } from "../lib/pageTitle";
@@ -16,26 +17,38 @@ export interface AppBarProps {
   canBack?: boolean;
   onBack?: () => void;
   showBrand?: boolean;
-  /** Slid up out of view (AppShell's scroll-down auto-hide). Keyboard focus brings it back. */
-  hidden?: boolean;
+  /** Scroll-linked hide progress 0..1 (AppShell's useHideOnScroll): the bar
+   *  slides up in proportion to scroll travel. Keyboard focus brings it back. */
+  hideProgress?: number;
 }
 
 export function AppBar({
   canBack = false,
   onBack,
   showBrand = true,
-  hidden = false,
+  hideProgress = 0,
 }: AppBarProps) {
   const { title: headerTitle, sub: headerSub } = usePageTitle();
+  const [focusWithin, setFocusWithin] = useState(false);
+  const p = focusWithin ? 0 : hideProgress;
   return (
     <div
       data-appbar
-      data-hidden={hidden || undefined}
+      data-hidden={p >= 0.999 || undefined}
+      onFocusCapture={() => setFocusWithin(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusWithin(false);
+      }}
       className={
-        "sticky top-0 z-30 flex items-center gap-3 border-b border-line px-[18px] pb-[11px] pt-[max(11px,env(safe-area-inset-top))] backdrop-blur-[22px] backdrop-saturate-[1.6] transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)] focus-within:translate-y-0 motion-reduce:transition-none" +
-        (hidden ? " -translate-y-full" : "")
+        "sticky top-0 z-30 flex items-center gap-3 border-b border-line px-[18px] pb-[11px] pt-[max(11px,env(safe-area-inset-top))] backdrop-blur-[22px] backdrop-saturate-[1.6] motion-reduce:transition-none" +
+        // Scroll-driven movement is transform-only (no transition — the bar
+        // tracks the finger); only the focus reveal animates.
+        (focusWithin ? " transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)]" : "")
       }
-      style={{ background: "color-mix(in srgb, var(--bg) 72%, transparent)" }}
+      style={{
+        background: "color-mix(in srgb, var(--bg) 72%, transparent)",
+        transform: p ? `translateY(${-p * 100}%)` : undefined,
+      }}
     >
       {canBack && (
         <button

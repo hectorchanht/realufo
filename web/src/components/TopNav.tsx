@@ -8,6 +8,7 @@
 // contextual page title/sub is folded into this single bar instead, so
 // desktop shows one nav, not two. No back button here: the browser's own back
 // covers desktop.
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Saucer } from "./Saucer";
 import { MoreMenu } from "./MoreMenu";
@@ -19,9 +20,14 @@ const OWN_H1 = /^\/(doc|case|browse|release|agency|location|decade)(\/|$)/;
 
 export interface TopNavProps {
   activeTab: NavTab;
+  /** Scroll-linked hide progress 0..1 (AppShell's useHideOnScroll): the bar
+   *  slides up in proportion to scroll travel and its flow space collapses
+   *  with it (negative margin), so content doesn't jump. Keyboard focus
+   *  brings it back. */
+  hideProgress?: number;
 }
 
-export function TopNav({ activeTab }: TopNavProps) {
+export function TopNav({ activeTab, hideProgress = 0 }: TopNavProps) {
   // Icon tabs; only the active one spells out its label (title = hover tooltip).
   const { tabs, more } = useNavItems();
   const { title, sub } = usePageTitle();
@@ -32,8 +38,44 @@ export function TopNav({ activeTab }: TopNavProps) {
   // pages that open with their own full <h1> (doc, case, browse, hubs).
   const showContext = title !== DEFAULT_PAGE_TITLE.title && !OWN_H1.test(pathname);
 
+  // The bar is in flow (not an overlay like BottomTab), so hiding it must
+  // also collapse its height: measure it and pull <main> up by the same
+  // proportion the bar slides away.
+  const navRef = useRef<HTMLElement>(null);
+  const [barH, setBarH] = useState(0);
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const update = () => setBarH(el.offsetHeight);
+    update();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const [focusWithin, setFocusWithin] = useState(false);
+  const p = focusWithin ? 0 : hideProgress;
+
   return (
-    <nav data-topnav className="flex flex-none items-center gap-5 border-b border-line bg-bg2 px-[26px] py-3">
+    <nav
+      ref={navRef}
+      data-topnav
+      data-hidden={p >= 0.999 || undefined}
+      onFocusCapture={() => setFocusWithin(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusWithin(false);
+      }}
+      className={
+        "flex flex-none items-center gap-5 border-b border-line bg-bg2 px-[26px] py-3 motion-reduce:transition-none" +
+        // Scroll-driven movement tracks the scroll position (no transition);
+        // only the focus reveal animates.
+        (focusWithin ? " transition-[transform,margin] duration-300 ease-[cubic-bezier(.32,.72,0,1)]" : "")
+      }
+      style={{
+        transform: p ? `translateY(${-p * 100}%)` : undefined,
+        marginBottom: p && barH ? -p * barH : undefined,
+      }}
+    >
       <a href="/" className="flex flex-none items-center gap-[11px] border-r border-line pr-1.5">
         <div className="flex-none">
           <Saucer />

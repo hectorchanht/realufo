@@ -195,6 +195,11 @@ describe("records", () => {
     const all = ((await (await get("/api/records?sort=release&limit=100")).json()) as any).records.map((r: any) => r.id);
     expect(all.indexOf("FAC-3")).toBeLessThan(all.indexOf("FAC-1")); // 2/1/90 is the newer release
     expect(facets.kinds.find((k: any) => k.name === "pdf").count).toBeGreaterThanOrEqual(4);
+    // "All" chip total: the sum of the kind counts, in the same faceted
+    // context — and it narrows with the other filters like they do.
+    expect(facets.total).toBe(facets.kinds.reduce((a: number, k: any) => a + k.count, 0));
+    const faceted: any = await (await get("/api/records/facets?agency=FACAG")).json();
+    expect(faceted.total).toBe(3);
     expect(facets.agencies.find((a: any) => a.name === "FACAG").count).toBe(3);
     expect(facets.locations.find((l: any) => l.name === "Facville").count).toBe(3);
     expect(facets.locations.some((l: any) => l.name === "N/A" || l.name === "")).toBe(false);

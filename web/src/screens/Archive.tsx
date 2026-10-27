@@ -48,7 +48,7 @@ import { hubForFilters } from "../lib/hubLink";
 import { useSetFooterLinks } from "../lib/footerLinks";
 import { DocCard } from "../components/DocCard";
 import { LoadError } from "../components/LoadError";
-import { ShortsRow, shortHref } from "../components/ShortsRow";
+import { ShortsRow, ShortsSkeleton, shortHref } from "../components/ShortsRow";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { useLang, type StringKey } from "../lib/lang";
 import { RECORDS_PAGE_SIZE, recordsFilter, recordsPage } from "../lib/recordsPage";
@@ -573,7 +573,11 @@ export function Archive() {
         <div className="mb-1.5 px-0.5 py-1">
           <div data-scroll className="flex gap-1.5 overflow-x-auto">
             {["", ...Object.keys(TYPE_LABELS)].map((k) => {
-              const n = k === "shorts" ? facets?.shorts : k ? kindCount(k) : totalRecords;
+              // "All" counts the same faceted context as its sibling chips
+              // (facets.total), falling back to the global total only until
+              // the facets land — it used to keep the global 564 under an
+              // active search while the siblings narrowed (2026-10-18).
+              const n = k === "shorts" ? facets?.shorts : k ? kindCount(k) : (facets?.total ?? totalRecords);
               return (
                 <TypeChip key={k} selected={type === k} style={typeChipStyle(type === k)} onClick={() => setParam("type", k || null)}>
                   {TYPE_LABELS[k] ?? "All"} {n != null && <span className="text-[10px]">{abbreviateCount(n)}</span>}
@@ -641,7 +645,9 @@ export function Archive() {
       )}
 
       {showShorts && shortsLoading ? (
-        <Skeleton cards rows={6} />
+        // Shorts-shaped shimmer grid (9:16 tiles), not DocCard placeholders:
+        // the loading surface must match the grid it turns into.
+        <ShortsSkeleton grid count={6} />
       ) : showShorts ? (
         <>
           {q && (
@@ -667,8 +673,10 @@ export function Archive() {
             </section>
           )}
 
-          {/* result count — line 187 */}
-          <div className="mx-0.5 mb-3 font-mono text-[10px] uppercase tracking-[.8px] text-faint">
+          {/* result count — line 187. Dimmed together with the grid while
+              placeholder (previous-filter) data is on screen, so the stale
+              count doesn't read as current (2026-10-18 scrutiny). */}
+          <div className={`transition-opacity ${isPlaceholderData ? "opacity-50" : ""} mx-0.5 mb-3 font-mono text-[10px] uppercase tracking-[.8px] text-faint`}>
             <b className="text-signal">{count.toLocaleString()}</b> {count === 1 ? "record" : "records"}
             {totalPages > 1 && ` · page ${page} / ${totalPages}`} · {finePointer ? "open a file, ← → to flip through" : "swipe a file to flip through"}
           </div>

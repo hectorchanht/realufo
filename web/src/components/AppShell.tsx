@@ -56,12 +56,16 @@ export function AppShell() {
   // navItems.ts's canBackForPath doc comment.
   const canBack = canBackForPath(pathname);
 
-  // Mobile: AppBar + BottomTab slide out while scrolling down, back on scroll
-  // up. BottomTab is an overlay (absolute, not in flow) so hiding it never
+  // Nav auto-hide (all form factors): the bars slide away in proportion to
+  // scroll travel — down hides gradually, up brings them back, near the top
+  // they always show (useHideOnScroll returns a 0..1 progress, not a toggle).
+  // BottomTab is an overlay (absolute, not in flow) so hiding it never
   // reflows <main> — a resizing scroll container clamps scrollTop and would
   // feed a fake "scroll up" back into the hook. Its measured height is
   // published as --bnav-h (screen bottom padding) and --bnav-y (what sticky
-  // bottom bars like Thread's reply bar offset by: 0 while the tab is hidden).
+  // bottom bars like Thread's reply bar offset by: the *visible* part of the
+  // tab bar, shrinking with the hide progress). Desktop's TopNav is in flow,
+  // so it collapses its own margin as it slides (see TopNav).
   const scrollRef = useRef<HTMLElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const bnavRef = useRef<HTMLDivElement>(null);
@@ -69,7 +73,7 @@ export function AppShell() {
   // the restored scrollTop and doesn't read the jump as a scroll-down.
   const key = scrollKey(pathname, search);
   useScrollMemory(scrollRef, key);
-  const navHidden = useHideOnScroll(scrollRef, !isDesktop, key);
+  const navHide = useHideOnScroll(scrollRef, true, key);
   useEffect(() => rememberTabUrl(pathname, search), [pathname, search]);
   // Installed PWA: remember where the user is so a cold start (e.g. Android
   // killing the app while a PDF is in the foreground) can resume here
@@ -112,10 +116,10 @@ export function AppShell() {
             ref={shellRef}
             data-shell
             className="relative z-10 flex min-h-0 flex-1 flex-col"
-            style={{ "--bnav-y": navHidden ? "0px" : "var(--bnav-h, 0px)" } as CSSProperties}
+            style={{ "--bnav-y": `calc(var(--bnav-h, 0px) * ${(1 - navHide.progress).toFixed(3)})` } as CSSProperties}
           >
             {isDesktop && (
-              <TopNav activeTab={activeTab} />
+              <TopNav activeTab={activeTab} hideProgress={navHide.progress} />
             )}
 
             <main
@@ -125,7 +129,7 @@ export function AppShell() {
               style={{ WebkitOverflowScrolling: "touch" }}
             >
               {!isDesktop && (
-                <AppBar canBack={canBack} onBack={() => goBack(navigate, pathname)} showBrand={!canBack} hidden={navHidden} />
+                <AppBar canBack={canBack} onBack={() => goBack(navigate, pathname)} showBrand={!canBack} hideProgress={navHide.progress} />
               )}
 
               <div
@@ -147,7 +151,7 @@ export function AppShell() {
               </div>
             </main>
 
-            {!isDesktop && <BottomTab ref={bnavRef} activeTab={activeTab} hidden={navHidden} />}
+            {!isDesktop && <BottomTab ref={bnavRef} activeTab={activeTab} hideProgress={navHide.progress} />}
           </div>
 
           {/* Overlays (Composer/MediaViewer/Toast) mount INSIDE the

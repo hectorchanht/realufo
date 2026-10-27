@@ -8,8 +8,10 @@ import { hubsFor } from "../lib/hubs";
 import { listHubsCached } from "./hubs";
 import {
   ASK_EMBED_MODEL, ASK_LLM_MODEL, ASK_RERANK_MODEL, ASK_TOP_K, ASK_POOL, ASK_PER_RECORD, NOT_COVERED, RESTING,
-  askHref, askIdOf, normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, aiSourceOf, type AskChunk,
+  askHref, askIdOf, normalizeQuestion, cacheKey, buildMessages, answerText, cleanCitations, aiSourceOf,
+  glossaryEntries, glossaryMatches, type AskChunk,
 } from "../lib/ask";
+import { GLOSSARY_HTML } from "../lib/glossary";
 
 type Hydrated = { id: string; title: string; kind: string; thumb: string | null };
 const notCovered = () => ({ answer: NOT_COVERED, sources: [] as unknown[] });
@@ -21,8 +23,10 @@ export async function ask(req: Request, env: Env) {
   const q = normalizeQuestion(new URL(req.url).searchParams.get("q"));
   if (!q) return error(400, "question must be 3–300 characters");
   // Threshold and prompt version are part of the key so re-tuning either never serves stale answers.
+  // p4: keyword retrieval also searches archive labels/agencies and attaches
+  // site-glossary definitions (the PURSUE fix) — p3 answers predate both.
   const min = Number(env.ASK_MIN_SCORE) || 0.45;
-  const key = `${min}|p3|${cacheKey(q)}`;
+  const key = `${min}|p4|${cacheKey(q)}`;
 
   const hit = await env.DB.prepare("SELECT answer FROM ask_cache WHERE key=? AND created_at >= datetime('now','-7 days')")
     .bind(key)
@@ -128,9 +132,10 @@ async function answer(env: Env, q: string, min: number) {
   const res = await env.VECTORIZE.query(emb.data[0], { topK: ASK_POOL, returnMetadata: "all" });
   const strong = res.matches.filter((m) => m.score >= min && m.metadata?.record_id);
   // Dense retrieval can miss (or weakly rank) a term the archive names outright
-  // ("PURSUE" scores below the threshold even though an AI summary says "the
-  // PURSUE initiative"): merge keyword hits over titles/summaries/AI summaries
-  // into the pool, then let the reranker + LLM judge relevance as usual.
+  // ("PURSUE" scores below the threshold, and no record text contains the word
+  // at all — it lives in the wargov archive's label and the site glossary):
+  // merge keyword hits over titles/summaries/AI summaries/archive labels into
+  // the pool, then let the reranker + LLM judge relevance as usual.
   const vec = strong.map((m) => ({
     record_id: String(m.metadata!.record_id),
     page: Number(m.metadata!.page) || 0,
@@ -182,41 +187,76 @@ async function answer(env: Env, q: string, min: number) {
 }
 
 // Keyword fallback for answer(): distinctive question terms matched against
-// titles/summaries/AI summaries. Ranked by how many terms hit, capped, then
-// the normal rerank + LLM path judges relevance.
+// titles/summaries/AI summaries AND the record's archive label + agency —
+// a programme name like PURSUE appears only in the archives table's label
+// ("War.gov · PURSUE"), never in a record's own text, so title-only matching
+// can never surface it. Ranked by how many terms hit, capped, then the
+// normal rerank + LLM path judges relevance.
+//
+// When a term is one of the site glossary's entries (PURSUE, AAWSAP, …), its
+// definition — the only place the site actually defines the term — is
+// attached to the top chunk, labelled as glossary text, so the LLM has a
+// source that answers "what is X" instead of a pile of the programme's files.
 const ASK_STOPWORDS = new Set(
   "what is the a an of and or to in on for with as by at from that this these those it its be are was were who which whose whom how why when where do does did can could should would will shall there their them they we you your our ours his her him she he i me my mine our the this that these those am is are was were be been being have has had having do does did doing will would shall should may might must can could".split(" ")
 );
 const escLike = (s: string) => s.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+type KwRow = { record_id: string; title: string; summary: string; archive_label: string | null; agency: string | null };
 async function keywordChunks(env: Env, q: string): Promise<{ record_id: string; page: number; text: string }[]> {
   const seen = new Set<string>();
   const kws = ((q.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter(
     (w) => w.length >= 3 && !ASK_STOPWORDS.has(w) && !seen.has(w) && seen.add(w)
   )).slice(0, 6);
   if (!kws.length) return [];
-  const hay = "lower(r.title || ' ' || coalesce(r.summary,'') || ' ' || coalesce(t.ai_summary,''))";
+  const defs = glossaryMatches(glossaryEntries(GLOSSARY_HTML), kws);
+  const hay =
+    "lower(r.title || ' ' || coalesce(r.summary,'') || ' ' || coalesce(t.ai_summary,'') || ' ' || coalesce(a.label,'') || ' ' || coalesce(r.agency_full, r.agency, ''))";
   const ors = kws.map(() => `(${hay} LIKE ? ESCAPE '\\')`).join(" OR ");
   const rows = await env.DB.prepare(
     `SELECT r.id record_id, r.title title,
-       coalesce(t.ai_summary, r.summary, '') summary
+       coalesce(t.ai_summary, r.summary, '') summary,
+       a.label archive_label, coalesce(r.agency_full, r.agency) agency
      FROM records r LEFT JOIN record_text t ON t.record_id = r.id
+     LEFT JOIN archives a ON a.id = r.archive
      WHERE r.status='live' AND (${ors}) LIMIT 24`
   )
     .bind(...kws.map((k) => `%${escLike(k)}%`))
-    .all<{ record_id: string; title: string; summary: string }>();
+    .all<KwRow>();
   const hits = rows.results
     .map((r) => {
-      const h = `${r.title} ${r.summary}`.toLowerCase();
+      const h = `${r.title} ${r.summary} ${r.archive_label ?? ""} ${r.agency ?? ""}`.toLowerCase();
       return { r, n: kws.filter((k) => h.includes(k)).length };
     })
     .filter((x) => x.n > 0)
     .sort((a, b) => b.n - a.n)
     .slice(0, 12);
-  return hits.map(({ r }) => ({
+  let picked: KwRow[] = hits.map((x) => x.r);
+  if (!picked.length && defs.length) {
+    // No record text mentions the term at all, but the glossary defines it:
+    // ground the answer in the term's own archive/agency records (newest
+    // first) so there is a real, citable source for the definition.
+    const term = `%${escLike(defs[0].term.toLowerCase())}%`;
+    const reps = await env.DB.prepare(
+      `SELECT r.id record_id, r.title title,
+         coalesce(t.ai_summary, r.summary, '') summary,
+         a.label archive_label, coalesce(r.agency_full, r.agency) agency
+       FROM records r LEFT JOIN record_text t ON t.record_id = r.id
+       LEFT JOIN archives a ON a.id = r.archive
+       WHERE r.status='live' AND (lower(coalesce(a.label,'')) LIKE ? ESCAPE '\\' OR lower(coalesce(r.agency_full, r.agency, '')) LIKE ? ESCAPE '\\')
+       ORDER BY r.doc_date DESC LIMIT 3`
+    )
+      .bind(term, term)
+      .all<KwRow>();
+    picked = reps.results;
+  }
+  return picked.map((r, i) => ({
     record_id: r.record_id,
     page: 0,
     // Same "<title> — AI summary" head the indexer uses, so aiSourceOf labels it.
-    text: `${r.title} — AI summary\n${r.summary.slice(0, 1500)}`,
+    // The glossary definition rides on the top chunk only, under its own label.
+    text:
+      `${r.title} — AI summary\n${r.summary.slice(0, 1500)}` +
+      (i === 0 && defs.length ? `\nSite glossary: ${defs.map((d) => `${d.term} — ${d.text}`).join(" ")}` : ""),
   }));
 }
 

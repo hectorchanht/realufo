@@ -374,6 +374,12 @@ export async function recordFacets(req: Request, env: Env) {
   return json({
     releases: releases.map(({ no, date, count }) => ({ no, date, count })),
     kinds: kinds.results.map(({ name, count }) => ({ name, count })),
+    // All-types total for the Archive's "All" chip, in the SAME faceted
+    // context as the kind counts (every record has exactly one kind, and the
+    // kinds dimension excludes only the type filter itself) — the chip used
+    // to show the global catalogue total while its siblings showed the
+    // search-context counts (2026-10-18 scrutiny).
+    total: kinds.results.reduce((a, k) => a + k.count, 0),
     agencies: agencies.results.map(({ name, count }) => ({ name, count })),
     decades: [...decades].sort(([a], [b]) => a - b).map(([decade, count]) => ({ decade, count })),
     locations: locations.results.map(({ name, count }) => ({ name, count })),
