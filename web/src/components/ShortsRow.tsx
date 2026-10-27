@@ -24,8 +24,10 @@ export function ShortsSkeleton({ grid = false, count = 4 }: { grid?: boolean; co
           aria-hidden="true"
           className={`skel relative aspect-[9/16] overflow-hidden rounded-[14px] border border-line ${grid ? "" : "w-[132px] shrink-0 snap-start"}`}
         >
-          <span className="absolute inset-0 grid place-items-center text-dim opacity-40">
-            <Play size={22} aria-hidden="true" />
+          <span className="absolute inset-0 grid place-items-center text-dim opacity-90">
+            <span className="grid place-items-center rounded-full border border-line bg-surface2/70 p-2.5">
+              <Play size={22} aria-hidden="true" />
+            </span>
           </span>
           <span className="absolute inset-x-0 bottom-0 space-y-1.5 px-2 pb-2">
             <span className="block h-2 w-1/3 rounded bg-surface2" />

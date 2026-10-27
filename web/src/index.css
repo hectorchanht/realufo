@@ -45,7 +45,7 @@
   background: linear-gradient(
     100deg,
     transparent 25%,
-    color-mix(in srgb, var(--ink) 11%, transparent) 50%,
+    color-mix(in srgb, var(--ink) 22%, transparent) 50%,
     transparent 75%
   );
   animation: shimmer 1.5s ease-in-out infinite;
