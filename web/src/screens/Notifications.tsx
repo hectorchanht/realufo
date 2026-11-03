@@ -35,7 +35,7 @@ export default function Notifications() {
     enabled: pushOn && endpoint !== undefined,
   });
 
-  if (!pushOn) return <p className="py-10 text-center font-mono text-[12px] text-faint">Notifications aren't available yet.</p>;
+  if (!pushOn) return <p className="py-12 text-center font-mono text-[12px] text-faint">Notifications aren't available yet.</p>;
 
   const enabled = !!endpoint && !!me?.prefs;
   async function toggleEnabled() {

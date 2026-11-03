@@ -25,7 +25,7 @@ function Picker({ label, value, onPick }: { label: string; value: string; onPick
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder={value || "Search records…"}
           aria-label={`${label} record search`}
-          className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 py-2.5 text-[14px] text-ink placeholder:text-faint focus:border-signal focus:outline-none"
+          className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-[14px] text-ink placeholder:text-faint focus:border-signal focus:outline-none"
         />
         {value && (
           <button
@@ -167,13 +167,13 @@ export default function Compare() {
         <div className="mb-4 flex flex-wrap gap-2 font-mono text-[11px]">
           <span className="self-center text-faint">Same series:</span>
           {series.prev && (
-            <button type="button" onClick={() => set("b", series.prev!)} className="inline-flex items-center gap-1 rounded-full border border-line2 px-3 py-1.5 text-dim hover:border-signal hover:text-signal">
+            <button type="button" onClick={() => set("b", series.prev!)} className="inline-flex items-center gap-1 rounded-full border border-line2 px-3 py-2 text-dim hover:border-signal hover:text-signal">
               <ChevronLeft size={13} strokeWidth={2.25} aria-hidden="true" />
               {series.prevTitle || series.prev}
             </button>
           )}
           {series.next && (
-            <button type="button" onClick={() => set("b", series.next!)} className="inline-flex items-center gap-1 rounded-full border border-line2 px-3 py-1.5 text-dim hover:border-signal hover:text-signal">
+            <button type="button" onClick={() => set("b", series.next!)} className="inline-flex items-center gap-1 rounded-full border border-line2 px-3 py-2 text-dim hover:border-signal hover:text-signal">
               {series.nextTitle || series.next}
               <ChevronRight size={13} strokeWidth={2.25} aria-hidden="true" />
             </button>

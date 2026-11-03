@@ -50,7 +50,7 @@ function PlacePanel({ place }: { place: MapPlace }) {
     <section
       id={`place-${placeSlug(place.name)}`}
       aria-label={place.name}
-      className="mb-[14px] scroll-mt-[76px] rounded-2xl border border-line2 bg-surface p-[14px] min-[900px]:max-h-[640px] min-[900px]:overflow-y-auto"
+      className="mb-4 scroll-mt-[76px] rounded-2xl border border-line2 bg-surface p-4 min-[900px]:max-h-[640px] min-[900px]:overflow-y-auto"
       style={{ animation: "fadeup .25s ease both" }}
     >
       <div className="mb-3 flex items-start gap-2">
@@ -88,7 +88,7 @@ function PlaceChooser({ places, onPick, onClose }: { places: MapPlace[]; onPick:
   return (
     <section
       aria-label={label}
-      className="mb-[14px] rounded-2xl border border-line2 bg-surface p-[14px]"
+      className="mb-4 rounded-2xl border border-line2 bg-surface p-4"
       style={{ animation: "fadeup .25s ease both" }}
     >
       <div className="mb-2 flex items-center gap-2">
@@ -103,7 +103,7 @@ function PlaceChooser({ places, onPick, onClose }: { places: MapPlace[]; onPick:
             key={p.name}
             type="button"
             onClick={() => onPick(p.name)}
-            className="flex items-center gap-3 border-t border-line py-[10px] text-left first:border-t-0 hover:text-signal"
+            className="flex items-center gap-3 border-t border-line py-2 text-left first:border-t-0 hover:text-signal"
           >
             <span className="min-w-0 flex-1 truncate text-[14px] text-ink">{p.name}</span>
             <span className="flex-none font-mono text-[10px] text-faint">{files(p.count)}</span>
@@ -182,12 +182,12 @@ export function MapScreen() {
   return (
     <div data-screen="map" style={{ animation: "fadeup .35s ease both" }}>
       <p className="mb-3 text-[13px] leading-[1.55] text-dim">{MAP_INTRO}</p>
-      <div className={place || choices ? "items-start min-[900px]:grid min-[900px]:grid-cols-[minmax(0,1fr)_340px] min-[900px]:gap-[14px]" : ""}>
+      <div className={place || choices ? "items-start min-[900px]:grid min-[900px]:grid-cols-[minmax(0,1fr)_340px] min-[900px]:gap-4" : ""}>
         {/* map panel — prototype lines 313-321 */}
         <div
           data-map
           onClick={pick}
-          className="relative mb-[14px] aspect-[16/10] overflow-hidden rounded-2xl border border-line2"
+          className="relative mb-4 aspect-[16/10] overflow-hidden rounded-2xl border border-line2"
           style={{ background: "radial-gradient(120% 120% at 50% 0%, var(--surface), var(--bg2))" }}
         >
           <div
@@ -265,7 +265,7 @@ export function MapScreen() {
                       e.stopPropagation();
                       setChoices(null);
                     }}
-                    className={`rounded-full border bg-surface px-2 py-[3px] font-mono text-[9px] hover:text-ink ${
+                    className={`rounded-full border bg-surface px-2 py-1 font-mono text-[9px] hover:text-ink ${
                       active ? "border-signal text-signal" : "border-line2 text-dim"
                     }`}
                   >
@@ -286,15 +286,15 @@ export function MapScreen() {
         {choices && <PlaceChooser places={choices} onPick={toggle} onClose={() => setChoices(null)} />}
       </div>
       {!!data?.unmappedFiles && (
-        <div className="-mt-2 mb-[14px] font-mono text-[9px] text-faint">
+        <div className="-mt-2 mb-4 font-mono text-[9px] text-faint">
           + {files(data.unmappedFiles)} without a map spot (e.g. “Various”)
         </div>
       )}
 
       {/* 4 stat tiles — prototype lines 322-327 */}
-      <div data-grid className="mb-5 grid grid-cols-2 gap-[10px] min-[900px]:grid-cols-4">
+      <div data-grid className="mb-5 grid grid-cols-2 gap-2 min-[900px]:grid-cols-4">
         {STAT_TILES.map((tile) => (
-          <div key={tile.key} className="rounded-[13px] border border-line bg-surface p-[14px]">
+          <div key={tile.key} className="rounded-[13px] border border-line bg-surface p-4">
             <div className="font-pixel text-[15px]" style={{ color: tile.color }}>
               {stats && stats[tile.key] != null ? stats[tile.key].toLocaleString() : "—"}
             </div>
@@ -305,9 +305,9 @@ export function MapScreen() {
 
       {/* "◆ Records by decade" bar chart — prototype lines 328-336 */}
       <div className="mx-0.5 mb-3 font-pixel text-[9px] tracking-[1px] text-faint">◆ Records by decade</div>
-      <div className="mb-2 flex h-[110px] items-end gap-[5px]">
+      <div className="mb-2 flex h-[110px] items-end gap-1">
         {byDecade.map(([label, n]) => (
-          <div key={label} className="flex h-full flex-1 flex-col items-center justify-end gap-[6px]">
+          <div key={label} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
             <div
               title={String(n)}
               className="w-full rounded-t"
@@ -328,9 +328,9 @@ export function MapScreen() {
 
       {/* "◆ Top locations" bars — prototype lines 337-342 */}
       <div className="mx-0.5 mb-3 mt-5 font-pixel text-[9px] tracking-[1px] text-faint">◆ Top locations</div>
-      <div className="flex flex-col gap-[9px]">
+      <div className="flex flex-col gap-2">
         {topLocations.map(([label, n]) => (
-          <div key={label} className="flex items-center gap-[10px]">
+          <div key={label} className="flex items-center gap-2">
             <span className="w-24 flex-none text-right font-mono text-[11px] text-dim">{label}</span>
             <div className="h-4 flex-1 overflow-hidden rounded-[5px] bg-surface">
               <div
@@ -355,7 +355,7 @@ export function MapScreen() {
               <li key={p.name}>
                 <Link
                   to={`/location/${p.hub}`}
-                  className="inline-block rounded-full border border-line2 px-[11px] py-[5px] font-mono text-[10px] text-dim hover:border-signal hover:text-signal"
+                  className="inline-block rounded-full border border-line2 px-3 py-1 font-mono text-[10px] text-dim hover:border-signal hover:text-signal"
                 >
                   {p.name} · {p.count}
                 </Link>

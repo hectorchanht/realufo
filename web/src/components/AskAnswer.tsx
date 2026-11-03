@@ -40,7 +40,7 @@ function ShareControls({ question, logId }: { question: string; logId: number })
   if (!url)
     return (
       <>
-        <button type="button" disabled={share.isPending} onClick={publish} className={`${ACTION} inline-flex items-center gap-[6px]`}>
+        <button type="button" disabled={share.isPending} onClick={publish} className={`${ACTION} inline-flex items-center gap-2`}>
           <Share2 size={13} strokeWidth={2} aria-hidden="true" />
           share
         </button>
@@ -66,7 +66,7 @@ function ShareControls({ question, logId }: { question: string; logId: number })
             { onSuccess: () => { setUrl(null); setResult(null); }, onError: () => setUndoFailed(true) }
           );
         }}
-        className={`${ACTION} inline-flex items-center gap-[6px]`}
+        className={`${ACTION} inline-flex items-center gap-2`}
       >
         <Undo2 size={13} strokeWidth={2} aria-hidden="true" />
         undo
@@ -107,7 +107,7 @@ export function AskAnswer({ question, onPost }: { question: string; onPost?: (da
           <>
             {canShare && <ShareControls key={data.log_id} question={question} logId={data.log_id!} />}
             {canPost && (
-              <button type="button" onClick={() => onPost!(data)} className={`${ACTION} inline-flex items-center gap-[6px]`}>
+              <button type="button" onClick={() => onPost!(data)} className={`${ACTION} inline-flex items-center gap-2`}>
                 <Megaphone size={13} strokeWidth={2} aria-hidden="true" />
                 post to a board
               </button>

@@ -65,7 +65,7 @@ export default function FullText({
     if (!data?.aiSummary) return null;
     const label = kind === "image" ? "AI VISUAL DESCRIPTION" : "AI SUMMARY";
     return (
-      <section aria-label={label} className="mb-[22px]">
+      <section aria-label={label} className="mb-6">
         <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 font-mono">
           <h2 className="text-[11px] font-semibold tracking-[.5px] text-ink">{label}</h2>
           <span className="text-[10px] text-faint">
@@ -110,15 +110,15 @@ export default function FullText({
       type="button"
       aria-pressed={format === k}
       onClick={() => setFormat(k)}
-      className={`${chip} ${format === k ? on : off} px-[7px] py-[2px] text-[9px]`}
+      className={`${chip} ${format === k ? on : off} px-2 py-0.5 text-[9px]`}
     >
       {label}
     </button>
   );
-  const arrow = "rounded-lg border border-line2 px-2.5 py-1 font-mono text-[11px] text-ink disabled:opacity-30";
+  const arrow = "rounded-lg border border-line2 px-2 py-1 font-mono text-[11px] text-ink disabled:opacity-30";
   const textUrl = `/doc/${encodeURIComponent(id)}/text`;
   return (
-    <section ref={section} aria-label="Full text" className="mb-[22px]">
+    <section ref={section} aria-label="Full text" className="mb-6">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2 font-mono">
         {data.aiSummary ? (
           <span className="flex min-w-0 flex-1 gap-2">
@@ -139,7 +139,7 @@ export default function FullText({
           <p className="text-[13.5px] leading-[1.65] text-dim">{data.aiSummary}</p>
           {(data.aiSections?.length ?? 0) > 1 && (
             <div className="mt-3">
-              <div className="mb-1.5 font-mono text-[10px] tracking-[.5px] text-faint">IN THIS FILE</div>
+              <div className="mb-2 font-mono text-[10px] tracking-[.5px] text-faint">IN THIS FILE</div>
               <ul className="max-h-[40vh] overflow-y-auto overscroll-contain rounded-xl border border-line">
                 {data.aiSections!.map((s) => {
                   const label = s.from === s.to ? `p. ${s.from}` : `pp. ${s.from}–${s.to}`;
@@ -171,14 +171,14 @@ export default function FullText({
             <button
               type="button"
               onClick={onOpenOriginal}
-              className="mb-2 flex w-full items-center gap-[7px] rounded-xl border border-signal px-3 py-2 text-left font-mono text-[11px] text-signal"
+              className="mb-2 flex w-full items-center gap-2 rounded-xl border border-signal px-3 py-2 text-left font-mono text-[11px] text-signal"
             >
               <ExternalLink size={12} strokeWidth={2} aria-hidden="true" className="flex-none" />
               <span>Page {cur} isn't in the extracted text: open it in the original file</span>
             </button>
           )}
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2 font-mono">
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-2">
               <button type="button" aria-label="Previous page" disabled={idx === 0} onClick={() => go(idx - 1)} className={arrow}><ChevronLeft size={15} strokeWidth={2.25} aria-hidden="true" /></button>
               <span className="text-[10px] tracking-[.5px] text-signal">PAGE {shown.n} / {all ? pages.length : data.total_pages}</span>
               <button type="button" aria-label="Next page" disabled={idx >= pages.length - 1} onClick={() => go(idx + 1)} className={arrow}><ChevronRight size={15} strokeWidth={2.25} aria-hidden="true" /></button>
@@ -186,7 +186,7 @@ export default function FullText({
             <span className="flex items-center gap-1">
               {fmt("md", "MD")}
               {fmt("json", "JSON")}
-              <a href={textUrl} target="_blank" rel="noopener" className="ml-1.5 text-[10px] text-faint underline">↗ .md</a>
+              <a href={textUrl} target="_blank" rel="noopener" className="ml-2 text-[10px] text-faint underline">↗ .md</a>
               <a href={`${textUrl}?format=json`} target="_blank" rel="noopener" className="text-[10px] text-faint underline">.json</a>
             </span>
           </div>
@@ -197,7 +197,7 @@ export default function FullText({
             data-page={shown.n}
             // Own scroller on desktop only: on phones an 80vh nested scroller traps the
             // swipe (the page never moves), so there the text just flows in the page.
-            className="rounded-xl border border-line bg-surface px-3.5 py-3 min-[900px]:max-h-[80vh] min-[900px]:overflow-y-auto"
+            className="rounded-xl border border-line bg-surface px-4 py-3 min-[900px]:max-h-[80vh] min-[900px]:overflow-y-auto"
           >
             {format === "json" ? (
               <pre className="font-mono text-[11.5px] leading-[1.5] text-dim" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
@@ -214,7 +214,7 @@ export default function FullText({
             <button
               type="button"
               onClick={onOpenOriginal}
-              className="flex w-full items-center justify-center gap-[7px] rounded-xl border border-line2 py-3 font-mono text-xs font-semibold text-ink active:scale-[.99]"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-line2 py-3 font-mono text-xs font-semibold text-ink active:scale-[.99]"
             >
               Text continues in the original file
               <ExternalLink size={13} strokeWidth={2} aria-hidden="true" />
@@ -235,11 +235,11 @@ function OcrMarkdown({ text }: { text: string }) {
     <div className="text-[13.5px] leading-[1.65] text-dim" style={{ overflowWrap: "anywhere" }}>
       {blocks.map((b, i) =>
         b.kind === "heading" ? (
-          <h3 key={i} className="mb-1.5 mt-3 font-mono text-[11.5px] font-semibold tracking-[.5px] text-ink first:mt-0">
+          <h3 key={i} className="mb-2 mt-3 font-mono text-[11.5px] font-semibold tracking-[.5px] text-ink first:mt-0">
             {b.text}
           </h3>
         ) : (
-          <p key={i} className="mb-2.5">
+          <p key={i} className="mb-2">
             {b.lines.map((l, j) => (
               <span key={j}>
                 {j > 0 && <br />}

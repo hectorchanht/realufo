@@ -60,7 +60,7 @@ function SharedAnswer({ id }: { id: number | null }) {
         }
       />
       {boot?.features?.ask && (
-        <form onSubmit={submit} className="flex items-center gap-[9px] rounded-xl border border-line2 bg-surface px-[13px] py-2.5">
+        <form onSubmit={submit} className="flex items-center gap-2 rounded-xl border border-line2 bg-surface px-3 py-2">
           <span aria-hidden="true" className="text-[15px] text-faint">
             ◉
           </span>

@@ -86,14 +86,14 @@ export function Case() {
 
       {/* name — prototype line 292 */}
       <div className="flex items-start gap-2">
-        <h1 className="mb-[6px] min-w-0 flex-1 text-[27px] font-bold leading-[1.12] text-ink" style={{ letterSpacing: "-.01em" }}>
+        <h1 className="mb-2 min-w-0 flex-1 text-[27px] font-bold leading-[1.12] text-ink" style={{ letterSpacing: "-.01em" }}>
           {storyTitle ?? caseDetail.name}
         </h1>
         <FollowBell kind="case" id={slug} />
       </div>
 
       {/* archive label + status — prototype line 293 */}
-      <div className="mb-[18px] font-mono text-[10px] uppercase text-faint" style={{ letterSpacing: ".5px" }}>
+      <div className="mb-4 font-mono text-[10px] uppercase text-faint" style={{ letterSpacing: ".5px" }}>
         {caseDetail.archive_label}
         {caseDetail.status && (
           <>
@@ -104,16 +104,16 @@ export function Case() {
       </div>
 
       {/* lede — prototype line 294 */}
-      <p className="mb-[22px] text-[15px] leading-[1.65] text-dim">{caseDetail.lede}</p>
+      <p className="mb-6 text-[15px] leading-[1.65] text-dim">{caseDetail.lede}</p>
 
       {/* pull-quote blockquote — prototype lines 295-299 */}
       {caseDetail.pull && (
         <blockquote
-          className="mb-[22px] rounded-r-xl bg-surface px-[18px] py-4"
+          className="mb-6 rounded-r-xl bg-surface px-4 py-4"
           style={{ borderLeft: `3px solid ${caseDetail.accent}` }}
         >
           <div className="text-base italic leading-[1.55] text-ink">“{caseDetail.pull}”</div>
-          <div className="mt-[11px] font-mono text-[10px] text-faint" style={{ letterSpacing: ".3px" }}>
+          <div className="mt-3 font-mono text-[10px] text-faint" style={{ letterSpacing: ".3px" }}>
             {caseDetail.pull_cite}
           </div>
         </blockquote>
@@ -126,7 +126,7 @@ export function Case() {
           href={caseStoryUrl(slug)}
           target="_blank"
           rel="noopener"
-          className="mb-[22px] inline-block font-mono text-[11px] text-signal hover:underline"
+          className="mb-6 inline-block font-mono text-[11px] text-signal hover:underline"
         >
           Full story, timeline and sources ↗
         </a>
@@ -137,7 +137,7 @@ export function Case() {
         <Link
           key={t.id}
           to={`/thread/${t.id}`}
-          className="mb-2 flex items-center gap-3 rounded-2xl border border-line2 bg-surface p-[14px] text-left"
+          className="mb-2 flex items-center gap-3 rounded-2xl border border-line2 bg-surface p-4 text-left"
         >
           <span
             aria-hidden="true"
@@ -149,7 +149,7 @@ export function Case() {
           <div className="min-w-0 flex-1">
             <div className="font-mono text-[9.5px] text-faint">{i === 0 ? `ACTIVE DISCUSSION · ${t.boardSlug}` : `${t.boardSlug} · ${t.ago}`}</div>
             <div
-              className="mt-[3px] text-[13px] font-semibold text-ink"
+              className="mt-1 text-[13px] font-semibold text-ink"
               style={{
                 display: "-webkit-box",
                 WebkitLineClamp: 2,
@@ -168,7 +168,7 @@ export function Case() {
 
       {/* Discussion — cases are discussion surfaces like records (add a
           comment, vote, promote a comment to a board, or start a thread). */}
-      <div className="mt-[22px] mb-3 flex items-baseline justify-between">
+      <div className="mt-6 mb-3 flex items-baseline justify-between">
         <div className="font-pixel text-[9px] uppercase text-faint" style={{ letterSpacing: "1px" }}>
           ◆ Discussion
         </div>
@@ -178,7 +178,7 @@ export function Case() {
       <button
         type="button"
         onClick={() => openComposer({ mode: "comment", caseSlug: slug })}
-        className="mb-3.5 flex w-full items-center gap-2.5 rounded-xl border border-line2 bg-surface px-3.5 py-3 text-left hover:border-signal active:scale-[.99]"
+        className="mb-4 flex w-full items-center gap-2 rounded-xl border border-line2 bg-surface px-4 py-3 text-left hover:border-signal active:scale-[.99]"
       >
         <span
           aria-hidden="true"
@@ -193,10 +193,10 @@ export function Case() {
         </span>
       </button>
 
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-2">
         {comments.map((c) => (
-          <div key={c.id} className="rounded-xl border border-line bg-surface px-[13px] py-3">
-            <div className="mb-[7px] flex flex-wrap items-center gap-2">
+          <div key={c.id} className="rounded-xl border border-line bg-surface px-3 py-3">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
               {c.handleShow && <span className="font-mono text-[10px] text-cyan">{c.handleShow}</span>}
               <span
                 role="img"
@@ -212,7 +212,7 @@ export function Case() {
             </div>
             <div className="whitespace-pre-wrap break-words text-[13px] leading-[1.55] text-ink">{c.body}</div>
             {<UploadThumbs urls={c.image_urls} fallback={c.image_url} />}
-            <div className="mt-2.5 flex items-center gap-4">
+            <div className="mt-2 flex items-center gap-4">
               <VoteButton targetType="comment" targetId={c.id} votes={c.votes} />
               <button
                 type="button"
@@ -221,7 +221,7 @@ export function Case() {
                     promoteCommentOpts(c, { title: caseDetail.name, boardId: DEFAULT_CASE_BOARD, caseSlug: slug }),
                   )
                 }
-                className="flex items-center gap-1.5 font-mono text-[11px] text-amber active:scale-[.93]"
+                className="flex items-center gap-2 font-mono text-[11px] text-amber active:scale-[.93]"
               >
                 <ArrowUpRight size={13} strokeWidth={2.25} aria-hidden="true" />to a board
               </button>
@@ -241,7 +241,7 @@ export function Case() {
             refLabel: caseDetail.name,
           })
         }
-        className="mt-4 flex w-full items-center justify-center gap-2.5 rounded-xl border border-dashed border-line2 py-[13px] font-mono text-xs font-semibold text-ink hover:border-signal hover:text-signal active:scale-[.98]"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line2 py-3 font-mono text-xs font-semibold text-ink hover:border-signal hover:text-signal active:scale-[.98]"
       >
         <MessageSquarePlus size={15} strokeWidth={2} aria-hidden="true" />
         Start a board thread about this case
@@ -255,7 +255,7 @@ export function Case() {
               <li key={c.slug}>
                 <Link
                   to={`/case/${c.slug}`}
-                  className="inline-block rounded-full border border-line2 px-[11px] py-[5px] font-mono text-[10px] text-dim hover:border-signal hover:text-signal"
+                  className="inline-block rounded-full border border-line2 px-3 py-1 font-mono text-[10px] text-dim hover:border-signal hover:text-signal"
                 >
                   {lang === "zh-Hant" && c.name_zh ? c.name_zh : c.name}
                 </Link>
@@ -283,13 +283,13 @@ function Cited({ text, max }: { text: string; max: number }) {
 function Story({ v }: { v: StoryView }) {
   const max = v.sources.length;
   return (
-    <article className="mb-[22px]">
+    <article className="mb-6">
       {v.sections.map((s) => (
         <section key={s.heading} className="mb-4">
           <h2 className="mb-2 text-[17px] font-bold text-ink">{s.heading}</h2>
           {s.paras.map((p, i) => <p key={i} className="mb-3 text-[15px] leading-[1.65] text-dim"><Cited text={p} max={max} /></p>)}
           {s.quote && (
-            <blockquote className="mb-3 rounded-r-xl border-l-[3px] border-signal bg-surface px-[18px] py-3">
+            <blockquote className="mb-3 rounded-r-xl border-l-[3px] border-signal bg-surface px-4 py-3">
               <div className="text-[15px] italic leading-[1.55] text-ink">“{s.quote.text}”</div>
               <div className="mt-2 font-mono text-[10px] text-faint">— {s.quote.who} <a href={`#src-${s.quote.src}`} className="text-signal">[{s.quote.src}]</a></div>
             </blockquote>

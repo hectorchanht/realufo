@@ -14,9 +14,9 @@ export interface TickerProps {
 
 function Row({ items }: { items: TickerItem[] }) {
   return (
-    <span className="inline-flex gap-[34px]">
+    <span className="inline-flex gap-8">
       {items.map((t, i) => (
-        <span key={i} className="inline-flex items-center gap-[7px]">
+        <span key={i} className="inline-flex items-center gap-2">
           <span className="font-bold text-signal">{t.board}</span>
           <span>{t.text}</span>
         </span>
@@ -29,14 +29,14 @@ export function Ticker({ items }: TickerProps) {
   return (
     <div data-ticker className="mb-5 flex items-center overflow-hidden rounded-xl border border-line bg-surface">
       <div
-        className="flex flex-none items-center gap-[7px] border-r border-line px-3 py-[9px] font-mono text-[10px] font-bold tracking-[1px] text-signal"
+        className="flex flex-none items-center gap-2 border-r border-line px-3 py-2 font-mono text-[10px] font-bold tracking-[1px] text-signal"
         style={{ background: "var(--signal-dim)" }}
       >
         <span className="h-[7px] w-[7px] animate-[blink_1.4s_infinite] rounded-full bg-signal" />
         LIVE
       </div>
       <div className="flex-1 overflow-hidden whitespace-nowrap">
-        <div className="inline-flex animate-[marquee_26s_linear_infinite] gap-[34px] pl-4 font-mono text-[11.5px] text-dim">
+        <div className="inline-flex animate-[marquee_26s_linear_infinite] gap-8 pl-4 font-mono text-[11.5px] text-dim">
           <Row items={items} />
           <Row items={items} />
         </div>

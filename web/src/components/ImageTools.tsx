@@ -284,7 +284,7 @@ export function MediaToolbar({
   const changed = adjustFilter(adjust) !== "";
   if (!showAdjustButton && !open) return null;
   return (
-    <div className="mb-3.5">
+    <div className="mb-4">
       {showAdjustButton && (
         <div className="flex flex-wrap items-center gap-2">
           <AdjustButton open={open} onToggle={onToggleOpen} changed={changed} />
@@ -292,7 +292,7 @@ export function MediaToolbar({
       )}
       {open && (
         // relative: MediaHelp's tooltip panel spans this box
-        <div className={`relative rounded-xl border border-line bg-surface px-3.5 py-3 ${showAdjustButton ? "mt-3" : ""}`}>
+        <div className={`relative rounded-xl border border-line bg-surface px-4 py-3 ${showAdjustButton ? "mt-3" : ""}`}>
           <MediaConsole
             media={media}
             skin={skin}

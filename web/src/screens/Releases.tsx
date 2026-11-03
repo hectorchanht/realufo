@@ -14,7 +14,7 @@ export default function Releases() {
   const { data, isLoading, isError } = useReleases();
   useSetPageTitle("RELEASES", "", RELEASES_TITLE);
   if (isError && !data) {
-    return <div data-screen="releases" className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">release data unavailable.</div>;
+    return <div data-screen="releases" className="px-5 py-16 text-center font-mono text-[12px] text-faint">release data unavailable.</div>;
   }
   if (isLoading || !data) {
     return <div data-screen="releases"><Skeleton rows={6} h={64} /></div>;
@@ -40,11 +40,11 @@ export default function Releases() {
           <tbody>
             {[...data.series].reverse().map((r) => (
               <tr key={r.no} className="border-t border-line">
-                <td className="py-1.5 pr-3"><Link to={`/release/${r.no}`} className="text-signal hover:underline">Release {pad2(r.no)}</Link></td>
-                <td className="py-1.5 pr-3 text-dim">{r.weekday.slice(0, 3)} {r.date}</td>
-                <td className="py-1.5 pr-3 text-ink">{r.files}</td>
-                <td className="py-1.5 pr-3 text-dim">{r.gap ?? "—"}</td>
-                <td className="py-1.5 text-dim">{r.agencies.slice(0, 3).map((a) => a.label).join(", ")}</td>
+                <td className="py-2 pr-3"><Link to={`/release/${r.no}`} className="text-signal hover:underline">Release {pad2(r.no)}</Link></td>
+                <td className="py-2 pr-3 text-dim">{r.weekday.slice(0, 3)} {r.date}</td>
+                <td className="py-2 pr-3 text-ink">{r.files}</td>
+                <td className="py-2 pr-3 text-dim">{r.gap ?? "—"}</td>
+                <td className="py-2 text-dim">{r.agencies.slice(0, 3).map((a) => a.label).join(", ")}</td>
               </tr>
             ))}
           </tbody>

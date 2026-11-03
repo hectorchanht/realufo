@@ -50,7 +50,7 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
       className={
         sheet
           ? "fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-line bg-bg2 px-3 pt-2 pb-[max(12px,env(safe-area-inset-bottom))] animate-[fadeup_.2s_ease_both]"
-          : "absolute right-0 top-full z-50 mt-2 w-52 rounded-xl border border-line bg-bg2 p-1.5 shadow-lg"
+          : "absolute right-0 top-full z-50 mt-2 w-52 rounded-xl border border-line bg-bg2 p-2 shadow-lg"
       }
     >
       {sheet && <div aria-hidden="true" className="mx-auto mb-2 h-1 w-9 rounded-full bg-line2" />}
@@ -111,7 +111,7 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
         onClick={() => setOpen((o) => !o)}
         className={
           sheet
-            ? "flex min-h-[44px] flex-1 flex-col items-center justify-center gap-1 px-0.5 py-[5px] active:scale-90"
+            ? "flex min-h-[44px] flex-1 flex-col items-center justify-center gap-1 px-0.5 py-1 active:scale-90"
             : "flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-[11px] px-3 font-mono text-[13px] font-medium" + (lit ? "" : " hover:bg-surface")
         }
         style={{ color: lit ? "var(--signal)" : "var(--dim)", background: !sheet && lit ? "var(--signal-dim)" : undefined }}

@@ -184,15 +184,15 @@ export function MediaHelp({ media, touch }: { media: Kind; touch: boolean }) {
         <DeskLabel>Help</DeskLabel>
       </button>
       {/* pt (not mt) keeps the gap inside the hover area, so the pointer can travel into the panel */}
-      <div id={id} role="tooltip" className={`absolute left-0 right-0 top-full z-30 pt-1.5 ${open ? "block" : "hidden group-hover:block group-focus-within:block"}`}>
-        <div className="grid max-h-[min(70vh,560px)] max-w-[640px] gap-x-6 gap-y-3 overflow-y-auto rounded-xl border border-line2 bg-bg2 p-3.5 shadow-[0_6px_24px_rgba(0,0,0,.45)] min-[640px]:grid-cols-2">
+      <div id={id} role="tooltip" className={`absolute left-0 right-0 top-full z-30 pt-2 ${open ? "block" : "hidden group-hover:block group-focus-within:block"}`}>
+        <div className="grid max-h-[min(70vh,560px)] max-w-[640px] gap-x-6 gap-y-3 overflow-y-auto rounded-xl border border-line2 bg-bg2 p-4 shadow-[0_6px_24px_rgba(0,0,0,.45)] min-[640px]:grid-cols-2">
           {groups.map((g) => (
             <section key={g.title}>
               <h3 className="mb-1 font-mono text-[9px] uppercase tracking-[.8px] text-faint">{g.title}</h3>
               <ul>
                 {g.rows.map((r) => (
-                  <li key={r.name + r.what} className="flex items-start gap-2 py-[3px]">
-                    <r.Icon {...ico} className="mt-px flex-none text-dim" />
+                  <li key={r.name + r.what} className="flex items-start gap-2 py-1">
+                    <r.Icon {...ico} className="mt-0.5 flex-none text-dim" />
                     <span className="min-w-0 flex-1 text-[11.5px] leading-snug text-dim">
                       <b className="font-medium text-ink">{r.name}</b>
                       {r.what && ` · ${r.what}`}
@@ -202,7 +202,7 @@ export function MediaHelp({ media, touch }: { media: Kind; touch: boolean }) {
                       : r.keys && (
                           <span className="flex flex-none flex-wrap justify-end gap-1">
                             {r.keys.map((k) => (
-                              <kbd key={k} className="rounded border border-line2 bg-surface px-1.5 py-px font-mono text-[10px] text-ink">
+                              <kbd key={k} className="rounded border border-line2 bg-surface px-2 py-0.5 font-mono text-[10px] text-ink">
                                 {k}
                               </kbd>
                             ))}

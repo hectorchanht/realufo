@@ -90,8 +90,8 @@ function SkinPicker({ skin, onPick }: { skin: MediaSkin; onPick(s: MediaSkin): v
         <DeskLabel>{SKINS.find((s) => s.key === skin)?.name}</DeskLabel>
       </button>
       {open && (
-        <span className="absolute left-0 top-full z-30 pt-1.5">
-          <span className="block w-[228px] rounded-xl border border-line2 bg-bg2 p-1.5 shadow-[0_6px_24px_rgba(0,0,0,.45)]">
+        <span className="absolute left-0 top-full z-30 pt-2">
+          <span className="block w-[228px] rounded-xl border border-line2 bg-bg2 p-2 shadow-[0_6px_24px_rgba(0,0,0,.45)]">
             {SKINS.map((s) => {
               const Icon = SKIN_ICONS[s.key];
               const current = s.key === skin;
@@ -104,7 +104,7 @@ function SkinPicker({ skin, onPick }: { skin: MediaSkin; onPick(s: MediaSkin): v
                     onPick(s.key);
                     setOpen(false);
                   }}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left active:scale-[.99]"
+                  className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left active:scale-[.99]"
                 >
                   <Icon size={18} strokeWidth={1.75} aria-hidden="true" className={current ? "text-signal" : "text-dim"} />
                   <span className="min-w-0 flex-1">
@@ -225,7 +225,7 @@ export function MediaConsole(props: ConsoleProps) {
   return (
     <div>
       {/* console header: style picker + presets, shared by all three bodies */}
-      <div data-scroll className="mb-2.5 flex items-center gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
+      <div data-scroll className="mb-2 flex items-center gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
         <SkinPicker skin={skin} onPick={onSkin} />
         <span className="mx-1 h-4 w-px bg-line2" aria-hidden="true" />
         <PresetRow

@@ -41,7 +41,7 @@ export function CassetteWindow({
   spinning: boolean;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-[12px] border border-line2 bg-bg px-3.5 py-2.5">
+    <div className="flex items-center gap-3 rounded-[12px] border border-line2 bg-bg px-4 py-2">
       <Reel spinning={spinning} />
       <div className="min-w-0 flex-1 text-center">
         <div className="truncate font-mono text-[14px] tabular-nums text-ink">{main}</div>

@@ -23,7 +23,7 @@ function YearPanel({ year, count }: { year: number; count: number }) {
     <section
       id={`year-${year}`}
       aria-label={`${year} sightings`}
-      className="mb-[14px] scroll-mt-[76px] rounded-2xl border border-line2 bg-surface p-[14px]"
+      className="mb-4 scroll-mt-[76px] rounded-2xl border border-line2 bg-surface p-4"
       style={{ animation: "fadeup .25s ease both" }}
     >
       <div className="mb-3 flex items-start gap-2">
@@ -131,9 +131,9 @@ export function TimelineScreen() {
       </p>
 
       {/* Stat tiles — same shape as Map's STAT_TILES. */}
-      <div data-grid className="mb-5 grid grid-cols-2 gap-[10px] min-[900px]:grid-cols-4">
+      <div data-grid className="mb-5 grid grid-cols-2 gap-2 min-[900px]:grid-cols-4">
         {tiles.map((tile) => (
-          <div key={tile.label} className="rounded-[13px] border border-line bg-surface p-[14px]">
+          <div key={tile.label} className="rounded-[13px] border border-line bg-surface p-4">
             <div className="font-pixel text-[15px]" style={{ color: tile.color }}>
               {tile.value}
             </div>
@@ -154,7 +154,7 @@ export function TimelineScreen() {
               <div className="mx-0.5 mb-3 font-pixel text-[9px] tracking-[1px] text-faint">
                 ◆ {decade}s · {total.toLocaleString()}
               </div>
-              <div className="flex h-[120px] items-end gap-[4px]" role="group" aria-label={`${decade}s sightings by year`}>
+              <div className="flex h-[120px] items-end gap-1" role="group" aria-label={`${decade}s sightings by year`}>
                 {cells.map(({ year, count }) => {
                   const active = selected === year;
                   const isPeak = peakYear === year;
@@ -165,7 +165,7 @@ export function TimelineScreen() {
                       aria-current={active ? "page" : undefined}
                       aria-label={`${year}: ${count} files`}
                       title={`${year} · ${count} files — ${active ? "close" : "open"} year link`}
-                      className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-[6px] rounded-sm py-1 hover:bg-surface"
+                      className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2 rounded-sm py-1 hover:bg-surface"
                     >
                       <span className="font-mono text-[8.5px] text-dim">{count > 0 ? count : ""}</span>
                       <div

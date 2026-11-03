@@ -53,7 +53,7 @@ export function Pad({
 }
 
 function SectionTitle({ children }: { children: string }) {
-  return <h3 className="mb-1.5 font-mono text-[9px] uppercase tracking-[.8px] text-faint">{children}</h3>;
+  return <h3 className="mb-2 font-mono text-[9px] uppercase tracking-[.8px] text-faint">{children}</h3>;
 }
 
 export function DjBody(p: ConsoleProps) {

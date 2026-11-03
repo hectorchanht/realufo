@@ -50,7 +50,7 @@ export default function Shelf() {
           href="https://watchthenight.com"
           target="_blank"
           rel="noopener"
-          className="inline-block rounded-lg border border-line px-5 py-2.5 font-mono text-[13px] font-bold text-ink"
+          className="inline-block rounded-lg border border-line px-5 py-2 font-mono text-[13px] font-bold text-ink"
         >
           Visit Watch the Night ↗
         </a>
@@ -61,7 +61,7 @@ export default function Shelf() {
       >
         <h2
           id="support-archive"
-          className="flex items-center gap-1.5 font-mono text-[11px] font-semibold tracking-[.5px] text-ink"
+          className="flex items-center gap-2 font-mono text-[11px] font-semibold tracking-[.5px] text-ink"
         >
           <Coffee size={13} className="text-signal" /> SUPPORT THE ARCHIVE
         </h2>
@@ -73,7 +73,7 @@ export default function Shelf() {
           href={KOFI_URL}
           target="_blank"
           rel="noopener"
-          className="inline-block rounded-lg bg-signal px-5 py-2.5 font-mono text-[13px] font-bold text-black"
+          className="inline-block rounded-lg bg-signal px-5 py-2 font-mono text-[13px] font-bold text-black"
         >
           Buy us a coffee on Ko-fi ↗
         </a>

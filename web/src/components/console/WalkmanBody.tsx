@@ -67,7 +67,7 @@ export function WalkmanBody(p: ConsoleProps) {
   return (
     <div className="rounded-[16px] border border-line2 bg-surface">
       <div aria-hidden="true" className="h-[3px] rounded-t-[16px] bg-[var(--signal)]" />
-      <div className="flex flex-col gap-4 p-3.5">
+      <div className="flex flex-col gap-4 p-4">
         <CassetteWindow main={main} sub={sub} spinning={spinning} />
         <div className="flex flex-col gap-4 min-[700px]:flex-row min-[700px]:items-start">
           <div className="order-2 flex justify-center gap-4 min-[700px]:order-1">

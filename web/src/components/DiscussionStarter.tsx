@@ -44,9 +44,9 @@ export function DiscussionStarter({
   };
 
   return (
-    <div className="mb-3.5 rounded-xl border border-line2 bg-surface p-[13px]">
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-[.6px] text-amber">
+    <div className="mb-4 rounded-xl border border-line2 bg-surface p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[.6px] text-amber">
           <Sparkles size={12} aria-hidden="true" />
           {t("doc.starterLabel")}
         </span>

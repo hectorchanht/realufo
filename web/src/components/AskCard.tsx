@@ -11,14 +11,14 @@ import type { AskSource, HubKind, HubLinks } from "../api/types";
 // Same title rule as cards: id prefix stripped, id shown once unless it only respells the title.
 const srcTitle = (s: { record_id: string; title: string; kind?: string }) => docTitleParts(s.record_id, s.title, s.kind);
 
-export const CARD = "mb-3.5 rounded-xl border border-line2 bg-surface px-[13px] py-3";
-export const ACTION = "rounded-md border border-line2 px-2.5 py-1 font-mono text-[10px] text-signal hover:border-signal disabled:opacity-50";
+export const CARD = "mb-4 rounded-xl border border-line2 bg-surface px-3 py-3";
+export const ACTION = "rounded-md border border-line2 px-2 py-1 font-mono text-[10px] text-signal hover:border-signal disabled:opacity-50";
 /** ACTION for an icon-only button (32px target). */
 export const ICON_ACTION = "inline-grid size-8 place-items-center rounded-md border border-line2 text-signal hover:border-signal disabled:opacity-50";
 
 const CHIP_KINDS: HubKind[] = ["release", "agency", "location", "decade"];
 
-const CHIP = "rounded-[5px] border border-line px-1.5 py-px font-mono text-[9px]";
+const CHIP = "rounded-[5px] border border-line px-2 py-0.5 font-mono text-[9px]";
 
 // Small links from a source row to the hubs it belongs to (R06, FBI, 1950s…).
 function hubChips(hubs: HubLinks | undefined, labels: Map<string, string>) {
@@ -94,13 +94,13 @@ export function AskCard({ question, data, footer }: { question: string; data: { 
         })}
       </p>
       {data.sources.length > 0 && (
-        <ol className="mt-3.5 flex flex-col gap-2.5">
+        <ol className="mt-4 flex flex-col gap-2">
           {data.sources.map((s) => (
             <li
               key={s.n}
               id={`ask-src-${s.n}`}
               data-flash={flash === s.n ? "true" : "false"}
-              className="relative flex items-center gap-2 rounded-lg border border-line px-2 py-1.5 transition-colors data-[flash=true]:border-signal"
+              className="relative flex items-center gap-2 rounded-lg border border-line px-2 py-2 transition-colors data-[flash=true]:border-signal"
             >
               {/* source number sits on the top border, legend-style, so it takes no row space */}
               <span className="absolute -top-1.5 left-2 bg-surface px-1 font-mono text-[9px] leading-none text-faint">[{s.n}]</span>
@@ -121,10 +121,10 @@ export function AskCard({ question, data, footer }: { question: string; data: { 
           ))}
         </ol>
       )}
-      <p className="mt-2.5 font-mono text-[9.5px] text-faint">
+      <p className="mt-2 font-mono text-[9.5px] text-faint">
         AI answer drawn from archive text, OCR &amp; AI descriptions — can be wrong. Check the sources.
       </p>
-      {footer && <div className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-line pt-2.5">{footer}</div>}
+      {footer && <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-line pt-2">{footer}</div>}
     </section>
   );
 }

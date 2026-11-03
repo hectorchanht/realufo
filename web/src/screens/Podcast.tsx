@@ -59,24 +59,24 @@ export default function Podcast() {
       <div data-scroll className="mb-6 flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
         <button
           onClick={copyFeed}
-          className="inline-flex items-center gap-[7px] rounded-lg border border-line px-3 py-1.5 text-[13px] text-signal hover:underline"
+          className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-[13px] text-signal hover:underline"
         >
           {copied ? <Check size={14} strokeWidth={2.25} aria-hidden="true" /> : <Copy size={14} strokeWidth={2} aria-hidden="true" />}
           {copied ? "Copied!" : "Copy RSS feed"}
         </button>
         <a
-          className="rounded-lg border border-line px-3 py-1.5 text-[13px] text-signal hover:underline"
+          className="rounded-lg border border-line px-3 py-2 text-[13px] text-signal hover:underline"
           href={`overcast://x-callback-url/add?url=${encodeURIComponent(FEED_URL)}`}
         >
           Overcast
         </a>
         <a
-          className="rounded-lg border border-line px-3 py-1.5 text-[13px] text-signal hover:underline"
+          className="rounded-lg border border-line px-3 py-2 text-[13px] text-signal hover:underline"
           href={`pktc://subscribe/${FEED_URL.replace(/^https?:\/\//, "")}`}
         >
           Pocket Casts
         </a>
-        <span className="px-1 py-1.5 text-[12px] text-faint">
+        <span className="px-1 py-2 text-[12px] text-faint">
           Apple Podcasts, Spotify &amp; YouTube coming soon
         </span>
       </div>

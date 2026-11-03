@@ -160,7 +160,7 @@ const PDF_INLINE_MAX_BYTES = 30 * 1024 * 1024;
 
 function MetaCell({ label, value }: MetaCellProps) {
   return (
-    <div className="bg-surface px-[13px] py-[11px]">
+    <div className="bg-surface px-3 py-3">
       <div className="font-mono text-[8.5px] uppercase tracking-[.6px] text-faint">{label}</div>
       <div className="mt-1 font-mono text-xs text-ink" style={{ overflowWrap: "anywhere" }}>
         {value}
@@ -691,7 +691,7 @@ export function Doc() {
         // image letterbox is the panel's black, not the <img>'s, so filters (invert) don't recolor it.
         // select-none: a long-press while lensing must not start a text selection on the badges.
         // zoomed: grab cursor (drag pans)
-        className={`relative mb-3.5 select-none overflow-hidden rounded-2xl border border-line2 [&:fullscreen]:rounded-none [&:fullscreen]:border-0 ${media === "image" ? "bg-black" : "bg-bg2"} ${view.z > 1 ? "cursor-grab active:cursor-grabbing" : ""}`}
+        className={`relative mb-4 select-none overflow-hidden rounded-2xl border border-line2 [&:fullscreen]:rounded-none [&:fullscreen]:border-0 ${media === "image" ? "bg-black" : "bg-bg2"} ${view.z > 1 ? "cursor-grab active:cursor-grabbing" : ""}`}
         style={{
           // panel takes the media's own shape once known (turned with it at 90/270°), so it fills the
           // block with no letterbox bars; tall shapes narrow (centred) instead of being cut at 78vh
@@ -773,7 +773,7 @@ export function Doc() {
                 <button
                   type="button"
                   onClick={handleOpenOriginal}
-                  className="mt-2 inline-flex items-center gap-[8px] rounded-lg border border-neutral-300 px-4 py-2 font-mono text-xs font-semibold text-neutral-800 active:scale-[.98]"
+                  className="mt-2 inline-flex items-center gap-2 rounded-lg border border-neutral-300 px-4 py-2 font-mono text-xs font-semibold text-neutral-800 active:scale-[.98]"
                 >
                   <Expand size={14} strokeWidth={2} aria-hidden="true" />
                   OPEN FULL PDF
@@ -832,7 +832,7 @@ export function Doc() {
               aria-hidden="true"
               data-lens-hide
               data-fs-hide
-              className={`absolute bottom-[11px] right-3 rounded-[7px] px-[9px] py-1 font-mono text-[10px] text-white ${fade}`}
+              className={`absolute bottom-[11px] right-3 rounded-[7px] px-2 py-1 font-mono text-[10px] text-white ${fade}`}
               style={{ background: "rgba(0,0,0,.6)" }}
             >
               {media === "image" ? <Expand size={13} strokeWidth={2} /> : <span className="inline-flex items-center gap-1"><Expand size={11} strokeWidth={2} aria-hidden="true" />open {glyph}</span>}
@@ -869,7 +869,7 @@ export function Doc() {
         {docIdx && (
           <span
             data-lens-hide
-            className={`absolute left-1/2 top-[11px] -translate-x-1/2 rounded-full px-[9px] py-[3px] font-mono text-[9px] text-white ${fade}`}
+            className={`absolute left-1/2 top-[11px] -translate-x-1/2 rounded-full px-2 py-1 font-mono text-[9px] text-white ${fade}`}
             style={{ background: "rgba(0,0,0,.55)" }}
           >
             {docIdx}
@@ -950,7 +950,7 @@ export function Doc() {
       )}
 
       {/* chips row — prototype line 358 */}
-      <div data-scroll className="mb-[10px] flex gap-[7px] overflow-x-auto pb-1 [&>*]:flex-none">
+      <div data-scroll className="mb-2 flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
         {/* every chip is a .tag link: hub page when the file has one, else the archive filtered to it */}
         <Link to={detail.hubs?.agency ? `/agency/${detail.hubs.agency}` : `/archive?agency=${encodeURIComponent(record.agency)}`} className="tag">
           {record.agency_full || record.agency}
@@ -990,11 +990,11 @@ export function Doc() {
           to convert a lurker — one tap jumps to the quick-reply bar and
           focuses it. Dismissible, resets per file. */}
       {showVoteNudge && (
-        <div className="mb-[22px] flex items-center gap-1 rounded-xl border border-line2 bg-surface py-2 pl-3 pr-1.5">
+        <div className="mb-6 flex items-center gap-1 rounded-xl border border-line2 bg-surface py-2 pl-3 pr-2">
           <button
             type="button"
             onClick={focusQuickReply}
-            className="flex min-w-0 flex-1 items-center gap-2.5 text-left active:scale-[.99]"
+            className="flex min-w-0 flex-1 items-center gap-2 text-left active:scale-[.99]"
           >
             <MessageCircle size={18} className="flex-none text-signal" aria-hidden="true" />
             <span className="truncate text-[13.5px] font-medium text-ink">{t("doc.voteNudge")}</span>
@@ -1012,7 +1012,7 @@ export function Doc() {
 
       {/* meta grid — prototype lines 360-365 */}
       {/* empty fields are left out; an odd last cell spans the row */}
-      <div className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line empty:hidden [&>:last-child:nth-child(odd)]:col-span-2">
+      <div className="mb-4 grid grid-cols-2 gap-0.5 overflow-hidden rounded-xl border border-line bg-line empty:hidden [&>:last-child:nth-child(odd)]:col-span-2">
         {(
           [
             ["Incident", record.incident_date && record.incident_date !== "N/A" ? record.incident_date : ""],
@@ -1024,7 +1024,7 @@ export function Doc() {
       </div>
 
       {detail.citedIn && detail.citedIn.length > 0 && (
-        <div className="-mt-2 mb-4 flex flex-wrap items-center gap-[7px] font-mono text-[10px]">
+        <div className="-mt-2 mb-4 flex flex-wrap items-center gap-2 font-mono text-[10px]">
           <span className="text-faint">CITED IN</span>
           {detail.citedIn.map((c) => (
             <Link key={c.slug} to={`/case/${c.slug}`} className="tag">{c.title}</Link>
@@ -1046,13 +1046,13 @@ export function Doc() {
         onClick={handleOpenOriginal}
         aria-label={`Open original ${glyph}`}
         title={`Open original ${glyph}`}
-        className="mb-[22px] flex w-full items-center justify-center gap-[8px] rounded-xl border border-line2 py-3 font-mono text-xs font-semibold text-ink active:scale-[.99]"
+        className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl border border-line2 py-3 font-mono text-xs font-semibold text-ink active:scale-[.99]"
       >
         <Expand size={14} strokeWidth={2} aria-hidden="true" />
         {glyph}
       </button>
       {srcLinks.length > 0 && (
-        <div className="-mt-3 mb-[22px] flex flex-wrap justify-center gap-x-5 gap-y-1 font-mono text-[11px]">
+        <div className="-mt-3 mb-6 flex flex-wrap justify-center gap-x-5 gap-y-1 font-mono text-[11px]">
           {srcLinks.map((l) => (
             <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="py-1 text-dim hover:text-ink">
               ↗ {l.label}
@@ -1077,7 +1077,7 @@ export function Doc() {
 
       {/* series prev/next — id neighbours (D029 ← D030 → D031), uapbrowser-style */}
       {(detail.series?.prev || detail.series?.next) && (
-        <div className="mb-[22px] grid grid-cols-2 gap-2 font-mono">
+        <div className="mb-6 grid grid-cols-2 gap-2 font-mono">
           {[
             { id: detail.series.prev, t: detail.series.prevTitle, k: detail.series.prevKind, arrow: "←", aria: "Previous in series", align: "text-left" },
             { id: detail.series.next, t: detail.series.nextTitle, k: detail.series.nextKind, arrow: "→", aria: "Next in series", align: "text-right" },
@@ -1088,7 +1088,7 @@ export function Doc() {
                 key={aria}
                 to={`/doc/${sid}${toolQuery}`}
                 aria-label={`${aria}: ${sp.title}`}
-                className={`rounded-xl border border-line px-3 py-2.5 ${align} active:scale-[.99]`}
+                className={`rounded-xl border border-line px-3 py-2 ${align} active:scale-[.99]`}
               >
                 <div className="text-[9px] tracking-[.5px] text-faint" aria-hidden="true">{arrow}</div>
                 {sp.showId && (
@@ -1121,7 +1121,7 @@ export function Doc() {
               <Link
                 key={pt.id}
                 to={`/thread/${pt.id}`}
-                className="rounded-lg border border-line2 px-[10px] py-[7px] font-mono text-[10.5px]"
+                className="rounded-lg border border-line2 px-2 py-2 font-mono text-[10.5px]"
                 style={{ color: dataInk(pt.accent) }}
               >
                 {pt.title}
@@ -1143,7 +1143,7 @@ export function Doc() {
       <div className="mb-3 flex items-center justify-between gap-3">
         {!(commentsError && !commentsData) && (
           <span
-            className="flex items-center gap-1.5"
+            className="flex items-center gap-2"
             role="img"
             aria-label={plural(comments.length, "comment")}
             title={plural(comments.length, "comment")}
@@ -1183,7 +1183,7 @@ export function Doc() {
       <button
         type="button"
         onClick={handleAddComment}
-        className="mb-3.5 flex w-full items-center gap-[10px] rounded-xl border border-line2 bg-surface px-[14px] py-3 text-left active:scale-[.99]"
+        className="mb-4 flex w-full items-center gap-2 rounded-xl border border-line2 bg-surface px-4 py-3 text-left active:scale-[.99]"
       >
         <span
           aria-hidden="true"
@@ -1198,10 +1198,10 @@ export function Doc() {
 
       {/* comment list — prototype lines 374-385 */}
       {commentsError && !commentsData && <LoadError error={commentsError} onRetry={() => void refetchComments()} />}
-      <div className="flex flex-col gap-[10px]">
+      <div className="flex flex-col gap-2">
         {comments.map((c) => (
-          <div key={c.id} className="rounded-xl border border-line bg-surface p-[13px]">
-            <div className="mb-[7px] flex flex-wrap items-center gap-2">
+          <div key={c.id} className="rounded-xl border border-line bg-surface p-3">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
               {c.handleShow && <span className="font-mono text-[10px] text-cyan">{c.handleShow}</span>}
               <span
                 role="img"
@@ -1219,7 +1219,7 @@ export function Doc() {
               {media === "video" ? withMoments(c.body, seekTo) : c.body}
             </div>
             {<UploadThumbs urls={c.image_urls} fallback={c.image_url} />}
-            <div className="mt-[9px] flex items-center gap-4">
+            <div className="mt-2 flex items-center gap-4">
               {/* Task 19 brief names VoteButton explicitly for this control —
                   the prototype's own comment-vote affordance (line 380) is a
                   bare unbordered "▲ N" button, visually different from
@@ -1231,7 +1231,7 @@ export function Doc() {
               <button
                 type="button"
                 onClick={() => handlePromote(c)}
-                className="flex items-center gap-[5px] font-mono text-[11px] text-amber active:scale-[.93]"
+                className="flex items-center gap-1 font-mono text-[11px] text-amber active:scale-[.93]"
               >
                 <CornerUpRight size={13} strokeWidth={2.25} aria-hidden="true" />
                 to a board
@@ -1245,7 +1245,7 @@ export function Doc() {
       <button
         type="button"
         onClick={handleFileThread}
-        className="mt-4 flex w-full items-center justify-center gap-[9px] rounded-xl border border-dashed border-line2 py-[13px] font-mono text-xs font-semibold text-ink active:scale-[.98]"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line2 py-3 font-mono text-xs font-semibold text-ink active:scale-[.98]"
       >
         <MessageSquarePlus size={15} strokeWidth={2} aria-hidden="true" />
         Start a board thread about this file
@@ -1254,8 +1254,8 @@ export function Doc() {
       {/* related files — uapbrowser-style groups: war.gov's related media,
           then shared topic / location / period / release / agency (worker dedupes, so a file shows in one group only) */}
       {detail.related?.map((g) => (
-        <section key={g.key} className="mt-[30px]">
-          <div className="mb-2.5 font-mono text-[9px] uppercase tracking-[.6px] text-faint">
+        <section key={g.key} className="mt-8">
+          <div className="mb-2 font-mono text-[9px] uppercase tracking-[.6px] text-faint">
             {RELATED_HEAD[g.key]} · <span className="text-dim">{g.label}</span>
           </div>
           <div className="grid grid-flow-row-dense grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
@@ -1274,7 +1274,7 @@ export function Doc() {
           "Add your read on this file…" button and the discussion header. */}
       <div
         data-quickreply
-        className="sticky left-0 right-0 z-20 -mx-4 mt-4 border-t border-line px-4 py-[10px] transition-[bottom] duration-300 ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none"
+        className="sticky left-0 right-0 z-20 -mx-4 mt-4 border-t border-line px-4 py-2 transition-[bottom] duration-300 ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none"
         style={{
           bottom: "var(--bnav-y, 0px)",
           background: "color-mix(in srgb, var(--bg) 82%, transparent)",

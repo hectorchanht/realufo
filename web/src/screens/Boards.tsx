@@ -81,10 +81,10 @@ export function Boards() {
   return (
     <div data-screen="boards" className="animate-[fadeup_.35s_ease_both]">
       {/* anon-post CTA + "NEW" tile — prototype lines 210-216 */}
-      <div className="mb-[18px] flex items-stretch gap-[10px]">
-        <div className="flex-1 rounded-[14px] border border-line bg-surface px-[15px] py-[13px]">
+      <div className="mb-4 flex items-stretch gap-2">
+        <div className="flex-1 rounded-[14px] border border-line bg-surface px-4 py-3">
           <div className="font-mono text-[10px] tracking-[.5px] text-faint">POST ANONYMOUSLY · NO ACCOUNT NEEDED</div>
-          <div className="mt-1.5 text-[14px] font-semibold leading-[1.4] text-ink">
+          <div className="mt-2 text-[14px] font-semibold leading-[1.4] text-ink">
             Drop a file, a photo, a theory. Or just lurk.
           </div>
         </div>
@@ -98,7 +98,7 @@ export function Boards() {
         </button>
       </div>
 
-      <div className="mb-3.5 flex items-center gap-[9px] rounded-xl border border-line2 bg-surface px-[13px] py-2.5">
+      <div className="mb-4 flex items-center gap-2 rounded-xl border border-line2 bg-surface px-3 py-2">
         <span aria-hidden="true" className="text-[15px] text-faint">
           ⌕
         </span>
@@ -115,7 +115,7 @@ export function Boards() {
         searchLoading && !found ? (
           <Skeleton rows={3} h={136} />
         ) : found?.threads.length ? (
-          <div className="flex flex-col gap-[10px]">
+          <div className="flex flex-col gap-2">
             <div className="font-mono text-[10px] text-faint">
               {found.threads.length === 50 ? "50+ threads match" : found.threads.length === 1 ? "1 thread matches" : `${found.threads.length} threads match`}
             </div>
@@ -130,7 +130,7 @@ export function Boards() {
       isLoading ? (
         <Skeleton rows={6} h={64} />
       ) : (
-        <div className="flex flex-col gap-[10px]">
+        <div className="flex flex-col gap-2">
           {boards.map((b) => (
             <BoardRow key={b.id} board={b} />
           ))}

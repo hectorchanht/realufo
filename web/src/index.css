@@ -24,7 +24,7 @@
    a link with the same border, size and hover everywhere. */
 @layer components {
   .tag {
-    @apply rounded-[7px] border border-line2 px-[9px] py-1 font-mono text-[10px] text-dim hover:border-signal hover:text-signal;
+    @apply rounded-[7px] border border-line2 px-2 py-1 font-mono text-[10px] text-dim hover:border-signal hover:text-signal;
   }
 }
 

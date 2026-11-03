@@ -35,14 +35,14 @@ export default function Leaderboard() {
       <p className="mb-4 mt-1 text-[13.5px] leading-[1.6] text-dim">{t("leaderboard.subtitle")}</p>
 
       {/* window tabs */}
-      <div className="mb-4 flex gap-1.5" role="tablist" aria-label={t("leaderboard.title")}>
+      <div className="mb-4 flex gap-2" role="tablist" aria-label={t("leaderboard.title")}>
         {TABS.map((k) => (
           <button
             key={k}
             role="tab"
             aria-selected={win === k}
             onClick={() => setWin(k)}
-            className={`rounded-lg border px-3 py-[5px] font-mono text-[11px] outline-none transition ${
+            className={`rounded-lg border px-3 py-1 font-mono text-[11px] outline-none transition ${
               win === k ? "text-ink" : "hover:text-ink"
             }`}
             style={{
@@ -61,7 +61,7 @@ export default function Leaderboard() {
       ) : !data ? (
         <LoadError error={error} onRetry={() => void refetch()} />
       ) : records.length === 0 ? (
-        <div className="px-5 py-[60px] text-center font-mono text-[12px] leading-[1.8] text-faint">
+        <div className="px-5 py-16 text-center font-mono text-[12px] leading-[1.8] text-faint">
           {t("leaderboard.emptyLine1")}
           <br />
           {t("leaderboard.emptyLine2")}
@@ -74,7 +74,7 @@ export default function Leaderboard() {
           {records.map((record, i) => (
             <div key={record.id} className="relative">
               <span
-                className="absolute -left-1 -top-1 z-10 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold"
+                className="absolute -left-1 -top-1 z-10 rounded-md px-2 py-0.5 font-mono text-[10px] font-bold"
                 style={{ background: "var(--signal)", color: "#000" }}
                 aria-label={`rank ${i + 1}`}
               >

@@ -17,7 +17,7 @@ export function Fader({
   onReset(): void;
 }) {
   return (
-    <div className="flex flex-col items-center gap-1.5">
+    <div className="flex flex-col items-center gap-2">
       <input
         type="range"
         aria-label={`${label} (double-click to reset)`}

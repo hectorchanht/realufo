@@ -75,7 +75,7 @@ export function Board() {
 
   if (!board) {
     return (
-      <div data-screen="board" className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
+      <div data-screen="board" className="px-5 py-16 text-center font-mono text-[12px] text-faint">
         board not found.
       </div>
     );
@@ -85,10 +85,10 @@ export function Board() {
     <div data-screen="board" className="animate-[fadeup_.3s_ease_both]">
       {/* board header card — prototype lines 235-241 */}
       <div
-        className="mb-4 rounded-2xl border border-line px-[17px] py-4"
+        className="mb-4 rounded-2xl border border-line px-4 py-4"
         style={{ background: "linear-gradient(135deg, var(--surface), transparent)" }}
       >
-        <div className="flex items-center gap-[11px]">
+        <div className="flex items-center gap-3">
           <div
             className="grid h-10 w-10 flex-none place-items-center rounded-[11px] font-pixel text-[9px]"
             style={{ background: board.accent, color: "#04140c" }}
@@ -97,7 +97,7 @@ export function Board() {
           </div>
           <div>
             <div className="text-[17px] font-bold text-ink">{board.name}</div>
-            <div className="mt-[3px] font-mono text-[10px] text-faint">
+            <div className="mt-1 font-mono text-[10px] text-faint">
               {plural(board.thread_count ?? 0, "thread")} · {board.desc}
             </div>
           </div>
@@ -105,7 +105,7 @@ export function Board() {
         <button
           type="button"
           onClick={handleNewThread}
-          className="mt-[13px] flex w-full items-center justify-center gap-[8px] rounded-[11px] border py-2.5 font-mono text-xs font-bold tracking-[.5px] active:scale-[.98]"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-[11px] border py-2 font-mono text-xs font-bold tracking-[.5px] active:scale-[.98]"
           style={{ borderColor: dataInk(board.accent), color: dataInk(board.accent) }}
         >
           <MessageSquarePlus size={15} strokeWidth={2} aria-hidden="true" />
@@ -117,12 +117,12 @@ export function Board() {
       {threadsLoading ? (
         <Skeleton rows={4} h={136} />
       ) : (
-        <div className="flex flex-col gap-[10px]">
+        <div className="flex flex-col gap-2">
           {threads.map((t) => (
             <ThreadRow key={t.id} thread={t} />
           ))}
           {threads.length === 0 && (
-            <div className="px-5 py-[40px] text-center font-mono text-[12px] text-faint">
+            <div className="px-5 py-12 text-center font-mono text-[12px] text-faint">
               no threads yet — be the first.
             </div>
           )}

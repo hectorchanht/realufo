@@ -9,7 +9,7 @@ export function UploadThumb({ url, className = "" }: { url: string; className?: 
       type="button"
       onClick={() => openViewer({ kind: "image", url, label: "attached image" })}
       aria-label="open attached image"
-      className={`mt-[9px] block h-24 w-24 overflow-hidden rounded-[10px] border border-line2 bg-bg2 active:scale-[.96] ${className}`}
+      className={`mt-2 block h-24 w-24 overflow-hidden rounded-[10px] border border-line2 bg-bg2 active:scale-[.96] ${className}`}
     >
       <img src={url} alt="" loading="lazy" className="h-full w-full object-cover" />
     </button>
@@ -21,7 +21,7 @@ export function UploadThumbs({ urls, fallback }: { urls?: string[]; fallback?: s
   const all = urls?.length ? urls : fallback ? [fallback] : [];
   if (!all.length) return null;
   return (
-    <div className="mt-[9px] flex flex-wrap gap-2">
+    <div className="mt-2 flex flex-wrap gap-2">
       {all.map((u) => (
         <UploadThumb key={u} url={u} className="mt-0" />
       ))}

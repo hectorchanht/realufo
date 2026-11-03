@@ -11,7 +11,7 @@ export function Toast({ message }: ToastProps) {
     <div
       role="status"
       data-toast
-      className="fixed bottom-24 left-1/2 z-[95] -translate-x-1/2 animate-[fadeup_.3s_ease] whitespace-nowrap rounded-[11px] bg-ink px-[18px] py-[11px] font-mono text-xs font-semibold text-bg"
+      className="fixed bottom-24 left-1/2 z-[95] -translate-x-1/2 animate-[fadeup_.3s_ease] whitespace-nowrap rounded-[11px] bg-ink px-4 py-3 font-mono text-xs font-semibold text-bg"
       style={{ boxShadow: "var(--shadow)" }}
     >
       ◉ {message}

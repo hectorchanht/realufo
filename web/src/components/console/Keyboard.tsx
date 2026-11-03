@@ -49,7 +49,7 @@ function WhiteKey({ k, blackKey }: { k: KeyDef; blackKey?: KeyDef }) {
         aria-pressed={k.hold ? undefined : k.active}
         title={k.title}
         {...holdProps}
-        className={`flex w-full flex-col items-center justify-end gap-1 rounded-b-[8px] rounded-t-[4px] border pb-1.5 pt-1 transition-all duration-150 ease-out active:translate-y-[2px] motion-reduce:transition-none ${
+        className={`flex w-full flex-col items-center justify-end gap-1 rounded-b-[8px] rounded-t-[4px] border pb-2 pt-1 transition-all duration-150 ease-out active:translate-y-[2px] motion-reduce:transition-none ${
           k.active
             ? "translate-y-[2px] border-signal bg-[var(--signal-dim)] text-signal"
             : "border-line2 bg-bg text-dim"
@@ -81,7 +81,7 @@ function WhiteKey({ k, blackKey }: { k: KeyDef; blackKey?: KeyDef }) {
 
 export function WakemanKeyboard({ white, black }: { white: KeyDef[]; black: KeyDef[] }) {
   return (
-    <div className="flex items-stretch gap-[3px]">
+    <div className="flex items-stretch gap-1">
       {white.map((k, i) => (
         <WhiteKey key={k.id} k={k} blackKey={black[i]} />
       ))}

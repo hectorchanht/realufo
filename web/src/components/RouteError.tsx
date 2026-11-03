@@ -9,10 +9,10 @@ export function RouteError() {
   const msg = err instanceof Error ? err.message : String(err ?? "");
   const stale = CHUNK_RE.test(msg);
   return (
-    <div data-screen="route-error" role="alert" className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
+    <div data-screen="route-error" role="alert" className="px-5 py-16 text-center font-mono text-[12px] text-faint">
       {stale ? "a newer version of the site is live." : "something broke on this page."}
       <div className="mt-4">
-        <button type="button" onClick={() => window.location.reload()} className="inline-flex items-center gap-[7px] rounded-md border border-line2 px-3 py-1 text-signal"><RefreshCw size={13} strokeWidth={2} aria-hidden="true" />reload</button>
+        <button type="button" onClick={() => window.location.reload()} className="inline-flex items-center gap-2 rounded-md border border-line2 px-3 py-1 text-signal"><RefreshCw size={13} strokeWidth={2} aria-hidden="true" />reload</button>
       </div>
     </div>
   );

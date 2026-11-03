@@ -314,8 +314,8 @@ export function KeyMoments({
   }, [active, videoRef]);
 
   return (
-    <section aria-label="Key moments" className="mb-3.5 rounded-xl border border-line bg-surface">
-      <div className="flex flex-wrap items-baseline justify-between gap-2 px-3.5 pb-1.5 pt-3">
+    <section aria-label="Key moments" className="mb-4 rounded-xl border border-line bg-surface">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 px-4 pb-2 pt-3">
         <div className="flex items-center gap-2">
           <h2 className="font-mono text-[10px] font-bold tracking-[.6px] text-signal">KEY MOMENTS</h2>
           {both && (
@@ -326,7 +326,7 @@ export function KeyMoments({
                   type="button"
                   aria-pressed={(k === "ai") === isAi}
                   onClick={() => choose(k)}
-                  className={`${chip} ${(k === "ai") === isAi ? on : off} inline-flex items-center gap-1 px-[7px] py-[2px] text-[9px]`}
+                  className={`${chip} ${(k === "ai") === isAi ? on : off} inline-flex items-center gap-1 px-2 py-0.5 text-[9px]`}
                 >
                   {k === "ai" ? <Sparkles size={10} strokeWidth={2.25} aria-hidden="true" /> : <FileText size={10} strokeWidth={2.25} aria-hidden="true" />}
                   {k === "ai" ? "AI" : "Official"}
@@ -339,16 +339,16 @@ export function KeyMoments({
           {isAi ? "AI-generated from video frames · may be inaccurate" : "from the official video description"}
         </span>
       </div>
-      <ol ref={list} className="relative max-h-[260px] overflow-y-auto px-1.5 pb-1.5">
+      <ol ref={list} className="relative max-h-[260px] overflow-y-auto px-2 pb-2">
         {moments.map((m, i) => (
           <li key={i}>
             <button
               type="button"
               aria-current={i === active ? "true" : undefined}
               onClick={() => onSeek(m.start)}
-              className={`flex w-full gap-2.5 rounded-lg px-2 py-1.5 text-left active:scale-[.99] ${i === active ? "bg-[var(--signal-dim)]" : ""}`}
+              className={`flex w-full gap-2 rounded-lg px-2 py-2 text-left active:scale-[.99] ${i === active ? "bg-[var(--signal-dim)]" : ""}`}
             >
-              <span className={`flex-none pt-px font-mono text-[10.5px] tabular-nums ${i === active ? "text-signal" : "text-dim"}`}>
+              <span className={`flex-none pt-0.5 font-mono text-[10.5px] tabular-nums ${i === active ? "text-signal" : "text-dim"}`}>
                 <Play {...ico} size={10} className="mr-1 inline align-[-1px]" />
                 {formatMoment(m.start, true).slice(0, fine ? 7 : 5)}
               </span>

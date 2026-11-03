@@ -12,7 +12,7 @@ export function Skeleton({ rows = 4, h = 72, cards = false }: { rows?: number; h
     <div
       role="status"
       aria-label="Loading"
-      className={cards ? "grid grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]" : "flex flex-col gap-[10px]"}
+      className={cards ? "grid grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]" : "flex flex-col gap-2"}
     >
       {Array.from({ length: rows }, (_, i) =>
         cards ? (

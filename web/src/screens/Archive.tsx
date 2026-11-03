@@ -77,9 +77,9 @@ interface PagerProps {
 }
 
 function Pager({ page, totalPages, onPage }: PagerProps) {
-  const btn = "h-9 min-w-9 rounded-lg px-[9px] font-mono text-[11px] active:scale-[.96] disabled:opacity-35 disabled:active:scale-100";
+  const btn = "h-9 min-w-9 rounded-lg px-2 font-mono text-[11px] active:scale-[.96] disabled:opacity-35 disabled:active:scale-100";
   return (
-    <nav aria-label="Pagination" className="mt-5 flex flex-wrap items-center justify-center gap-1.5">
+    <nav aria-label="Pagination" className="mt-5 flex flex-wrap items-center justify-center gap-2">
       <button type="button" className={`${btn} inline-flex items-center justify-center`} style={typeChipStyle(false)} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page" title="Previous page">
         <ChevronLeft size={14} strokeWidth={2.25} aria-hidden="true" />
       </button>
@@ -120,7 +120,7 @@ function PageJump({ page, totalPages, onPage }: PagerProps) {
     if (target !== page) onPage(target);
   }
   return (
-    <form key={page} onSubmit={handleSubmit} className="mt-2.5 flex items-center justify-center gap-1.5 font-mono text-[11px] text-faint">
+    <form key={page} onSubmit={handleSubmit} className="mt-2 flex items-center justify-center gap-2 font-mono text-[11px] text-faint">
       <label htmlFor="archive-page-jump">jump to</label>
       <input
         id="archive-page-jump"
@@ -130,10 +130,10 @@ function PageJump({ page, totalPages, onPage }: PagerProps) {
         min={1}
         max={totalPages}
         defaultValue={page}
-        className="w-[64px] rounded-lg border border-line2 bg-surface px-2 py-[5px] text-center text-[11px] text-ink outline-none focus:border-signal"
+        className="w-[64px] rounded-lg border border-line2 bg-surface px-2 py-1 text-center text-[11px] text-ink outline-none focus:border-signal"
       />
       <span>/ {totalPages}</span>
-      <button type="submit" className="inline-flex items-center gap-1 rounded-lg px-[9px] py-[5px] text-[11px] active:scale-[.96]" style={typeChipStyle(false)} aria-label="Go to page">
+      <button type="submit" className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] active:scale-[.96]" style={typeChipStyle(false)} aria-label="Go to page">
         <ArrowRight size={12} strokeWidth={2.25} aria-hidden="true" />
         go
       </button>
@@ -203,7 +203,7 @@ function ArchiveChip({ selected, style, onClick, children }: ChipProps) {
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className="flex flex-none items-center gap-1.5 whitespace-nowrap rounded-[9px] px-[11px] py-[7px] font-mono text-[11px] active:scale-[.96]"
+      className="flex flex-none items-center gap-2 whitespace-nowrap rounded-[9px] px-3 py-2 font-mono text-[11px] active:scale-[.96]"
       style={style}
     >
       {children}
@@ -219,7 +219,7 @@ function TypeChip({ selected, style, onClick, children }: ChipProps) {
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className="whitespace-nowrap rounded-lg px-[10px] py-[5px] font-mono text-[10.5px] active:scale-[.96]"
+      className="whitespace-nowrap rounded-lg px-2 py-1 font-mono text-[10.5px] active:scale-[.96]"
       style={style}
     >
       {children}
@@ -240,7 +240,7 @@ function FacetSelect({ label, value, all, options, onChange }: {
       aria-label={label}
       value={value}
       onChange={(e) => onChange(e.target.value || null)}
-      className="min-w-0 flex-1 rounded-lg border bg-surface px-2 py-[5px] font-mono text-[10.5px] outline-none focus:border-signal"
+      className="min-w-0 flex-1 rounded-lg border bg-surface px-2 py-1 font-mono text-[10.5px] outline-none focus:border-signal"
       style={{ borderColor: value ? "var(--signal)" : "var(--line2)", color: value ? "var(--signal)" : "var(--dim)" }}
     >
       <option value="">{all}</option>
@@ -473,7 +473,7 @@ export function Archive() {
       {/* search bar — lines 169-173 */}
       <form
         onSubmit={(e) => e.preventDefault()}
-        className="mb-3.5 flex items-center gap-[9px] rounded-xl border border-line2 bg-surface px-[13px] py-2.5"
+        className="mb-4 flex items-center gap-2 rounded-xl border border-line2 bg-surface px-3 py-2"
       >
         <span aria-hidden="true" className="text-[15px] text-faint">
           ⌕
@@ -497,7 +497,7 @@ export function Archive() {
       {!showShorts && (
         <>
         {/* archive chip row — lines 174-178 */}
-        <div data-scroll className="mb-1.5 flex gap-[7px] overflow-x-auto pb-2.5">
+        <div data-scroll className="mb-2 flex gap-2 overflow-x-auto pb-2">
           <ArchiveChip selected={archive === ""} style={archiveChipStyle(archive === "", true)} onClick={() => setParam("archive", null)}>
             {/* prototype archChips seeds the "all" entry with flag:'🛰' (RealUFO.dc.html:591) */}
             <Satellite size={12} strokeWidth={2} aria-hidden="true" />
@@ -518,7 +518,7 @@ export function Archive() {
 
         {/* war.gov release chips */}
         {showReleases && (
-          <div data-scroll className="mb-1.5 flex gap-1.5 overflow-x-auto pb-1.5">
+          <div data-scroll className="mb-2 flex gap-2 overflow-x-auto pb-2">
             <TypeChip selected={release === ""} style={typeChipStyle(release === "")} onClick={() => setParam("release", null)}>
               All releases
             </TypeChip>
@@ -536,7 +536,7 @@ export function Archive() {
         )}
 
         {/* agency / decade / location */}
-        <div className="mb-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+        <div className="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <FacetSelect
             label="Agency"
             all="All agencies"
@@ -561,7 +561,7 @@ export function Archive() {
           <FacetSelect label={t("archive.sortLabel")} all={t("archive.sortFeatured")} value={filter.sort ?? ""} options={SORTS.map((o) => ({ value: o.value, label: t(o.key) }))} onChange={(v) => setParam("sort", v)} />
           <Link
             to="/leaderboard"
-            className="flex min-w-0 items-center justify-center gap-1.5 rounded-lg border px-2 py-[5px] font-mono text-[10.5px] outline-none transition hover:text-ink"
+            className="flex min-w-0 items-center justify-center gap-2 rounded-lg border px-2 py-1 font-mono text-[10.5px] outline-none transition hover:text-ink"
             style={{ borderColor: "var(--line2)", color: "var(--dim)" }}
           >
             <Trophy size={13} />
@@ -570,8 +570,8 @@ export function Archive() {
         </div>
 
         {/* type chips */}
-        <div className="mb-1.5 px-0.5 py-1">
-          <div data-scroll className="flex gap-1.5 overflow-x-auto">
+        <div className="mb-2 px-0.5 py-1">
+          <div data-scroll className="flex gap-2 overflow-x-auto">
             {["", ...Object.keys(TYPE_LABELS)].map((k) => {
               // "All" counts the same faceted context as its sibling chips
               // (facets.total), falling back to the global total only until
@@ -588,7 +588,7 @@ export function Archive() {
         </div>
 
         {/* redaction (exclusive pair) + has-flags (combine) */}
-        <div data-scroll className="mb-3 flex items-center gap-1.5 overflow-x-auto pb-1.5">
+        <div data-scroll className="mb-3 flex items-center gap-2 overflow-x-auto pb-2">
           {(
             [
               ["1", "Redacted", flags?.redacted],
@@ -616,14 +616,14 @@ export function Archive() {
         </div>
 
         {pills.length > 0 && (
-          <ul aria-label="Active filters" data-scroll className="mx-0.5 mb-2.5 flex items-center gap-1.5 overflow-x-auto pb-1 [&>li]:flex-none">
+          <ul aria-label="Active filters" data-scroll className="mx-0.5 mb-2 flex items-center gap-2 overflow-x-auto pb-1 [&>li]:flex-none">
             {pills.map((p) => (
               <li key={p.label}>
                 <button
                   type="button"
                   aria-label={`Remove ${p.label}`}
                   onClick={() => setParams(p.remove)}
-                  className="inline-flex items-center gap-1 rounded-full border border-signal px-2 py-[3px] font-mono text-[10px] text-signal hover:bg-signal hover:text-bg"
+                  className="inline-flex items-center gap-1 rounded-full border border-signal px-2 py-1 font-mono text-[10px] text-signal hover:bg-signal hover:text-bg"
                 >
                   {p.label} <X size={10} strokeWidth={2.5} aria-hidden="true" />
                 </button>
@@ -665,7 +665,7 @@ export function Archive() {
       ) : (
         <>
           {q && page === 1 && shorts.length > 0 && (
-            <section aria-labelledby="archive-shorts" className="mb-[18px]">
+            <section aria-labelledby="archive-shorts" className="mb-4">
               <h2 id="archive-shorts" className="mx-0.5 mb-3 font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
                 ◆ Shorts ({shortsTotal ?? shorts.length})
               </h2>
@@ -696,7 +696,7 @@ export function Archive() {
             <LoadError error={error} onRetry={() => void refetch()} />
           ) : (
             count === 0 && (
-              <div className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
+              <div className="px-5 py-16 text-center font-mono text-[12px] text-faint">
                 {t("archive.emptyLine1")}
                 <br />
                 {t("archive.emptyLine2")}

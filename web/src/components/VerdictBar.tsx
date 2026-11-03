@@ -63,7 +63,7 @@ export function VerdictBar({
   };
 
   return (
-    <section aria-label="WTF-meter" className="mb-[22px] rounded-xl border border-line p-3">
+    <section aria-label="WTF-meter" className="mb-6 rounded-xl border border-line p-3">
       {/* <div className="mb-2 font-mono text-[11px] font-semibold tracking-[.4px] text-faint">WTF-METER</div> */}
       {/* always mounted so the number is announced when it appears after a vote */}
       <div aria-live="polite">
@@ -101,7 +101,7 @@ export function VerdictBar({
               <div key={o.v} style={{ width: `${pct(tally[o.v], total)}%`, background: o.color }} />
             ))}
           </div>
-          <div className="mt-1.5 flex justify-between font-mono text-[10px] text-dim">
+          <div className="mt-2 flex justify-between font-mono text-[10px] text-dim">
             {OPTIONS.map((o) => (
               <span key={o.v}>{pct(tally[o.v], total)}%</span>
             ))}

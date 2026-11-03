@@ -80,7 +80,7 @@ export function TldrCard({ tldr, title, onBoring }: { tldr?: Tldr | null; title:
                   revealed ? "" : "blur-[3px] hover:blur-none active:blur-none"
                 }`}
               >
-                {/* <span className="mr-1.5 font-mono text-[10px] uppercase tracking-[.4px] text-faint">Finding</span> */}
+                {/* <span className="mr-2 font-mono text-[10px] uppercase tracking-[.4px] text-faint">Finding</span> */}
                 {conclusion}
               </p>
             )

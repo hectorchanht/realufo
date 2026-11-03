@@ -242,7 +242,7 @@ export function Composer() {
       />
       <div
         ref={sheetRef}
-        className="absolute inset-x-0 bottom-0 animate-[sheetin_.34s_cubic-bezier(.32,.72,0,1)] rounded-t-[22px] border-t border-line2 bg-bg2 px-4 pb-[18px] pt-2"
+        className="absolute inset-x-0 bottom-0 animate-[sheetin_.34s_cubic-bezier(.32,.72,0,1)] rounded-t-[22px] border-t border-line2 bg-bg2 px-4 pb-4 pt-2"
       >
         {/* Drag handle — not in the prototype markup (which has no dedicated
             grab affordance), added so sheetDown/Move/End can be ported without
@@ -258,7 +258,7 @@ export function Composer() {
           <div className="h-[5px] w-[42px] rounded-full bg-line2" />
         </div>
 
-        <div className="mb-[14px] flex items-center gap-[10px]">
+        <div className="mb-4 flex items-center gap-2">
           <div className="flex-1">
             <div className="font-pixel text-[8px] tracking-[.5px] text-signal">{HEADLINES[composer.mode]}</div>
           </div>
@@ -273,13 +273,13 @@ export function Composer() {
         </div>
 
         {composer.refLabel && (
-          <div className="mb-[11px] flex items-center gap-[9px] rounded-[10px] border border-line2 bg-surface px-[11px] py-[9px]">
+          <div className="mb-3 flex items-center gap-2 rounded-[10px] border border-line2 bg-surface px-3 py-2">
             <span className="flex-none text-sm" aria-hidden="true">
               ◨
             </span>
             <div className="min-w-0 flex-1">
               <div className="font-mono text-[8.5px] tracking-[.5px] text-faint">REFERENCING FILE</div>
-              <div className="mt-[3px] truncate text-xs text-cyan">{composer.refLabel}</div>
+              <div className="mt-1 truncate text-xs text-cyan">{composer.refLabel}</div>
             </div>
           </div>
         )}
@@ -289,11 +289,11 @@ export function Composer() {
             value={threadTitle}
             onChange={(e) => setThreadTitle(e.target.value)}
             placeholder="Thread title"
-            className="mb-[11px] w-full rounded-[10px] border border-line2 bg-surface px-3 py-[10px] font-body text-sm font-semibold text-ink outline-none"
+            className="mb-3 w-full rounded-[10px] border border-line2 bg-surface px-3 py-2 font-body text-sm font-semibold text-ink outline-none"
           />
         )}
 
-        <div className="mb-[11px] flex gap-1.5">
+        <div className="mb-3 flex gap-2">
           {STANCE_OPTS.map((o) => {
             const active = stance === o.id;
             return (
@@ -301,7 +301,7 @@ export function Composer() {
                 key={o.id}
                 type="button"
                 onClick={() => setStance(o.id)}
-                className="flex flex-1 items-center justify-center gap-1 rounded-[9px] border px-1 py-[7px] font-mono text-[10px] font-semibold active:scale-[.96]"
+                className="flex flex-1 items-center justify-center gap-1 rounded-[9px] border px-1 py-2 font-mono text-[10px] font-semibold active:scale-[.96]"
                 style={{
                   borderColor: o.color,
                   background: active ? o.color : "transparent",
@@ -322,15 +322,15 @@ export function Composer() {
           className="min-h-[100px] w-full resize-none rounded-xl border border-line2 bg-surface p-3 font-body text-sm leading-[1.5] text-ink outline-none"
         />
 
-        <div className="mt-[11px] flex items-center gap-[10px]">
+        <div className="mt-3 flex items-center gap-2">
           <input
             value={handle}
             onChange={(e) => setHandle(e.target.value)}
             placeholder="handle (optional)"
-            className="min-w-0 flex-1 rounded-[10px] border border-line2 bg-surface px-[11px] py-[9px] font-mono text-xs text-ink outline-none"
+            className="min-w-0 flex-1 rounded-[10px] border border-line2 bg-surface px-3 py-2 font-mono text-xs text-ink outline-none"
           />
           {(imgs.length > 0 || imgUrl) && (
-            <div className="flex flex-none items-center gap-1.5">
+            <div className="flex flex-none items-center gap-2">
               {previews.map((src, i) => (
                 <span key={src} className="relative flex-none">
                   <button
@@ -374,7 +374,7 @@ export function Composer() {
             </div>
           )}
           {imgs.length < MAX_ATTACH && (
-            <label title="Attach images" className="flex-none cursor-pointer rounded-[10px] border border-dashed border-line2 px-3 py-[9px] text-dim active:scale-[.96]">
+            <label title="Attach images" className="flex-none cursor-pointer rounded-[10px] border border-dashed border-line2 px-3 py-2 text-dim active:scale-[.96]">
               <ImagePlus size={16} strokeWidth={1.75} aria-hidden="true" />
               <input
                 type="file"
@@ -406,8 +406,8 @@ export function Composer() {
         </div>
 
         {showNotifyEmail && (
-          <div className="mt-[11px]">
-            <div className="flex items-center gap-[10px]">
+          <div className="mt-3">
+            <div className="flex items-center gap-2">
               <BellRing size={15} strokeWidth={1.75} aria-hidden="true" className="flex-none text-dim" />
               <input
                 value={notifyEmail}
@@ -416,20 +416,20 @@ export function Composer() {
                 type="email"
                 autoComplete="email"
                 aria-label={t("thread.notifyEmailPh")}
-                className="min-w-0 flex-1 rounded-[10px] border border-line2 bg-surface px-[11px] py-[9px] font-mono text-xs text-ink outline-none"
+                className="min-w-0 flex-1 rounded-[10px] border border-line2 bg-surface px-3 py-2 font-mono text-xs text-ink outline-none"
               />
             </div>
-            <p className="mt-[6px] font-mono text-[9.5px] leading-[1.5] text-faint">{t("thread.notifyEmailHint")}</p>
+            <p className="mt-2 font-mono text-[9.5px] leading-[1.5] text-faint">{t("thread.notifyEmailHint")}</p>
           </div>
         )}
 
-        <div className="mt-[14px] flex items-center gap-3">
+        <div className="mt-4 flex items-center gap-3">
           <span className="flex-1 font-mono text-[9.5px] text-faint">◉ Posting as {asLabel}</span>
           <button
             type="button"
             onClick={handleSubmit}
             disabled={busy}
-            className="flex flex-none items-center gap-[7px] rounded-[11px] bg-signal px-[22px] py-[11px] font-mono text-xs font-bold tracking-[.5px] text-on-signal active:scale-[.96] disabled:pointer-events-none disabled:opacity-60"
+            className="flex flex-none items-center gap-2 rounded-[11px] bg-signal px-6 py-3 font-mono text-xs font-bold tracking-[.5px] text-on-signal active:scale-[.96] disabled:pointer-events-none disabled:opacity-60"
           >
             <Send size={13} strokeWidth={2.25} aria-hidden="true" />
             POST
@@ -441,7 +441,7 @@ export function Composer() {
           Lives inside the composer (above the sheet) so the draft survives; Esc/backdrop closes. */}
       {lightboxSrc && (
         <div className="fixed inset-0 z-[90] flex animate-[fadein_.2s_ease] flex-col" style={{ background: "rgba(0,0,0,.94)" }} data-composer-lightbox>
-          <div className="flex flex-none items-center gap-[10px] px-4 py-[14px]">
+          <div className="flex flex-none items-center gap-2 px-4 py-4">
             <span className="flex-1 font-mono text-[11px] text-dim">
               {lightboxItems.length > 1 ? `${(lightbox ?? 0) + 1} / ${lightboxItems.length}` : "attached image"}
             </span>

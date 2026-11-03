@@ -26,7 +26,7 @@ export function BoardRow({ board }: BoardRowProps) {
     <Link
       to={`/board/${slugPath(board.slug)}`}
       data-board-row
-      className="flex items-center gap-[13px] rounded-[14px] border border-line bg-surface p-[14px] hover:border-line2 active:scale-[.99]"
+      className="flex items-center gap-3 rounded-[14px] border border-line bg-surface p-4 hover:border-line2 active:scale-[.99]"
     >
       {/* monogram, not the slug: "/skeptic/" overflowed the 44px tile onto the title */}
       <div
@@ -43,8 +43,8 @@ export function BoardRow({ board }: BoardRowProps) {
             {board.slug}
           </span>
         </div>
-        <div className="mt-[3px] text-[12px] leading-[1.4] text-dim">{board.desc}</div>
-        <div className="mt-[7px] flex gap-[14px] font-mono text-[9.5px] text-faint">
+        <div className="mt-1 text-[12px] leading-[1.4] text-dim">{board.desc}</div>
+        <div className="mt-2 flex gap-4 font-mono text-[9.5px] text-faint">
           <span>{plural(board.thread_count ?? 0, "thread")}</span>
         </div>
       </div>

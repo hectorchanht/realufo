@@ -22,7 +22,7 @@ export default function FunnelStrip() {
     return () => clearInterval(id);
   }, []);
   return (
-    <div className="mb-4 flex items-center gap-1.5 whitespace-nowrap font-mono text-[11px] text-faint">
+    <div className="mb-4 flex items-center gap-2 whitespace-nowrap font-mono text-[11px] text-faint">
       <a href={URL} className="flex-none font-semibold text-cyan active:scale-[.97]">
         {LINK_LABEL}
       </a>

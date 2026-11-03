@@ -31,7 +31,7 @@ function HubSkeleton() {
         <div className={`h-[26px] flex-1 ${box}`} />
         <div className={`h-[26px] w-[26px] rounded-full ${box}`} />
       </div>
-      <div data-skel="intro" aria-hidden="true" className="mb-5 flex flex-col gap-[8px]">
+      <div data-skel="intro" aria-hidden="true" className="mb-5 flex flex-col gap-2">
         <div className={`h-[15px] ${box}`} />
         <div className={`h-[15px] ${box}`} />
         <div className={`h-[15px] w-[70%] ${box}`} />
@@ -42,7 +42,7 @@ function HubSkeleton() {
         {Array.from({ length: 3 }, (_, i) => (
           <div key={i} className="flex gap-3 rounded-lg p-1">
             <div className={`h-12 w-12 flex-none rounded-md ${box}`} />
-            <div className="flex min-w-0 flex-1 flex-col justify-center gap-[6px]">
+            <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
               <div className={`h-[13px] w-[80%] ${box}`} />
               <div className={`h-[12px] w-[95%] ${box}`} />
             </div>
@@ -74,7 +74,7 @@ export default function Hub({ kind }: { kind: HubKind }) {
   }
   if (!data) {
     return (
-      <div data-screen="hub" className="px-5 py-[60px] text-center font-mono text-[12px] text-faint">
+      <div data-screen="hub" className="px-5 py-16 text-center font-mono text-[12px] text-faint">
         hub not found.
       </div>
     );
@@ -132,7 +132,7 @@ export default function Hub({ kind }: { kind: HubKind }) {
           <h2 id="hub-more" className="mb-2 font-mono text-[11px] font-semibold tracking-[.5px] text-ink">
             MORE {KIND_PLURAL[kind]}
           </h2>
-          <div data-scroll className="flex gap-[7px] overflow-x-auto pb-1 [&>*]:flex-none">
+          <div data-scroll className="flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
             {data.siblings.map((s) => (
               <Link
                 key={s.slug}

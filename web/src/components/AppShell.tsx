@@ -136,13 +136,13 @@ export function AppShell() {
 
               <div
                 data-screenpad
-                className="relative px-4 pt-[18px]"
+                className="relative px-4 pt-4"
                 style={{ paddingBottom: "calc(2.5rem + var(--bnav-h, 0px))" }}
               >
                 {stale && (
                   <div
                     role="status"
-                    className="mb-3 flex items-center justify-center gap-2 rounded-[10px] border border-line bg-bg2 px-3 py-1.5 font-mono text-[11px] text-dim"
+                    className="mb-3 flex items-center justify-center gap-2 rounded-[10px] border border-line bg-bg2 px-3 py-2 font-mono text-[11px] text-dim"
                   >
                     <WifiOff size={13} aria-hidden="true" />
                     Offline — showing saved copy

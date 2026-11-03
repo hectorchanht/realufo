@@ -188,16 +188,16 @@ function PostRow({ post, sourceRecord, thread, nos, replies, onQuote }: PostRowP
     <div
       data-post
       id={`p${post.no}`}
-      className="rounded-[14px] border px-[14px] py-[13px]"
+      className="rounded-[14px] border px-4 py-3"
       style={{
         borderColor: post.isOp ? "var(--line2)" : "var(--line)",
         background: post.isOp ? "var(--surface2)" : "var(--surface)",
       }}
     >
       {/* meta row — prototype lines 265-271 */}
-      <div className="mb-[9px] flex flex-wrap items-center gap-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         {(post.isOp || post.byOp) && (
-          <span className="rounded-[5px] bg-signal px-1.5 py-0.5 font-mono text-[8px] font-bold text-on-signal">
+          <span className="rounded-[5px] bg-signal px-2 py-0.5 font-mono text-[8px] font-bold text-on-signal">
             OP
           </span>
         )}
@@ -230,7 +230,7 @@ function PostRow({ post, sourceRecord, thread, nos, replies, onQuote }: PostRowP
             <img src={img.kind === "upload" ? img.url : img.thumb!} alt="" loading="lazy" className="h-full w-full object-cover" />
           ) : (
             <div
-              className="grid h-full w-full place-items-center px-1.5 text-center font-mono text-[9px]"
+              className="grid h-full w-full place-items-center px-2 text-center font-mono text-[9px]"
               style={{
                 background:
                   "repeating-linear-gradient(45deg,var(--bg2),var(--bg2) 8px,var(--surface) 8px,var(--surface) 16px)",
@@ -265,7 +265,7 @@ function PostRow({ post, sourceRecord, thread, nos, replies, onQuote }: PostRowP
       </div>
 
       {/* footer — VoteButton("credible") + "↩ reply" (opens the composer quoting this post) */}
-      <div className="mt-[10px] flex items-center gap-4 font-mono text-[11px]" style={{ clear: "both" }}>
+      <div className="mt-2 flex items-center gap-4 font-mono text-[11px]" style={{ clear: "both" }}>
         {thread ? (
           <VoteButton targetType="thread" targetId={thread.id} votes={thread.votes} />
         ) : (
@@ -358,7 +358,7 @@ export function Thread() {
         <Link
           to={`/doc/${sourceRecord.id}`}
           data-source-chip
-          className="mb-4 flex items-center gap-[10px] rounded-[10px] border border-line2 bg-surface px-3 py-[9px]"
+          className="mb-4 flex items-center gap-2 rounded-[10px] border border-line2 bg-surface px-3 py-2"
         >
           <span aria-hidden="true" className="flex-none text-sm text-faint">
             ◂
@@ -379,7 +379,7 @@ export function Thread() {
         <Link
           to={`/case/${data.sourceCase.slug}`}
           data-case-chip
-          className="mb-4 flex items-center gap-[10px] rounded-[10px] border border-line2 bg-surface px-3 py-[9px]"
+          className="mb-4 flex items-center gap-2 rounded-[10px] border border-line2 bg-surface px-3 py-2"
         >
           <span aria-hidden="true" className="flex-none text-sm text-faint">
             ◂
@@ -392,7 +392,7 @@ export function Thread() {
       )}
 
       {/* post list — prototype lines 262-282 (OP-first ordering from the API) */}
-      <div className="flex flex-col gap-[11px]">
+      <div className="flex flex-col gap-3">
         {posts.map((p) => (
           <Fragment key={p.id}>
             <PostRow
@@ -412,7 +412,7 @@ export function Thread() {
       {/* sticky bottom reply bar — prototype lines 284-286. Sits above the
           mobile BottomTab overlay via --bnav-y (AppShell; 0 when it's hidden). */}
       <div
-        className="sticky left-0 right-0 z-20 -mx-4 mt-4 border-t border-line px-4 py-[10px] transition-[bottom] duration-300 ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none"
+        className="sticky left-0 right-0 z-20 -mx-4 mt-4 border-t border-line px-4 py-2 transition-[bottom] duration-300 ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none"
         style={{
           bottom: "var(--bnav-y, 0px)",
           background: "color-mix(in srgb, var(--bg) 82%, transparent)",
@@ -423,7 +423,7 @@ export function Thread() {
         <button
           type="button"
           onClick={handleReply}
-          className="flex w-full items-center gap-[10px] rounded-xl border border-line2 bg-surface px-[14px] py-[11px] text-left font-mono text-xs text-dim active:scale-[.99]"
+          className="flex w-full items-center gap-2 rounded-xl border border-line2 bg-surface px-4 py-3 text-left font-mono text-xs text-dim active:scale-[.99]"
         >
           <Pencil size={15} strokeWidth={2} aria-hidden="true" className="flex-none text-signal" />
           Post a reply — anonymous by default

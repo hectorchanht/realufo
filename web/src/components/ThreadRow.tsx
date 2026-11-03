@@ -40,7 +40,7 @@ export function ThreadRow({ thread, voted }: ThreadRowProps) {
   return (
     <div
       data-thread-row
-      className="flex gap-3 rounded-[14px] border border-line bg-surface px-[14px] py-[13px] hover:border-line2"
+      className="flex gap-3 rounded-[14px] border border-line bg-surface px-4 py-3 hover:border-line2"
     >
       {showImg && (
         <Link to={to} tabIndex={-1} aria-hidden="true" className="flex-none">
@@ -56,7 +56,7 @@ export function ThreadRow({ thread, voted }: ThreadRowProps) {
       )}
       <div className="min-w-0 flex-1">
         <Link to={to} className="block text-left">
-          <div className="mb-1.5 flex flex-wrap items-center gap-[7px]">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
             <span className="font-mono text-[9.5px] font-bold" style={{ color: dataInk(thread.accent) }}>
               {thread.boardSlug}
             </span>
@@ -66,11 +66,11 @@ export function ThreadRow({ thread, voted }: ThreadRowProps) {
           </div>
           <div className="line-clamp-2 text-[13.5px] font-semibold leading-[1.32] text-ink">{thread.title}</div>
           {thread.op_body && (
-            <div className="mt-[5px] line-clamp-2 text-[11.5px] leading-[1.45] text-dim">{thread.op_body}</div>
+            <div className="mt-1 line-clamp-2 text-[11.5px] leading-[1.45] text-dim">{thread.op_body}</div>
           )}
         </Link>
         <div className="mt-2 flex items-center gap-2">
-          <Link to={to} className="flex min-w-0 flex-1 items-center gap-[14px] font-mono text-[10px] text-dim">
+          <Link to={to} className="flex min-w-0 flex-1 items-center gap-4 font-mono text-[10px] text-dim">
             <span>💬 {thread.reply_count}</span>
             <span>🖼 {thread.img_count}</span>
             {/* <span className="font-mono text-[8.5px] text-faint">No.{thread.no}</span> */}

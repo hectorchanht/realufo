@@ -71,7 +71,7 @@ export function MediaViewer() {
       style={{ background: "rgba(0,0,0,.94)" }}
       data-media-viewer
     >
-      <div className="flex flex-none items-center gap-[10px] px-4 py-[14px]">
+      <div className="flex flex-none items-center gap-2 px-4 py-4">
         <span className="flex-1 truncate font-mono text-[11px] text-dim">{viewer.label}</span>
         <button
           type="button"
@@ -112,7 +112,7 @@ export function MediaViewer() {
         )}
 
         {viewer.kind === "doc" && (
-          <div className="flex h-full w-full flex-col gap-[10px]">
+          <div className="flex h-full w-full flex-col gap-2">
             <iframe
               title={viewer.label || "document"}
               src={viewer.url}

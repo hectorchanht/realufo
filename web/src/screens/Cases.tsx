@@ -14,7 +14,7 @@ export default function Cases() {
   const cases = boot?.cases ?? [];
 
   return (
-    <div data-screen="cases" className="flex flex-col gap-2.5">
+    <div data-screen="cases" className="flex flex-col gap-2">
       {isLoading && !boot ? (
         <Skeleton rows={6} h={64} />
       ) : (
@@ -23,7 +23,7 @@ export default function Cases() {
             key={c.slug}
             to={`/case/${c.slug}`}
             style={{ borderLeftColor: c.accent }}
-            className="rounded-[14px] border border-line border-l-4 bg-surface px-[14px] py-3 hover:border-line2"
+            className="rounded-[14px] border border-line border-l-4 bg-surface px-4 py-3 hover:border-line2"
           >
             <div className="text-[15px] font-bold text-ink">{zh && c.name_zh ? c.name_zh : c.name}</div>
             <div className="font-mono text-[10px] text-faint">{c.coord}</div>

@@ -150,7 +150,7 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
             }}
           >
             <span
-              className="rounded-[7px] border-2 px-2.5 py-1 font-mono text-[13px] font-bold"
+              className="rounded-[7px] border-2 px-2 py-1 font-mono text-[13px] font-bold"
               style={{ color: dataInk(accentColor), borderColor: dataInk(accentColor) }}
             >
               {typeGlyph(record.kind)}
@@ -165,7 +165,7 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
           />
         )}
         <span
-          className="absolute left-2 top-2 rounded-[5px] px-1.5 py-1 font-mono text-[8.5px] font-bold"
+          className="absolute left-2 top-2 rounded-[5px] px-2 py-1 font-mono text-[8.5px] font-bold"
           style={{ background: "rgba(0,0,0,.85)", color: accentColor }}
         >
           {badge}
@@ -174,19 +174,19 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
           <span
             title="Redacted"
             aria-label="Redacted"
-            className="absolute right-2 top-2 rounded-[5px] bg-red px-1.5 py-1 font-mono text-[8px] font-bold text-white"
+            className="absolute right-2 top-2 rounded-[5px] bg-red px-2 py-1 font-mono text-[8px] font-bold text-white"
           >
             R
           </span>
         )}
         {record.kind === "video" && !!record.duration && (
-          <span className="absolute bottom-2 right-2 rounded-[5px] px-1.5 py-1 font-mono text-[9px] font-bold text-white" style={{ background: "rgba(0,0,0,.72)" }}>
+          <span className="absolute bottom-2 right-2 rounded-[5px] px-2 py-1 font-mono text-[9px] font-bold text-white" style={{ background: "rgba(0,0,0,.72)" }}>
             {formatDuration(record.duration)}
           </span>
         )}
       </div>
 
-      <div className={"flex flex-col gap-[7px] " + (tall ? "" : "flex-1 ") + (isFeed ? "px-3 pb-[13px] pt-[11px]" : "px-[11px] pb-3 pt-[10px]")}>
+      <div className={"flex flex-col gap-2 " + (tall ? "" : "flex-1 ") + (isFeed ? "px-3 pb-3 pt-3" : "px-3 pb-3 pt-2")}>
         {isFeed && (
           <div className="font-mono text-[9px] tracking-[.4px] text-faint">{metaLine(record)}</div>
         )}
@@ -218,7 +218,7 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
           </div>
         )}
         {!isFeed && isListRecord(record) && (
-          <div className="mt-auto flex flex-wrap gap-x-2.5 gap-y-1 font-mono text-[9px] text-faint">
+          <div className="mt-auto flex flex-wrap gap-x-2 gap-y-1 font-mono text-[9px] text-faint">
             {(() => {
               const { place, date } = placeAndDate(record);
               if (!place && !date) return <span>—</span>;

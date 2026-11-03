@@ -55,7 +55,7 @@ export function BottomTab({ activeTab, hideProgress = 0, ref }: BottomTabProps) 
               to={href}
               onClick={active ? () => retapTab(href, here) : undefined}
               aria-current={active ? "page" : undefined}
-              className="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-1 px-0.5 py-[5px] active:scale-90"
+              className="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-1 px-0.5 py-1 active:scale-90"
               style={{ color: active ? "var(--signal)" : "var(--dim)" }}
             >
               <Icon size={22} aria-hidden="true" />

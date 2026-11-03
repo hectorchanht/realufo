@@ -60,7 +60,7 @@ export default function SiteFooter() {
       {/* Brand + social: who this is and where else to find it. */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <Link to="/" className="flex items-center gap-[11px]">
+          <Link to="/" className="flex items-center gap-3">
             <Saucer />
             <span className="font-pixel text-[11px] text-ink">REAL<span className="text-signal">UFO</span></span>
           </Link>
@@ -77,7 +77,7 @@ export default function SiteFooter() {
           ))}
         </ul>
       </div>
-      <nav aria-label="Site" className="flex flex-wrap gap-x-8 gap-y-6 sm:gap-x-10">
+      <nav aria-label="Site" className="flex flex-wrap gap-x-8 gap-y-6 sm:gap-x-12">
         {col(t("footer.explore"), [
           ...[...tabs, ...more].map((i) => (
             <li key={i.path}><Link className={linkCls} to={i.path}>{i.label}</Link></li>

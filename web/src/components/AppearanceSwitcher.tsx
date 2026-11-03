@@ -20,7 +20,7 @@ export function AppearanceSwitcher() {
   const { accent, scanlines, setAccent, setScanlines } = useTheme();
   return (
     <ul className="flex flex-wrap items-center gap-x-4 gap-y-2" data-appearance-switcher>
-      <li className="flex gap-1.5">
+      <li className="flex gap-2">
         {ACCENTS.map((a) => (
           <button
             key={a}

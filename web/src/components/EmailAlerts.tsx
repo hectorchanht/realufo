@@ -50,7 +50,7 @@ export default function EmailAlerts() {
           <button
             type="submit"
             disabled={state === "sending"}
-            className="flex flex-none items-center gap-[7px] rounded-lg bg-signal px-4 py-2 font-mono text-[13px] font-bold text-black disabled:opacity-50"
+            className="flex flex-none items-center gap-2 rounded-lg bg-signal px-4 py-2 font-mono text-[13px] font-bold text-black disabled:opacity-50"
           >
             <Bell size={14} strokeWidth={2.25} aria-hidden="true" />
             {state === "sending" ? "…" : "ALERT ME"}

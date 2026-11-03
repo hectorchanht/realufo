@@ -40,7 +40,7 @@ export function AppBar({
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusWithin(false);
       }}
       className={
-        "sticky top-0 z-30 flex items-center gap-3 border-b border-line px-[18px] pb-[11px] pt-[max(11px,env(safe-area-inset-top))] backdrop-blur-[22px] backdrop-saturate-[1.6] motion-reduce:transition-none" +
+        "sticky top-0 z-30 flex items-center gap-3 border-b border-line px-4 pb-3 pt-[max(11px,env(safe-area-inset-top))] backdrop-blur-[22px] backdrop-saturate-[1.6] motion-reduce:transition-none" +
         // Scroll-driven movement is transform-only (no transition — the bar
         // tracks the finger); only the focus reveal animates.
         (focusWithin ? " transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)]" : "")
@@ -55,7 +55,7 @@ export function AppBar({
           type="button"
           onClick={onBack}
           aria-label="Back"
-          className="-ml-[10px] grid h-[34px] w-[34px] flex-none place-items-center rounded-[8px] text-ink active:scale-[.94]"
+          className="-ml-2 grid h-[34px] w-[34px] flex-none place-items-center rounded-[8px] text-ink active:scale-[.94]"
         >
           <ArrowLeft size={19} strokeWidth={2} aria-hidden="true" />
         </button>

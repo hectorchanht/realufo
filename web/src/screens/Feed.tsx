@@ -53,7 +53,7 @@ function BrowseStrip() {
   const chips = [...hubs.filter((h) => h.kind === "release"), ...top("agency", 4), ...top("location", 4)];
   if (!chips.length) return null;
   return (
-    <section aria-labelledby="feed-browse" className="mb-[26px]">
+    <section aria-labelledby="feed-browse" className="mb-6">
       <div className="mx-0.5 mb-3 flex items-baseline justify-between">
         <h2 id="feed-browse" className="font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
           ◆ Browse the files
@@ -62,7 +62,7 @@ function BrowseStrip() {
           see all ›
         </Link>
       </div>
-      <div data-scroll className="flex gap-[7px] overflow-x-auto pb-1 [&>*]:flex-none">
+      <div data-scroll className="flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
         {chips.map((h) => (
           <Link
             key={`${h.kind}/${h.slug}`}
@@ -86,7 +86,7 @@ function BrowseStrip() {
 function ClipCarousel({ clips, loading }: { clips: Short[]; loading: boolean }) {
   if (!loading && !clips.length) return null;
   return (
-    <section aria-labelledby="feed-clips" className="mb-[26px]">
+    <section aria-labelledby="feed-clips" className="mb-6">
       <div className="mx-0.5 mb-3 flex items-baseline justify-between">
         <h2 id="feed-clips" className="font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
           ◆ Short clips
@@ -117,7 +117,7 @@ export function Feed() {
     <div data-screen="feed" className="animate-[fadeup_.4s_ease_both]">
       {feedFailed ? null : <ClipCarousel clips={feed?.clips ?? []} loading={feedLoading} />}
 
-      <section aria-labelledby="feed-hot" className="mb-[26px]">
+      <section aria-labelledby="feed-hot" className="mb-6">
         <div className="mx-0.5 mb-3 flex items-baseline justify-between">
           <h2 id="feed-hot" className="font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
             ◆ Hot right now
@@ -161,7 +161,7 @@ export function Feed() {
         </Link>
       </div>
       {feedFailed ? null : (
-        <div aria-busy={feedLoading} className="mb-[26px] flex flex-col gap-[10px]">
+        <div aria-busy={feedLoading} className="mb-6 flex flex-col gap-2">
           {feedLoading
             ? // Row-sized shimmer placeholders (the feed returns 4): this list sits above the
               // card grid, so a one-line loader here would shove the grid down on load.
@@ -175,7 +175,7 @@ export function Feed() {
       <BrowseStrip />
 
       {cases.length > 0 && (
-        <section aria-labelledby="feed-cases" className="mb-[26px]">
+        <section aria-labelledby="feed-cases" className="mb-6">
           <div className="mx-0.5 mb-3 flex items-baseline justify-between">
             <h2 id="feed-cases" className="font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
               ◆ Cold cases
@@ -184,7 +184,7 @@ export function Feed() {
               see all ›
             </Link>
           </div>
-          <div data-scroll className="flex gap-[7px] overflow-x-auto pb-1 [&>*]:flex-none">
+          <div data-scroll className="flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
             {cases.slice(0, 6).map((c) => (
               <Link
                 key={c.slug}
@@ -199,17 +199,17 @@ export function Feed() {
       )}
 
       <div
-        className="mt-[26px] overflow-hidden rounded-2xl border border-line"
+        className="mt-6 overflow-hidden rounded-2xl border border-line"
         style={{ background: "linear-gradient(135deg, var(--signal-dim), transparent)" }}
       >
-        <div className="px-[18px] pb-4 pt-[18px]">
-          <div className="mb-[10px] font-pixel text-[9px] tracking-[1px] text-signal">{statsLine(boot?.stats)}</div>
+        <div className="px-4 pb-4 pt-4">
+          <div className="mb-2 font-pixel text-[9px] tracking-[1px] text-signal">{statsLine(boot?.stats)}</div>
           <div className="text-[14px] font-medium leading-[1.5] text-ink">
             Every declassified record, mirrored offline. Read the file, then argue about it — anonymously or not.
           </div>
           <Link
             to="/archive"
-            className="mt-[14px] inline-flex items-center gap-2 rounded-[11px] bg-signal px-4 py-[11px] font-mono text-[12px] font-bold tracking-[.5px] text-on-signal active:scale-[.97]"
+            className="mt-4 inline-flex items-center gap-2 rounded-[11px] bg-signal px-4 py-3 font-mono text-[12px] font-bold tracking-[.5px] text-on-signal active:scale-[.97]"
           >
             BROWSE THE ARCHIVE →
           </Link>
@@ -219,15 +219,15 @@ export function Feed() {
       {/* Funnel: own-site link to the citizen skywatch gear guide
           (watchthenight.com). Tasteful closer for the home page — the
           archive is about evidence; looking up yourself is the next step. */}
-      <section aria-labelledby="feed-funnel" className="mt-[26px] overflow-hidden rounded-2xl border border-line">
-        <div className="px-[18px] pb-4 pt-[18px]">
-          <h2 id="feed-funnel" className="mb-[10px] font-pixel text-[9px] tracking-[1px] text-faint">
+      <section aria-labelledby="feed-funnel" className="mt-6 overflow-hidden rounded-2xl border border-line">
+        <div className="px-4 pb-4 pt-4">
+          <h2 id="feed-funnel" className="mb-2 font-pixel text-[9px] tracking-[1px] text-faint">
             ◆ {t("funnel.heading")}
           </h2>
           <div className="text-[14px] font-medium leading-[1.5] text-ink">{t("funnel.body")}</div>
           <a
             href="https://watchthenight.com"
-            className="mt-[14px] inline-flex items-center gap-2 rounded-[11px] border border-signal px-4 py-[11px] font-mono text-[12px] font-bold tracking-[.5px] text-signal active:scale-[.97]"
+            className="mt-4 inline-flex items-center gap-2 rounded-[11px] border border-signal px-4 py-3 font-mono text-[12px] font-bold tracking-[.5px] text-signal active:scale-[.97]"
           >
             {t("funnel.cta")}
           </a>

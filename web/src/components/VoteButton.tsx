@@ -70,7 +70,7 @@ export function VoteButton({ targetType, targetId, votes, voted, row }: VoteButt
       data-vote-button
       className={
         row
-          ? "flex min-h-[32px] flex-none items-center gap-1.5 rounded-[10px] border px-2.5 active:scale-[.93]"
+          ? "flex min-h-[32px] flex-none items-center gap-2 rounded-[10px] border px-2 active:scale-[.93]"
           : "flex min-h-[44px] min-w-[46px] flex-none flex-col items-center justify-center gap-0.5 rounded-[10px] border px-2 py-0.5 active:scale-[.93]"
       }
       style={{

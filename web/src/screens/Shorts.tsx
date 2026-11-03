@@ -122,7 +122,7 @@ function CommentsSheet({ id, onClose, onCount }: { id: string; onClose: () => vo
   return (
     <div className="absolute inset-0 z-30 flex flex-col justify-end bg-black/40" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div role="dialog" aria-label="Comments" className="flex max-h-[70%] flex-col rounded-t-2xl bg-bg2 text-ink animate-[fadeup_.2s_ease_both]">
-        <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
+        <div className="flex items-center justify-between border-b border-line px-4 py-2">
           <span className="font-mono text-[11px] uppercase tracking-[.8px] text-dim">Comments {data ? comments.length : ""}</span>
           <button type="button" aria-label="Close comments" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full hover:bg-surface">
             <X size={18} aria-hidden="true" />
@@ -132,19 +132,19 @@ function CommentsSheet({ id, onClose, onCount }: { id: string; onClose: () => vo
           {isLoading && <li><Skeleton rows={3} h={48} /></li>}
           {data && !comments.length && <li className="py-6 text-center font-mono text-[11px] text-faint">no comments yet. be the first.</li>}
           {comments.map((c) => (
-            <li key={c.id} className="border-b border-line py-2.5 last:border-0">
+            <li key={c.id} className="border-b border-line py-2 last:border-0">
               <div className="mb-1 flex items-center gap-2 font-mono text-[9.5px] text-faint">
                 {c.handleShow && <span className="text-cyan">{c.handleShow}</span>}
                 <span className="ml-auto">{c.ago}</span>
               </div>
               <div className="text-[13px] leading-[1.5]" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{c.body}</div>
               {<UploadThumbs urls={c.image_urls} fallback={c.image_url} />}
-              <div className="mt-1.5"><VoteButton targetType="comment" targetId={c.id} votes={c.votes} /></div>
+              <div className="mt-2"><VoteButton targetType="comment" targetId={c.id} votes={c.votes} /></div>
             </li>
           ))}
         </ul>
         <button type="button" onClick={() => openComposer({ mode: "comment", recordId: id })}
-          className="m-3 mb-[max(12px,env(safe-area-inset-bottom))] inline-flex items-center gap-[8px] rounded-full border border-line2 px-4 py-2.5 text-left font-mono text-[12px] text-dim hover:border-signal">
+          className="m-3 mb-[max(12px,env(safe-area-inset-bottom))] inline-flex items-center gap-2 rounded-full border border-line2 px-4 py-2 text-left font-mono text-[12px] text-dim hover:border-signal">
           <MessageCircle size={14} strokeWidth={2} aria-hidden="true" />
           Add a comment…
         </button>
@@ -360,7 +360,7 @@ export default function Shorts() {
                     className={`absolute right-3 top-3 bg-black/50 ${round}`}>
                     <MuteIcon size={20} aria-hidden="true" />
                   </button>
-                  <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 bg-gradient-to-t from-black/85 to-transparent px-4 pb-[max(24px,calc(env(safe-area-inset-bottom)+12px))] pt-10 text-white">
+                  <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 bg-gradient-to-t from-black/85 to-transparent px-4 pb-[max(24px,calc(env(safe-area-inset-bottom)+12px))] pt-12 text-white">
                     {/* The id + title is the way to the file. */}
                     <Link to={`/doc/${encodeURIComponent(s.id)}`} title="View file" className="-mx-2 min-w-0 flex-1 rounded-lg px-2 py-1 hover:bg-white/10">
                       <span className="block font-mono text-[10px] uppercase tracking-[.8px] text-white/60">{s.id}</span>

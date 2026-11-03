@@ -13,8 +13,8 @@ export function Articles({ articles, currentId, onSeek }: { articles: Article[];
     <>
       {articles.map((a) => (
         <section key={a.slug} aria-label={a.title} className="mb-4 overflow-hidden rounded-xl border border-line2 bg-surface">
-          <div className="px-3.5 pt-3 font-mono text-[10px] font-bold tracking-[.6px] text-signal">STORY · {a.evidence.length} FILES</div>
-          <h2 className="px-3.5 pb-2.5 pt-1 font-body text-[15px] font-semibold leading-snug text-ink">{a.title}</h2>
+          <div className="px-4 pt-3 font-mono text-[10px] font-bold tracking-[.6px] text-signal">STORY · {a.evidence.length} FILES</div>
+          <h2 className="px-4 pb-2 pt-1 font-body text-[15px] font-semibold leading-snug text-ink">{a.title}</h2>
           {a.image_url && (
             <button type="button" aria-label="Expand image" className="block w-full" onClick={() => openViewer({ kind: "image", url: a.image_url!, label: a.title })}>
               <img src={a.image_url} alt={a.title} loading="lazy" className="block w-full" />
@@ -34,9 +34,9 @@ export function Articles({ articles, currentId, onSeek }: { articles: Article[];
                   <span className="block font-body text-[13px] leading-snug text-ink">{e.label}</span>
                 </span>
               );
-              const cls = "flex min-w-0 flex-1 items-center py-2.5 pr-3.5 text-left";
+              const cls = "flex min-w-0 flex-1 items-center py-2 pr-4 text-left";
               return (
-                <li key={e.id} className="flex items-center gap-3 pl-3.5">
+                <li key={e.id} className="flex items-center gap-3 pl-4">
                   {e.image_url && (
                     <button type="button" aria-label={`Expand image: ${e.label}`} className="flex-none" onClick={() => openViewer({ kind: "image", url: e.image_url!, label: e.label })}>
                       <img src={e.image_url} alt="" loading="lazy" className="h-12 w-12 rounded-md object-cover" />
@@ -52,7 +52,7 @@ export function Articles({ articles, currentId, onSeek }: { articles: Article[];
             })}
           </ol>
           {a.thread_id && (
-            <Link to={`/thread/${a.thread_id}`} className="block border-t border-line px-3.5 py-2.5 font-mono text-[11px] text-signal">
+            <Link to={`/thread/${a.thread_id}`} className="block border-t border-line px-4 py-2 font-mono text-[11px] text-signal">
               Read the full story + evidence →
             </Link>
           )}

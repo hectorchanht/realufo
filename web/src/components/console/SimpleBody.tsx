@@ -54,7 +54,7 @@ function ToolRow(p: {
   }
   const nextMag = LENS_MAGS[(LENS_MAGS.indexOf(p.mag) + 1) % LENS_MAGS.length];
   return (
-    <div data-scroll className="mb-2.5 flex items-center gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
+    <div data-scroll className="mb-2 flex items-center gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
       {/* look closer: lens + frame zoom */}
       <button type="button" aria-label="Lens" aria-pressed={p.lens} onClick={() => p.onLens(!p.lens)} title="Lens (L)" className={`${chip} ${p.lens ? on : off}`}>
         <Search {...ico} />
@@ -189,7 +189,7 @@ function ToolRow(p: {
 
 function SpeedRow({ video }: { video: VideoCtl }) {
   return (
-    <div data-scroll className="mb-2.5 flex items-center gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
+    <div data-scroll className="mb-2 flex items-center gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
       {SPEEDS.map((s) => (
         <button key={s} type="button" aria-label={`Speed ${s}×`} aria-pressed={video.rate === s} title="Speed ([ ])" onClick={() => video.setRate(s)} className={`${chip} ${video.rate === s ? on : off} inline-flex items-center gap-1`}>
           <Gauge size={11} strokeWidth={2.25} aria-hidden="true" />
@@ -230,7 +230,7 @@ export function SimpleBody(p: ConsoleProps) {
         help={p.help}
       />
       {p.video && <SpeedRow video={p.video} />}
-      <div data-scroll className="mb-2.5 flex items-center gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
+      <div data-scroll className="mb-2 flex items-center gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
         {EFFECTS.map((e) => {
           const active = e.active(p.adjust);
           return (
@@ -251,7 +251,7 @@ export function SimpleBody(p: ConsoleProps) {
       </div>
       <div className="grid gap-x-5 gap-y-2 min-[600px]:grid-cols-2">
         {SLIDERS.map((s) => (
-          <label key={s.key} title={s.label} className="flex items-center gap-2.5 font-mono text-[9.5px] tracking-[.4px] text-faint">
+          <label key={s.key} title={s.label} className="flex items-center gap-2 font-mono text-[9.5px] tracking-[.4px] text-faint">
             <s.Icon {...ico} className="flex-none" />
             <input
               type="range"

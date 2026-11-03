@@ -41,12 +41,12 @@ function Jumper() {
     SECTIONS.forEach(({ id }) => { const el = document.getElementById(id); if (el) obs.observe(el); });
     return () => obs.disconnect();
   }, []);
-  const chip = "flex-none rounded-full px-3 py-1.5 font-mono text-[11px] transition";
+  const chip = "flex-none rounded-full px-3 py-2 font-mono text-[11px] transition";
   const on = "bg-signal text-bg";
   const off = "text-dim hover:bg-panel hover:text-ink";
   return (
     <>
-      <nav aria-label="Page sections" className="mb-2 flex gap-1.5 overflow-x-auto pb-2 lg:hidden">
+      <nav aria-label="Page sections" className="mb-2 flex gap-2 overflow-x-auto pb-2 lg:hidden">
         {SECTIONS.map((s) => (
           <a key={s.id} href={`#${s.id}`} className={`${chip} ${active === s.id ? on : off}`}>{s.label}</a>
         ))}
@@ -69,7 +69,7 @@ function Jumper() {
 }
 
 const Endpoint = ({ method, path, desc }: { method: string; path: string; desc: string }) => (
-  <li className="flex flex-wrap items-baseline gap-x-3 py-1.5">
+  <li className="flex flex-wrap items-baseline gap-x-3 py-2">
     <span className="font-mono text-[11px] font-bold text-signal">{method}</span>
     <code className="font-mono text-[12px] text-ink">{path}</code>
     <span className="text-dim">{desc}</span>
@@ -165,7 +165,7 @@ function Playground() {
         <button
           onClick={run}
           disabled={busy}
-          className="inline-flex items-center gap-[6px] rounded border border-line bg-signal px-3 py-1 font-mono text-[12px] font-bold text-canvas disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded border border-line bg-signal px-3 py-1 font-mono text-[12px] font-bold text-canvas disabled:opacity-50"
         >
           {busy ? "…" : (<><Play size={12} strokeWidth={2.5} aria-hidden="true" />Run</>)}
         </button>
@@ -212,7 +212,7 @@ function ApiPulse() {
   }, []);
   if (!text) return null;
   return (
-    <p className="mt-3 inline-flex items-center gap-2 rounded border border-line bg-panel px-3 py-1.5 font-mono text-[12px] text-dim">
+    <p className="mt-3 inline-flex items-center gap-2 rounded border border-line bg-panel px-3 py-2 font-mono text-[12px] text-dim">
       <span className="inline-block h-2 w-2 rounded-full bg-green-500" aria-hidden="true" />
       {text}
     </p>

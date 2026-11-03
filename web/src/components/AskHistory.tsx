@@ -7,8 +7,8 @@ import { Link } from "react-router-dom";
 import { useAskRecent } from "../api/queries";
 import { clearAskHistory, readAskHistory } from "../lib/askHistory";
 
-const HEAD = "mb-1.5 flex items-center justify-between font-mono text-[9px] tracking-[.5px] text-faint";
-const ITEM = "block w-full truncate rounded-lg border border-line px-2.5 py-1.5 text-left text-[12px] text-ink hover:border-signal";
+const HEAD = "mb-2 flex items-center justify-between font-mono text-[9px] tracking-[.5px] text-faint";
+const ITEM = "block w-full truncate rounded-lg border border-line px-2 py-2 text-left text-[12px] text-ink hover:border-signal";
 
 export function AskHistory({ onPick }: { onPick: (q: string) => void }) {
   const [mine, setMine] = useState(readAskHistory);
@@ -17,7 +17,7 @@ export function AskHistory({ onPick }: { onPick: (q: string) => void }) {
   if (!mine.length && !recent.length) return null;
 
   return (
-    <div className="mb-3.5 flex flex-col gap-3">
+    <div className="mb-4 flex flex-col gap-3">
       {mine.length > 0 && (
         <section>
           <div className={HEAD}>

@@ -66,7 +66,7 @@ export function TopNav({ activeTab, hideProgress = 0 }: TopNavProps) {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusWithin(false);
       }}
       className={
-        "flex flex-none items-center gap-5 border-b border-line bg-bg2 px-[26px] py-3 motion-reduce:transition-none" +
+        "flex flex-none items-center gap-5 border-b border-line bg-bg2 px-6 py-3 motion-reduce:transition-none" +
         // Scroll-driven movement tracks the scroll position (no transition);
         // only the focus reveal animates.
         (focusWithin ? " transition-[transform,margin] duration-300 ease-[cubic-bezier(.32,.72,0,1)]" : "")
@@ -76,11 +76,11 @@ export function TopNav({ activeTab, hideProgress = 0 }: TopNavProps) {
         marginBottom: p && barH ? -p * barH : undefined,
       }}
     >
-      <a href="/" className="flex flex-none items-center gap-[11px] border-r border-line pr-1.5">
+      <a href="/" className="flex flex-none items-center gap-3 border-r border-line pr-2">
         <div className="flex-none">
           <Saucer />
         </div>
-        <div className="pr-3.5 font-pixel text-[11px] text-ink">
+        <div className="pr-4 font-pixel text-[11px] text-ink">
           REAL<span className="text-signal">UFO</span>
         </div>
       </a>

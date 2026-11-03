@@ -16,7 +16,7 @@ export function ShortsSkeleton({ grid = false, count = 4 }: { grid?: boolean; co
       role="status"
       aria-label="Loading"
       aria-busy="true"
-      className={grid ? "grid grid-cols-3 gap-[10px] min-[900px]:grid-cols-[repeat(auto-fill,minmax(150px,1fr))]" : "flex snap-x snap-mandatory gap-[10px] overflow-x-auto pb-1.5"}
+      className={grid ? "grid grid-cols-3 gap-2 min-[900px]:grid-cols-[repeat(auto-fill,minmax(150px,1fr))]" : "flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2"}
     >
       {Array.from({ length: count }, (_, i) => (
         <div
@@ -25,11 +25,11 @@ export function ShortsSkeleton({ grid = false, count = 4 }: { grid?: boolean; co
           className={`skel relative aspect-[9/16] overflow-hidden rounded-[14px] border border-line ${grid ? "" : "w-[132px] shrink-0 snap-start"}`}
         >
           <span className="absolute inset-0 grid place-items-center text-dim opacity-90">
-            <span className="grid place-items-center rounded-full border border-line bg-surface2/70 p-2.5">
+            <span className="grid place-items-center rounded-full border border-line bg-surface2/70 p-2">
               <Play size={22} aria-hidden="true" />
             </span>
           </span>
-          <span className="absolute inset-x-0 bottom-0 space-y-1.5 px-2 pb-2">
+          <span className="absolute inset-x-0 bottom-0 space-y-2 px-2 pb-2">
             <span className="block h-2 w-1/3 rounded bg-surface2" />
             <span className="block h-2.5 w-4/5 rounded bg-surface2" />
           </span>
@@ -46,7 +46,7 @@ export function ShortsRow({ shorts, loading = false, grid = false, href }: { sho
   useAutoplayInView(row, [shorts]);
   if (loading) return <ShortsSkeleton grid={grid} count={grid ? 6 : 4} />;
   return (
-    <div ref={setRow} data-scroll className={grid ? "grid grid-cols-3 gap-[10px] min-[900px]:grid-cols-[repeat(auto-fill,minmax(150px,1fr))]" : "flex snap-x snap-mandatory gap-[10px] overflow-x-auto pb-1.5"}>
+    <div ref={setRow} data-scroll className={grid ? "grid grid-cols-3 gap-2 min-[900px]:grid-cols-[repeat(auto-fill,minmax(150px,1fr))]" : "flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2"}>
       {shorts.map((s) => {
         const t = docTitleParts(s.id, s.title, "video");
         return (
@@ -63,7 +63,7 @@ export function ShortsRow({ shorts, loading = false, grid = false, href }: { sho
                 BEHIND the video; the video paints over them when ready. */}
             <span aria-hidden="true" className="skel absolute inset-0">
               <span className="absolute inset-0 grid place-items-center text-dim opacity-90">
-                <span className="grid place-items-center rounded-full border border-line bg-surface2/70 p-2.5">
+                <span className="grid place-items-center rounded-full border border-line bg-surface2/70 p-2">
                   <Play size={22} aria-hidden="true" />
                 </span>
               </span>
