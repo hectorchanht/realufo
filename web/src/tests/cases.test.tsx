@@ -1,11 +1,14 @@
 // Cold cases index: one link card per bootstrap case, with its lede.
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Cases from "../screens/Cases";
 
-vi.mock("../api/queries", () => ({
-  useBootstrap: () => ({
+let boot: unknown;
+vi.mock("../api/queries", () => ({ useBootstrap: () => boot }));
+
+beforeEach(() => {
+  boot = {
     isLoading: false,
     data: {
       cases: [
@@ -13,8 +16,8 @@ vi.mock("../api/queries", () => ({
         { slug: "roswell", name: "Roswell", accent: "#cbd5e1", coord: "33.4 N", lede: "A 1947 press release." },
       ],
     },
-  }),
-}));
+  };
+});
 
 describe("Cases", () => {
   it("lists each case as a link to /case/:slug with its lede", () => {
@@ -26,5 +29,18 @@ describe("Cases", () => {
     expect(screen.getByRole("link", { name: /Kaikoura Lights/ })).toHaveAttribute("href", "/case/kaikoura");
     expect(screen.getByRole("link", { name: /Roswell/ })).toHaveAttribute("href", "/case/roswell");
     expect(screen.getByText("Radar and film over New Zealand.")).toBeInTheDocument();
+  });
+
+  it("offers a retry when bootstrap fails", () => {
+    const refetch = vi.fn();
+    boot = { isLoading: false, data: undefined, error: new Error("offline"), refetch };
+    render(
+      <MemoryRouter>
+        <Cases />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    screen.getByRole("button", { name: "Retry" }).click();
+    expect(refetch).toHaveBeenCalled();
   });
 });
