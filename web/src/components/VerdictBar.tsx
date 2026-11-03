@@ -6,25 +6,19 @@ import type { Verdict, VerdictState } from "../api/types";
 import { useCastVerdict } from "../api/queries";
 import { useOverlay } from "../overlays/OverlayProvider";
 
-// Icon-only verdicts: no English text on the buttons, so readers of any
-// language can judge. The English label survives as aria-label/title for
-// screen readers, tooltips, and tests.
-const OPTIONS: { v: Verdict; label: string; color: string; Icon: typeof BadgeCheck }[] = [
-  { v: "explained", label: "EXPLAINED", color: "var(--signal)", Icon: BadgeCheck },
-  { v: "unexplained", label: "UNEXPLAINED", color: "var(--red)", Icon: CircleHelp },
-  { v: "more_data", label: "NEED MORE DATA", color: "var(--amber)", Icon: FileSearch },
+// Icon + one short word: a bare check / ? / magnifier left first-time
+// visitors guessing. The full label stays the accessible name.
+const OPTIONS: { v: Verdict; label: string; short: string; color: string; Icon: typeof BadgeCheck }[] = [
+  { v: "explained", label: "EXPLAINED", short: "Explained", color: "var(--signal)", Icon: BadgeCheck },
+  { v: "unexplained", label: "UNEXPLAINED", short: "Unexplained", color: "var(--red)", Icon: CircleHelp },
+  { v: "more_data", label: "NEED MORE DATA", short: "More data", color: "var(--amber)", Icon: FileSearch },
 ];
 const pct = (n: number, total: number) => (total ? Math.round((n * 100) / total) : 0);
 // A second tap on the same option inside this window is a double-tap, not "clear my vote".
 const DOUBLE_TAP_MS = 600;
 // Below this many verdicts a big percentage is noise ("100% unexplained" from 1 vote).
 const MIN_CROWD = 5;
-// "? ? ?" is decoration: screen readers hear just the instruction.
-const TEASE = (
-  <>
-    <span aria-hidden="true">? ? ?</span> Judge it to reveal the crowd
-  </>
-);
+const TEASE = "What's your read? Vote to see how others judged this file";
 const plural = (n: number) => `${n} ${n === 1 ? "verdict" : "verdicts"}`;
 
 export function VerdictBar({
@@ -83,10 +77,11 @@ export function VerdictBar({
             aria-pressed={mine === o.v}
             disabled={cast.isPending}
             onClick={() => vote(o.v)}
-            className="grid min-h-[56px] place-items-center rounded-[10px] border active:scale-[.97] disabled:opacity-60"
+            className="flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-[10px] border px-1 active:scale-[.97] disabled:opacity-60"
             style={{ borderColor: mine === o.v ? o.color : "var(--line2)", color: mine === o.v ? o.color : "var(--dim)" }}
           >
-            <o.Icon size={24} aria-hidden="true" />
+            <o.Icon size={20} aria-hidden="true" />
+            <span aria-hidden="true" className="font-mono text-[10px] tracking-[.3px]">{o.short}</span>
           </button>
         ))}
       </div>
@@ -111,7 +106,7 @@ export function VerdictBar({
           </div>
         </>
       ) : (
-        <div className="mt-2 font-mono text-[10px] text-faint">
+        <div className="mt-2 text-[12px] text-dim">
           {mine ? "…" : <>{TEASE}{total ? ` · ${plural(total)}` : ""}</>}
         </div>
       )}

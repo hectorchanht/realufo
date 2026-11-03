@@ -72,7 +72,7 @@ export default function FullText({
             {kind === "image" ? "AI-generated from the image · may contain errors" : "AI-generated · may contain errors"}
           </span>
         </div>
-        <p className="text-[13.5px] leading-[1.65] text-dim">{data.aiSummary}</p>
+        <p className="max-w-[75ch] text-[13.5px] leading-[1.65] text-dim">{data.aiSummary}</p>
       </section>
     );
   }
@@ -88,10 +88,9 @@ export default function FullText({
     onPageChange?.(n);
   };
   const showSummary = !!data.aiSummary && view === "summary";
-  // Icon-only tabs (Sparkles = AI summary, FileText = full text), each half
-  // of the row's width. The English label survives as aria-label/title for
-  // screen readers, tooltips, tests.
-  const tab = (k: "summary" | "text", label: string, Icon: typeof Sparkles) => (
+  // Tabs (Sparkles = AI summary, FileText = the page text), each half of the
+  // row's width: icon + one short word, so "which one is the real text" needs no guessing.
+  const tab = (k: "summary" | "text", label: string, short: string, Icon: typeof Sparkles) => (
     <button
       key={k}
       type="button"
@@ -99,9 +98,10 @@ export default function FullText({
       aria-label={label}
       title={label}
       onClick={() => setView(k)}
-      className={`${chip} grid h-10 flex-1 place-items-center ${(k === "summary") === showSummary ? on : off}`}
+      className={`${chip} flex h-10 flex-1 items-center justify-center gap-2 ${(k === "summary") === showSummary ? on : off}`}
     >
       <Icon size={16} aria-hidden="true" />
+      <span aria-hidden="true" className="whitespace-nowrap font-mono text-[11px]">{short}</span>
     </button>
   );
   const fmt = (k: "md" | "json", label: string) => (
@@ -122,8 +122,8 @@ export default function FullText({
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2 font-mono">
         {data.aiSummary ? (
           <span className="flex min-w-0 flex-1 gap-2">
-            {tab("summary", "AI SUMMARY", Sparkles)}
-            {tab("text", "FULL TEXT", FileText)}
+            {tab("summary", "AI SUMMARY", "AI summary", Sparkles)}
+            {tab("text", "FULL TEXT", "Page text", FileText)}
           </span>
         ) : (
           <h2 className="text-[11px] font-semibold tracking-[.5px] text-ink">FULL TEXT</h2>
@@ -136,7 +136,7 @@ export default function FullText({
       </div>
       {showSummary ? (
         <>
-          <p className="text-[13.5px] leading-[1.65] text-dim">{data.aiSummary}</p>
+          <p className="max-w-[75ch] text-[13.5px] leading-[1.65] text-dim">{data.aiSummary}</p>
           {(data.aiSections?.length ?? 0) > 1 && (
             <div className="mt-3">
               <div className="mb-2 font-mono text-[10px] tracking-[.5px] text-faint">IN THIS FILE</div>

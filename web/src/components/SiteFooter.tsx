@@ -66,11 +66,11 @@ export default function SiteFooter() {
           </Link>
           <p className="mt-2 text-faint">{t("footer.tagline")}</p>
         </div>
-        <ul aria-label="Follow RealUFO" className="flex flex-wrap gap-4">
+        <ul aria-label="Follow RealUFO" className="-mx-2 flex flex-wrap gap-0.5">
           {/* GitHub is a personal account's repo, not a RealUFO profile: no rel=me / sameAs. */}
           {[...SOCIAL_PROFILES.map(([n, u]) => [n, u, n, "noopener me"]), ["GitHub", "https://github.com/hectorchanht/realufo", "Source code on GitHub", "noopener"]].map(([name, url, label, rel]) => (
             <li key={name}>
-              <a className={`${linkCls} block`} href={url} target="_blank" rel={rel} aria-label={label} title={label}>
+              <a className={`${linkCls} grid h-9 w-9 place-items-center`} href={url} target="_blank" rel={rel} aria-label={label} title={label}>
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d={ICONS[name]} /></svg>
               </a>
             </li>

@@ -18,14 +18,14 @@ describe("VerdictBar", () => {
     // the visible "WTF-METER" title is hidden; the section keeps its accessible name
     expect(screen.getByRole("region", { name: "WTF-meter" })).toBeTruthy();
     expect(screen.queryByText("WTF-METER")).toBeNull();
-    const tease = screen.getByText(/Judge it to reveal the crowd/);
-    expect(tease).toHaveTextContent(/^\? \? \? Judge it to reveal the crowd$/);
-    expect(screen.getByText("? ? ?").getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByText("What's your read? Vote to see how others judged this file")).toBeInTheDocument();
+    // each option shows a short word next to its icon
+    expect(screen.getByRole("button", { name: "NEED MORE DATA" })).toHaveTextContent("More data");
   });
 
   it("hides the split before voting (count shown) and casts on tap", () => {
     render(<VerdictBar recordId="r1" state={{ mine: null, total: 7 }} />);
-    expect(screen.getByText(/Judge it to reveal the crowd/)).toHaveTextContent(/^\? \? \? Judge it to reveal the crowd · 7 verdicts$/);
+    expect(screen.getByText(/Vote to see how others judged/)).toHaveTextContent(/^What's your read\? Vote to see how others judged this file · 7 verdicts$/);
     expect(screen.queryByRole("img")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "NEED MORE DATA" }));
     expect(mutate).toHaveBeenCalledWith("more_data", expect.any(Object));

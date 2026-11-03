@@ -27,7 +27,7 @@
 // Loading/not-found: `record` is undefined both while `useRecord` hasn't
 // settled and if the id doesn't resolve to a real record — both cases render
 // the same simple safe states (no attempt to index into `undefined`).
-import { Expand, GitCompare, MessageCircle, MessageSquarePlus, MessagesSquare, X, ChevronLeft, ChevronRight, Pencil, CornerUpRight } from "lucide-react";
+import { Expand, Columns2, MessageCircle, MessageSquarePlus, MessagesSquare, X, ChevronLeft, ChevronRight, CornerUpRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -146,6 +146,7 @@ function withMoments(body: string, onSeek: (t: number) => void): ReactNode[] {
 interface MetaCellProps {
   label: string;
   value: string;
+  hint?: string;
 }
 
 // One cell of the 2x2 meta grid (prototype lines 361-364). Hub links for these
@@ -159,10 +160,10 @@ const PANEL_MAX_H = "min(78vh, max(220px, calc(100dvh - 280px)))"; // floor: lan
 // into the page — it gets an explicit open-in-new-tab gate instead.
 const PDF_INLINE_MAX_BYTES = 30 * 1024 * 1024;
 
-function MetaCell({ label, value }: MetaCellProps) {
+function MetaCell({ label, value, hint }: MetaCellProps) {
   return (
     <div className="bg-surface px-3 py-3">
-      <div className="font-mono text-[8.5px] uppercase tracking-[.6px] text-faint">{label}</div>
+      <div className="font-mono text-[10px] uppercase tracking-[.6px] text-faint" title={hint}>{label}</div>
       <div className="mt-1 font-mono text-xs text-ink" style={{ overflowWrap: "anywhere" }}>
         {value}
       </div>
@@ -288,7 +289,6 @@ export function Doc() {
   const [panel, setPanel] = useState<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const summaryRef = useRef<HTMLParagraphElement>(null);
   useEffect(() => {
     setView(DEFAULT_VIEW);
     setPic(null);
@@ -646,7 +646,7 @@ export function Doc() {
         )}
         {title}
       </h1>
-      <div className="mb-3 flex items-center gap-1">
+      <div className="mb-3 flex flex-wrap items-center gap-1">
         <CiteButton record={record} />
         <button
           type="button"
@@ -655,16 +655,16 @@ export function Doc() {
           title="Compare with another record"
           className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-dim transition hover:bg-surface hover:text-ink"
         >
-          <GitCompare size={20} />
+          <Columns2 size={20} aria-hidden="true" />
         </button>
         <FollowBell kind="record" id={id} />
+        <div className="ml-auto">
+          <ShareRow url={shareUrl} title={title} />
+        </div>
       </div>
       {showBlink && (
-        <p className="mb-2 font-mono text-[11px] text-faint">{t("doc.wtfBlink")}</p>
+        <p className="mb-3 font-mono text-[11px] text-faint">{t("doc.wtfBlink")}</p>
       )}
-      <div className="mb-3 flex justify-end">
-        <ShareRow url={shareUrl} title={title} />
-      </div>
     </>
   );
 
@@ -837,10 +837,18 @@ export function Doc() {
               aria-hidden="true"
               data-lens-hide
               data-fs-hide
-              className={`absolute bottom-[11px] right-3 rounded-[7px] px-2 py-1 font-mono text-[10px] text-white ${fade}`}
+              className={`absolute bottom-[11px] right-3 rounded-[7px] px-2 py-1 font-mono text-[11px] text-white ${media === "image" ? fade : ""}`}
               style={{ background: "rgba(0,0,0,.6)" }}
             >
-              {media === "image" ? <Expand size={13} strokeWidth={2} /> : <span className="inline-flex items-center gap-1"><Expand size={11} strokeWidth={2} aria-hidden="true" />open {glyph}</span>}
+              {media === "image" ? (
+                <Expand size={13} strokeWidth={2} />
+              ) : (
+                <span className="inline-flex items-center gap-1">
+                  <Expand size={12} strokeWidth={2} aria-hidden="true" />
+                  open {glyph}
+                  {detail.fullText?.total_pages ? ` · ${plural(detail.fullText.total_pages, "page")}` : ""}
+                </span>
+              )}
             </span>
           </button>
         )}
@@ -955,7 +963,7 @@ export function Doc() {
       )}
 
       {/* chips row — prototype line 358 */}
-      <div data-scroll className="mb-2 flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
+      <div data-scroll className="edge-fade mb-2 flex gap-2 overflow-x-auto pb-1 pr-6 [&>*]:flex-none">
         {/* every chip is a .tag link: hub page when the file has one, else the archive filtered to it */}
         <Link to={detail.hubs?.agency ? `/agency/${detail.hubs.agency}` : `/archive?agency=${encodeURIComponent(record.agency)}`} className="tag">
           {record.agency_full || record.agency}
@@ -983,37 +991,8 @@ export function Doc() {
 
       {!isDesktop && titleBlock}
 
-      <TldrCard
-        tldr={detail.tldr}
-        title={title}
-        onBoring={() => summaryRef.current?.scrollIntoView?.({ behavior: scrollBehavior(), block: "start" })}
-      />
+      <TldrCard tldr={detail.tldr} />
 
-      <VerdictBar recordId={record.id} state={detail.verdicts} onVoted={() => setShowVoteNudge(true)} />
-
-      {/* Post-vote nudge: a fresh WTF-meter vote is the highest-intent moment
-          to convert a lurker — one tap jumps to the quick-reply bar and
-          focuses it. Dismissible, resets per file. */}
-      {showVoteNudge && (
-        <div className="mb-6 flex items-center gap-1 rounded-xl border border-line2 bg-surface py-2 pl-3 pr-2">
-          <button
-            type="button"
-            onClick={focusQuickReply}
-            className="flex min-w-0 flex-1 items-center gap-2 text-left active:scale-[.99]"
-          >
-            <MessageCircle size={18} className="flex-none text-signal" aria-hidden="true" />
-            <span className="truncate text-[13.5px] font-medium text-ink">{t("doc.voteNudge")}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowVoteNudge(false)}
-            aria-label={t("doc.dismiss")}
-            className="grid h-9 w-9 flex-none place-items-center rounded-lg text-dim active:scale-90"
-          >
-            <X size={16} aria-hidden="true" />
-          </button>
-        </div>
-      )}
 
       {/* meta grid — prototype lines 360-365 */}
       {/* empty fields are left out; an odd last cell spans the row */}
@@ -1025,7 +1004,9 @@ export function Doc() {
             ["Released", record.doc_date || ""],
             ["VIRIN", record.virin || ""],
           ] as const
-        ).map(([label, value]) => (value ? <MetaCell key={label} label={label} value={value} /> : null))}
+        ).map(([label, value]) =>
+          value ? <MetaCell key={label} label={label} value={value} hint={label === "VIRIN" ? "Visual Information Record ID (DoD media number)" : undefined} /> : null,
+        )}
       </div>
 
       {detail.citedIn && detail.citedIn.length > 0 && (
@@ -1038,11 +1019,9 @@ export function Doc() {
       )}
 
       {/* summary — prototype line 366 */}
-      <p ref={summaryRef} className="mb-4 scroll-mt-16 text-[14.5px] leading-[1.65] text-dim" style={{ whiteSpace: "pre-line" }}>
+      <p className="mb-4 max-w-[68ch] text-[14.5px] leading-[1.65] text-dim" style={{ whiteSpace: "pre-line" }}>
         {media === "video" ? keyMoments.prose : record.summary || ""}
       </p>
-
-      <GoDeeper picks={picksForRecord(record.title, record.summary || "")} note="Directly related to this file." press={pressRefFor(record.incident_date, record.location)} />
 
       {/* OPEN ORIGINAL — prototype line 367. Icon + format glyph only
           (e.g. "⛶ PDF"); the English label lives in aria-label. */}
@@ -1084,9 +1063,9 @@ export function Doc() {
       {(detail.series?.prev || detail.series?.next) && (
         <div className="mb-6 grid grid-cols-2 gap-2 font-mono">
           {[
-            { id: detail.series.prev, t: detail.series.prevTitle, k: detail.series.prevKind, arrow: "←", aria: "Previous in series", align: "text-left" },
-            { id: detail.series.next, t: detail.series.nextTitle, k: detail.series.nextKind, arrow: "→", aria: "Next in series", align: "text-right" },
-          ].map(({ id: sid, t, k, arrow, aria, align }) => {
+            { id: detail.series.prev, t: detail.series.prevTitle, k: detail.series.prevKind, Arrow: ChevronLeft, aria: "Previous in series", align: "text-left" },
+            { id: detail.series.next, t: detail.series.nextTitle, k: detail.series.nextKind, Arrow: ChevronRight, aria: "Next in series", align: "text-right" },
+          ].map(({ id: sid, t, k, Arrow, aria, align }) => {
             const sp = sid ? docTitleParts(sid, t, k ?? undefined) : null;
             return sid && sp ? (
               <Link
@@ -1095,9 +1074,9 @@ export function Doc() {
                 aria-label={`${aria}: ${sp.title}`}
                 className={`rounded-xl border border-line px-3 py-2 ${align} active:scale-[.99]`}
               >
-                <div className="text-[9px] tracking-[.5px] text-faint" aria-hidden="true">{arrow}</div>
+                <Arrow size={16} aria-hidden="true" className={`text-dim ${align === "text-right" ? "ml-auto" : ""}`} />
                 {sp.showId && (
-                  <div className="mt-1 text-[10px] font-semibold" style={{ color: dataInk(accent), overflowWrap: "anywhere" }}>
+                  <div className="mt-1 text-[11px] font-semibold" style={{ color: dataInk(accent), overflowWrap: "anywhere" }}>
                     {sp.id}
                   </div>
                 )}
@@ -1112,191 +1091,193 @@ export function Doc() {
         </div>
       )}
 
-      {/* promotedThreads back-references — not in the prototype's doc markup
-          (RealUFO.dc.html has no such strip), but required by the data model:
-          GET /api/records/:id returns `promotedThreads[]`, the record->thread
-          direction of the bidirectional "promote a comment to its own
-          thread" link. Placed between the record's own info and the
-          Discussion section below, since it bridges the two. */}
-      {promotedThreads.length > 0 && (
-        <div className="mb-4">
-          <div className="mb-2 font-mono text-[9px] uppercase tracking-[.6px] text-faint">◂ promoted threads</div>
-          <div data-scroll className="flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
-            {promotedThreads.map((pt) => (
-              <Link
-                key={pt.id}
-                to={`/thread/${pt.id}`}
-                className="rounded-lg border border-line2 px-2 py-2 font-mono text-[10.5px]"
-                style={{ color: dataInk(pt.accent) }}
-              >
-                {pt.title}
-              </Link>
-            ))}
+      {/* Everything after the evidence (crowd verdict, discussion, reading picks,
+          related files) sits in one wrapper so the sticky reply bar, its last child,
+          only sticks while this part of the page is on screen. */}
+      <div className="mt-8">
+        <VerdictBar recordId={record.id} state={detail.verdicts} onVoted={() => setShowVoteNudge(true)} />
+
+        {/* Post-vote nudge: a fresh WTF-meter vote is the highest-intent moment
+            to convert a lurker — one tap jumps to the quick-reply bar and
+            focuses it. Dismissible, resets per file. */}
+        {showVoteNudge && (
+          <div className="mb-6 flex items-center gap-1 rounded-xl border border-line2 bg-surface py-2 pl-3 pr-2">
+            <button
+              type="button"
+              onClick={focusQuickReply}
+              className="flex min-w-0 flex-1 items-center gap-2 text-left active:scale-[.99]"
+            >
+              <MessageCircle size={18} className="flex-none text-signal" aria-hidden="true" />
+              <span className="truncate text-[13.5px] font-medium text-ink">{t("doc.voteNudge")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowVoteNudge(false)}
+              aria-label={t("doc.dismiss")}
+              className="grid h-9 w-9 flex-none place-items-center rounded-lg text-dim active:scale-90"
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
           </div>
-        </div>
-      )}
-
-      {/* Funnel strip: rotating watchthenight.com messages (link first). */}
-      <FunnelStrip />
-
-      {/* Discussion header + count — prototype line 368. Icon-only: a speech
-          bubble with the comment count on the left, and a single icon button
-          on the right that deep-links to the record's board thread when one
-          exists, else opens the new-thread composer prefilled with this file
-          (same flow as the "Start a board thread" button below). English
-          labels survive as aria-label/title for screen readers and tooltips. */}
-      <div className="mb-3 flex items-center justify-between gap-3">
-        {!(commentsError && !commentsData) && (
-          <span
-            className="flex items-center gap-2"
-            role="img"
-            aria-label={plural(comments.length, "comment")}
-            title={plural(comments.length, "comment")}
-          >
-            <MessageCircle size={15} aria-hidden="true" className="text-faint" />
-            <span className="font-mono text-[11px] text-signal">{comments.length}</span>
-          </span>
         )}
-        {promotedThreads.length > 0 ? (
-          <Link
-            to={`/thread/${promotedThreads[0].id}`}
-            aria-label={t("doc.discussThread")}
-            title={t("doc.discussThread")}
-            className="grid h-10 w-10 place-items-center rounded-full text-cyan transition hover:bg-surface active:scale-[.97]"
-          >
-            <MessagesSquare size={19} aria-hidden="true" />
-          </Link>
-        ) : (
+
+        {/* promotedThreads back-references — not in the prototype's doc markup
+            (RealUFO.dc.html has no such strip), but required by the data model:
+            GET /api/records/:id returns `promotedThreads[]`, the record->thread
+            direction of the bidirectional "promote a comment to its own
+            thread" link. Placed between the record's own info and the
+            Discussion section below, since it bridges the two. */}
+        {promotedThreads.length > 0 && (
+          <div className="mb-4">
+            <h2 className="mb-2 font-mono text-[10px] uppercase tracking-[.6px] text-faint">Board threads from this file</h2>
+            <div data-scroll className="flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
+              {promotedThreads.map((pt) => (
+                <Link
+                  key={pt.id}
+                  to={`/thread/${pt.id}`}
+                  className="rounded-lg border border-line2 px-2 py-2 font-mono text-[11px]"
+                  style={{ color: dataInk(pt.accent) }}
+                >
+                  {pt.title}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Discussion header + count — prototype line 368. Icon-only: a speech
+            bubble with the comment count on the left, and a single icon button
+            on the right that deep-links to the record's board thread when one
+            exists, else opens the new-thread composer prefilled with this file
+            (same flow as the "Start a board thread" button below). English
+            labels survive as aria-label/title for screen readers and tooltips. */}
+        <div className="mb-3 flex items-center justify-between gap-3">
+          {!(commentsError && !commentsData) && (
+            <h2 className="flex items-center gap-2 font-mono text-[11px] text-dim">
+              <MessageCircle size={15} aria-hidden="true" className="text-faint" />
+              {plural(comments.length, "comment")}
+            </h2>
+          )}
+          {promotedThreads.length > 0 ? (
+            <Link
+              to={`/thread/${promotedThreads[0].id}`}
+              title="Open this file's board thread"
+              className="flex h-9 items-center gap-2 rounded-[11px] border border-line2 px-3 font-mono text-[11px] text-ink transition hover:border-signal hover:text-signal active:scale-[.97]"
+            >
+              <MessagesSquare size={16} aria-hidden="true" />
+              {t("doc.discussThread")}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={handleFileThread}
+              title="Start a board thread about this file"
+              className="flex h-9 items-center gap-2 rounded-[11px] border border-line2 px-3 font-mono text-[11px] text-ink transition hover:border-signal hover:text-signal active:scale-[.97]"
+            >
+              <MessageSquarePlus size={16} aria-hidden="true" />
+              {t("doc.startDiscussion")}
+            </button>
+          )}
+        </div>
+
+        {/* AI discussion starter — pinned prompt while the record is quiet
+            (fewer than STARTER_MAX_COMMENTS comments); hidden once discussion
+            is alive. The Reply affordance focuses the sticky quick-reply bar. */}
+        <DiscussionStarter recordId={id} commentCount={comments.length} onReply={focusQuickReply} />
+
+        {/* comment list — prototype lines 374-385 */}
+        {commentsError && !commentsData && <LoadError error={commentsError} onRetry={() => void refetchComments()} />}
+        <div className="flex flex-col gap-2">
+          {comments.map((c) => (
+            <div key={c.id} className="rounded-xl border border-line bg-surface p-3">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                {c.handleShow && <span className="font-mono text-[11px] text-cyan">{c.handleShow}</span>}
+                <span
+                  role="img"
+                  aria-label={c.stance ?? "neutral"}
+                  title={c.stance ?? "neutral"}
+                  className="text-[12px] leading-none"
+                  style={{ color: stanceColor(c.stance) }}
+                >
+                  ●
+                </span>
+                <span className="font-mono text-[10px] text-faint">ID:{c.id}</span>
+                <span className="ml-auto font-mono text-[10px] text-faint">{c.ago}</span>
+              </div>
+              <div className="text-[13px] leading-[1.55] text-ink" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                {media === "video" ? withMoments(c.body, seekTo) : c.body}
+              </div>
+              {<UploadThumbs urls={c.image_urls} fallback={c.image_url} />}
+              <div className="mt-2 flex items-center gap-4">
+                {/* Task 19 brief names VoteButton explicitly for this control —
+                    the prototype's own comment-vote affordance (line 380) is a
+                    bare unbordered "▲ N" button, visually different from
+                    VoteButton's bordered pillar chrome used everywhere else
+                    (threads); reusing the shared component here trades that
+                    literal-pixel match for one consistent vote control + a
+                    single source of the optimistic-vote behavior. */}
+                <VoteButton targetType="comment" targetId={c.id} votes={c.votes} />
+                <button
+                  type="button"
+                  onClick={() => handlePromote(c)}
+                  className="flex min-h-9 items-center gap-1 font-mono text-[11px] text-cyan active:scale-[.93]"
+                >
+                  <CornerUpRight size={13} strokeWidth={2.25} aria-hidden="true" />
+                  to a board
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <GoDeeper picks={picksForRecord(record.title, record.summary || "")} note="Directly related to this file." press={pressRefFor(record.incident_date, record.location)} />
+
+        {/* Funnel strip: rotating watchthenight.com messages (link first). */}
+        <FunnelStrip />
+
+        {/* related files — uapbrowser-style groups: war.gov's related media,
+            then shared topic / location / period / release / agency (worker dedupes, so a file shows in one group only) */}
+        {detail.related?.map((g) => (
+          <section key={g.key} className="mt-8">
+            <h2 className="mb-2 font-mono text-[10px] uppercase tracking-[.6px] text-faint">
+              {RELATED_HEAD[g.key]} · <span className="text-dim">{g.label}</span>
+            </h2>
+            <div className="grid grid-flow-row-dense grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
+              {g.records.map((r) => (
+                <DocCard key={r.id} record={r} />
+              ))}
+            </div>
+          </section>
+        ))}
+
+        {/* Sticky bottom reply bar — same mechanics as Thread's reply bar:
+            `sticky bottom` keeps it pinned to the viewport bottom (above the
+            mobile BottomTab overlay via --bnav-y, 0 when the tab hides) while
+            reading; at page end it rests in flow. It sits inside the discussion
+            wrapper, so it only sticks once the reader reaches the verdict and
+            comments, never over the file, summary or page text. Taps open the
+            full composer in comment mode. */}
+        <div
+          data-quickreply
+          className="sticky bottom-0 left-0 right-0 z-20 -mx-4 mt-4 border-t border-line px-4 py-2 transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none"
+          style={{
+            // transform, not `bottom`: rides above the tab without a reflow per scroll frame
+            transform: "translateY(calc(-1 * var(--bnav-y, 0px)))",
+            background: "color-mix(in srgb, var(--bg) 82%, transparent)",
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
+          }}
+        >
           <button
             type="button"
-            onClick={handleFileThread}
-            aria-label={t("doc.startDiscussion")}
-            title={t("doc.startDiscussion")}
-            className="grid h-10 w-10 place-items-center rounded-full text-cyan transition hover:bg-surface active:scale-[.97]"
+            onClick={handleAddComment}
+            className="flex h-12 w-full items-center gap-2 rounded-xl border border-line2 bg-surface px-4 text-left active:scale-[.99]"
           >
-            <MessageSquarePlus size={19} aria-hidden="true" />
+            <MessageCircle size={18} aria-hidden="true" className="flex-none text-dim" />
+            <span className="flex-1 truncate text-[13.5px] text-faint">Add your read on this file…</span>
+            <span className="flex-none font-mono text-[10px] text-faint">no sign-in</span>
           </button>
-        )}
-      </div>
-
-      {/* AI discussion starter — pinned prompt while the record is quiet
-          (fewer than STARTER_MAX_COMMENTS comments); hidden once discussion
-          is alive. The Reply affordance focuses the sticky quick-reply bar. */}
-      <DiscussionStarter recordId={id} commentCount={comments.length} onReply={focusQuickReply} />
-
-      {/* "Add your read on this file…" — prototype lines 369-373 */}
-      <button
-        type="button"
-        onClick={handleAddComment}
-        className="mb-4 flex w-full items-center gap-2 rounded-xl border border-line2 bg-surface px-4 py-3 text-left active:scale-[.99]"
-      >
-        <span
-          aria-hidden="true"
-          className="grid h-[26px] w-[26px] flex-none place-items-center rounded-full"
-          style={{ background: "var(--signal-dim)", color: "var(--signal)" }}
-        >
-          <Pencil size={13} strokeWidth={2} aria-hidden="true" />
-        </span>
-        <span className="flex-1 font-body text-[13.5px] text-faint">Add your read on this file…</span>
-        <span className="flex-none font-mono text-[8.5px] tracking-[.5px] text-faint">ANON OK</span>
-      </button>
-
-      {/* comment list — prototype lines 374-385 */}
-      {commentsError && !commentsData && <LoadError error={commentsError} onRetry={() => void refetchComments()} />}
-      <div className="flex flex-col gap-2">
-        {comments.map((c) => (
-          <div key={c.id} className="rounded-xl border border-line bg-surface p-3">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              {c.handleShow && <span className="font-mono text-[10px] text-cyan">{c.handleShow}</span>}
-              <span
-                role="img"
-                aria-label={c.stance ?? "neutral"}
-                title={c.stance ?? "neutral"}
-                className="text-[12px] leading-none"
-                style={{ color: stanceColor(c.stance) }}
-              >
-                ●
-              </span>
-              <span className="font-mono text-[9px] text-faint">ID:{c.id}</span>
-              <span className="ml-auto font-mono text-[9px] text-faint">{c.ago}</span>
-            </div>
-            <div className="text-[13px] leading-[1.55] text-ink" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-              {media === "video" ? withMoments(c.body, seekTo) : c.body}
-            </div>
-            {<UploadThumbs urls={c.image_urls} fallback={c.image_url} />}
-            <div className="mt-2 flex items-center gap-4">
-              {/* Task 19 brief names VoteButton explicitly for this control —
-                  the prototype's own comment-vote affordance (line 380) is a
-                  bare unbordered "▲ N" button, visually different from
-                  VoteButton's bordered pillar chrome used everywhere else
-                  (threads); reusing the shared component here trades that
-                  literal-pixel match for one consistent vote control + a
-                  single source of the optimistic-vote behavior. */}
-              <VoteButton targetType="comment" targetId={c.id} votes={c.votes} />
-              <button
-                type="button"
-                onClick={() => handlePromote(c)}
-                className="flex items-center gap-1 font-mono text-[11px] text-cyan active:scale-[.93]"
-              >
-                <CornerUpRight size={13} strokeWidth={2.25} aria-hidden="true" />
-                to a board
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* "◈ Start a board thread about this file" — prototype line 386 */}
-      <button
-        type="button"
-        onClick={handleFileThread}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line2 py-3 font-mono text-xs font-semibold text-ink active:scale-[.98]"
-      >
-        <MessageSquarePlus size={15} strokeWidth={2} aria-hidden="true" />
-        Start a board thread about this file
-      </button>
-
-      {/* related files — uapbrowser-style groups: war.gov's related media,
-          then shared topic / location / period / release / agency (worker dedupes, so a file shows in one group only) */}
-      {detail.related?.map((g) => (
-        <section key={g.key} className="mt-8">
-          <div className="mb-2 font-mono text-[9px] uppercase tracking-[.6px] text-faint">
-            {RELATED_HEAD[g.key]} · <span className="text-dim">{g.label}</span>
-          </div>
-          <div className="grid grid-flow-row-dense grid-cols-2 gap-3 min-[900px]:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
-            {g.records.map((r) => (
-              <DocCard key={r.id} record={r} />
-            ))}
-          </div>
-        </section>
-      ))}
-
-      {/* Sticky bottom reply bar — same mechanics as Thread's reply bar:
-          `sticky bottom` keeps it pinned to the viewport bottom (above the
-          mobile BottomTab overlay via --bnav-y, 0 when the tab hides) while
-          reading; at page end it rests in flow. Icon-only pill: taps open
-          the full composer in comment mode, the same modal as the
-          "Add your read on this file…" button and the discussion header. */}
-      <div
-        data-quickreply
-        className="sticky bottom-0 left-0 right-0 z-20 -mx-4 mt-4 border-t border-line px-4 py-2 transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none"
-        style={{
-          // transform, not `bottom`: rides above the tab without a reflow per scroll frame
-          transform: "translateY(calc(-1 * var(--bnav-y, 0px)))",
-          background: "color-mix(in srgb, var(--bg) 82%, transparent)",
-          backdropFilter: "blur(18px)",
-          WebkitBackdropFilter: "blur(18px)",
-        }}
-      >
-        <button
-          type="button"
-          onClick={handleAddComment}
-          aria-label={t("doc.quickReply")}
-          title={t("doc.quickReply")}
-          className="grid h-[48px] w-full place-items-center rounded-xl border border-line2 bg-surface text-signal active:scale-[.99]"
-        >
-          <MessageCircle size={20} aria-hidden="true" />
-        </button>
+        </div>
       </div>
     </div>
   );

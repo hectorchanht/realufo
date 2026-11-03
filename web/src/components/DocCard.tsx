@@ -166,7 +166,7 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
           />
         )}
         <span
-          className="absolute left-2 top-2 rounded-[5px] px-2 py-1 font-mono text-[8.5px] font-bold"
+          className="absolute left-2 top-2 rounded-[5px] px-2 py-1 font-mono text-[10px] font-bold"
           // the chip is always black: light theme's dark --signal would vanish on it
           style={{ background: "rgba(0,0,0,.85)", color: archiveAccent ?? "#4df0a6" }}
         >
@@ -177,13 +177,13 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
             role="img"
             title="Redacted"
             aria-label="Redacted"
-            className="absolute right-2 top-2 rounded-[5px] bg-red px-2 py-1 font-mono text-[8px] font-bold text-white"
+            className="absolute right-2 top-2 rounded-[5px] bg-red px-2 py-1 font-mono text-[10px] font-bold text-white"
           >
             R
           </span>
         )}
         {record.kind === "video" && !!record.duration && (
-          <span className="absolute bottom-2 right-2 rounded-[5px] px-2 py-1 font-mono text-[9px] font-bold text-white" style={{ background: "rgba(0,0,0,.72)" }}>
+          <span className="absolute bottom-2 right-2 rounded-[5px] px-2 py-1 font-mono text-[10px] font-bold text-white" style={{ background: "rgba(0,0,0,.72)" }}>
             {formatDuration(record.duration)}
           </span>
         )}
@@ -191,10 +191,10 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
 
       <div className={"flex flex-col gap-2 " + (tall ? "" : "flex-1 ") + (isFeed ? "px-3 pb-3 pt-3" : "px-3 pb-3 pt-2")}>
         {isFeed && (
-          <div className="font-mono text-[9px] tracking-[.4px] text-faint">{metaLine(record)}</div>
+          <div className="font-mono text-[10px] tracking-[.4px] text-faint">{metaLine(record)}</div>
         )}
         {tp.showId && (
-          <div className="truncate font-mono text-[9.5px] font-semibold tracking-[.3px]" style={{ color: dataInk(accentColor) }}>
+          <div className="truncate font-mono text-[11px] font-semibold tracking-[.3px]" style={{ color: dataInk(accentColor) }}>
             {tp.id}
           </div>
         )}
@@ -209,19 +209,19 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
           <div className="line-clamp-2 text-[11.5px] italic leading-[1.35] text-dim">“{record.oneLiner}”</div>
         )}
         {isFeed && isFeedRecord(record) && (
-          <div className="mt-auto flex gap-3 pt-0.5 font-mono text-[10px] text-dim">
+          <div className="mt-auto flex gap-3 pt-0.5 font-mono text-[11px] text-dim">
             <span>💬 {record.commentN}</span>
             <span>⚖ {record.verdictN ?? 0}</span>
           </div>
         )}
         {isListRecord(record) && record.match && (
           <div className="line-clamp-3 text-[11px] leading-[1.4] text-dim">
-            <span className="mr-1 font-mono text-[9px] text-signal">p.{record.match.page}</span>
+            <span className="mr-1 font-mono text-[10px] text-signal">p.{record.match.page}</span>
             {record.match.text}
           </div>
         )}
         {!isFeed && isListRecord(record) && (
-          <div className="mt-auto flex flex-wrap gap-x-2 gap-y-1 font-mono text-[9px] text-faint">
+          <div className="mt-auto flex flex-wrap gap-x-2 gap-y-1 font-mono text-[11px] text-faint">
             {(() => {
               const { place, date } = placeAndDate(record);
               if (!place && !date) return <span>—</span>;

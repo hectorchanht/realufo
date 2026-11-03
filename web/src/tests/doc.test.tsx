@@ -342,7 +342,7 @@ describe("Doc", () => {
     }
   });
 
-  it("puts the TL;DR card and the WTF-meter under the title, above the meta grid", () => {
+  it("reading order: title, TL;DR, facts, original and page text first; the crowd verdict after them", () => {
     useRecordMock.mockReturnValue({
       data: { ...mockDetail, tldr: { bullets: ["a", "b", "c"], oneLiner: "Paperwork wins.", cardUrl: null } },
       isLoading: false,
@@ -350,9 +350,11 @@ describe("Doc", () => {
     renderDoc();
     const html = document.body.innerHTML;
     const h1 = html.indexOf("<h1"), card = html.indexOf('aria-label="TL;DR"'), meter = html.indexOf('aria-label="WTF-meter"'), meta = html.indexOf("Incident");
+    const original = html.indexOf("Open original");
     expect(h1).toBeLessThan(card);
-    expect(card).toBeLessThan(meter);
-    expect(meter).toBeLessThan(meta);
+    expect(card).toBeLessThan(meta);
+    expect(meta).toBeLessThan(original);
+    expect(original).toBeLessThan(meter);
   });
 
   it("no TL;DR: no card", () => {
@@ -435,9 +437,10 @@ describe("Doc", () => {
     expect(opts.presetBody).toContain("cross-referenced with another FOIA release");
   });
 
-  it('clicking "◈ Start a board thread about this file" opens the composer in newThread mode with an empty body and a refLabel', () => {
+  it('"Start the discussion" opens the composer in newThread mode with an empty body and a refLabel', () => {
+    useRecordMock.mockReturnValue({ data: { ...mockDetail, promotedThreads: [] }, isLoading: false });
     renderDoc();
-    fireEvent.click(screen.getByRole("button", { name: /Start a board thread about this file/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Start the discussion/i }));
 
     expect(mockOpenComposer).toHaveBeenCalledTimes(1);
     const [opts] = mockOpenComposer.mock.calls[0];
@@ -449,9 +452,9 @@ describe("Doc", () => {
   });
 
   it("file threads from a video or image land on the footage board", () => {
-    useRecordMock.mockReturnValue({ data: { ...mockDetail, record: { ...mockDetail.record, kind: "video" } }, isLoading: false });
+    useRecordMock.mockReturnValue({ data: { ...mockDetail, promotedThreads: [], record: { ...mockDetail.record, kind: "video" } }, isLoading: false });
     renderDoc();
-    fireEvent.click(screen.getByRole("button", { name: /Start a board thread about this file/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Start the discussion/i }));
     fireEvent.click(screen.getByRole("button", { name: /to a board/i }));
     expect(mockOpenComposer.mock.calls.map(([o]) => o.boardId)).toEqual(["vids", "vids"]);
   });
@@ -480,14 +483,14 @@ describe("Doc", () => {
     expect(opts.boardId).toBe("gov"); // a PDF is a government document
   });
 
-  it("sticky reply bar is an icon pill that opens the composer in comment mode", () => {
+  it("sticky reply bar is the one add-comment field and opens the composer in comment mode", () => {
     renderDoc();
     const bar = document.querySelector('[data-quickreply]');
     expect(bar).toBeTruthy();
     expect(bar!.className).toContain("sticky");
-    const pill = screen.getByRole("button", { name: /Add your read…/i });
-    // icon-only: no visible words on the pill
-    expect(pill.textContent).toBe("");
+    // only one "add your read" control on the page, and it says what it does
+    const pill = screen.getByRole("button", { name: /Add your read on this file/i });
+    expect(bar!.contains(pill)).toBe(true);
     fireEvent.click(pill);
     expect(mockOpenComposer).toHaveBeenCalledWith(expect.objectContaining({ mode: "comment", recordId: "rec1" }));
     expect(mockQuickMutate).not.toHaveBeenCalled();
