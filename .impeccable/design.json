@@ -177,9 +177,9 @@
     ],
     "motion": [
       {
-        "name": "ease-calm",
-        "value": "120-200ms ease-out",
-        "purpose": "Default state transitions (茶盤)."
+        "name": "ease-ui",
+        "value": "150ms ease-out",
+        "purpose": "Default UI state transitions."
       },
       {
         "name": "sheet-slide",
@@ -190,6 +190,16 @@
         "name": "scandrift",
         "value": "6s linear infinite",
         "purpose": "Optional CRT scanline drift; off under reduced motion."
+      },
+      {
+        "name": "blink",
+        "value": "blink keyframes",
+        "purpose": "Terminal cursor / live indicator."
+      },
+      {
+        "name": "marquee",
+        "value": "marquee keyframes",
+        "purpose": "Ticker crawl."
       }
     ],
     "breakpoints": [
@@ -206,7 +216,7 @@
       "refersTo": "button-primary",
       "description": "Signal-filled key for the one main action on a screen.",
       "html": "<button class=\"ds-btn-primary\">Post</button>",
-      "css": ".ds-btn-primary{background:var(--signal,#4df0a6);color:var(--on-signal,#04140c);border:0;border-radius:11px;padding:11px 22px;font:700 12px/1 'JetBrains Mono',monospace;letter-spacing:.5px;transition:transform .15s ease-out}.ds-btn-primary:hover{filter:brightness(1.05)}.ds-btn-primary:focus-visible{outline:2px solid var(--signal,#4df0a6);outline-offset:2px}.ds-btn-primary:active{transform:scale(.96)}"
+      "css": ".ds-btn-primary{background:var(--signal,#4df0a6);color:var(--on-signal,#04140c);border:0;border-radius:11px;padding:12px 24px;font:700 12px/1 'JetBrains Mono',monospace;letter-spacing:.5px;transition:transform .15s ease-out}.ds-btn-primary:hover{filter:brightness(1.05)}.ds-btn-primary:focus-visible{outline:2px solid var(--signal,#4df0a6);outline-offset:2px}.ds-btn-primary:active{transform:scale(.96)}"
     },
     {
       "name": "Outline Pill",
@@ -214,7 +224,7 @@
       "refersTo": "button-outline",
       "description": "Signal-outlined pill for secondary filter actions.",
       "html": "<button class=\"ds-btn-outline\">Apply</button>",
-      "css": ".ds-btn-outline{background:transparent;color:var(--signal,#4df0a6);border:1px solid var(--signal,#4df0a6);border-radius:9999px;padding:3px 8px;font:10px 'JetBrains Mono',monospace;transition:background .15s,color .15s}.ds-btn-outline:hover{background:var(--signal,#4df0a6);color:var(--bg,#07080c)}.ds-btn-outline:focus-visible{outline:2px solid var(--signal,#4df0a6);outline-offset:2px}"
+      "css": ".ds-btn-outline{background:transparent;color:var(--signal,#4df0a6);border:1px solid var(--signal,#4df0a6);border-radius:9999px;padding:4px 8px;font:10px 'JetBrains Mono',monospace;transition:background .15s,color .15s}.ds-btn-outline:hover{background:var(--signal,#4df0a6);color:var(--bg,#07080c)}.ds-btn-outline:focus-visible{outline:2px solid var(--signal,#4df0a6);outline-offset:2px}"
     },
     {
       "name": "Tag Chip",
@@ -222,7 +232,7 @@
       "refersTo": "chip-tag",
       "description": "Shared .tag link chip: agencies, places, hubs, cited-in.",
       "html": "<a class=\"ds-tag\" href=\"#\">FBI</a>",
-      "css": ".ds-tag{display:inline-block;border:1px solid var(--line2,rgba(150,170,205,.24));border-radius:7px;padding:4px 9px;font:10px 'JetBrains Mono',monospace;color:var(--dim,#a1abbd);text-decoration:none;transition:border-color .15s,color .15s}.ds-tag:hover,.ds-tag:focus-visible{border-color:var(--signal,#4df0a6);color:var(--signal,#4df0a6);outline:none}"
+      "css": ".ds-tag{display:inline-block;border:1px solid var(--line2,rgba(150,170,205,.24));border-radius:7px;padding:4px 8px;font:10px 'JetBrains Mono',monospace;color:var(--dim,#a1abbd);text-decoration:none;transition:border-color .15s,color .15s}.ds-tag:hover,.ds-tag:focus-visible{border-color:var(--signal,#4df0a6);color:var(--signal,#4df0a6);outline:none}"
     },
     {
       "name": "Search Field",
@@ -230,7 +240,7 @@
       "refersTo": "input-search",
       "description": "Archive search: mono text in a surface field.",
       "html": "<label class=\"ds-search\"><span aria-hidden=\"true\">⌕</span><input placeholder=\"search 2,140 records — titles, places, words inside the files…\"></label>",
-      "css": ".ds-search{display:flex;align-items:center;gap:9px;background:var(--surface,#111420);border:1px solid var(--line2,rgba(150,170,205,.24));border-radius:12px;padding:10px 13px;color:var(--faint,#7a8598);transition:border-color .15s}.ds-search:focus-within{border-color:var(--signal,#4df0a6)}.ds-search input{flex:1;min-width:0;border:0;background:transparent;outline:none;font:12.5px 'JetBrains Mono',monospace;color:var(--ink,#e7ecf4)}.ds-search input::placeholder{color:var(--faint,#7a8598)}"
+      "css": ".ds-search{display:flex;align-items:center;gap:8px;background:var(--surface,#111420);border:1px solid var(--line2,rgba(150,170,205,.24));border-radius:12px;padding:8px 12px;color:var(--faint,#7a8598);transition:border-color .15s}.ds-search:focus-within{border-color:var(--signal,#4df0a6)}.ds-search input{flex:1;min-width:0;border:0;background:transparent;outline:none;font:12.5px 'JetBrains Mono',monospace;color:var(--ink,#e7ecf4)}.ds-search input::placeholder{color:var(--faint,#7a8598)}"
     },
     {
       "name": "Record Card",
@@ -238,7 +248,7 @@
       "refersTo": "card-record",
       "description": "Archive grid card: media, mono meta, grotesk title, italic one-liner.",
       "html": "<a class=\"ds-card\" href=\"#\"><div class=\"ds-card-media\"><span class=\"ds-card-badge\">VIDEO</span></div><div class=\"ds-card-body\"><div class=\"ds-card-meta\">2004 · NAVY · NIMITZ</div><div class=\"ds-card-src\">DOW-UAP-PR003</div><div class=\"ds-card-title\">FLIR1 Tic Tac video</div><div class=\"ds-card-line\">“White oblong object tracked off San Diego.”</div></div></a>",
-      "css": ".ds-card{display:flex;flex-direction:column;width:220px;overflow:hidden;background:var(--surface,#111420);border:1px solid var(--line,rgba(150,170,205,.12));border-radius:14px;text-decoration:none;transition:border-color .15s,transform .15s}.ds-card:hover{border-color:var(--line2,rgba(150,170,205,.24))}.ds-card:focus-visible{outline:2px solid var(--signal,#4df0a6);outline-offset:2px}.ds-card:active{transform:scale(.985)}.ds-card-media{position:relative;aspect-ratio:4/3;background:var(--bg2,#0b0d13);border-bottom:1px solid var(--line,rgba(150,170,205,.12))}.ds-card-badge{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.85);color:var(--cyan,#46dfff);border-radius:5px;padding:4px 6px;font:700 8.5px 'JetBrains Mono',monospace}.ds-card-body{display:flex;flex-direction:column;gap:7px;padding:10px 11px 12px}.ds-card-meta{font:9px 'JetBrains Mono',monospace;letter-spacing:.4px;color:var(--faint,#7a8598)}.ds-card-src{font:600 9.5px 'JetBrains Mono',monospace;color:var(--cyan,#46dfff)}.ds-card-title{font:600 12.5px/1.3 'Space Grotesk',sans-serif;color:var(--ink,#e7ecf4)}.ds-card-line{font:italic 11.5px/1.35 'Space Grotesk',sans-serif;color:var(--dim,#a1abbd)}"
+      "css": ".ds-card{display:flex;flex-direction:column;width:220px;overflow:hidden;background:var(--surface,#111420);border:1px solid var(--line,rgba(150,170,205,.12));border-radius:14px;text-decoration:none;transition:border-color .15s,transform .15s}.ds-card:hover{border-color:var(--line2,rgba(150,170,205,.24))}.ds-card:focus-visible{outline:2px solid var(--signal,#4df0a6);outline-offset:2px}.ds-card:active{transform:scale(.985)}.ds-card-media{position:relative;aspect-ratio:4/3;background:var(--bg2,#0b0d13);border-bottom:1px solid var(--line,rgba(150,170,205,.12))}.ds-card-badge{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.85);color:var(--cyan,#46dfff);border-radius:5px;padding:4px 6px;font:700 8.5px 'JetBrains Mono',monospace}.ds-card-body{display:flex;flex-direction:column;gap:8px;padding:12px}.ds-card-meta{font:9px 'JetBrains Mono',monospace;letter-spacing:.4px;color:var(--faint,#7a8598)}.ds-card-src{font:600 9.5px 'JetBrains Mono',monospace;color:var(--cyan,#46dfff)}.ds-card-title{font:600 12.5px/1.3 'Space Grotesk',sans-serif;color:var(--ink,#e7ecf4)}.ds-card-line{font:italic 11.5px/1.35 'Space Grotesk',sans-serif;color:var(--dim,#a1abbd)}"
     },
     {
       "name": "Nav Tab",
@@ -246,23 +256,24 @@
       "refersTo": "nav-tab-active",
       "description": "Desktop top-nav icon tab; active shows signal-dim fill and label.",
       "html": "<nav class=\"ds-nav\"><a class=\"ds-tab is-on\" href=\"#\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/></svg>Archive</a><a class=\"ds-tab\" href=\"#\" title=\"Ask\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"9\"/></svg></a></nav>",
-      "css": ".ds-nav{display:flex;gap:4px;background:var(--bg2,#0b0d13);padding:12px 26px;border-bottom:1px solid var(--line,rgba(150,170,205,.12))}.ds-tab{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;min-width:44px;padding:0 12px;border-radius:11px;font:500 13px 'JetBrains Mono',monospace;color:var(--dim,#a1abbd);text-decoration:none;transition:background .15s}.ds-tab:hover{background:var(--surface,#111420)}.ds-tab:focus-visible{outline:2px solid var(--signal,#4df0a6);outline-offset:2px}.ds-tab.is-on{background:var(--signal-dim,rgba(77,240,166,.14));color:var(--signal,#4df0a6)}"
+      "css": ".ds-nav{display:flex;gap:4px;background:var(--bg2,#0b0d13);padding:12px 24px;border-bottom:1px solid var(--line,rgba(150,170,205,.12))}.ds-tab{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;min-width:44px;padding:0 12px;border-radius:11px;font:500 13px 'JetBrains Mono',monospace;color:var(--dim,#a1abbd);text-decoration:none;transition:background .15s}.ds-tab:hover{background:var(--surface,#111420)}.ds-tab:focus-visible{outline:2px solid var(--signal,#4df0a6);outline-offset:2px}.ds-tab.is-on{background:var(--signal-dim,rgba(77,240,166,.14));color:var(--signal,#4df0a6)}"
     }
   ],
   "narrative": {
-    "northStar": "The Declassified Tea Tray",
-    "overview": "\n**Creative North Star: \"The Declassified Tea Tray\"**\n\nA dark records room, lit by one phosphor-green lamp, where every tool sits on a tray in its own place. The room comes from the original CRT prototype: near-black blue surfaces, faint film grain, optional scanlines, a pixel wordmark and monospaced labels that read like stamped file headers. The tray is 茶盤 ちゃばん (`docs/design/chaban-design-style.md`): few controls, each shaped for its use, quiet motion, one accent that means \"on\".\n\nThe two layers have different jobs. The CRT layer is atmosphere and brand texture; it lives in the background, the wordmark and the type of metadata. The tea-tray layer governs everything a hand touches: controls, colour meaning, motion and words. When they disagree on a control, the tea tray wins. The evidence (scans, video frames, page text) is always the brightest, largest thing on screen; chrome steps back.\n\nDensity is high on purpose (archives are lists), but rows breathe: small mono metadata, generous card gaps, nothing decorative that doesn't help someone find or check a file.",
+    "northStar": "The Declassified CRT Terminal",
+    "overview": "CRT is the design style of RealUFO. The site is a records terminal glowing in a dark room: near-black blue glass, phosphor-green signal, film grain over everything, scanlines drifting across the screen, a pixel wordmark, and monospaced labels that read like stamped file headers and teletype readouts. The authoritative source is the original prototype, `realufo-handoff/RealUFO.dc.html`, ported verbatim into `web/src/theme/theme.css`.\n\nThe terminal frames the evidence; it never competes with it. Scans, video frames and page text are the brightest, largest things on screen, and the CRT texture sits behind and over them as a thin atmospheric layer (grain at 5.5% dark / 3% light, scanlines as an overlay blend the visitor can switch off).\n\nDensity is high on purpose (archives are lists), but rows breathe: small mono metadata, generous card gaps, nothing decorative that doesn't help someone find or check a file.",
     "keyCharacteristics": [
-      "Dark first; a warm paper light theme with AA-tuned text colours.",
-      "One accent (`signal`, phosphor green by default; visitor can pick cyan, amber or violet) means on, active, primary.",
-      "Mono for metadata and labels, grotesk for titles and reading, pixel only for the wordmark and page titles.",
-      "Icon-only controls (lucide), words in `aria-label`/`title`.",
-      "Flat surfaces separated by hairline borders, not shadows."
+      "Dark terminal first; a warm paper light theme (a printout of the same terminal) with AA-tuned text colours.",
+      "Phosphor `signal` (green by default; visitor can retune to cyan, amber or violet like a monitor's phosphor) means on, active, primary.",
+      "CRT layers: `.crt-grain` film noise always on, `.crt-scan` scanlines on by default and switchable.",
+      "Mono for metadata and labels, grotesk for titles and reading, Press Start 2P for the wordmark and page titles.",
+      "Terminal motion vocabulary: blink, pulse, marquee ticker, scan drift; all stop under reduced motion.",
+      "Flat glass surfaces separated by hairline borders, not shadows."
     ],
     "rules": [
       {
-        "name": "The One Lamp Rule",
-        "body": "Only `signal` means \"on\". Never use it for decoration, headings or illustration.",
+        "name": "The One Phosphor Rule",
+        "body": "Only `signal` means \"on\". Never use it for decoration, headings or illustration (the UFO half of the wordmark is the one exception).",
         "section": "colors"
       },
       {
@@ -286,24 +297,30 @@
         "section": "typography"
       },
       {
-        "name": "The Flat Tray Rule",
-        "body": "Cards and controls never cast shadows. If something needs to look raised, use a thicker bottom edge; if pressed, sink it 2px and light it.",
+        "name": "The One Scale Rule",
+        "body": "All padding, margin and gap use one 4px-based scale: 2, 4, 8, 12, 16, 24, 32, 48px (Tailwind `0.5 1 2 3 4 6 8 12`). No arbitrary spacing (`p-[11px]`, `gap-[7px]`) and no off-scale half-steps (`1.5`, `2.5`, `3.5`). Legacy odd values from the prototype (3, 5, 7, 9, 10, 11, 13, 14, 18, 22, 26px) snap to the nearest step when touched.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Glass Rule",
+        "body": "Cards and controls never cast shadows; everything sits on the same screen. Pressed = scale down slightly; selected = `signal-dim` fill and `signal` text.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "**Do** read `docs/design/chaban-design-style.md` before touching any visitor-facing control.",
+      "**Do** treat the prototype (`realufo-handoff/RealUFO.dc.html`) and `web/src/theme/theme.css` as the source of the look.",
+      "**Do** keep the CRT layers (grain, scanlines, phosphor signal, pixel wordmark, mono readouts) on every screen, under the content.",
       "**Do** use theme tokens (`bg`…`signal`) via Tailwind names or `var(--…)`; never raw hexes in components.",
       "**Do** keep touch targets ≥36×36px (nav 44px) and icons 18px in 36px controls.",
       "**Do** write metadata in mono and reading text in grotesk (Stamp Rule).",
-      "**Do** keep motion 120–200ms ease-out (sheets may use the 300ms `cubic-bezier(.32,.72,0,1)` slide) and stop it under `prefers-reduced-motion`.",
+      "**Do** use the terminal motion set (blink, pulse, marquee, scandrift, fadeup, sheetin) before inventing new keyframes; UI transitions ~150ms ease-out, sheets the 300ms `cubic-bezier(.32,.72,0,1)` slide; everything stops under `prefers-reduced-motion`.",
       "**Do** run colour pairs through `dataInk()` for data accents so light theme stays ≥4.5:1."
     ],
     "donts": [
-      "**Don't** use `signal` for decoration, headings or illustration (One Lamp Rule).",
-      "**Don't** add shadows, glows or gradients to cards and controls; gradients are allowed only as a legibility scrim over media.",
-      "**Don't** add new grain, scanline or pixel-font surfaces beyond the existing CRT layer; the room is set, the tray is where new work goes.",
-      "**Don't** put visible text on controls; words go in `aria-label`, `title` and help.",
+      "**Don't** use `signal` for decoration, headings or illustration (One Phosphor Rule).",
+      "**Don't** add shadows or gradients to cards and controls; gradients are allowed only as a legibility scrim over media.",
+      "**Don't** let CRT texture sit on top of evidence at a strength that hurts reading a scan or frame; the media viewer is where texture steps back.",
+      "**Don't** set body text or long labels in Press Start 2P (One Pixel Voice Rule).",
       "**Don't** let chrome outshine the evidence: scans and frames stay the largest, brightest element."
     ]
   }

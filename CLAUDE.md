@@ -45,7 +45,7 @@ Gate on the test command's own exit code — `vitest … | grep … && deploy` d
 **Data**: site renders ONLY from D1 (`records` + `assets`; `assets.role` = `full`/`thumb`, `cdn_url` on `https://assets.realufo.org` = R2 bucket `realufo`). A file in R2 without a D1 row does not show. Schema = `db/migrations/*.sql` (applied in order; tests apply them too). `db/seed.ts` `buildSeedSQL` = canonical record→rows transform. Full text: R2 `text/<id>.json` + `record_text` + FTS5 `record_fts`. Ask: Workers AI + Vectorize `realufo-chunks`.
 D1 gotcha: LIKE/GLOB patterns >50 bytes fail ("pattern too complex") → use `instr()`.
 
-**Web** (`web/`): React + Vite + Tailwind SPA; `src/router.tsx`, `src/screens/`, `src/api/` (react-query; send `X-Anon-Id`). Design style 茶盤 ちゃばん — read `docs/design/chaban-design-style.md` before any visitor-facing UI (lucide icons, minimal text, aria-label/title).
+**Web** (`web/`): React + Vite + Tailwind SPA; `src/router.tsx`, `src/screens/`, `src/api/` (react-query; send `X-Anon-Id`). Design style = CRT terminal — read `DESIGN.md` before any visitor-facing UI (tokens in `web/src/theme/theme.css`; lucide icons, minimal text, aria-label/title).
 
 **Crawler** (`crawler/ingest/`, `python -m ingest.<step>`): daily GitHub Action `ingest.yml` (schedule/dispatch only, runs branch code) in order: ingest → thumbs → clips → moments → ocr → fulltext → summaries → visuals → textindex → highlights → tldr → cards → links → indexnow. Every step idempotent, `--dry-run`/`--limit`. Bare `wrangler` in Python steps needs `PATH=<repo>/node_modules/.bin:$PATH` and `set -a; . ./.env; set +a`.
 

@@ -45,7 +45,7 @@ What a neighbouring site (uapbrowser, The Black Vault, forums) can't truthfully 
 ## Brand Commitments
 
 - Name: RealUFO / realufo.org.
-- Existing named design style 茶盤 ちゃばん (`docs/design/chaban-design-style.md`) governs visitor-facing UI; this file does not restate it.
+- Design style is CRT (phosphor terminal from the original prototype `realufo-handoff/RealUFO.dc.html`); visual rules live in `DESIGN.md`.
 - Voice: plain words, sentence case, no jargon, no hype; acronyms written (FBI, UFO), not spelled out.
 
 ## Evidence on Hand

@@ -1,6 +1,6 @@
 ---
 name: RealUFO
-description: Declassified UAP/UFO archive — a dark records room laid out like a tea tray.
+description: Declassified UAP/UFO archive on a phosphor CRT terminal.
 colors:
   bg: "#07080c"
   bg2: "#0b0d13"
@@ -55,16 +55,20 @@ rounded:
   panel: "16px"
   full: "9999px"
 spacing:
+  2xs: "2px"
   xs: "4px"
   sm: "8px"
-  md: "16px"
-  lg: "24px"
+  md: "12px"
+  lg: "16px"
+  xl: "24px"
+  2xl: "32px"
+  3xl: "48px"
 components:
   button-primary:
     backgroundColor: "{colors.signal}"
     textColor: "{colors.on-signal}"
     rounded: "{rounded.key}"
-    padding: "11px 16px"
+    padding: "12px 16px"
     typography: "{typography.label}"
   nav-tab-active:
     backgroundColor: "{colors.signal-dim}"
@@ -78,7 +82,7 @@ components:
   chip-tag:
     textColor: "{colors.dim}"
     rounded: "{rounded.chip}"
-    padding: "4px 9px"
+    padding: "4px 8px"
     typography: "{typography.label}"
   card-record:
     backgroundColor: "{colors.surface}"
@@ -87,31 +91,32 @@ components:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
     rounded: "{rounded.field}"
-    padding: "10px 13px"
+    padding: "8px 12px"
 ---
 
 # Design System: RealUFO
 
 ## Overview
 
-**Creative North Star: "The Declassified Tea Tray"**
+**Creative North Star: "The Declassified CRT Terminal"**
 
-A dark records room, lit by one phosphor-green lamp, where every tool sits on a tray in its own place. The room comes from the original CRT prototype: near-black blue surfaces, faint film grain, optional scanlines, a pixel wordmark and monospaced labels that read like stamped file headers. The tray is 茶盤 ちゃばん (`docs/design/chaban-design-style.md`): few controls, each shaped for its use, quiet motion, one accent that means "on".
+CRT is the design style of RealUFO. The site is a records terminal glowing in a dark room: near-black blue glass, phosphor-green signal, film grain over everything, scanlines drifting across the screen, a pixel wordmark, and monospaced labels that read like stamped file headers and teletype readouts. The authoritative source is the original prototype, `realufo-handoff/RealUFO.dc.html`, ported verbatim into `web/src/theme/theme.css`.
 
-The two layers have different jobs. The CRT layer is atmosphere and brand texture; it lives in the background, the wordmark and the type of metadata. The tea-tray layer governs everything a hand touches: controls, colour meaning, motion and words. When they disagree on a control, the tea tray wins. The evidence (scans, video frames, page text) is always the brightest, largest thing on screen; chrome steps back.
+The terminal frames the evidence; it never competes with it. Scans, video frames and page text are the brightest, largest things on screen, and the CRT texture sits behind and over them as a thin atmospheric layer (grain at 5.5% dark / 3% light, scanlines as an overlay blend the visitor can switch off).
 
 Density is high on purpose (archives are lists), but rows breathe: small mono metadata, generous card gaps, nothing decorative that doesn't help someone find or check a file.
 
 **Key Characteristics:**
-- Dark first; a warm paper light theme with AA-tuned text colours.
-- One accent (`signal`, phosphor green by default; visitor can pick cyan, amber or violet) means on, active, primary.
-- Mono for metadata and labels, grotesk for titles and reading, pixel only for the wordmark and page titles.
-- Icon-only controls (lucide), words in `aria-label`/`title`.
-- Flat surfaces separated by hairline borders, not shadows.
+- Dark terminal first; a warm paper light theme (a printout of the same terminal) with AA-tuned text colours.
+- Phosphor `signal` (green by default; visitor can retune to cyan, amber or violet like a monitor's phosphor) means on, active, primary.
+- CRT layers: `.crt-grain` film noise always on, `.crt-scan` scanlines on by default and switchable.
+- Mono for metadata and labels, grotesk for titles and reading, Press Start 2P for the wordmark and page titles.
+- Terminal motion vocabulary: blink, pulse, marquee ticker, scan drift; all stop under reduced motion.
+- Flat glass surfaces separated by hairline borders, not shadows.
 
 ## Colors
 
-A near-black blue room with cool grey text and one phosphor lamp; data accents tint sources and boards.
+Near-black blue CRT glass with cool grey text and one phosphor glow; data accents tint sources and boards like coloured terminal output.
 
 ### Primary
 - **Phosphor Signal** (`signal`): the "on" colour. Active tab, primary button, focused/selected state, links on hover, the UFO half of the wordmark. Its dim twin (`signal-dim`) fills active tabs and text selection. Visitor-switchable to cyan / amber / violet via `[data-accent]`; in light theme it becomes Deep Moss (`light-signal`).
@@ -132,7 +137,7 @@ Data accents pass through `dataInk()` (`--data-mix`: 100% dark, 45% mixed with i
 - Light theme mirrors each role: Archive Paper (`light-bg`), Index Card (`light-surface`), Carbon Ink (`light-ink`); full set in `web/src/theme/theme.css`.
 
 ### Named Rules
-**The One Lamp Rule.** Only `signal` means "on". Never use it for decoration, headings or illustration.
+**The One Phosphor Rule.** Only `signal` means "on". Never use it for decoration, headings or illustration (the UFO half of the wordmark is the one exception).
 **The Amber Means Trouble Rule.** Amber in UI chrome only ever means "failed, try again".
 **The Two Themes Rule.** Every colour pair must read in both themes; light text colours are AA-tuned (≥4.5:1 on `bg`), never reuse dark-theme hexes in light.
 
@@ -142,7 +147,7 @@ Data accents pass through `dataInk()` (`--data-mix`: 100% dark, 45% mixed with i
 **Body Font:** Space Grotesk (with system-ui, sans-serif)
 **Label/Mono Font:** JetBrains Mono (with monospace)
 
-**Character:** A stamped file header (mono), a readable modern grotesk for what people actually read, and an 8-bit wordmark as the single nod to the CRT room.
+**Character:** Terminal readout and stamped file headers (mono), an 8-bit pixel face for the terminal's own name, and a readable modern grotesk for what people actually read.
 
 ### Hierarchy
 - **Wordmark / page title** (Press Start 2P, 10–11px): `REAL<signal>UFO</signal>` and desktop nav page titles only.
@@ -161,45 +166,45 @@ Sizes are authored in px and converted to rem by PostCSS so the text sizer (50�
 
 - Phone-first app shell. Below 900px: top AppBar, content with 16px side gutter, bottom tab bar (4 icon tabs + More) that hides on scroll and floats over content with a 78% `bg` blur. At ≥900px: a single top nav bar (`bg2`, hairline bottom) with icon tabs, wordmark and page context; no bottom bar.
 - Grids of record cards use dense packing; portrait media cards span two rows.
-- Spacing sits on an 8px grid with 4px half-steps; many legacy values are odd px (7, 9, 11, 13) from the prototype — match neighbours rather than normalising one place.
+- **The One Scale Rule.** All padding, margin and gap use one 4px-based scale: 2, 4, 8, 12, 16, 24, 32, 48px (Tailwind `0.5 1 2 3 4 6 8 12`). No arbitrary spacing (`p-[11px]`, `gap-[7px]`) and no off-scale half-steps (`1.5`, `2.5`, `3.5`). Legacy odd values from the prototype (3, 5, 7, 9, 10, 11, 13, 14, 18, 22, 26px) snap to the nearest step when touched.
 - Reading width caps around 560–680px; dialogs at 360px.
 - Must work from 320px to wide desktop with no horizontal page scroll; horizontal chip rows scroll with hidden scrollbars (`[data-scroll]`).
 
 ## Elevation & Depth
 
-Flat. Depth comes from the neutral ladder (`bg` → `surface` → `surface2` → `elev`) and hairline borders, plus position for pressed state. The one theme shadow (`--shadow`) and a few one-offs belong to floating overlays (sheets, popovers, media viewer) where something genuinely sits above the page.
+Flat glass. The only layers above the content are the CRT overlays: `.crt-grain` (z 1, opacity `--grain`) and `.crt-scan` (z 40, overlay blend, 6s drift), both pointer-events none. Depth comes from the neutral ladder (`bg` → `surface` → `surface2` → `elev`) and hairline borders, plus position for pressed state. The one theme shadow (`--shadow`) and a few one-offs belong to floating overlays (sheets, popovers, media viewer) where something genuinely sits above the page.
 
 ### Shadow Vocabulary
 - **Overlay lift** (`box-shadow: 0 18px 50px -16px rgba(0,0,0,0.72)`; light: `0 18px 50px -18px rgba(50,60,80,0.28)`): sheets, popovers, menus.
 - **Scrim** (`box-shadow: 0 0 0 999px rgba(0,0,0,0.35)`): spotlight behind a focused overlay.
 
 ### Named Rules
-**The Flat Tray Rule.** Cards and controls never cast shadows. If something needs to look raised, use a thicker bottom edge; if pressed, sink it 2px and light it.
+**The Flat Glass Rule.** Cards and controls never cast shadows; everything sits on the same screen. Pressed = scale down slightly; selected = `signal-dim` fill and `signal` text.
 
 ## Shapes
 
-Gently rounded rectangles by family: chips 7px, keys and tabs 11px, fields 12px, cards 14–15px, panels and sheets 16px, round controls fully circular. Following 茶盤: round = turn (dials, knobs), square = press (keys, chips, pads), long = slide (seek bars, faders), triangle = play only. Hairline 1px borders everywhere; a 2px border only on media placeholders. Thumbnails are cropped to fill (`object-cover`) with a slight contrast lift.
+Gently rounded rectangles by family, like the rounded corners of a CRT screen: chips 7px, keys and tabs 11px, fields 12px, cards 14–15px, panels and sheets 16px, dials and avatars fully circular. Hairline 1px borders everywhere; a 2px border only on media placeholders. Thumbnails are cropped to fill (`object-cover`) with a slight contrast lift.
 
 ## Components
 
-Tactile and quiet: like real keys on a desk. Off is flat and calm; on sinks and lights in the accent; nothing bounces.
+Terminal keys: flat at rest, glowing phosphor when on, a small press-scale on tap; nothing bounces.
 
 ### Buttons
 - **Shape:** key radius (11px); compact inline actions use 6–8px.
-- **Primary:** `signal` fill, `on-signal` text, mono bold 12px with 0.5px tracking, ~11px × 16–22px padding.
+- **Primary:** `signal` fill, `on-signal` text, mono bold 12px with 0.5px tracking, 12×16px padding (12×24px for the composer post key).
 - **Press:** scales to .96–.97 on `:active`; disabled = 60% opacity, no pointer.
 - **Outline / ghost:** pill with `signal` border and text, fills on hover (filter "apply"-style actions); plain icon buttons are 36×36 (touch) / 32×32 (mouse) with 18px / 16px lucide icons.
 
 ### Chips
-- **Style:** the shared `.tag` class: 7px radius, `line2` border, mono 10px `dim` text, 4×9px padding.
+- **Style:** the shared `.tag` class: 7px radius, `line2` border, mono 10px `dim` text, 4×8px padding.
 - **State:** hover turns border and text `signal`. Active filter chips use `signal-dim` fill with `signal` text. Image badges on cards are 5px-radius dark (`rgba(0,0,0,.85)`) stamps with mono 8–9px bold text; the redacted badge is `red` with white text.
 
 ### Cards / Containers
 - **Corner Style:** 14px (grid), 15px (feed).
 - **Background:** `surface`, media area on `bg2` with a hairline under it.
-- **Shadow Strategy:** none (Flat Tray Rule).
+- **Shadow Strategy:** none (Flat Glass Rule).
 - **Border:** `line`, `line2` on hover; press scales to .985.
-- **Internal Padding:** ~11–12px; meta line (mono 9px `faint`), source line in its data accent, title, optional italic one-liner in `dim`.
+- **Internal Padding:** 12px; meta line (mono 9px `faint`), source line in its data accent, title, optional italic one-liner in `dim`.
 
 ### Inputs / Fields
 - **Style:** 12px radius, `surface` fill, `line2` border, mono 12.5px `ink` text, `faint` placeholder, leading search glyph.
@@ -209,22 +214,23 @@ Tactile and quiet: like real keys on a desk. Off is flat and calm; on sinks and 
 - **Phone bottom tab:** 4 icon tabs + More, min 44px tall, icons `dim`; active tab is `signal` and shows its mono 9px label, others keep the label `sr-only`. Re-tap scrolls to top.
 - **Desktop top nav:** 44px icon tabs with 11px radius; active = `signal-dim` fill + `signal` icon + visible label; hover = `surface`.
 
-### Video / image tools (signature)
-The 茶盤 control set on record pages: round dials for scrub and zoom (drawn like the Junghans max bill face: hairline ticks, one thin needle, value small in the centre), square keys for frame step and effects, long faders for speed and seek, triangle for play. Active effects sit in an always-visible strip, one tap to turn off.
+### CRT overlay (signature)
+Full-bleed `.crt-grain` and `.crt-scan` layers inside the app shell, theme-aware via `--grain`; scanlines follow the visitor's `scanlines` setting in ThemeProvider. Together with the pixel wordmark `REAL<signal>UFO</signal>` and the marquee ticker, this is the brand.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** read `docs/design/chaban-design-style.md` before touching any visitor-facing control.
+- **Do** treat the prototype (`realufo-handoff/RealUFO.dc.html`) and `web/src/theme/theme.css` as the source of the look.
+- **Do** keep the CRT layers (grain, scanlines, phosphor signal, pixel wordmark, mono readouts) on every screen, under the content.
 - **Do** use theme tokens (`bg`…`signal`) via Tailwind names or `var(--…)`; never raw hexes in components.
 - **Do** keep touch targets ≥36×36px (nav 44px) and icons 18px in 36px controls.
 - **Do** write metadata in mono and reading text in grotesk (Stamp Rule).
-- **Do** keep motion 120–200ms ease-out (sheets may use the 300ms `cubic-bezier(.32,.72,0,1)` slide) and stop it under `prefers-reduced-motion`.
+- **Do** use the terminal motion set (blink, pulse, marquee, scandrift, fadeup, sheetin) before inventing new keyframes; UI transitions ~150ms ease-out, sheets the 300ms `cubic-bezier(.32,.72,0,1)` slide; everything stops under `prefers-reduced-motion`.
 - **Do** run colour pairs through `dataInk()` for data accents so light theme stays ≥4.5:1.
 
 ### Don't:
-- **Don't** use `signal` for decoration, headings or illustration (One Lamp Rule).
-- **Don't** add shadows, glows or gradients to cards and controls; gradients are allowed only as a legibility scrim over media.
-- **Don't** add new grain, scanline or pixel-font surfaces beyond the existing CRT layer; the room is set, the tray is where new work goes.
-- **Don't** put visible text on controls; words go in `aria-label`, `title` and help.
+- **Don't** use `signal` for decoration, headings or illustration (One Phosphor Rule).
+- **Don't** add shadows or gradients to cards and controls; gradients are allowed only as a legibility scrim over media.
+- **Don't** let CRT texture sit on top of evidence at a strength that hurts reading a scan or frame; the media viewer is where texture steps back.
+- **Don't** set body text or long labels in Press Start 2P (One Pixel Voice Rule).
 - **Don't** let chrome outshine the evidence: scans and frames stay the largest, brightest element.
