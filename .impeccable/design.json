@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-03T05:00:33.995670+00:00",
+  "title": "Design System: RealUFO",
+  "extensions": {
+    "colorMeta": {
+      "signal": {
+        "role": "primary",
+        "displayName": "Phosphor Signal",
+        "tonalRamp": [
+          "oklch(15% 0.057 160)",
+          "oklch(25% 0.085 160)",
+          "oklch(35% 0.113 160)",
+          "oklch(45% 0.142 160)",
+          "oklch(55% 0.17 160)",
+          "oklch(68% 0.133 160)",
+          "oklch(82% 0.094 160)",
+          "oklch(95% 0.057 160)"
+        ]
+      },
+      "cyan": {
+        "role": "secondary",
+        "displayName": "Archive Cyan",
+        "tonalRamp": [
+          "oklch(15% 0.047 215)",
+          "oklch(25% 0.07 215)",
+          "oklch(35% 0.093 215)",
+          "oklch(45% 0.117 215)",
+          "oklch(55% 0.14 215)",
+          "oklch(68% 0.11 215)",
+          "oklch(82% 0.077 215)",
+          "oklch(95% 0.047 215)"
+        ]
+      },
+      "amber": {
+        "role": "secondary",
+        "displayName": "Amber Warning",
+        "tonalRamp": [
+          "oklch(15% 0.05 70)",
+          "oklch(25% 0.075 70)",
+          "oklch(35% 0.1 70)",
+          "oklch(45% 0.125 70)",
+          "oklch(55% 0.15 70)",
+          "oklch(68% 0.117 70)",
+          "oklch(82% 0.083 70)",
+          "oklch(95% 0.05 70)"
+        ]
+      },
+      "red": {
+        "role": "secondary",
+        "displayName": "Redaction Red",
+        "tonalRamp": [
+          "oklch(15% 0.063 25)",
+          "oklch(25% 0.095 25)",
+          "oklch(35% 0.127 25)",
+          "oklch(45% 0.158 25)",
+          "oklch(55% 0.19 25)",
+          "oklch(68% 0.149 25)",
+          "oklch(82% 0.105 25)",
+          "oklch(95% 0.063 25)"
+        ]
+      },
+      "violet": {
+        "role": "secondary",
+        "displayName": "Report Violet",
+        "tonalRamp": [
+          "oklch(15% 0.05 290)",
+          "oklch(25% 0.075 290)",
+          "oklch(35% 0.1 290)",
+          "oklch(45% 0.125 290)",
+          "oklch(55% 0.15 290)",
+          "oklch(68% 0.117 290)",
+          "oklch(82% 0.083 290)",
+          "oklch(95% 0.05 290)"
+        ]
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Vault Black",
+        "tonalRamp": [
+          "#07080c",
+          "#0b0d13",
+          "#111420",
+          "#161a28",
+          "#1b2030",
+          "#7a8598",
+          "#a1abbd",
+          "#e7ecf4"
+        ]
+      },
+      "bg2": {
+        "role": "neutral",
+        "displayName": "Shelf Black"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Folder Slate"
+      },
+      "surface2": {
+        "role": "neutral",
+        "displayName": "Raised Slate"
+      },
+      "elev": {
+        "role": "neutral",
+        "displayName": "Lamp Slate"
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline"
+      },
+      "line2": {
+        "role": "neutral",
+        "displayName": "Hairline Strong"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Paper White"
+      },
+      "dim": {
+        "role": "neutral",
+        "displayName": "Dust Grey"
+      },
+      "faint": {
+        "role": "neutral",
+        "displayName": "Ash Grey"
+      },
+      "light-bg": {
+        "role": "neutral",
+        "displayName": "Archive Paper"
+      },
+      "light-surface": {
+        "role": "neutral",
+        "displayName": "Index Card"
+      },
+      "light-ink": {
+        "role": "neutral",
+        "displayName": "Carbon Ink"
+      },
+      "light-signal": {
+        "role": "primary",
+        "displayName": "Deep Moss"
+      }
+    },
+    "typographyMeta": {
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "REALUFO wordmark and desktop page titles only."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card and row titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Summaries, page text, threads."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, chips, tab labels, counts."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "IDs, dates, agency lines."
+      }
+    },
+    "shadows": [
+      {
+        "name": "overlay-lift",
+        "value": "0 18px 50px -16px rgba(0,0,0,0.72)",
+        "purpose": "Sheets, popovers, menus (light: 0 18px 50px -18px rgba(50,60,80,0.28))."
+      },
+      {
+        "name": "scrim",
+        "value": "0 0 0 999px rgba(0,0,0,0.35)",
+        "purpose": "Spotlight behind a focused overlay."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-calm",
+        "value": "120-200ms ease-out",
+        "purpose": "Default state transitions (茶盤)."
+      },
+      {
+        "name": "sheet-slide",
+        "value": "300ms cubic-bezier(.32,.72,0,1)",
+        "purpose": "Bottom tab hide/show, sheets."
+      },
+      {
+        "name": "scandrift",
+        "value": "6s linear infinite",
+        "purpose": "Optional CRT scanline drift; off under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "desktop",
+        "value": "900px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Signal-filled key for the one main action on a screen.",
+      "html": "<button class=\"ds-btn-primary\">Post</button>",
+      "css": ".ds-btn-primary{background:var(--signal,#4df0a6);color:var(--on-signal,#04140c);border:0;border-radius:11px;padding:11px 22px;font:700 12px/1 'JetBrains Mono',monospace;letter-spacing:.5px;transition:transform .15s ease-out}.ds-btn-primary:hover{filter:brightness(1.05)}.ds-btn-primary:focus-visible{outline:2px solid var(--signal,#4df0a6);outline-offset:2px}.ds-btn-primary:active{transform:scale(.96)}"
+    },
+    {
+      "name": "Outline Pill",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Signal-outlined pill for secondary filter actions.",
+      "html": "<button class=\"ds-btn-outline\">Apply</button>",
+      "css": ".ds-btn-outline{background:transparent;color:var(--signal,#4df0a6);border:1px solid var(--signal,#4df0a6);border-radius:9999px;padding:3px 8px;font:10px 'JetBrains Mono',monospace;transition:background .15s,color .15s}.ds-btn-outline:hover{background:var(--signal,#4df0a6);color:var(--bg,#07080c)}.ds-btn-outline:focus-visible{outline:2px solid var(--signal,#4df0a6);outline-offset:2px}"
+    },
+    {
+      "name": "Tag Chip",
+      "kind": "chip",
+      "refersTo": "chip-tag",
+      "description": "Shared .tag link chip: agencies, places, hubs, cited-in.",
+      "html": "<a class=\"ds-tag\" href=\"#\">FBI</a>",
+      "css": ".ds-tag{display:inline-block;border:1px solid var(--line2,rgba(150,170,205,.24));border-radius:7px;padding:4px 9px;font:10px 'JetBrains Mono',monospace;color:var(--dim,#a1abbd);text-decoration:none;transition:border-color .15s,color .15s}.ds-tag:hover,.ds-tag:focus-visible{border-color:var(--signal,#4df0a6);color:var(--signal,#4df0a6);outline:none}"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Archive search: mono text in a surface field.",
+      "html": "<label class=\"ds-search\"><span aria-hidden=\"true\">⌕</span><input placeholder=\"search 2,140 records — titles, places, words inside the files…\"></label>",
+      "css": ".ds-search{display:flex;align-items:center;gap:9px;background:var(--surface,#111420);border:1px solid var(--line2,rgba(150,170,205,.24));border-radius:12px;padding:10px 13px;color:var(--faint,#7a8598);transition:border-color .15s}.ds-search:focus-within{border-color:var(--signal,#4df0a6)}.ds-search input{flex:1;min-width:0;border:0;background:transparent;outline:none;font:12.5px 'JetBrains Mono',monospace;color:var(--ink,#e7ecf4)}.ds-search input::placeholder{color:var(--faint,#7a8598)}"
+    },
+    {
+      "name": "Record Card",
+      "kind": "card",
+      "refersTo": "card-record",
+      "description": "Archive grid card: media, mono meta, grotesk title, italic one-liner.",
+      "html": "<a class=\"ds-card\" href=\"#\"><div class=\"ds-card-media\"><span class=\"ds-card-badge\">VIDEO</span></div><div class=\"ds-card-body\"><div class=\"ds-card-meta\">2004 · NAVY · NIMITZ</div><div class=\"ds-card-src\">DOW-UAP-PR003</div><div class=\"ds-card-title\">FLIR1 Tic Tac video</div><div class=\"ds-card-line\">“White oblong object tracked off San Diego.”</div></div></a>",
+      "css": ".ds-card{display:flex;flex-direction:column;width:220px;overflow:hidden;background:var(--surface,#111420);border:1px solid var(--line,rgba(150,170,205,.12));border-radius:14px;text-decoration:none;transition:border-color .15s,transform .15s}.ds-card:hover{border-color:var(--line2,rgba(150,170,205,.24))}.ds-card:focus-visible{outline:2px solid var(--signal,#4df0a6);outline-offset:2px}.ds-card:active{transform:scale(.985)}.ds-card-media{position:relative;aspect-ratio:4/3;background:var(--bg2,#0b0d13);border-bottom:1px solid var(--line,rgba(150,170,205,.12))}.ds-card-badge{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.85);color:var(--cyan,#46dfff);border-radius:5px;padding:4px 6px;font:700 8.5px 'JetBrains Mono',monospace}.ds-card-body{display:flex;flex-direction:column;gap:7px;padding:10px 11px 12px}.ds-card-meta{font:9px 'JetBrains Mono',monospace;letter-spacing:.4px;color:var(--faint,#7a8598)}.ds-card-src{font:600 9.5px 'JetBrains Mono',monospace;color:var(--cyan,#46dfff)}.ds-card-title{font:600 12.5px/1.3 'Space Grotesk',sans-serif;color:var(--ink,#e7ecf4)}.ds-card-line{font:italic 11.5px/1.35 'Space Grotesk',sans-serif;color:var(--dim,#a1abbd)}"
+    },
+    {
+      "name": "Nav Tab",
+      "kind": "nav",
+      "refersTo": "nav-tab-active",
+      "description": "Desktop top-nav icon tab; active shows signal-dim fill and label.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-tab is-on\" href=\"#\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/></svg>Archive</a><a class=\"ds-tab\" href=\"#\" title=\"Ask\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"9\"/></svg></a></nav>",
+      "css": ".ds-nav{display:flex;gap:4px;background:var(--bg2,#0b0d13);padding:12px 26px;border-bottom:1px solid var(--line,rgba(150,170,205,.12))}.ds-tab{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;min-width:44px;padding:0 12px;border-radius:11px;font:500 13px 'JetBrains Mono',monospace;color:var(--dim,#a1abbd);text-decoration:none;transition:background .15s}.ds-tab:hover{background:var(--surface,#111420)}.ds-tab:focus-visible{outline:2px solid var(--signal,#4df0a6);outline-offset:2px}.ds-tab.is-on{background:var(--signal-dim,rgba(77,240,166,.14));color:var(--signal,#4df0a6)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Declassified Tea Tray",
+    "overview": "\n**Creative North Star: \"The Declassified Tea Tray\"**\n\nA dark records room, lit by one phosphor-green lamp, where every tool sits on a tray in its own place. The room comes from the original CRT prototype: near-black blue surfaces, faint film grain, optional scanlines, a pixel wordmark and monospaced labels that read like stamped file headers. The tray is 茶盤 ちゃばん (`docs/design/chaban-design-style.md`): few controls, each shaped for its use, quiet motion, one accent that means \"on\".\n\nThe two layers have different jobs. The CRT layer is atmosphere and brand texture; it lives in the background, the wordmark and the type of metadata. The tea-tray layer governs everything a hand touches: controls, colour meaning, motion and words. When they disagree on a control, the tea tray wins. The evidence (scans, video frames, page text) is always the brightest, largest thing on screen; chrome steps back.\n\nDensity is high on purpose (archives are lists), but rows breathe: small mono metadata, generous card gaps, nothing decorative that doesn't help someone find or check a file.",
+    "keyCharacteristics": [
+      "Dark first; a warm paper light theme with AA-tuned text colours.",
+      "One accent (`signal`, phosphor green by default; visitor can pick cyan, amber or violet) means on, active, primary.",
+      "Mono for metadata and labels, grotesk for titles and reading, pixel only for the wordmark and page titles.",
+      "Icon-only controls (lucide), words in `aria-label`/`title`.",
+      "Flat surfaces separated by hairline borders, not shadows."
+    ],
+    "rules": [
+      {
+        "name": "The One Lamp Rule",
+        "body": "Only `signal` means \"on\". Never use it for decoration, headings or illustration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Amber Means Trouble Rule",
+        "body": "Amber in UI chrome only ever means \"failed, try again\".",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Themes Rule",
+        "body": "Every colour pair must read in both themes; light text colours are AA-tuned (≥4.5:1 on `bg`), never reuse dark-theme hexes in light.",
+        "section": "colors"
+      },
+      {
+        "name": "The Stamp Rule",
+        "body": "Anything that is metadata (ID, date, agency, count) is mono; anything that is meant to be read is grotesk.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Pixel Voice Rule",
+        "body": "Press Start 2P is for the wordmark and page titles; never for body, buttons or long labels.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Tray Rule",
+        "body": "Cards and controls never cast shadows. If something needs to look raised, use a thicker bottom edge; if pressed, sink it 2px and light it.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** read `docs/design/chaban-design-style.md` before touching any visitor-facing control.",
+      "**Do** use theme tokens (`bg`…`signal`) via Tailwind names or `var(--…)`; never raw hexes in components.",
+      "**Do** keep touch targets ≥36×36px (nav 44px) and icons 18px in 36px controls.",
+      "**Do** write metadata in mono and reading text in grotesk (Stamp Rule).",
+      "**Do** keep motion 120–200ms ease-out (sheets may use the 300ms `cubic-bezier(.32,.72,0,1)` slide) and stop it under `prefers-reduced-motion`.",
+      "**Do** run colour pairs through `dataInk()` for data accents so light theme stays ≥4.5:1."
+    ],
+    "donts": [
+      "**Don't** use `signal` for decoration, headings or illustration (One Lamp Rule).",
+      "**Don't** add shadows, glows or gradients to cards and controls; gradients are allowed only as a legibility scrim over media.",
+      "**Don't** add new grain, scanline or pixel-font surfaces beyond the existing CRT layer; the room is set, the tray is where new work goes.",
+      "**Don't** put visible text on controls; words go in `aria-label`, `title` and help.",
+      "**Don't** let chrome outshine the evidence: scans and frames stay the largest, brightest element."
+    ]
+  }
+}
