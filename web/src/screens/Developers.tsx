@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useSetPageTitle } from "../lib/pageTitle";
 
 const Code = ({ children }: { children: string }) => (
-  <pre className="overflow-x-auto rounded border border-line bg-panel p-3 font-mono text-[12px] leading-[1.5] text-ink">
+  <pre className="overflow-x-auto rounded border border-line bg-surface p-3 font-mono text-[12px] leading-[1.5] text-ink">
     <code>{children}</code>
   </pre>
 );
@@ -43,7 +43,7 @@ function Jumper() {
   }, []);
   const chip = "flex-none rounded-full px-3 py-2 font-mono text-[11px] transition";
   const on = "bg-signal text-bg";
-  const off = "text-dim hover:bg-panel hover:text-ink";
+  const off = "text-dim hover:bg-surface hover:text-ink";
   return (
     <>
       <nav aria-label="Page sections" className="mb-2 flex gap-2 overflow-x-auto pb-2 lg:hidden">
@@ -57,7 +57,7 @@ function Jumper() {
             key={s.id}
             href={`#${s.id}`}
             className={`rounded px-2 py-1 font-mono text-[11px] transition ${
-              active === s.id ? "bg-panel font-semibold text-signal" : "text-faint hover:text-ink"
+              active === s.id ? "bg-surface font-semibold text-signal" : "text-faint hover:text-ink"
             }`}
           >
             {s.label}
@@ -146,7 +146,7 @@ function Playground() {
     }
   };
   return (
-    <div className="max-w-[680px] rounded border border-line bg-panel p-3">
+    <div className="max-w-[680px] rounded border border-line bg-surface p-3">
       <div data-scroll className="mb-2 flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
         <select
           aria-label="Example request"
@@ -179,7 +179,7 @@ function Playground() {
         onKeyDown={(e) => { if (e.key === "Enter") run(); }}
         spellCheck={false}
       />
-      {err && <p className="font-mono text-[12px] text-red-400">Error: {err}</p>}
+      {err && <p className="font-mono text-[12px] text-red">Error: {err}</p>}
       {out && (
         <pre className="max-h-[320px] overflow-auto rounded border border-line bg-canvas p-3 font-mono text-[12px] leading-[1.5] text-ink">
           <code>{out}</code>
@@ -212,8 +212,8 @@ function ApiPulse() {
   }, []);
   if (!text) return null;
   return (
-    <p className="mt-3 inline-flex items-center gap-2 rounded border border-line bg-panel px-3 py-2 font-mono text-[12px] text-dim">
-      <span className="inline-block h-2 w-2 rounded-full bg-green-500" aria-hidden="true" />
+    <p className="mt-3 inline-flex items-center gap-2 rounded border border-line bg-surface px-3 py-2 font-mono text-[12px] text-dim">
+      <span className="inline-block h-2 w-2 rounded-full bg-signal" aria-hidden="true" />
       {text}
     </p>
   );

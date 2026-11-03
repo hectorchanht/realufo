@@ -221,7 +221,7 @@ export function Case() {
                     promoteCommentOpts(c, { title: caseDetail.name, boardId: DEFAULT_CASE_BOARD, caseSlug: slug }),
                   )
                 }
-                className="flex items-center gap-2 font-mono text-[11px] text-amber active:scale-[.93]"
+                className="flex items-center gap-2 font-mono text-[11px] text-cyan active:scale-[.93]"
               >
                 <ArrowUpRight size={13} strokeWidth={2.25} aria-hidden="true" />to a board
               </button>

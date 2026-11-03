@@ -21,6 +21,7 @@ import type { VideoCtl } from "../lib/useVideoTransport";
 import { formatMoment } from "../lib/recordMedia";
 import type { VideoCrop } from "../lib/recordMedia";
 import type { KeyMoment } from "../lib/keyMoments";
+import { scrollBehavior } from "../lib/motion";
 
 function isTyping() {
   const el = document.activeElement as HTMLElement | null;
@@ -96,7 +97,7 @@ export function VideoTransport({
         className="mb-2 w-full accent-[var(--signal)]"
       />
       {/* button row: horizontal scroll (filter-pills pattern) when wider than the viewport */}
-      <div data-scroll className="flex items-center gap-2 overflow-x-auto pb-1">
+      <div data-scroll className="edge-fade flex items-center gap-2 overflow-x-auto pb-1 pr-6">
       {/* transport group: play/pause + timecode + frame stepper as one compact unit */}
       <span role="group" aria-label="Playback" className={`${tgroup} flex-none`}>
         <button type="button" aria-label={playing ? "Pause" : "Play"} title={`${playing ? "Pause" : "Play"} (Space/K)`} onClick={ctl.togglePlay} className={`${chip} ${off}`}>
@@ -310,7 +311,7 @@ export function KeyMoments({
   useEffect(() => {
     const box = list.current;
     const row = box?.children[active] as HTMLElement | undefined;
-    if (box && row && !videoRef.current?.paused) box.scrollTo({ top: row.offsetTop - box.clientHeight / 3, behavior: "smooth" });
+    if (box && row && !videoRef.current?.paused) box.scrollTo({ top: row.offsetTop - box.clientHeight / 3, behavior: scrollBehavior() });
   }, [active, videoRef]);
 
   return (
@@ -335,7 +336,7 @@ export function KeyMoments({
             </span>
           )}
         </div>
-        <span className={`font-mono text-[8.5px] ${isAi ? "text-amber" : "text-faint"}`}>
+        <span className={`font-mono text-[10px] ${isAi ? "text-violet" : "text-faint"}`}>
           {isAi ? "AI-generated from video frames · may be inaccurate" : "from the official video description"}
         </span>
       </div>
@@ -353,7 +354,7 @@ export function KeyMoments({
                 {formatMoment(m.start, true).slice(0, fine ? 7 : 5)}
               </span>
               {isAi && (
-                <span className="flex-none self-start rounded border border-amber px-1 font-mono text-[8px] leading-[14px] text-amber">
+                <span className="flex-none self-start rounded border border-violet px-1 font-mono text-[10px] leading-[14px] text-violet">
                   AI
                 </span>
               )}

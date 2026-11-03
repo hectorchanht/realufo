@@ -37,6 +37,8 @@ import { Skeleton } from "../components/Skeleton";
 const DEFAULT_BOARD = "uap";
 const SEARCH_DEBOUNCE_MS = 250; // same as Archive
 
+const matchCount = (n: number) => (n === 50 ? "50+ threads match" : n === 1 ? "1 thread matches" : `${n} threads match`);
+
 export function Boards() {
   // AppBar title — prototype's `titles.boards` (RealUFO.dc.html:566).
   useSetPageTitle("THE BOARDS", "Anonymous. Mostly.");
@@ -98,12 +100,13 @@ export function Boards() {
         </button>
       </div>
 
-      <div className="mb-4 flex items-center gap-2 rounded-xl border border-line2 bg-surface px-3 py-2">
+      <div className="mb-4 flex items-center gap-2 rounded-xl border border-line2 bg-surface px-3 py-2 focus-within:border-signal">
         <span aria-hidden="true" className="text-[15px] text-faint">
           ⌕
         </span>
         <input
           type="search"
+          aria-label="Search threads"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="search all threads — titles, posts, replies…"
@@ -111,13 +114,17 @@ export function Boards() {
         />
       </div>
 
+      {/* persistent live region: the visible count below mounts and unmounts */}
+      <p className="sr-only" aria-live="polite">
+        {searching && found ? (found.threads.length ? matchCount(found.threads.length) : "no threads match") : ""}
+      </p>
       {searching ? (
         searchLoading && !found ? (
           <Skeleton rows={3} h={136} />
         ) : found?.threads.length ? (
           <div className="flex flex-col gap-2">
             <div className="font-mono text-[10px] text-faint">
-              {found.threads.length === 50 ? "50+ threads match" : found.threads.length === 1 ? "1 thread matches" : `${found.threads.length} threads match`}
+              {matchCount(found.threads.length)}
             </div>
             {found.threads.map((t) => (
               <ThreadRow key={t.id} thread={t} />

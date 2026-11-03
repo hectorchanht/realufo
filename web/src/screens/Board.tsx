@@ -84,10 +84,7 @@ export function Board() {
   return (
     <div data-screen="board" className="animate-[fadeup_.3s_ease_both]">
       {/* board header card — prototype lines 235-241 */}
-      <div
-        className="mb-4 rounded-2xl border border-line px-4 py-4"
-        style={{ background: "linear-gradient(135deg, var(--surface), transparent)" }}
-      >
+      <div className="mb-4 rounded-2xl border border-line bg-surface px-4 py-4">
         <div className="flex items-center gap-3">
           <div
             className="grid h-10 w-10 flex-none place-items-center rounded-[11px] font-pixel text-[9px]"

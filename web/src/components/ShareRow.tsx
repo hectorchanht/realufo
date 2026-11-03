@@ -70,7 +70,7 @@ export function ShareRow({ url, title }: { url: string; title: string }) {
   ];
 
   const btn =
-    "grid h-11 w-11 shrink-0 place-items-center rounded-full text-dim transition hover:bg-panel";
+    "grid h-11 w-11 shrink-0 place-items-center rounded-full text-dim transition hover:bg-surface";
 
   return (
     <div aria-label={t("share.rowLabel")} className="flex items-center gap-0.5" role="group">

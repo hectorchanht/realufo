@@ -5,6 +5,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useHubs } from "../api/queries";
 import { docTitleParts } from "../lib/docTitle";
+import { scrollBehavior } from "../lib/motion";
 import { absUrl, type ShareResult } from "../lib/shareLink";
 import type { AskSource, HubKind, HubLinks } from "../api/types";
 
@@ -69,7 +70,7 @@ export function AskCard({ question, data, footer }: { question: string; data: { 
   const hubLabels = new Map((hubsData?.hubs ?? []).map((h) => [`${h.kind}/${h.slug}`, h.label]));
 
   function cite(n: number) {
-    document.getElementById(`ask-src-${n}`)?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+    document.getElementById(`ask-src-${n}`)?.scrollIntoView?.({ block: "nearest", behavior: scrollBehavior() });
     setFlash(n);
     setTimeout(() => setFlash((cur) => (cur === n ? null : cur)), 1200);
   }
@@ -105,7 +106,8 @@ export function AskCard({ question, data, footer }: { question: string; data: { 
               {/* source number sits on the top border, legend-style, so it takes no row space */}
               <span className="absolute -top-1.5 left-2 bg-surface px-1 font-mono text-[9px] leading-none text-faint">[{s.n}]</span>
               {s.thumb && (
-                <Link to={`/doc/${s.record_id}`} className="flex-none">
+                // duplicate of the title link next to it: hidden from AT and the tab order
+                <Link to={`/doc/${s.record_id}`} aria-hidden="true" tabIndex={-1} className="flex-none">
                   <img src={s.thumb} alt="" loading="lazy" className="h-8 w-8 rounded object-cover" />
                 </Link>
               )}

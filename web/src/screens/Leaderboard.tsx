@@ -42,7 +42,7 @@ export default function Leaderboard() {
             role="tab"
             aria-selected={win === k}
             onClick={() => setWin(k)}
-            className={`rounded-lg border px-3 py-1 font-mono text-[11px] outline-none transition ${
+            className={`rounded-lg border px-3 py-1 font-mono text-[11px] transition ${
               win === k ? "text-ink" : "hover:text-ink"
             }`}
             style={{
@@ -75,7 +75,7 @@ export default function Leaderboard() {
             <div key={record.id} className="relative">
               <span
                 className="absolute -left-1 -top-1 z-10 rounded-md px-2 py-0.5 font-mono text-[10px] font-bold"
-                style={{ background: "var(--signal)", color: "#000" }}
+                style={{ background: "var(--signal)", color: "var(--on-signal)" }}
                 aria-label={`rank ${i + 1}`}
               >
                 #{i + 1}

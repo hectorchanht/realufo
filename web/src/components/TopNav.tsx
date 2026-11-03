@@ -12,11 +12,12 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Saucer } from "./Saucer";
 import { MoreMenu } from "./MoreMenu";
-import { retapTab, tabHref, useNavItems, type NavTab } from "./navItems";
+import { ownsH1, retapTab, tabHref, useNavItems, type NavTab } from "./navItems";
 import { ThemeToggle } from "./ThemeToggle";
 import { usePageTitle, DEFAULT_PAGE_TITLE } from "../lib/pageTitle";
 
-const OWN_H1 = /^\/(doc|case|browse|release|agency|location|decade)(\/|$)/;
+// Pages that open with a full title of their own: the bar skips its context block.
+const OWN_TITLE = /^\/(doc|case|browse|release|agency|location|decade)(\/|$)/;
 
 export interface TopNavProps {
   activeTab: NavTab;
@@ -36,7 +37,10 @@ export function TopNav({ activeTab, hideProgress = 0 }: TopNavProps) {
   // Suppress the contextual block on the root/Feed tab — its title is
   // "REALUFO", which the brand wordmark already shows (avoids a dupe) — and on
   // pages that open with their own full <h1> (doc, case, browse, hubs).
-  const showContext = title !== DEFAULT_PAGE_TITLE.title && !OWN_H1.test(pathname);
+  const showContext = title !== DEFAULT_PAGE_TITLE.title && !OWN_TITLE.test(pathname);
+  // The page title is the h1 unless the screen renders its own (shown or sr-only).
+  const h1 = !ownsH1(pathname);
+  const Title = h1 ? "h1" : "div";
 
   // The bar is in flow (not an overlay like BottomTab), so hiding it must
   // also collapse its height: measure it and pull <main> up by the same
@@ -116,11 +120,13 @@ export function TopNav({ activeTab, hideProgress = 0 }: TopNavProps) {
 
       {/* Contextual page title/sub — the "bottom bar" description, folded in. */}
       <div className={"min-w-0 flex-1 leading-[1.15]" + (showContext ? " border-l border-line pl-4" : "")}>
-        {showContext && (
+        {showContext ? (
           <>
-            <div className="truncate font-pixel text-[10px] text-ink">{title}</div>
+            <Title className="truncate font-pixel text-[10px] text-ink">{title}</Title>
             <div className="mt-1 truncate font-mono text-[9.5px] tracking-[.5px] text-faint">{sub}</div>
           </>
+        ) : (
+          h1 && <h1 className="sr-only">{title}</h1>
         )}
       </div>
 

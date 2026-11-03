@@ -49,6 +49,7 @@ import { docPageTitle, docTitleParts } from "../lib/docTitle";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { Skeleton } from "../components/Skeleton";
 import { dataInk } from "../lib/dataInk";
+import { scrollBehavior } from "../lib/motion";
 
 // Matches Doc.tsx's own local STANCE_COLOR/stanceColor (FRONTEND-CONTEXT.md
 // "Stance colors") — kept duplicated for the same reason Doc.tsx gives for
@@ -97,7 +98,7 @@ const BODY_TOKEN_RE = new RegExp(
 );
 
 function scrollToPost(no: number | string) {
-  document.getElementById(`p${no}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  document.getElementById(`p${no}`)?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
 }
 
 function linkifyBody(body: string, nos: Set<number>): ReactNode[] {
@@ -349,7 +350,7 @@ export function Thread() {
         <span className="font-mono text-[9px] text-faint">No.{thread.no}</span>
       </div>
       <div className="flex items-start gap-2">
-        <h2 className="mb-4 min-w-0 flex-1 text-[18px] font-bold leading-[1.28] text-ink">{thread.title}</h2>
+        <h1 className="mb-4 min-w-0 flex-1 text-[18px] font-bold leading-[1.28] text-ink">{thread.title}</h1>
         <FollowBell kind="thread" id={id} />
       </div>
 
@@ -412,9 +413,10 @@ export function Thread() {
       {/* sticky bottom reply bar — prototype lines 284-286. Sits above the
           mobile BottomTab overlay via --bnav-y (AppShell; 0 when it's hidden). */}
       <div
-        className="sticky left-0 right-0 z-20 -mx-4 mt-4 border-t border-line px-4 py-2 transition-[bottom] duration-300 ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none"
+        className="sticky bottom-0 left-0 right-0 z-20 -mx-4 mt-4 border-t border-line px-4 py-2 transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none"
         style={{
-          bottom: "var(--bnav-y, 0px)",
+          // transform, not `bottom`: rides above the tab without a reflow per scroll frame
+          transform: "translateY(calc(-1 * var(--bnav-y, 0px)))",
           background: "color-mix(in srgb, var(--bg) 82%, transparent)",
           backdropFilter: "blur(18px)",
           WebkitBackdropFilter: "blur(18px)",

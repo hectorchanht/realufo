@@ -11,6 +11,10 @@ import '@fontsource/space-grotesk/500.css'
 import '@fontsource/space-grotesk/600.css'
 import '@fontsource/space-grotesk/700.css'
 import './theme/theme.css'
+// Same hashed files the @font-face rules above point at (Vite dedupes the asset),
+// preloaded so the body + label faces don't wait for first layout to start loading.
+import groteskUrl from '@fontsource/space-grotesk/files/space-grotesk-latin-400-normal.woff2?url'
+import monoUrl from '@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff2?url'
 import './index.css'
 import { ThemeProvider } from './theme/ThemeProvider'
 import { LangProvider } from './lib/lang'
@@ -19,6 +23,11 @@ import { startOutbox } from './lib/outbox'
 import { sendRaw } from './api/client'
 import { carryOverFollows } from './lib/identity'
 import { guardTranslatedDom } from './lib/translateGuard'
+
+for (const href of [groteskUrl, monoUrl]) {
+  const l = Object.assign(document.createElement('link'), { rel: 'preload', as: 'font', type: 'font/woff2', href, crossOrigin: 'anonymous' })
+  document.head.appendChild(l)
+}
 
 // Before the first render: browser translate must not crash React (lib/translateGuard.ts).
 guardTranslatedDom()

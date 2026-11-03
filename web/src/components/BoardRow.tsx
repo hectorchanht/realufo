@@ -32,7 +32,7 @@ export function BoardRow({ board }: BoardRowProps) {
       <div
         aria-hidden="true"
         className="grid h-11 w-11 flex-none place-items-center rounded-xl font-pixel text-[15px] uppercase"
-        style={{ background: board.accent, color: "#04140c", boxShadow: `0 0 22px -6px ${board.accent}` }}
+        style={{ background: board.accent, color: "#04140c" }}
       >
         {slugPath(board.slug).charAt(0)}
       </div>

@@ -221,7 +221,8 @@ describe("Boards global thread search", () => {
   it("shows an empty state when nothing matches", () => {
     useSearchThreadsMock.mockReturnValue({ data: { threads: [] }, isLoading: false });
     renderBoards("/boards?q=nothinghere");
-    expect(screen.getByText(/no threads match/i)).toBeInTheDocument();
+    // visible message + the sr-only live region announcing it
+    expect(screen.getAllByText(/no threads match/i)).toHaveLength(2);
   });
 
   it("debounces typing into the search query", async () => {

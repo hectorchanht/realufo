@@ -174,9 +174,9 @@ describe("DocCard", () => {
     expect(screen.getByText("Go Fast UAP")).toBeInTheDocument();
   });
 
-  it("falls back to var(--signal) for the badge color when bootstrap hasn't loaded", () => {
+  it("falls back to the dark phosphor hex for the badge (always on a black chip) when bootstrap hasn't loaded", () => {
     render(withRouter(<DocCard record={feedRecord} variant="feed" />));
-    expect(screen.getByText("CIA")).toHaveStyle({ color: "var(--signal)" });
+    expect(screen.getByText("CIA")).toHaveStyle({ color: "#4df0a6" });
   });
 
   it("resolves the agency badge color from the matching bootstrap archive's accent", () => {

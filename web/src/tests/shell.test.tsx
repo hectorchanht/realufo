@@ -171,7 +171,7 @@ describe("AppShell", () => {
     renderAppAt("/");
     await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
 
-    const main = document.querySelector<HTMLElement>("main[data-scroll]")!;
+    const main = document.querySelector<HTMLElement>("[data-scroll]")!;
     // jsdom does no layout — fake a 2000px document in an 800px viewport.
     Object.defineProperty(main, "scrollHeight", { configurable: true, value: 2000 });
     Object.defineProperty(main, "clientHeight", { configurable: true, value: 800 });
@@ -200,7 +200,7 @@ describe("AppShell", () => {
     renderAppAt("/");
     await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
 
-    const main = document.querySelector<HTMLElement>("main[data-scroll]")!;
+    const main = document.querySelector<HTMLElement>("[data-scroll]")!;
     Object.defineProperty(main, "scrollHeight", { configurable: true, value: 2000 });
     Object.defineProperty(main, "clientHeight", { configurable: true, value: 800 });
     const scrollTo = (y: number) =>
@@ -231,7 +231,7 @@ describe("AppShell", () => {
     await screen.findByText("◆ Hot right now", { selector: "[data-screen='feed'] *" });
     const topnav = document.querySelector<HTMLElement>("[data-topnav]")!;
 
-    const main = document.querySelector<HTMLElement>("main[data-scroll]")!;
+    const main = document.querySelector<HTMLElement>("[data-scroll]")!;
     Object.defineProperty(main, "scrollHeight", { configurable: true, value: 4000 });
     Object.defineProperty(main, "clientHeight", { configurable: true, value: 900 });
     const scrollTo = (y: number) =>
@@ -255,7 +255,7 @@ describe("AppShell", () => {
   it("mobile: tabs reopen their last URL and each URL gets its scroll back", async () => {
     renderAppAt("/archive?type=video");
     await waitFor(() => expect(document.querySelector("[data-screen='archive']")).toBeInTheDocument());
-    const main = document.querySelector<HTMLElement>("main[data-scroll]")!;
+    const main = document.querySelector<HTMLElement>("[data-scroll]")!;
     Object.defineProperty(main, "scrollHeight", { configurable: true, value: 5000 });
     Object.defineProperty(main, "clientHeight", { configurable: true, value: 800 });
     act(() => {
@@ -277,7 +277,7 @@ describe("AppShell", () => {
   it("mobile: re-tapping the active tab scrolls its root list to the top and forgets the old spot", async () => {
     renderAppAt("/archive");
     await waitFor(() => expect(document.querySelector("[data-screen='archive']")).toBeInTheDocument());
-    const main = document.querySelector<HTMLElement>("main[data-scroll]")!;
+    const main = document.querySelector<HTMLElement>("[data-scroll]")!;
     Object.defineProperty(main, "scrollHeight", { configurable: true, value: 5000 });
     Object.defineProperty(main, "clientHeight", { configurable: true, value: 800 });
     main.scrollTo = ((o: ScrollToOptions) => (main.scrollTop = o.top ?? 0)) as typeof main.scrollTo;

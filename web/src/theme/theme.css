@@ -117,13 +117,29 @@ button {
   background: var(--signal-dim);
   color: var(--ink);
 }
-[data-scroll] {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+/* Keyboard focus: one phosphor ring everywhere. Fields that drop the outline
+   (outline-none) show focus as a signal border instead (DESIGN.md Inputs). */
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
 }
-[data-scroll]::-webkit-scrollbar {
-  display: none;
-  width: 0;
+/* Swipe rows hide their scrollbar on touch screens only; mouse users keep it
+   (and the page's own scrollbar on <main data-scroll>). */
+@media (pointer: coarse) {
+  [data-scroll] {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  [data-scroll]::-webkit-scrollbar {
+    display: none;
+    width: 0;
+  }
+}
+/* A sideways-scrolling row fades at its right edge so cut-off controls read as
+   "more this way". Pair with pr-6: at the scroll end the last item clears the fade. */
+.edge-fade {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
 }
 
 @keyframes blink {
@@ -136,32 +152,12 @@ button {
     opacity: 0.15;
   }
 }
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 var(--signal-dim);
-  }
-  70% {
-    box-shadow: 0 0 0 9px transparent;
-  }
-  100% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-}
 @keyframes marquee {
   0% {
     transform: translateX(0);
   }
   100% {
     transform: translateX(-50%);
-  }
-}
-/* transform, not background-position: composited, no full-screen repaint per frame */
-@keyframes scandrift {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(4px);
   }
 }
 @keyframes fadeup {
@@ -225,9 +221,10 @@ button {
  *
  *   .crt-grain -> line 69: pointer-events-none film-grain layer (SVG fractal
  *                 noise turbulence), opacity driven by --grain (theme-aware).
- *   .crt-scan  -> line 70: pointer-events-none scanline layer, animated via
- *                 the scandrift keyframes (respects prefers-reduced-motion
- *                 above). The prototype wires this to a `scanlines` toggle
+ *   .crt-scan  -> line 70: pointer-events-none scanline layer. Static: the
+ *                 prototype's 4px `scandrift` loop kept a full-screen
+ *                 overlay-blended layer recompositing every frame for a
+ *                 barely visible move, so it was dropped. The prototype wires this to a `scanlines` toggle
  *                 (sc-if) rather than a CSS media query — AppShell should
  *                 conditionally render/omit this class based on
  *                 ThemeProvider's `scanlines` state.
@@ -245,7 +242,7 @@ button {
 }
 .crt-scan {
   position: absolute;
-  inset: -4px 0 0; /* 4px of overdraw so the drift never uncovers the top edge */
+  inset: 0;
   pointer-events: none;
   z-index: 40;
   mix-blend-mode: overlay;
@@ -256,5 +253,4 @@ button {
     rgba(255, 255, 255, 0.05) 3px,
     transparent 4px
   );
-  animation: scandrift 6s linear infinite;
 }

@@ -50,7 +50,7 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
       className={
         sheet
           ? "fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-line bg-bg2 px-3 pt-2 pb-[max(12px,env(safe-area-inset-bottom))] animate-[fadeup_.2s_ease_both]"
-          : "absolute right-0 top-full z-50 mt-2 w-52 rounded-xl border border-line bg-bg2 p-2 shadow-lg"
+          : "absolute right-0 top-full z-50 mt-2 w-52 rounded-xl border border-line bg-bg2 p-2 shadow-[var(--shadow)]"
       }
     >
       {sheet && <div aria-hidden="true" className="mx-auto mb-2 h-1 w-9 rounded-full bg-line2" />}

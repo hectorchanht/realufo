@@ -102,7 +102,7 @@ components:
 
 **Creative North Star: "The Declassified CRT Terminal"**
 
-CRT is the design style of RealUFO. The site is a records terminal glowing in a dark room: near-black blue glass, phosphor-green signal, film grain over everything, scanlines drifting across the screen, a pixel wordmark, and monospaced labels that read like stamped file headers and teletype readouts. The authoritative source is the original prototype, `realufo-handoff/RealUFO.dc.html`, ported verbatim into `web/src/theme/theme.css`.
+CRT is the design style of RealUFO. The site is a records terminal glowing in a dark room: near-black blue glass, phosphor-green signal, film grain over everything, scanlines across the screen, a pixel wordmark, and monospaced labels that read like stamped file headers and teletype readouts. The authoritative source is the original prototype, `realufo-handoff/RealUFO.dc.html`, ported verbatim into `web/src/theme/theme.css`.
 
 The terminal frames the evidence; it never competes with it. Scans, video frames and page text are the brightest, largest things on screen, and the CRT texture sits behind and over them as a thin atmospheric layer (grain at 5.5% dark / 3% light, scanlines as an overlay blend the visitor can switch off).
 
@@ -113,7 +113,7 @@ Density is high on purpose (archives are lists), but rows breathe: small mono me
 - Phosphor `signal` (green by default; visitor can retune to cyan, amber or violet like a monitor's phosphor) means on, active, primary.
 - CRT layers: `.crt-grain` film noise always on, `.crt-scan` scanlines on by default and switchable.
 - Mono for metadata and labels, grotesk for titles and reading, Press Start 2P for the wordmark and page titles.
-- Terminal motion vocabulary: blink, pulse, marquee ticker, scan drift; all stop under reduced motion.
+- Terminal motion vocabulary: blink, Tailwind pulse, marquee ticker; scanlines are static (a drifting full-screen blend layer cost frames on phones); all motion stops under reduced motion.
 - Flat glass surfaces separated by hairline borders, not shadows.
 
 ## Colors
@@ -174,7 +174,7 @@ Sizes are authored in px and converted to rem by PostCSS so the text sizer (50�
 
 ## Elevation & Depth
 
-Flat glass. The only layers above the content are the CRT overlays: `.crt-grain` (z 1, opacity `--grain`) and `.crt-scan` (z 40, overlay blend, 6s drift), both pointer-events none. Depth comes from the neutral ladder (`bg` → `surface` → `surface2` → `elev`) and hairline borders, plus position for pressed state. The one theme shadow (`--shadow`) and a few one-offs belong to floating overlays (sheets, popovers, media viewer) where something genuinely sits above the page.
+Flat glass. The only layers above the content are the CRT overlays: `.crt-grain` (z 1, opacity `--grain`) and `.crt-scan` (z 40, overlay blend, static), both pointer-events none. Depth comes from the neutral ladder (`bg` → `surface` → `surface2` → `elev`) and hairline borders, plus position for pressed state. The one theme shadow (`--shadow`) and a few one-offs belong to floating overlays (sheets, popovers, media viewer) where something genuinely sits above the page.
 
 ### Shadow Vocabulary
 - **Overlay lift** (`box-shadow: 0 18px 50px -16px rgba(0,0,0,0.72)`; light: `0 18px 50px -18px rgba(50,60,80,0.28)`): sheets, popovers, menus.
@@ -227,7 +227,7 @@ Full-bleed `.crt-grain` and `.crt-scan` layers inside the app shell, theme-aware
 - **Do** use theme tokens (`bg`…`signal`) via Tailwind names or `var(--…)`; never raw hexes in components.
 - **Do** keep touch targets ≥36×36px (nav 44px) and icons 18px in 36px controls.
 - **Do** write metadata in mono and reading text in grotesk (Stamp Rule).
-- **Do** use the terminal motion set (blink, pulse, marquee, scandrift, fadeup, sheetin) before inventing new keyframes; UI transitions ~150ms ease-out, sheets the 300ms `cubic-bezier(.32,.72,0,1)` slide; everything stops under `prefers-reduced-motion`.
+- **Do** use the terminal motion set (blink, pulse, marquee, fadeup, sheetin) before inventing new keyframes; UI transitions ~150ms ease-out, sheets the 300ms `cubic-bezier(.32,.72,0,1)` slide; everything stops under `prefers-reduced-motion`.
 - **Do** run colour pairs through `dataInk()` for data accents so light theme stays ≥4.5:1.
 
 ### Don't:

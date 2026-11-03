@@ -75,6 +75,7 @@ import { Skeleton } from "../components/Skeleton";
 import { dataInk } from "../lib/dataInk";
 import { plural } from "../lib/plural";
 import { useLang } from "../lib/lang";
+import { scrollBehavior } from "../lib/motion";
 
 // prototype line 522: `if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4)`.
 const SWIPE_MIN_DX = 55;
@@ -151,7 +152,7 @@ interface MetaCellProps {
 // facts live in the site footer ("This file" column), not inline.
 // Media panel cap: leaves room for the title above and the video tools bar below,
 // which otherwise sat on the viewport's bottom edge like a detached mini-player.
-const PANEL_MAX_H = "min(78vh, calc(100dvh - 280px))";
+const PANEL_MAX_H = "min(78vh, max(220px, calc(100dvh - 280px)))"; // floor: landscape phones
 // PDFs render in the browser's native viewer inside the panel <iframe> — a huge
 // scanned PDF rasterized in-tab can OOM the tab ("Aw, snap"). The byte size is
 // probed with a 1-byte range request first; anything over this never auto-loads
@@ -445,9 +446,11 @@ export function Doc() {
   // or while typing in a field.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (composer || viewer) return;
+      if (composer || viewer || e.defaultPrevented) return;
       const el = document.activeElement as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      // a focused control owns its keys (slider arrows, open popover's Esc, …)
+      if (el?.closest?.("[role=slider], video, audio, select, [role=dialog], [aria-expanded=true]")) return;
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
         e.preventDefault();
         const href = e.key === "ArrowRight" ? nextHref : prevHref;
@@ -586,7 +589,7 @@ export function Doc() {
     const v = videoRef.current;
     if (!v) return;
     v.currentTime = t;
-    panel?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    panel?.scrollIntoView?.({ behavior: scrollBehavior(), block: "center" });
   }
 
   function handleAddComment() {
@@ -650,7 +653,7 @@ export function Doc() {
           onClick={() => navigate(`/compare?a=${encodeURIComponent(id)}`)}
           aria-label="Compare with another record"
           title="Compare with another record"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-dim transition hover:bg-panel hover:text-ink"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-dim transition hover:bg-surface hover:text-ink"
         >
           <GitCompare size={20} />
         </button>
@@ -710,6 +713,8 @@ export function Doc() {
             ref={imgRef}
             src={fullUrl}
             alt={title}
+            fetchPriority="high"
+            decoding="async"
             onLoad={(e) => setPic({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
             draggable={false} // a native image drag would cancel the pan mid-way
             className="h-full w-full object-contain"
@@ -853,7 +858,7 @@ export function Doc() {
         <span
           data-lens-hide
           className={`absolute left-[10px] top-[10px] rounded-md px-2 py-1 font-mono text-[9px] font-bold ${fade}`}
-          style={{ background: "rgba(0,0,0,.85)", color: accent }}
+          style={{ background: "rgba(0,0,0,.85)", color: archive?.accent ?? "#4df0a6" /* chip is always dark; --signal goes moss in light */ }}
         >
           {badge}
         </span>
@@ -981,7 +986,7 @@ export function Doc() {
       <TldrCard
         tldr={detail.tldr}
         title={title}
-        onBoring={() => summaryRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" })}
+        onBoring={() => summaryRef.current?.scrollIntoView?.({ behavior: scrollBehavior(), block: "start" })}
       />
 
       <VerdictBar recordId={record.id} state={detail.verdicts} onVoted={() => setShowVoteNudge(true)} />
@@ -1157,7 +1162,7 @@ export function Doc() {
             to={`/thread/${promotedThreads[0].id}`}
             aria-label={t("doc.discussThread")}
             title={t("doc.discussThread")}
-            className="grid h-10 w-10 place-items-center rounded-full text-cyan transition hover:bg-panel active:scale-[.97]"
+            className="grid h-10 w-10 place-items-center rounded-full text-cyan transition hover:bg-surface active:scale-[.97]"
           >
             <MessagesSquare size={19} aria-hidden="true" />
           </Link>
@@ -1167,7 +1172,7 @@ export function Doc() {
             onClick={handleFileThread}
             aria-label={t("doc.startDiscussion")}
             title={t("doc.startDiscussion")}
-            className="grid h-10 w-10 place-items-center rounded-full text-cyan transition hover:bg-panel active:scale-[.97]"
+            className="grid h-10 w-10 place-items-center rounded-full text-cyan transition hover:bg-surface active:scale-[.97]"
           >
             <MessageSquarePlus size={19} aria-hidden="true" />
           </button>
@@ -1231,7 +1236,7 @@ export function Doc() {
               <button
                 type="button"
                 onClick={() => handlePromote(c)}
-                className="flex items-center gap-1 font-mono text-[11px] text-amber active:scale-[.93]"
+                className="flex items-center gap-1 font-mono text-[11px] text-cyan active:scale-[.93]"
               >
                 <CornerUpRight size={13} strokeWidth={2.25} aria-hidden="true" />
                 to a board
@@ -1274,9 +1279,10 @@ export function Doc() {
           "Add your read on this file…" button and the discussion header. */}
       <div
         data-quickreply
-        className="sticky left-0 right-0 z-20 -mx-4 mt-4 border-t border-line px-4 py-2 transition-[bottom] duration-300 ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none"
+        className="sticky bottom-0 left-0 right-0 z-20 -mx-4 mt-4 border-t border-line px-4 py-2 transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none"
         style={{
-          bottom: "var(--bnav-y, 0px)",
+          // transform, not `bottom`: rides above the tab without a reflow per scroll frame
+          transform: "translateY(calc(-1 * var(--bnav-y, 0px)))",
           background: "color-mix(in srgb, var(--bg) 82%, transparent)",
           backdropFilter: "blur(18px)",
           WebkitBackdropFilter: "blur(18px)",

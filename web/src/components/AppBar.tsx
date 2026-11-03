@@ -20,6 +20,8 @@ export interface AppBarProps {
   /** Scroll-linked hide progress 0..1 (AppShell's useHideOnScroll): the bar
    *  slides up in proportion to scroll travel. Keyboard focus brings it back. */
   hideProgress?: number;
+  /** Render the title as the page's <h1> (false on screens that own one). */
+  h1?: boolean;
 }
 
 export function AppBar({
@@ -27,7 +29,9 @@ export function AppBar({
   onBack,
   showBrand = true,
   hideProgress = 0,
+  h1 = false,
 }: AppBarProps) {
+  const Title = h1 ? "h1" : "div";
   const { title: headerTitle, sub: headerSub } = usePageTitle();
   const [focusWithin, setFocusWithin] = useState(false);
   const p = focusWithin ? 0 : hideProgress;
@@ -40,7 +44,7 @@ export function AppBar({
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusWithin(false);
       }}
       className={
-        "sticky top-0 z-30 flex items-center gap-3 border-b border-line px-4 pb-3 pt-[max(11px,env(safe-area-inset-top))] backdrop-blur-[22px] backdrop-saturate-[1.6] motion-reduce:transition-none" +
+        "sticky top-0 z-30 flex items-center gap-3 border-b border-line px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-[22px] backdrop-saturate-[1.6] motion-reduce:transition-none" +
         // Scroll-driven movement is transform-only (no transition — the bar
         // tracks the finger); only the focus reveal animates.
         (focusWithin ? " transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)]" : "")
@@ -66,10 +70,10 @@ export function AppBar({
         </div>
       )}
       <div className="min-w-0 flex-1 leading-[1.15]">
-        <div className="overflow-hidden text-ellipsis whitespace-nowrap font-pixel text-[10px] text-ink">
+        <Title className="overflow-hidden text-ellipsis whitespace-nowrap font-pixel text-[10px] text-ink">
           {/* the brand wordmark looks the same everywhere: UFO in the signal colour (TopNav, SiteFooter) */}
           {headerTitle === "REALUFO" ? <>REAL<span className="text-signal">UFO</span></> : headerTitle}
-        </div>
+        </Title>
         <div className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[9.5px] tracking-[.5px] text-faint">
           {headerSub}
         </div>

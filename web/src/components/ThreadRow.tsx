@@ -60,7 +60,7 @@ export function ThreadRow({ thread, voted }: ThreadRowProps) {
             <span className="font-mono text-[9.5px] font-bold" style={{ color: dataInk(thread.accent) }}>
               {thread.boardSlug}
             </span>
-            {!!thread.hot && <span className="font-mono text-[8.5px] font-bold text-amber">🔥 HOT</span>}
+            {!!thread.hot && <span className="font-mono text-[8.5px] font-bold text-violet">🔥 HOT</span>}
             <span className="font-mono text-[9px] text-faint">{thread.ago} ago</span>
             <StanceTag stance={thread.stance} dotOnly={true} className="ml-auto"/>
           </div>

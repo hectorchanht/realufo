@@ -9,11 +9,12 @@
 // then sizes to the whole article height and its card lands far below the
 // viewport, leaving only the dim visible. (Same trap MoreMenu's sheet avoids
 // by portaling past BottomTab's slide-away transform.)
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Quote, X, Copy, Check } from "lucide-react";
 import { useOverlay } from "../overlays/OverlayProvider";
 import { buildCitations, type CiteRecord } from "../lib/cite";
+import { useModal } from "../lib/useModal";
 
 const FORMATS = ["APA", "Chicago", "BibTeX", "RIS"] as const;
 
@@ -22,6 +23,8 @@ export default function CiteButton({ record }: { record: CiteRecord | undefined 
   const [open, setOpen] = useState(false);
   const [fmt, setFmt] = useState<(typeof FORMATS)[number]>("APA");
   const [copied, setCopied] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModal(dialogRef, open);
 
   useEffect(() => {
     if (!open) return;
@@ -64,13 +67,14 @@ export default function CiteButton({ record }: { record: CiteRecord | undefined 
         onClick={() => setOpen(true)}
         aria-label="Cite this record"
         title="Cite this record"
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-dim transition hover:bg-panel hover:text-ink"
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-dim transition hover:bg-surface hover:text-ink"
       >
         <Quote size={20} />
       </button>
       {open &&
         createPortal(
           <div
+            ref={dialogRef}
             className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4"
             onClick={() => setOpen(false)}
             role="dialog"
@@ -89,7 +93,7 @@ export default function CiteButton({ record }: { record: CiteRecord | undefined 
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close"
-                className="grid h-9 w-9 place-items-center rounded-full text-dim hover:bg-panel hover:text-ink"
+                className="grid h-9 w-9 place-items-center rounded-full text-dim hover:bg-surface hover:text-ink"
               >
                 <X size={18} />
               </button>
@@ -105,14 +109,14 @@ export default function CiteButton({ record }: { record: CiteRecord | undefined 
                   aria-selected={fmt === f}
                   onClick={() => setFmt(f)}
                   className={`rounded-full px-4 py-2 font-mono text-[12px] transition ${
-                    fmt === f ? "bg-signal text-bg" : "text-dim hover:bg-panel hover:text-ink"
+                    fmt === f ? "bg-signal text-on-signal" : "text-dim hover:bg-surface hover:text-ink"
                   }`}
                 >
                   {f}
                 </button>
               ))}
             </div>
-            <pre className="mb-3 max-h-[40vh] overflow-auto whitespace-pre-wrap rounded-xl border border-line bg-panel p-3 font-mono text-[12px] leading-[1.6] text-ink">
+            <pre className="mb-3 max-h-[40vh] overflow-auto whitespace-pre-wrap rounded-xl border border-line bg-surface p-3 font-mono text-[12px] leading-[1.6] text-ink">
               {cites[fmt]}
             </pre>
             <button

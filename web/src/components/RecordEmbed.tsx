@@ -45,7 +45,7 @@ export function RecordEmbed({ id, t, withMedia }: { id: string; t?: number; with
           {media === "image" && (
             <button type="button" onClick={() => openViewer({ kind: "image", url: fullUrl, label })} aria-label={`open ${id}`} className={box}>
               {/* 640px thumb inline (originals run to MBs); full file opens in the viewer */}
-              <img src={thumbUrl ?? fullUrl} alt={label} loading="lazy" className="max-h-[260px] w-full object-contain" />
+              <img src={thumbUrl ?? fullUrl} alt={label} loading="lazy" className="aspect-[4/3] max-h-[260px] w-full object-contain" />
             </button>
           )}
           {media === "video" && (
@@ -67,7 +67,7 @@ export function RecordEmbed({ id, t, withMedia }: { id: string; t?: number; with
           {(media === "pdf" || media === "thumb") && (
             <a href={pdfHref} target="_blank" rel="noopener noreferrer" onClick={onPdfClick} className={`${box} relative`}>
               {thumbUrl ? (
-                <img src={thumbUrl} alt={label} loading="lazy" className="max-h-[200px] w-full object-cover" />
+                <img src={thumbUrl} alt={label} loading="lazy" className="h-[200px] w-full object-cover" />
               ) : (
                 <span className="block px-3 py-4 font-mono text-[11px] text-dim">PDF · {label}</span>
               )}

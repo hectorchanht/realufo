@@ -7,12 +7,15 @@ import { useOverlay } from "./OverlayProvider";
 import { ZoomLens } from "../components/ImageTools";
 import { DEFAULT_VIEW, pointToUV } from "../lib/mediaView";
 import { useMediaQuery } from "../lib/useMediaQuery";
+import { useModal } from "../lib/useModal";
 
 export function MediaViewer() {
   const { viewer, closeViewer } = useOverlay();
   const imgRef = useRef<HTMLImageElement>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
+  const rootRef = useRef<HTMLDivElement>(null);
+  useModal(rootRef, !!viewer);
 
   // Viewer-video shortcuts (YouTube convention). The Doc's keys are ALL off
   // while an overlay is open (Doc.tsx + VideoTransport skip when viewer is
@@ -66,8 +69,16 @@ export function MediaViewer() {
   }
 
   return (
+    // focus lands on the dialog itself (data-autofocus), not the close X: Space
+    // must stay play/pause, not "close"
     <div
-      className="fixed inset-0 z-[70] flex animate-[fadein_.2s_ease] flex-col"
+      ref={rootRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={viewer.label || "Media viewer"}
+      tabIndex={-1}
+      data-autofocus
+      className="fixed inset-0 z-[70] flex animate-[fadein_.2s_ease] flex-col outline-none"
       style={{ background: "rgba(0,0,0,.94)" }}
       data-media-viewer
     >

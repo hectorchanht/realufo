@@ -73,7 +73,7 @@ export default function Shelf() {
           href={KOFI_URL}
           target="_blank"
           rel="noopener"
-          className="inline-block rounded-lg bg-signal px-5 py-2 font-mono text-[13px] font-bold text-black"
+          className="inline-block rounded-lg bg-signal px-5 py-2 font-mono text-[13px] font-bold text-on-signal"
         >
           Buy us a coffee on Ko-fi ↗
         </a>

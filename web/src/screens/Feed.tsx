@@ -198,12 +198,9 @@ export function Feed() {
         </section>
       )}
 
-      <div
-        className="mt-6 overflow-hidden rounded-2xl border border-line"
-        style={{ background: "linear-gradient(135deg, var(--signal-dim), transparent)" }}
-      >
+      <div className="mt-6 overflow-hidden rounded-2xl border border-line bg-surface">
         <div className="px-4 pb-4 pt-4">
-          <div className="mb-2 font-pixel text-[9px] tracking-[1px] text-signal">{statsLine(boot?.stats)}</div>
+          <div className="mb-2 font-pixel text-[9px] tracking-[1px] text-dim">{statsLine(boot?.stats)}</div>
           <div className="text-[14px] font-medium leading-[1.5] text-ink">
             Every declassified record, mirrored offline. Read the file, then argue about it — anonymously or not.
           </div>

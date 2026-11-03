@@ -4,20 +4,19 @@ import { useTheme, type Accent } from "../theme/useTheme";
 
 const ACCENTS: Accent[] = ["phosphor", "cyan", "amber", "violet"];
 
-// Fixed swatch colors (dark-theme hex values from theme.css) — NOT the live
-// `var(--signal)`/`var(--grn)` tokens, because those two get re-aliased to
-// whichever accent is currently active (theme.css `[data-accent="..."]`
-// blocks), so they can't represent "what would cyan/amber/violet look like"
-// while a different accent is selected.
+// Swatches use the base accent tokens (theme-aware, never re-aliased by
+// `[data-accent]`), NOT `var(--signal)`/`var(--grn)`, which follow whichever
+// accent is active. Phosphor has no un-aliased token, so it keeps the raw
+// theme.css values (dark #4df0a6 / light #00673e).
 const ACCENT_SWATCH: Record<Accent, string> = {
   phosphor: "#4df0a6",
-  cyan: "#46dfff",
-  amber: "#ffb648",
-  violet: "#b39bff",
+  cyan: "var(--cyan)",
+  amber: "var(--amber)",
+  violet: "var(--violet)",
 };
 
 export function AppearanceSwitcher() {
-  const { accent, scanlines, setAccent, setScanlines } = useTheme();
+  const { theme, accent, scanlines, setAccent, setScanlines } = useTheme();
   return (
     <ul className="flex flex-wrap items-center gap-x-4 gap-y-2" data-appearance-switcher>
       <li className="flex gap-2">
@@ -30,7 +29,7 @@ export function AppearanceSwitcher() {
             aria-label={a}
             title={a}
             className="h-5 w-5 rounded-full border-2"
-            style={{ borderColor: accent === a ? "var(--ink)" : "var(--line2)", background: ACCENT_SWATCH[a] }}
+            style={{ borderColor: accent === a ? "var(--ink)" : "var(--line2)", background: a === "phosphor" && theme === "light" ? "#00673e" : ACCENT_SWATCH[a] }}
           />
         ))}
       </li>

@@ -17,6 +17,7 @@ import { Archive, Bell, Clapperboard, Compass, Ellipsis, FileSearch, History, Ho
 import { useBootstrap } from "../api/queries";
 import { useLang, type StringKey } from "../lib/lang";
 import { forgetScroll, scrollKey } from "../lib/useScrollMemory";
+import { scrollBehavior } from "../lib/motion";
 
 export type NavTab = "feed" | "archive" | "shorts" | "boards" | "ask" | "map" | "timeline" | "cases" | "browse" | "releases" | "notifications";
 
@@ -81,6 +82,13 @@ export const isMoreTab = (tab: NavTab) => MORE_ITEMS.some((i) => i.tab === tab);
  * `/board/:slug`, `/case/:slug`). Any path that isn't one of the nav roots is
  * a detail screen.
  */
+// Screens that render their own <h1> (LegalPage covers about/contact/faq/...).
+// Everywhere else the shell's page title (AppBar on phones, TopNav on desktop)
+// is the page's one <h1>.
+const OWN_H1 =
+  /^\/(doc|case|thread|browse|releases?|agency|location|decade|topic|compare|developers|leaderboard|newsletter|podcast|shelf|privacy|terms|about|contact|faq|glossary|pursue|foia|sites)(\/|$)/;
+export const ownsH1 = (pathname: string) => OWN_H1.test(pathname);
+
 export function canBackForPath(pathname: string): boolean {
   return ![...NAV_ITEMS, ...MORE_ITEMS].some((item) => item.path === pathname);
 }
@@ -155,5 +163,5 @@ export function retapTab(href: string, here: { pathname: string; search: string 
   forgetScroll(key);
   // Already on the root: the link is a no-op navigation, so scroll by hand.
   if (key === scrollKey(here.pathname, here.search))
-    document.querySelector("[data-scroll]")?.scrollTo?.({ top: 0, behavior: "smooth" });
+    document.querySelector("[data-scroll]")?.scrollTo?.({ top: 0, behavior: scrollBehavior() });
 }

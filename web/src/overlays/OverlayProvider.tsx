@@ -167,7 +167,7 @@ export function useOverlay(): OverlayContextValue {
  * tree (AppShell) so the Composer's useNavigate() has a <Router> ancestor.
  */
 export function OverlayHost() {
-  const { composer, viewer, toastMsg, closeComposer, closeViewer, toast } = useOverlay();
+  const { composer, viewer, toastMsg, closeViewer, toast } = useOverlay();
 
   // Offline outbox (lib/outbox.ts): "saved offline" and "N sent / couldn't post" toasts.
   useEffect(() => {
@@ -176,23 +176,22 @@ export function OverlayHost() {
     return () => window.removeEventListener("outbox", on);
   }, [toast]);
 
-  // Esc closes the open overlay (composer > viewer, top-most first).
+  // Esc closes the viewer. The Composer handles its own Esc (lightbox first,
+  // and never mid-send), so it is skipped here.
   useEffect(() => {
-    if (!composer && !viewer) return;
+    if (composer || !viewer) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      if (composer) closeComposer();
-      else if (viewer) closeViewer();
+      if (e.key === "Escape") closeViewer();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [composer, viewer, closeComposer, closeViewer]);
+  }, [composer, viewer, closeViewer]);
 
   return (
     <>
       {composer && <Composer />}
       {viewer && <MediaViewer />}
-      {toastMsg && <Toast message={toastMsg} />}
+      <Toast message={toastMsg} />
     </>
   );
 }

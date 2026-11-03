@@ -1,6 +1,6 @@
 // Page-specific links for SiteFooter. A screen (Doc) sets them while mounted;
 // the footer, which lives in AppShell outside the routed screen, shows them.
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export interface FooterLinks {
   title: string;
@@ -14,7 +14,8 @@ const Ctx = createContext<{ value: FooterLinks | null; set: (v: FooterLinks | nu
 
 export function FooterLinksProvider({ children }: { children: ReactNode }) {
   const [value, set] = useState<FooterLinks | null>(null);
-  return <Ctx.Provider value={{ value, set }}>{children}</Ctx.Provider>;
+  const ctx = useMemo(() => ({ value, set }), [value]);
+  return <Ctx.Provider value={ctx}>{children}</Ctx.Provider>;
 }
 
 export const useFooterLinks = () => useContext(Ctx).value;

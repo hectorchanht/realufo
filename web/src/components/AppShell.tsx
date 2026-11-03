@@ -41,7 +41,7 @@ import { OverlayHost } from "../overlays/OverlayProvider";
 import { TopNav } from "./TopNav";
 import { AppBar } from "./AppBar";
 import { BottomTab } from "./BottomTab";
-import { activeTabForPath, canBackForPath, goBack, rememberTabUrl } from "./navItems";
+import { activeTabForPath, canBackForPath, goBack, ownsH1, rememberTabUrl } from "./navItems";
 
 export function AppShell() {
   const isDesktop = useMediaQuery("(min-width:900px)");
@@ -68,7 +68,8 @@ export function AppShell() {
   // published as --bnav-h (screen bottom padding) and --bnav-y (what sticky
   // bottom bars like Thread's reply bar offset by: the *visible* part of the
   // tab bar, shrinking with the hide progress).
-  const scrollRef = useRef<HTMLElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const bnavRef = useRef<HTMLDivElement>(null);
   // useScrollMemory runs first (layout effect) so the hide hook starts from
@@ -81,6 +82,18 @@ export function AppShell() {
   // killing the app while a PDF is in the foreground) can resume here
   // instead of resetting to the homepage — see lib/resumeRoute.ts.
   useEffect(() => saveLastRoute(pathname + search), [pathname, search]);
+
+  // Route change: move focus to the new page's <main> (screen readers announce
+  // it, Tab starts there). Not on first load, and not when focus is still on a
+  // control inside the page that survived the change (map dots, year bars).
+  const firstPath = useRef(pathname);
+  useEffect(() => {
+    if (pathname === firstPath.current) return;
+    firstPath.current = "";
+    const a = document.activeElement;
+    if (a && a !== document.body && mainRef.current?.contains(a)) return;
+    mainRef.current?.focus({ preventScroll: true });
+  }, [pathname]);
 
   useEffect(() => {
     const nav = bnavRef.current;
@@ -108,9 +121,19 @@ export function AppShell() {
             className="pointer-events-none absolute inset-0 z-0"
             style={{
               background:
-                "radial-gradient(1200px 500px at 78% -8%, var(--signal-dim), transparent 60%), radial-gradient(900px 500px at 10% 108%, rgba(70,223,255,.06), transparent 55%)",
+                "radial-gradient(1200px 500px at 78% -8%, var(--signal-dim), transparent 60%), radial-gradient(900px 500px at 10% 108%, color-mix(in srgb, var(--cyan) 6%, transparent), transparent 55%)",
             }}
           />
+          <a
+            href="#main"
+            onClick={(e) => {
+              e.preventDefault();
+              mainRef.current?.focus();
+            }}
+            className="sr-only z-[80] rounded-[11px] bg-signal px-4 py-3 font-mono text-[12px] font-bold text-on-signal focus:not-sr-only focus:absolute focus:left-4 focus:top-4"
+          >
+            Skip to content
+          </a>
           <div aria-hidden="true" className="crt-grain" />
           {scanlines && <div aria-hidden="true" className="crt-scan" />}
 
@@ -124,14 +147,16 @@ export function AppShell() {
               <TopNav activeTab={activeTab} hideProgress={0} />
             )}
 
-            <main
+            {/* The scroller is a div: <main> is the screen itself, so the footer
+                can sit outside it while still scrolling with the page. */}
+            <div
               ref={scrollRef}
               data-scroll
               className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
               style={{ WebkitOverflowScrolling: "touch" }}
             >
               {!isDesktop && (
-                <AppBar canBack={canBack} onBack={() => goBack(navigate, pathname)} showBrand={!canBack} hideProgress={navHide.progress} />
+                <AppBar canBack={canBack} onBack={() => goBack(navigate, pathname)} showBrand={!canBack} hideProgress={navHide.progress} h1={!ownsH1(pathname)} />
               )}
 
               <div
@@ -148,10 +173,12 @@ export function AppShell() {
                     Offline — showing saved copy
                   </div>
                 )}
-                <Outlet />
+                <main ref={mainRef} id="main" tabIndex={-1} className="outline-none">
+                  <Outlet />
+                </main>
                 <SiteFooter />
               </div>
-            </main>
+            </div>
 
             {!isDesktop && <BottomTab ref={bnavRef} activeTab={activeTab} hideProgress={navHide.progress} />}
           </div>

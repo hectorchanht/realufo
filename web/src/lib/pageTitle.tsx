@@ -25,7 +25,7 @@
 // tree; `useSetPageTitle` must still be safe to call there — it just has
 // nothing to update (document.title still gets set, same as in the full
 // app).
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -57,7 +57,8 @@ const PageTitleContext = createContext<PageTitleContextValue>({
 
 export function PageTitleProvider({ children }: { children: ReactNode }) {
   const [value, setValue] = useState<PageTitleValue>(DEFAULT_PAGE_TITLE);
-  return <PageTitleContext.Provider value={{ value, setValue }}>{children}</PageTitleContext.Provider>;
+  const ctx = useMemo(() => ({ value, setValue }), [value]);
+  return <PageTitleContext.Provider value={ctx}>{children}</PageTitleContext.Provider>;
 }
 
 /** AppBar's read side — the currently-set `{title,sub}`. */

@@ -91,7 +91,7 @@ function SkinPicker({ skin, onPick }: { skin: MediaSkin; onPick(s: MediaSkin): v
       </button>
       {open && (
         <span className="absolute left-0 top-full z-30 pt-2">
-          <span className="block w-[228px] rounded-xl border border-line2 bg-bg2 p-2 shadow-[0_6px_24px_rgba(0,0,0,.45)]">
+          <span className="block w-[228px] max-w-[calc(100vw-16px)] rounded-xl border border-line2 bg-bg2 p-2 shadow-[var(--shadow)]">
             {SKINS.map((s) => {
               const Icon = SKIN_ICONS[s.key];
               const current = s.key === skin;

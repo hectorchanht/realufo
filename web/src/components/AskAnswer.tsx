@@ -77,7 +77,18 @@ function ShareControls({ question, logId }: { question: string; logId: number })
   );
 }
 
-export function AskAnswer({ question, onPost }: { question: string; onPost?: (data: AskResponse) => void }) {
+type AskAnswerProps = { question: string; onPost?: (data: AskResponse) => void };
+
+// One persistent live region, so screen readers hear loading → answer/error.
+export function AskAnswer(props: AskAnswerProps) {
+  return (
+    <div aria-live="polite">
+      <AskAnswerBody {...props} />
+    </div>
+  );
+}
+
+function AskAnswerBody({ question, onPost }: AskAnswerProps) {
   const { data, isLoading, error, refetch } = useAsk(question);
 
   if (isLoading) return <div className={`${CARD} font-mono text-[11px] text-faint`}>◉ consulting the archive…</div>;

@@ -26,6 +26,8 @@ import { shareLink } from "../lib/shareLink";
 import { useAutoplayInView } from "../lib/useAutoplayInView";
 import { useSetPageTitle } from "../lib/pageTitle";
 import { Skeleton } from "../components/Skeleton";
+import { scrollBehavior } from "../lib/motion";
+import { useModal } from "../lib/useModal";
 
 const DOUBLE_TAP_MS = 250;
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
@@ -101,7 +103,7 @@ function Seek() {
         e.preventDefault();
         seek(t.at + step);
       }}
-      className="absolute inset-x-0 bottom-0 z-10 flex h-5 cursor-pointer touch-none items-end outline-none focus-visible:ring-2 focus-visible:ring-signal"
+      className="absolute inset-x-0 bottom-0 z-10 flex h-5 cursor-pointer touch-none items-end outline-none focus-visible:ring-2 focus-visible:ring-signal before:absolute before:inset-x-0 before:-top-1 before:bottom-0 before:content-['']"
     >
       <div className={`w-full bg-white/25 transition-[height] ${drag ? "h-[6px]" : "h-[3px]"}`}>
         <div className="h-full bg-signal" style={{ width: `${pct}%` }} />
@@ -116,12 +118,14 @@ function CommentsSheet({ id, onClose, onCount }: { id: string; onClose: () => vo
   const { data, isLoading } = useComments(id);
   const { openComposer } = useOverlay();
   const comments = data?.comments ?? [];
+  const ref = useRef<HTMLDivElement>(null);
+  useModal(ref, true);
   useEffect(() => {
     if (data) onCount(data.comments.length);
   }, [data, onCount]);
   return (
     <div className="absolute inset-0 z-30 flex flex-col justify-end bg-black/40" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-label="Comments" className="flex max-h-[70%] flex-col rounded-t-2xl bg-bg2 text-ink animate-[fadeup_.2s_ease_both]">
+      <div ref={ref} role="dialog" aria-modal="true" aria-label="Comments" className="flex max-h-[70%] flex-col rounded-t-2xl bg-bg2 text-ink animate-[fadeup_.2s_ease_both]">
         <div className="flex items-center justify-between border-b border-line px-4 py-2">
           <span className="font-mono text-[11px] uppercase tracking-[.8px] text-dim">Comments {data ? comments.length : ""}</span>
           <button type="button" aria-label="Close comments" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full hover:bg-surface">
@@ -181,6 +185,7 @@ export default function Shorts() {
 
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const [muted, setMuted] = useState(true);
+  const [paused, setPaused] = useState<Record<string, boolean>>({});
   const [copied, setCopied] = useState("");
   // Big ▶ / ❚❚ / ♥ flashed mid-slide after a tap / double-tap.
   const [flash, setFlash] = useState<{ id: string; icon: "play" | "pause" | "like"; n: number } | null>(null);
@@ -228,7 +233,7 @@ export default function Shorts() {
     const h = setTimeout(() => setFlash(null), 600);
     return () => clearTimeout(h);
   }, [flash]);
-  const step = (n: number) => root?.scrollBy?.({ top: n * root.clientHeight, behavior: "smooth" });
+  const step = (n: number) => root?.scrollBy?.({ top: n * root.clientHeight, behavior: scrollBehavior() });
   const opened = useRef(false);
   const idx = shorts?.findIndex((s) => s.id === id) ?? -1;
   const found = idx >= 0;
@@ -343,6 +348,8 @@ export default function Shorts() {
                     onClick={(e) => onTap(e.currentTarget, s)}
                     // autoplay may force a slide back to muted (useAutoplayInView): keep the button honest
                     onVolumeChange={(e) => setMuted(e.currentTarget.muted)}
+                    onPlay={() => setPaused((m) => ({ ...m, [s.id]: false }))}
+                    onPause={() => setPaused((m) => ({ ...m, [s.id]: true }))}
                     className="h-full w-full object-contain"
                   />
                   {flash?.id === s.id && (
@@ -356,6 +363,14 @@ export default function Shorts() {
                       )}
                     </div>
                   )}
+                  <button type="button" aria-label={paused[s.id] === false ? "Pause" : "Play"} title={paused[s.id] === false ? "Pause" : "Play"}
+                    onClick={(e) => {
+                      const v = e.currentTarget.parentElement?.querySelector("video");
+                      if (v) toggle(v);
+                    }}
+                    className={`absolute right-16 top-3 bg-black/50 ${round}`}>
+                    {paused[s.id] === false ? <Pause size={20} aria-hidden="true" /> : <Play size={20} aria-hidden="true" />}
+                  </button>
                   <button type="button" onClick={() => setMuted((m) => !m)} aria-label={muted ? "Unmute" : "Mute"} title={muted ? "Unmute" : "Mute"}
                     className={`absolute right-3 top-3 bg-black/50 ${round}`}>
                     <MuteIcon size={20} aria-hidden="true" />

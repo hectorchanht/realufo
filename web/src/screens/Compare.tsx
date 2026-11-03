@@ -32,7 +32,7 @@ function Picker({ label, value, onPick }: { label: string; value: string; onPick
             type="button"
             onClick={() => onPick("")}
             aria-label={`Clear ${label}`}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-dim hover:bg-panel hover:text-ink"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-dim hover:bg-surface hover:text-ink"
           >
             <X size={16} />
           </button>
@@ -42,14 +42,14 @@ function Picker({ label, value, onPick }: { label: string; value: string; onPick
         <div className="mt-1 truncate font-mono text-[11px] text-signal">{value}</div>
       )}
       {open && hits.length > 0 && (
-        <ul className="absolute z-20 mt-1 max-h-[240px] w-full overflow-auto rounded-xl border border-line bg-bg shadow-xl">
+        <ul className="absolute z-20 mt-1 max-h-[240px] w-full overflow-auto rounded-xl border border-line bg-bg shadow-[var(--shadow)]">
           {hits.map((r) => (
             <li key={r.id}>
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => { onPick(r.id); setQ(""); setOpen(false); }}
-                className="block w-full px-3 py-2 text-left hover:bg-panel"
+                className="block w-full px-3 py-2 text-left hover:bg-surface"
               >
                 <div className="truncate font-mono text-[12px] text-signal">{r.id}</div>
                 <div className="truncate text-[13px] text-dim">{r.title}</div>

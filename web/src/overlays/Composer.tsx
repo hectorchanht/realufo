@@ -23,6 +23,7 @@ import { ApiError, QueuedError } from "../api/client";
 import type { Stance } from "../api/types";
 import { useOverlay, type ComposerMode } from "./OverlayProvider";
 import { useLang } from "../lib/lang";
+import { useModal } from "../lib/useModal";
 
 type StanceValue = NonNullable<Stance>;
 
@@ -94,6 +95,8 @@ export function Composer() {
   const lightboxSrc = lightbox === null ? null : (lightboxItems[lightbox] ?? null);
 
   const sheetRef = useRef<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  useModal(rootRef, !!composer);
   const dragRef = useRef<{ startY: number; dragging: boolean }>({ startY: 0, dragging: false });
 
   // In-flight guard: without this, double-tapping POST before onSuccess
@@ -103,6 +106,18 @@ export function Composer() {
   const closeComposer = () => {
     if (!busy) closeSheet();
   };
+  // Esc is ours, not OverlayHost's: lightbox first, then the guarded close.
+  const escRef = useRef<() => void>(() => {});
+  escRef.current = () => (lightbox !== null ? setLightbox(null) : closeComposer());
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      escRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   if (!composer) return null;
 
@@ -233,7 +248,7 @@ export function Composer() {
   const asLabel = handle.trim() || "Anonymous"; // prototype line 645
 
   return (
-    <div className="fixed inset-0 z-[80] animate-[fadein_.2s_ease]" data-composer>
+    <div ref={rootRef} role="dialog" aria-modal="true" aria-label={HEADLINES[composer.mode].toLowerCase()} className="fixed inset-0 z-[80] animate-[fadein_.2s_ease]" data-composer>
       <div
         onClick={closeComposer}
         aria-hidden="true"
@@ -251,7 +266,15 @@ export function Composer() {
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
+          onPointerCancel={() => {
+            // a cancelled drag (scroll took over, call came in) springs back, never closes
+            dragRef.current.dragging = false;
+            const el = sheetRef.current;
+            if (el) {
+              el.style.transition = SHEET_TRANSITION;
+              el.style.transform = "translateY(0)";
+            }
+          }}
           className="mb-2 flex touch-none justify-center py-1"
           aria-hidden="true"
         >
@@ -260,7 +283,7 @@ export function Composer() {
 
         <div className="mb-4 flex items-center gap-2">
           <div className="flex-1">
-            <div className="font-pixel text-[8px] tracking-[.5px] text-signal">{HEADLINES[composer.mode]}</div>
+            <div className="font-pixel text-[8px] tracking-[.5px] text-ink">{HEADLINES[composer.mode]}</div>
           </div>
           <button
             type="button"
@@ -289,7 +312,8 @@ export function Composer() {
             value={threadTitle}
             onChange={(e) => setThreadTitle(e.target.value)}
             placeholder="Thread title"
-            className="mb-3 w-full rounded-[10px] border border-line2 bg-surface px-3 py-2 font-body text-sm font-semibold text-ink outline-none"
+            aria-label="Thread title"
+            className="mb-3 w-full rounded-[10px] border border-line2 bg-surface px-3 py-2 font-body text-sm font-semibold text-ink outline-none focus:border-signal"
           />
         )}
 
@@ -319,7 +343,8 @@ export function Composer() {
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Say your piece. Keep it sourced."
-          className="min-h-[100px] w-full resize-none rounded-xl border border-line2 bg-surface p-3 font-body text-sm leading-[1.5] text-ink outline-none"
+          aria-label="Your post"
+          className="min-h-[100px] w-full resize-none rounded-xl border border-line2 bg-surface p-3 font-body text-sm leading-[1.5] text-ink outline-none focus:border-signal"
         />
 
         <div className="mt-3 flex items-center gap-2">
@@ -327,7 +352,8 @@ export function Composer() {
             value={handle}
             onChange={(e) => setHandle(e.target.value)}
             placeholder="handle (optional)"
-            className="min-w-0 flex-1 rounded-[10px] border border-line2 bg-surface px-3 py-2 font-mono text-xs text-ink outline-none"
+            aria-label="Handle (optional)"
+            className="min-w-0 flex-1 rounded-[10px] border border-line2 bg-surface px-3 py-2 font-mono text-xs text-ink outline-none focus:border-signal"
           />
           {(imgs.length > 0 || imgUrl) && (
             <div className="flex flex-none items-center gap-2">
@@ -345,7 +371,7 @@ export function Composer() {
                     type="button"
                     onClick={() => setImgs(imgs.filter((_, j) => j !== i))}
                     aria-label={`Remove image ${i + 1}`}
-                    className="absolute -right-1.5 -top-1.5 grid h-[18px] w-[18px] place-items-center rounded-full border border-line2 bg-bg2 text-dim active:scale-[.94]"
+                    className="absolute -right-1.5 -top-1.5 grid h-[18px] w-[18px] place-items-center rounded-full border border-line2 bg-bg2 text-dim active:scale-[.94] before:absolute before:-inset-[4px] before:content-['']"
                   >
                     <X size={10} strokeWidth={2.5} aria-hidden="true" />
                   </button>
@@ -365,7 +391,7 @@ export function Composer() {
                     type="button"
                     onClick={() => setImgUrl(null)}
                     aria-label="Remove image"
-                    className="absolute -right-1.5 -top-1.5 grid h-[18px] w-[18px] place-items-center rounded-full border border-line2 bg-bg2 text-dim active:scale-[.94]"
+                    className="absolute -right-1.5 -top-1.5 grid h-[18px] w-[18px] place-items-center rounded-full border border-line2 bg-bg2 text-dim active:scale-[.94] before:absolute before:-inset-[4px] before:content-['']"
                   >
                     <X size={10} strokeWidth={2.5} aria-hidden="true" />
                   </button>
@@ -416,7 +442,7 @@ export function Composer() {
                 type="email"
                 autoComplete="email"
                 aria-label={t("thread.notifyEmailPh")}
-                className="min-w-0 flex-1 rounded-[10px] border border-line2 bg-surface px-3 py-2 font-mono text-xs text-ink outline-none"
+                className="min-w-0 flex-1 rounded-[10px] border border-line2 bg-surface px-3 py-2 font-mono text-xs text-ink outline-none focus:border-signal"
               />
             </div>
             <p className="mt-2 font-mono text-[9.5px] leading-[1.5] text-faint">{t("thread.notifyEmailHint")}</p>

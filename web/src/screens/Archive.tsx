@@ -130,7 +130,7 @@ function PageJump({ page, totalPages, onPage }: PagerProps) {
         min={1}
         max={totalPages}
         defaultValue={page}
-        className="w-[64px] rounded-lg border border-line2 bg-surface px-2 py-1 text-center text-[11px] text-ink outline-none focus:border-signal"
+        className="w-[8ch] rounded-lg border border-line2 bg-surface px-1 py-1 text-center text-[11px] text-ink outline-none focus:border-signal"
       />
       <span>/ {totalPages}</span>
       <button type="submit" className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] active:scale-[.96]" style={typeChipStyle(false)} aria-label="Go to page">
@@ -240,8 +240,9 @@ function FacetSelect({ label, value, all, options, onChange }: {
       aria-label={label}
       value={value}
       onChange={(e) => onChange(e.target.value || null)}
-      className="min-w-0 flex-1 rounded-lg border bg-surface px-2 py-1 font-mono text-[10.5px] outline-none focus:border-signal"
-      style={{ borderColor: value ? "var(--signal)" : "var(--line2)", color: value ? "var(--signal)" : "var(--dim)" }}
+      className={`min-w-0 flex-1 rounded-lg border bg-surface px-2 py-1 font-mono text-[10.5px] ${
+        value ? "border-signal text-signal" : "border-line2 text-dim focus:border-signal"
+      }`}
     >
       <option value="">{all}</option>
       {options.map((o) => (
@@ -299,7 +300,7 @@ function RandomButton() {
       disabled={busy}
       aria-label="Open a random record"
       title="Surprise me — open a random record"
-      className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-dim transition hover:bg-panel hover:text-ink disabled:opacity-50"
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-dim transition hover:bg-surface hover:text-ink disabled:opacity-50"
     >
       <Dices size={18} />
     </button>
@@ -473,12 +474,13 @@ export function Archive() {
       {/* search bar — lines 169-173 */}
       <form
         onSubmit={(e) => e.preventDefault()}
-        className="mb-4 flex items-center gap-2 rounded-xl border border-line2 bg-surface px-3 py-2"
+        className="mb-4 flex items-center gap-2 rounded-xl border border-line2 bg-surface px-3 py-2 focus-within:border-signal"
       >
         <span aria-hidden="true" className="text-[15px] text-faint">
           ⌕
         </span>
         <input
+          aria-label="Search the archive"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           enterKeyHint="search"
@@ -561,7 +563,7 @@ export function Archive() {
           <FacetSelect label={t("archive.sortLabel")} all={t("archive.sortFeatured")} value={filter.sort ?? ""} options={SORTS.map((o) => ({ value: o.value, label: t(o.key) }))} onChange={(v) => setParam("sort", v)} />
           <Link
             to="/leaderboard"
-            className="flex min-w-0 items-center justify-center gap-2 rounded-lg border px-2 py-1 font-mono text-[10.5px] outline-none transition hover:text-ink"
+            className="flex min-w-0 items-center justify-center gap-2 rounded-lg border px-2 py-1 font-mono text-[10.5px] transition hover:text-ink"
             style={{ borderColor: "var(--line2)", color: "var(--dim)" }}
           >
             <Trophy size={13} />
@@ -676,7 +678,7 @@ export function Archive() {
           {/* result count — line 187. Dimmed together with the grid while
               placeholder (previous-filter) data is on screen, so the stale
               count doesn't read as current (2026-10-18 scrutiny). */}
-          <div className={`transition-opacity ${isPlaceholderData ? "opacity-50" : ""} mx-0.5 mb-3 font-mono text-[10px] uppercase tracking-[.8px] text-faint`}>
+          <div aria-live="polite" className={`transition-opacity ${isPlaceholderData ? "opacity-50" : ""} mx-0.5 mb-3 font-mono text-[10px] uppercase tracking-[.8px] text-faint`}>
             <b className="text-signal">{count.toLocaleString()}</b> {count === 1 ? "record" : "records"}
             {totalPages > 1 && ` · page ${page} / ${totalPages}`} · {finePointer ? "open a file, ← → to flip through" : "swipe a file to flip through"}
           </div>

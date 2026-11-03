@@ -1,7 +1,7 @@
 // Sightings Timeline — year-by-year visualization of dated sightings.
 // Data: GET /api/timeline (D1 `records.incident_date` aggregated through
 // yearOf(), the same parser the Archive decade filter uses). Visual language
-// follows web/src/screens/Map.tsx: pixel headings, stat tiles, gradient bars,
+// follows web/src/screens/Map.tsx: pixel headings, stat tiles, flat data bars,
 // fadeup animation. Each year bar is a real link to /timeline/:year — opening
 // a year shows its files (useRecords with the `year` param, same free-text
 // matching as the decade filter) and the URL is shareable/referenceable;
@@ -10,6 +10,8 @@ import { useEffect, useMemo } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { useRecords, useTimeline } from "../api/queries";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { scrollBehavior } from "../lib/motion";
+import { dataInk } from "../lib/dataInk";
 import { DocCard } from "../components/DocCard";
 import { Skeleton } from "../components/Skeleton";
 
@@ -28,7 +30,7 @@ function YearPanel({ year, count }: { year: number; count: number }) {
     >
       <div className="mb-3 flex items-start gap-2">
         <div className="min-w-0 flex-1">
-          <h2 className="font-pixel text-[15px] text-signal">{year}</h2>
+          <h2 className="font-pixel text-[15px] text-ink">{year}</h2>
           <div className="mt-1 font-mono text-[10px] uppercase tracking-[.6px] text-faint">
             {count} file{count === 1 ? "" : "s"}
           </div>
@@ -76,7 +78,7 @@ export function TimelineScreen() {
   // Deep link (/timeline/1947): bring the year's panel into view on arrival
   // and when hopping between years.
   useEffect(() => {
-    if (selected != null) document.getElementById(`year-${selected}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (selected != null) document.getElementById(`year-${selected}`)?.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
   }, [selected]);
 
   const years = data?.years ?? [];
@@ -167,16 +169,15 @@ export function TimelineScreen() {
                       title={`${year} · ${count} files — ${active ? "close" : "open"} year link`}
                       className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2 rounded-sm py-1 hover:bg-surface"
                     >
-                      <span className="font-mono text-[8.5px] text-dim">{count > 0 ? count : ""}</span>
+                      <span className={`font-mono text-[8.5px] ${isPeak ? "font-bold text-ink" : "text-dim"}`}>{count > 0 ? count : ""}</span>
+                      {/* Flat data bars (cyan data accent); the peak year is the full-strength one. */}
                       <div
                         className="w-full rounded-t"
                         style={{
                           height: `calc(${(count / maxCount) * 72}% + ${count > 0 ? 5 : 2}px)`,
-                          background: isPeak
-                            ? "linear-gradient(to top, var(--amber-dim, #7a5b1e), var(--amber))"
-                            : "linear-gradient(to top, var(--signal-dim), var(--signal))",
-                          boxShadow: active ? "0 0 0 2px var(--ink), 0 0 14px 3px var(--signal)" : undefined,
-                          opacity: count === 0 ? 0.25 : 1,
+                          background: dataInk("var(--cyan)"),
+                          boxShadow: active ? "0 0 0 2px var(--ink)" : undefined,
+                          opacity: count === 0 ? 0.25 : isPeak || active ? 1 : 0.55,
                         }}
                       />
                       <span className="font-mono text-[7.5px] text-faint">{String(year).slice(2)}</span>

@@ -62,7 +62,7 @@ export function TextSizeBadge({ style, up = false, size = BADGE }: { style: CSSP
         title="Text size"
         aria-expanded={!!open}
         onClick={() => setOpen(open ? null : btn.current!.getBoundingClientRect())}
-        className="absolute z-[31] grid -translate-x-1/2 shadow-lg -translate-y-1/2 place-items-center rounded-full font-mono font-bold leading-none active:scale-90 before:absolute before:-inset-[8px] before:content-['']"
+        className="absolute z-[31] grid -translate-x-1/2 shadow-[var(--shadow)] -translate-y-1/2 place-items-center rounded-full font-mono font-bold leading-none active:scale-90 before:absolute before:-inset-[8px] before:content-['']"
         style={{ ...style, width: size, height: size, background: "var(--signal)", color: "var(--bg)" }}
       >
         <ALargeSmall size={size / 2.2} strokeWidth={2.25} aria-hidden="true" />
@@ -73,7 +73,7 @@ export function TextSizeBadge({ style, up = false, size = BADGE }: { style: CSSP
             ref={pop}
             // px throughout (inline font-size skips pxToRem): the popover mustn't grow
             // with the text size it sets, or A+ gets pushed out at 250%+.
-            className="fixed z-50 w-[180px] rounded-[12px] border border-line bg-bg2 p-2 font-mono font-medium shadow-lg animate-[fadeup_.2s_ease_both]"
+            className="fixed z-50 w-[180px] rounded-[12px] border border-line bg-bg2 p-2 font-mono font-medium shadow-[var(--shadow)] animate-[fadeup_.2s_ease_both]"
             style={{
               fontSize: 13,
               right: Math.max(8, innerWidth - open.right - 8),

@@ -342,5 +342,19 @@ describe("Composer", () => {
     renderComposer({ mode: "newThread", boardId: "uap" });
     fireEvent.click(screen.getByRole("button", { name: /close composer/i }));
     expect(screen.getByPlaceholderText(/Say your piece/i)).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" }); // Esc is guarded the same way
+    expect(screen.getByPlaceholderText(/Say your piece/i)).toBeInTheDocument();
+  });
+
+  it("Esc closes the attachment lightbox first, then the composer", () => {
+    renderComposer({ mode: "reply", threadId: "t1" });
+    const files = [new File([new Uint8Array([1])], "a.png", { type: "image/png" })];
+    fireEvent.change(screen.getByLabelText(/attach images/i), { target: { files } });
+    fireEvent.click(screen.getByRole("button", { name: /View attached image 1/ }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByAltText("attached image full size")).toBeNull();
+    expect(screen.getByRole("dialog", { name: /post a reply/i })).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: /post a reply/i })).toBeNull();
   });
 });

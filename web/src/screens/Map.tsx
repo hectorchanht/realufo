@@ -27,6 +27,8 @@ import { useBootstrap, useRecords } from "../api/queries";
 import { dotSize, placeSlug, placesNear, project } from "../lib/map";
 import { MAP_INTRO } from "../../../worker/lib/shared";
 import { useSetPageTitle } from "../lib/pageTitle";
+import { scrollBehavior } from "../lib/motion";
+import { dataInk } from "../lib/dataInk";
 import { WorldMap } from "../components/WorldMap";
 import { DocCard } from "../components/DocCard";
 import type { MapPlace, Stats } from "../api/types";
@@ -135,7 +137,7 @@ export function MapScreen() {
   // Deep link (/map/roswell): bring the place's panel into view on arrival
   // and when hopping between places.
   useEffect(() => {
-    if (selected) document.getElementById(`place-${placeSlug(selected.name)}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (selected) document.getElementById(`place-${placeSlug(selected.name)}`)?.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
   }, [selected]);
 
   const cases = data?.sightings ?? [];
@@ -155,6 +157,8 @@ export function MapScreen() {
   // whether the array is empty or every count happens to be 0.
   const maxDecade = Math.max(1, ...byDecade.map(([, n]) => n));
   const maxLocation = Math.max(1, ...topLocations.map(([, n]) => n));
+
+  const active = (p: MapPlace) => p.name === selected?.name || !!choices?.some((c) => c.name === p.name);
 
   const toggle = (name: string) => {
     setChoices(null);
@@ -202,18 +206,21 @@ export function MapScreen() {
           <WorldMap />
           <div className="absolute left-0 right-0 top-1/2 h-px opacity-60" style={{ background: "var(--line2)" }} />
           <div className="absolute bottom-0 top-0 left-1/2 w-px opacity-60" style={{ background: "var(--line2)" }} />
-          {onMap.map((p) => {
+          {onMap.map((p, i) => {
             const { x, y } = project(p.lat!, p.lng!);
+            // Every 4th dot twinkles (staggered); the rest hold the mid glow. An
+            // infinite animation per pin was ~100 always-running layers.
+            const twinkle = !active(p) && i % 4 === 0;
             const size = dotSize(p.count);
             const slug = placeSlug(p.name);
-            const active = p.name === selected?.name || !!choices?.some((c) => c.name === p.name);
+            const on = active(p);
             return (
               <Link
                 key={p.name}
-                to={active && !choices ? "/map" : `/map/${slug}`}
-                title={`${p.name} · ${files(p.count)} — ${active && !choices ? "close" : "open"} place link`}
+                to={on && !choices ? "/map" : `/map/${slug}`}
+                title={`${p.name} · ${files(p.count)} — ${on && !choices ? "close" : "open"} place link`}
                 aria-label={`${p.name}: ${files(p.count)}`}
-                aria-current={active && !choices ? "page" : undefined}
+                aria-current={on && !choices ? "page" : undefined}
                 // The dot itself navigates; stop the container's hit-test from double-firing
                 // and close the overlap chooser if it's open.
                 onClick={(e) => {
@@ -227,9 +234,10 @@ export function MapScreen() {
                   width: size,
                   height: size,
                   background: "var(--signal)",
-                  boxShadow: active ? "0 0 0 2px var(--ink), 0 0 14px 3px var(--signal)" : "0 0 12px 2px var(--signal)",
-                  zIndex: active ? 2 : 1,
-                  animation: active ? undefined : "twinkle 3s ease-in-out infinite",
+                  boxShadow: on ? "0 0 0 2px var(--ink), 0 0 14px 3px var(--signal)" : "0 0 12px 2px var(--signal)",
+                  zIndex: on ? 2 : 1,
+                  opacity: on || twinkle ? undefined : 0.6,
+                  animation: twinkle ? `twinkle 3s ease-in-out ${(i % 3) * -1}s infinite` : undefined,
                 }}
               />
             );
@@ -241,13 +249,17 @@ export function MapScreen() {
                 key={c.id}
                 type="button"
                 title={`Case: ${c.name}`}
+                aria-label={`Case: ${c.name}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (c.case_slug) navigate(`/case/${c.case_slug}`);
                 }}
-                className="absolute z-[3] h-[9px] w-[9px] -translate-x-1/2 -translate-y-1/2 rotate-45 border border-bg hover:scale-150"
-                style={{ left: `${x * 100}%`, top: `${y * 100}%`, background: c.accent }}
-              />
+                // 24px invisible hit area around the 9px diamond
+                className="group absolute z-[3] grid h-6 w-6 -translate-x-1/2 -translate-y-1/2 place-items-center"
+                style={{ left: `${x * 100}%`, top: `${y * 100}%` }}
+              >
+                <span aria-hidden="true" className="h-[9px] w-[9px] rotate-45 border border-bg group-hover:scale-150" style={{ background: c.accent }} />
+              </button>
             );
           })}
           {offWorld.length > 0 && (
@@ -313,7 +325,7 @@ export function MapScreen() {
               className="w-full rounded-t"
               style={{
                 height: `${(n / maxDecade) * 94 + 6}%`,
-                background: "linear-gradient(to top, var(--signal-dim), var(--signal))",
+                background: dataInk("var(--cyan)"),
               }}
             />
             <span
@@ -337,7 +349,7 @@ export function MapScreen() {
                 className="h-full"
                 style={{
                   width: `${(n / maxLocation) * 100}%`,
-                  background: "linear-gradient(90deg, var(--cyan), var(--signal))",
+                  background: dataInk("var(--cyan)"),
                 }}
               />
             </div>

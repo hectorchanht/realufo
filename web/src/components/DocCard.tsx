@@ -97,7 +97,8 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
   const badge = record.agency || "DOC";
   // see file header note — resolved from the shared bootstrap cache; falls
   // back to var(--signal) until bootstrap loads or for an unknown archive id.
-  const accentColor = boot?.archives.find((a) => a.id === record.archive)?.accent ?? "var(--signal)";
+  const archiveAccent = boot?.archives.find((a) => a.id === record.archive)?.accent;
+  const accentColor = archiveAccent ?? "var(--signal)";
   // Same title rule as the Doc page: id once as a kicker (unless it only respells the title).
   const tp = docTitleParts(record.id, record.title, record.kind);
   const isFeed = variant === "feed";
@@ -166,12 +167,14 @@ export function DocCard({ record, variant = "grid", onOpen, search, priority }: 
         )}
         <span
           className="absolute left-2 top-2 rounded-[5px] px-2 py-1 font-mono text-[8.5px] font-bold"
-          style={{ background: "rgba(0,0,0,.85)", color: accentColor }}
+          // the chip is always black: light theme's dark --signal would vanish on it
+          style={{ background: "rgba(0,0,0,.85)", color: archiveAccent ?? "#4df0a6" }}
         >
           {badge}
         </span>
         {!!record.redacted && (
           <span
+            role="img"
             title="Redacted"
             aria-label="Redacted"
             className="absolute right-2 top-2 rounded-[5px] bg-red px-2 py-1 font-mono text-[8px] font-bold text-white"

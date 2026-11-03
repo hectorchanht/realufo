@@ -234,7 +234,7 @@ function TopicIntro({ t }: { t: TopicBlock }) {
       ))}
       {t.lore && (
         <p className="mb-2 text-[13.5px] leading-[1.6] text-dim">
-          <span className="font-semibold text-amber">Where the lore differs:</span> {t.lore}
+          <span className="font-semibold text-ink">Where the lore differs:</span> {t.lore}
         </p>
       )}
       {t.sources.length > 0 && (
