@@ -60,9 +60,11 @@ spacing:
   sm: "8px"
   md: "12px"
   lg: "16px"
+  lg-plus: "20px"
   xl: "24px"
   2xl: "32px"
   3xl: "48px"
+  4xl: "64px"
 components:
   button-primary:
     backgroundColor: "{colors.signal}"
@@ -166,7 +168,7 @@ Sizes are authored in px and converted to rem by PostCSS so the text sizer (50�
 
 - Phone-first app shell. Below 900px: top AppBar, content with 16px side gutter, bottom tab bar (4 icon tabs + More) that hides on scroll and floats over content with a 78% `bg` blur. At ≥900px: a single top nav bar (`bg2`, hairline bottom) with icon tabs, wordmark and page context; no bottom bar.
 - Grids of record cards use dense packing; portrait media cards span two rows.
-- **The One Scale Rule.** All padding, margin and gap use one 4px-based scale: 2, 4, 8, 12, 16, 24, 32, 48px (Tailwind `0.5 1 2 3 4 6 8 12`). No arbitrary spacing (`p-[11px]`, `gap-[7px]`) and no off-scale half-steps (`1.5`, `2.5`, `3.5`). Legacy odd values from the prototype (3, 5, 7, 9, 10, 11, 13, 14, 18, 22, 26px) snap to the nearest step when touched.
+- **The One Scale Rule.** All padding, margin and gap use one 4px-based scale: 2, 4, 8, 12, 16, 20, 24, 32, 48, 64px (Tailwind `0.5 1 2 3 4 5 6 8 12 16`). No arbitrary spacing (`p-[11px]`, `gap-[7px]`) and no off-scale half-steps (`1.5`, `2.5`, `3.5`). Applied across `web/src` on 2026-11-02 (ties snap to the 8px multiple, then the larger step); keep it that way. Sizes (`h-`, `w-`), positions (`top-`, `left-`) and radii are not spacing and keep their own values.
 - Reading width caps around 560–680px; dialogs at 360px.
 - Must work from 320px to wide desktop with no horizontal page scroll; horizontal chip rows scroll with hidden scrollbars (`[data-scroll]`).
 

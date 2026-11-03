@@ -298,7 +298,7 @@
       },
       {
         "name": "The One Scale Rule",
-        "body": "All padding, margin and gap use one 4px-based scale: 2, 4, 8, 12, 16, 24, 32, 48px (Tailwind `0.5 1 2 3 4 6 8 12`). No arbitrary spacing (`p-[11px]`, `gap-[7px]`) and no off-scale half-steps (`1.5`, `2.5`, `3.5`). Legacy odd values from the prototype (3, 5, 7, 9, 10, 11, 13, 14, 18, 22, 26px) snap to the nearest step when touched.",
+        "body": "All padding, margin and gap use one 4px-based scale: 2, 4, 8, 12, 16, 20, 24, 32, 48, 64px (Tailwind `0.5 1 2 3 4 5 6 8 12 16`). No arbitrary spacing (`p-[11px]`, `gap-[7px]`) and no off-scale half-steps (`1.5`, `2.5`, `3.5`). Applied across `web/src` on 2026-11-02 (ties snap to the 8px multiple, then the larger step); keep it that way. Sizes (`h-`, `w-`), positions (`top-`, `left-`) and radii are not spacing and keep their own values.",
         "section": "layout"
       },
       {
