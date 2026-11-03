@@ -22,7 +22,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-        with: { ref: "build/app-foundation" }
+        with: { ref: "main" }
       - name: Toggle bot fight mode
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -76,4 +76,4 @@ jobs:
           git config user.name "muse"
           git config user.email "muse@local"
           git add _analytics/botfight-*.json
-          git diff --cached --quiet && echo "no changes" || git commit -m "cf botfight toggle ($(date -u +%F))" && git push origin build/app-foundation
+          git diff --cached --quiet && echo "no changes" || git commit -m "cf botfight toggle ($(date -u +%F))" && git push origin main

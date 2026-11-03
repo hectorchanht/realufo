@@ -180,7 +180,7 @@ PDF or watch the video, browse its full text page by page, and follow related fi
   original file (`file_url`) before quoting.
 - Official content only: realufo.org's AI-written summaries and notes are not included.
 - Exported {date} from the live site by
-  [`scripts/export_dataset.py`](https://github.com/hectorchanht/realufo/blob/build/app-foundation/scripts/export_dataset.py).
+  [`scripts/export_dataset.py`](https://github.com/hectorchanht/realufo/blob/main/scripts/export_dataset.py).
 
 ## Links
 

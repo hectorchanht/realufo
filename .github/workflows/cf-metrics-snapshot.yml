@@ -2,7 +2,7 @@ name: cf-metrics-snapshot
 
 # Daily read-only Cloudflare metrics snapshot for realufo.org.
 # Uses the repo's CLOUDFLARE_API_TOKEN (same secret as d1-migrate.yml).
-# Snapshots land on the ops/metrics branch (NOT build/app-foundation, so no
+# Snapshots land on the ops/metrics branch (NOT main, so no
 # worker rebuild is triggered). The daily metrics cron + weekly cost-watch
 # cron read them from there instead of driving the browser dashboard.
 on:
@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: build/app-foundation
+          ref: main
           path: repo
           sparse-checkout: .github/scripts/cf_metrics_snapshot.py
           sparse-checkout-cone-mode: false

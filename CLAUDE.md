@@ -55,13 +55,11 @@ D1 gotcha: LIKE/GLOB patterns >50 bytes fail ("pattern too complex") → use `in
 
 ## How we work here
 
-- **Shared checkout.** Several Claude chats work in this tree on `build/app-foundation` at once. Run `git status` + `git diff --cached --name-only` before staging; stage only files you touched (never `git add -A`); foreign staged files or "MM" in a shared file → work in a detached worktree. Never commit other chats' uncommitted files.
+- **Shared checkout.** Several Claude chats work in this tree on `main` at once. Run `git status` + `git diff --cached --name-only` before staging; stage only files you touched (never `git add -A`); foreign staged files or "MM" in a shared file → work in a detached worktree. Never commit other chats' uncommitted files.
 - **Commit when done** (tests pass), no asking. Don't push unasked. Commit messages containing the deploy phrase trip the hook → `git commit -F file`.
-- **Deploy** (only when asked) from a clean worktree of HEAD, never the working tree:
-  `git worktree add --detach <scratch> HEAD` → copy `.dev.vars` → Node 22 PATH → `pnpm install` (root + web) → tests + `cd web && npx tsc -b --noEmit` → `pnpm run deploy` (applies remote D1 migrations, then build + deploy) → remove worktree.
-  Bare `wrangler deploy` is blocked by `.claude/hooks/block-bare-deploy.sh` (it shipped code before its migration → 500s).
-  Before deploying: `git fetch` + `git branch -r --contains <sha>` and `npx wrangler deployments list --env-file /dev/null` — other chats often already shipped your commit (grep the live `/assets/index-*.js` to confirm).
-  After a successful deploy: push that exact commit (deploy = deploy + push). If origin moved, stop and tell the user.
+- **Deploy = push.** Cloudflare Workers Builds deploys every push to `origin/main` (check "Workers Builds: realufo" on the commit: `GH_TOKEN=$(gh auth token --user hectorchanht) gh api repos/hectorchanht/realufo/commits/<sha>/check-runs`). Push only when asked to deploy/push.
+  Before pushing: `git fetch` — if local is behind origin, rebase/cherry-pick onto `origin/main` in a clean worktree (`git worktree add --detach <scratch> origin/main`), never push or build from a stale tree. Then Node 22 PATH → `pnpm install` (root + web) → tests + `cd web && npx tsc -b --noEmit` → push → wait for the Workers Build → grep the live `/assets/index-*.js` changed → remove worktree.
+  New D1 migration: apply it to remote BEFORE pushing code that needs it (`npx wrangler d1 migrations apply realufo-db --remote`); bare `wrangler deploy` stays blocked by `.claude/hooks/block-bare-deploy.sh`.
 - **"Push"** = whole branch incl. other chats' unpushed commits; name them, and flag any touching `crawler/` (next scheduled ingest runs it).
 - **Wrangler auth**: repo `.env` `CLOUDFLARE_API_TOKEN` (narrow; auto-loaded) overrides OAuth. For deploy/account-level commands in the main checkout use `--env-file /dev/null` (OAuth must be f147259@gmail.com; re-login: `npx wrangler login --env-file /dev/null`). Cloudflare MCP tools see only Flow accounts — don't use them here; zone settings = user via dashboard.
 - **After any live data change**: purge `assets.realufo.org` / page URLs and the `__page/doc/<id>` memo key via `CF_PURGE_TOKEN` (zone `da2ac798d7be9b1e27fdcfa38877c1e8`, batches of 30); then `cd crawler && python3 indexnow.py --since-hours N` (or explicit URLs from live `/sitemap.xml`). Verify caching with GET, never `curl -I`.
