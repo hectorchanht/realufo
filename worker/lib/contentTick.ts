@@ -15,6 +15,7 @@
 import type { Env } from "../env";
 import { gateOn, queueContent } from "./gate";
 import { OPEN } from "./jobs";
+import { indexNow } from "./indexnow";
 
 const OPEN_SQL = OPEN.map((s) => `'${s}'`).join(",");
 
@@ -109,9 +110,25 @@ async function dropSkippedStaging(env: Env): Promise<void> {
 // Records ship automatically (owner's call, 2026-10-25): every pending record
 // goes live on the tick, whatever the Telegram gate says. Returns rows flipped.
 export async function flipPendingRecords(env: Env): Promise<number> {
+  // Capture the ids first so the auto-live flip can announce the new pages:
+  // sitemap.xml is generated from the DB (so the flip alone updates it),
+  // and IndexNow gets the new doc URLs + the hubs they join, with zero
+  // manual steps (SEO system, 2026-11-05). Best effort — a failed ping
+  // never blocks records going live.
+  const pending = await env.DB.prepare("SELECT id FROM records WHERE status='pending' LIMIT 1000").all<{ id: string }>();
   const r = await env.DB.prepare("UPDATE records SET status='live' WHERE status='pending'").run();
   const n = (r as { meta?: { changes?: number } }).meta?.changes ?? 0;
-  if (n) log({ autoLive: "records", count: n });
+  if (n) {
+    log({ autoLive: "records", count: n });
+    const ids = (pending.results ?? []).map((x) => x.id);
+    if (ids.length)
+      await indexNow([
+        ...ids.map((id) => `https://realufo.org/doc/${encodeURIComponent(id)}`),
+        "https://realufo.org/",
+        "https://realufo.org/releases",
+        "https://realufo.org/browse",
+      ]).catch(() => {});
+  }
   return n;
 }
 

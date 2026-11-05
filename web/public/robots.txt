@@ -3,6 +3,11 @@
 User-agent: *
 Content-Signal: search=yes, ai-input=yes, ai-train=yes
 Allow: /
+# Homepage feed pagination (?page=N) is the same page with a feed offset —
+# its canonical is already "/", so keep crawlers out of the param space
+# (GSC filed these under Crawled – currently not indexed, 2026-11-05).
+Disallow: /?page=
 
 Sitemap: https://realufo.org/sitemap.xml
+Sitemap: https://realufo.org/sitemap-index.xml
 Sitemap: https://realufo.org/rss.xml

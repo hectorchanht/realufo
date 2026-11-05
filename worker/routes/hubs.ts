@@ -9,7 +9,7 @@ import {
 } from "../lib/hubs";
 import { docTitle } from "../lib/ssr";
 import { releaseBlock } from "./releases";
-import type { ReleaseBlock } from "../lib/releases";
+import type { FaqItem, ReleaseBlock } from "../lib/releases";
 import { TOPIC_RULES, topicWhere, type TopicBlock, type TopicText } from "../lib/topics";
 import { AGENCY_TEXT, TOPIC_TEXT } from "../lib/topicText";
 import { CASE_STORY_TEXT } from "../lib/caseStoryText";
@@ -23,6 +23,8 @@ export interface Hub {
   highlights: Highlights | null;
   release?: ReleaseBlock | null;
   topic?: TopicBlock;
+  /** Topic hubs: data-written FAQ, rendered on the page and emitted as FAQPage JSON-LD. */
+  faq?: FaqItem[];
   /** Pagination: records is the current page's slice. */
   total: number; page: number; pageSize: number; totalPages: number;
 }
@@ -244,12 +246,32 @@ export async function loadHub(
               .all<{ id: string }>()).results.map((r) => r.id)
           )
         : undefined;
+  // Topic hubs get a short FAQ from their own hand-written background +
+  // live counts (the 2026-10-05 SEO spike's outstanding item): rendered on
+  // the page by hubBody and emitted as FAQPage JSON-LD by pages.ts.
+  const topicFaq: FaqItem[] | undefined = topic
+    ? [
+        {
+          q: `What is ${TOPIC_RULES.find((t) => t.slug === me.slug)?.label ?? me.label}?`,
+          a: topic.background.split(/(?<=\.)\s+/).slice(0, 2).join(" "),
+        },
+        {
+          q: `How many declassified UFO files cover ${TOPIC_RULES.find((t) => t.slug === me.slug)?.label ?? me.label}?`,
+          a: `${total} declassified files are collected on this page, each mirrored verbatim from its official government source with full text and a link to the original record.`,
+        },
+        {
+          q: "Are these files official government records?",
+          a: "Yes. Every file on RealUFO is mirrored verbatim from an official source — the Pentagon's PURSUE releases at war.gov/UFO, AARO, the CIA, FBI, NASA or the National Archives — and each record page names its source agency.",
+        },
+      ]
+    : undefined;
   return {
     kind: me.kind, slug: me.slug, title: hubTitle(me), intro: hubIntro(me, sel.release, stats), stats, records, highlights,
     total, page: p, pageSize: size, totalPages,
     siblings: same.filter((h) => h !== me),
     ...(me.kind === "release" ? { prev: same[i - 1]?.slug ?? null, next: same[i + 1]?.slug ?? null, release } : {}),
     ...(topic ? { topic } : {}),
+    ...(topicFaq ? { faq: topicFaq } : {}),
   };
 }
 

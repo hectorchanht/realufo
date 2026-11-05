@@ -28,9 +28,22 @@ function media(r: Rec): string {
 }
 
 // Every crawlable SPA route. Pages render client-side from /api/*, which is why
-// robots.txt must not disallow /api/. ponytail: single file, split into a
-// sitemap index once records approach the 50k-URL limit.
-export async function sitemap(req: Request, env: Env) {
+// robots.txt must not disallow /api/. /sitemap.xml stays the full urlset (the
+// URL submitted to GSC in 2026-10); the same data is also served as per-type
+// child sitemaps under a /sitemap-index.xml so Search Console can report
+// indexation per page family (2026-11-05 SEO pass: 809 of 877 unindexed URLs
+// were stuck in "Discovered – currently not indexed", and a single undiffer-
+// entiated dump gives Google no priority signal and us no per-type view).
+// Order inside the full set is deliberate: core pages, hubs and cases first
+// (the pages that must be crawled first), then docs, then UGC/AI last.
+const CORE_PAGES = ["/", "/real-ufo", "/archive", "/boards", "/cases", "/map", "/timeline", "/browse", "/releases", "/shelf", "/newsletter", "/podcast", "/ask", "/privacy", "/terms", "/about", "/contact", "/faq", "/glossary", "/pursue", "/foia", "/sites", "/leaderboard", "/developers"];
+// Pages whose content changed in the 2026-11-05 SEO pass; honest lastmod so
+// Google re-crawls them first. Bump when their content next changes.
+const CORE_LASTMOD: Record<string, string> = { "/": "2026-11-05", "/real-ufo": "2026-11-05" };
+export type SitemapSection = "pages" | "hubs" | "docs" | "cases" | "threads";
+export const SITEMAP_SECTIONS: SitemapSection[] = ["pages", "hubs", "docs", "cases", "threads"];
+
+async function sitemapSections(req: Request, env: Env): Promise<Record<SitemapSection, string[]>> {
   const origin = new URL(req.url).origin;
   const [records, threads, boards, cases, hubs, asks, years, locRows] = await Promise.all([
     env.DB.prepare(
@@ -61,19 +74,44 @@ export async function sitemap(req: Request, env: Env) {
   const loc = (path: string, d?: string, extra = "") =>
     `<url><loc>${origin}${path}</loc>${d ? `<lastmod>${d}</lastmod>` : ""}${extra}</url>`;
   const e = encodeURIComponent; // also encodes & < > so no XML escaping needed
-  const urls = [
-    ...["/", "/archive", "/boards", "/cases", "/map", "/timeline", "/browse", "/releases", "/shelf", "/newsletter", "/podcast", "/ask", "/privacy", "/terms", "/about", "/contact", "/faq", "/glossary", "/pursue", "/foia", "/sites", "/leaderboard"].map((p) => loc(p)),
-    ...years.map((y) => loc(`/timeline/${y.year}`)),
-    ...places.map((p) => loc(`/map/${placeSlug(p.name)}`)),
-    ...records.results.map((r) => loc(`/doc/${e(r.id)}`, r.d, media(r))),
-    ...threads.results.map((t) => loc(`/thread/${e(t.id)}`, t.d)),
-    ...boards.results.map((b) => loc(boardHref(b.id))), // slug is "/uap/"; the URL is /board/uap
-    ...cases.results.map((c) => loc(`/case/${e(c.id)}`, CASE_STORY_TEXT[c.id]?.updated)),
-    ...hubs.map((h) => loc(hubHref(h.kind, h.slug))),
-    ...asks.results.map((x) => loc(askHref(x.id, x.question), x.d)), // slug is [a-z0-9-] only
-  ];
-  return new Response(
+  return {
+    pages: CORE_PAGES.map((p) => loc(p, CORE_LASTMOD[p])),
+    hubs: [
+      ...hubs.map((h) => loc(hubHref(h.kind, h.slug))),
+      ...boards.results.map((b) => loc(boardHref(b.id))), // slug is "/uap/"; the URL is /board/uap
+      ...years.map((y) => loc(`/timeline/${y.year}`)),
+      ...places.map((p) => loc(`/map/${placeSlug(p.name)}`)),
+    ],
+    docs: records.results.map((r) => loc(`/doc/${e(r.id)}`, r.d, media(r))),
+    cases: cases.results.map((c) => loc(`/case/${e(c.id)}`, CASE_STORY_TEXT[c.id]?.updated)),
+    threads: [
+      ...threads.results.map((t) => loc(`/thread/${e(t.id)}`, t.d)),
+      ...asks.results.map((x) => loc(askHref(x.id, x.question), x.d)), // slug is [a-z0-9-] only
+    ],
+  };
+}
+
+const urlset = (urls: string[]) =>
+  new Response(
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${urls.join("")}</urlset>`,
+    { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=3600" } },
+  );
+
+export async function sitemap(req: Request, env: Env) {
+  const s = await sitemapSections(req, env);
+  return urlset([...s.pages, ...s.hubs, ...s.cases, ...s.docs, ...s.threads]);
+}
+
+export async function sitemapSection(req: Request, env: Env, section: SitemapSection) {
+  const s = await sitemapSections(req, env);
+  return urlset(s[section]);
+}
+
+export async function sitemapIndex(req: Request, env: Env) {
+  const origin = new URL(req.url).origin;
+  const items = SITEMAP_SECTIONS.map((s) => `<sitemap><loc>${origin}/sitemap-${s}.xml</loc></sitemap>`).join("");
+  return new Response(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${items}</sitemapindex>`,
     { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=3600" } },
   );
 }

@@ -22,7 +22,7 @@ import { getPoll, castPoll } from "./routes/polls";
 import { getCase } from "./routes/cases";
 import { serveWithMeta } from "./lib/meta";
 import { ask, recentAsks, setAskPublic, getSharedAsk } from "./routes/ask";
-import { sitemap } from "./routes/sitemap";
+import { sitemap, sitemapIndex, sitemapSection, type SitemapSection } from "./routes/sitemap";
 import { rss } from "./routes/rss";
 import { llms, llmsFull } from "./routes/llms";
 import { recordText } from "./routes/text";
@@ -251,6 +251,16 @@ async function handleFetch(req: Request, env: Env, ctx: ExecutionContext): Promi
     const bare = /^\/([a-z]+)\/?$/.exec(url.pathname)?.[1];
     const nativeTarget = bare && NATIVE_BARE[bare];
     if (nativeTarget) return Response.redirect(`${url.origin}${nativeTarget}${url.search}`, 301);
+    // Legacy *.html document paths: the release subdomain answers every
+    // path with the same SPA shell (200, identical bytes), so a 301 there
+    // reads to Google as a soft 404 (GSC, 2026-11-05: all 16 soft 404s are
+    // legacy paths). Send the ones with native equivalents to the native
+    // page, and the rest of the legacy .html space to the archive, BEFORE
+    // the generic legacy redirect below can bounce them to the shell.
+    if (/^\/uk\/rendlesham\.html$/i.test(url.pathname)) return Response.redirect(`${url.origin}/case/rendlesham`, 301);
+    if (/^\/nara\/mantell\.html$/i.test(url.pathname)) return Response.redirect(`${url.origin}/case/mantell`, 301);
+    if (/^\/nara\//i.test(url.pathname)) return Response.redirect(`${url.origin}/agency/nara`, 301);
+    if (LEGACY_PATH.test(url.pathname) && /\.html$/i.test(url.pathname)) return Response.redirect(`${url.origin}/archive`, 301);
     if (/^\/(aaro|nasa|stories)\//.test(url.pathname)) {
       const p = url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`;
       return Response.redirect(`https://release.realufo.org${p}${url.search}`, 301);
@@ -278,6 +288,9 @@ async function handleFetch(req: Request, env: Env, ctx: ExecutionContext): Promi
     if (url.pathname === "/__tg") return tgWebhook(req, env);
     if (url.pathname === "/__job") return jobRoute(req, env);
     if (url.pathname === "/sitemap.xml") return sitemap(req, env);
+    if (url.pathname === "/sitemap-index.xml") return sitemapIndex(req, env);
+    const smSection = /^\/sitemap-(pages|hubs|docs|cases|threads)\.xml$/.exec(url.pathname)?.[1];
+    if (smSection) return sitemapSection(req, env, smSection as SitemapSection);
     if (url.pathname === "/podcast/feed.xml") return podcastFeedXml();
     if (/^\/(rss(\.xml)?|feed(\.xml)?)$/.test(url.pathname)) return rss(req, env);
     if (url.pathname === "/llms.txt") return llms(req, env);

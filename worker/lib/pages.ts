@@ -20,6 +20,7 @@ import { FOIA_HTML } from "./foia";
 import { SITES_HTML } from "./sites";
 import { GLOSSARY_HTML } from "./glossary";
 import { PURSUE_HTML } from "./pursue";
+import { REAL_UFO_HTML, REAL_UFO_FAQ } from "./realUfo";
 import { CONTACT_HTML } from "./contact";
 import { FAQ_ITEMS, FAQ_HTML } from "./faq";
 import { SOCIAL_PROFILES } from "./profiles";
@@ -101,7 +102,7 @@ const homePage: Loader = async (env, _g, url) => {
   const [latestRows, feed] = await Promise.all([latest(env), feedData(env).catch(() => null)]);
   return {
     meta: {
-      title: "Declassified UAP Archive",
+      title: "Real UFO Files — Declassified UAP Archive",
       description: DEFAULT_DESCRIPTION,
       type: "website",
       jsonLd: {
@@ -384,7 +385,9 @@ const docPage: Loader = async (env, g, url) => {
   const title = docTitle(x.title, x.id, x.kind);
   // Full title (with the id) when there's no summary: same-titled videos stay apart.
   const lead = `Declassified UAP ${what}${agency ? ` from ${agency}` : ""}${base ? "" : `: ${title}`}${when ? ` (${when})` : ""}.`;
-  const description = base.length >= 100 ? base : [base && (/[.!?]$/.test(base) ? base : base + "."), lead, `${verb} on RealUFO.`].filter(Boolean).join(" ");
+  // Long official summaries stand alone as snippets, but prefix the file id
+  // so an exact-ID search shows this page is the file itself (2026-11-05).
+  const description = base.length >= 100 ? `${x.id}: ${base}` : [base && (/[.!?]$/.test(base) ? base : base + "."), lead, `${verb} on RealUFO.`].filter(Boolean).join(" ");
   // Same pick as thumbSql, from the assets already loaded.
   const thumb =
     d.assets.find((a) => a.role === "thumb") ?? d.assets.find((a) => a.role === "full" && a.mime?.startsWith("image/"));
@@ -552,7 +555,7 @@ const hubPage =
           { name: "Browse", href: "/browse" },
           { name: h.title, href: hubHref(kind, h.slug) },
         ],
-        faq: h.release?.faq,
+        faq: h.release?.faq ?? h.faq,
       },
       body: hubBody(h),
       // Paginated pages canonicalise to themselves (?page=N); page 1 keeps the bare path.
@@ -672,6 +675,29 @@ const pursuePage: Loader = async () => ({
   body: `<h1>What is PURSUE?</h1>${PURSUE_HTML}`,
 });
 
+// /real-ufo — the plain-language answer page for the "real UFO" /
+// "are UFOs real" query family: what the declassified files prove, what
+// they don't, and where to read them. Evidence-led and static (no D1),
+// so it stays fast under a disclosure-day surge.
+const realUfoPage: Loader = async () => ({
+  meta: {
+    title: "Real UFO Files: Are UFOs Real? What the Government Records Show",
+    description: "Are UFOs real? What the declassified government files actually show: Blue Book's 12,618 sightings and 701 unidentified, ODNI's 144 reports, AARO's verdict — and the strongest cases, read from the records.",
+    type: "website",
+    faq: REAL_UFO_FAQ.map((f) => ({ q: f.q, a: f.aText })),
+    jsonLd: {
+      "@type": "WebPage",
+      name: "Real UFO Files: Are UFOs Real? What the Government Records Show",
+      about: { "@type": "Thing", name: "Unidentified Flying Objects" },
+    },
+    breadcrumbs: [
+      { name: "Home", href: "/" },
+      { name: "Real UFO", href: "/real-ufo" },
+    ],
+  },
+  body: `<h1>Real UFO Files: Are UFOs Real?</h1>${REAL_UFO_HTML}`,
+});
+
 const foiaPage: Loader = async () => ({
   meta: { title: "FOIA", description: "How to file freedom-of-information requests for UAP records: the US FOIA recipe, other jurisdictions, and tips that increase response rates.", type: "website" },
   body: `<h1>FOIA</h1>${FOIA_HTML}`,
@@ -762,6 +788,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader; cacheKey?: (url: URL) 
   { pattern: new URLPattern({ pathname: "/faq" }), load: faqPage },
   { pattern: new URLPattern({ pathname: "/glossary" }), load: glossaryPage },
   { pattern: new URLPattern({ pathname: "/pursue" }), load: pursuePage },
+  { pattern: new URLPattern({ pathname: "/real-ufo" }), load: realUfoPage },
   { pattern: new URLPattern({ pathname: "/foia" }), load: foiaPage },
   { pattern: new URLPattern({ pathname: "/sites" }), load: sitesPage },
   { pattern: new URLPattern({ pathname: "/compare" }), load: comparePage },

@@ -30,3 +30,4 @@ showcase/articles/*/short/*.mp4
 showcase/.tts/
 showcase/.src/
 crawler/.venv-ocr/
+.codegraph/

@@ -36,6 +36,7 @@ const STRINGS = {
   "footer.privacy": ["Privacy", "私隱"],
   "footer.terms": ["Terms", "條款"],
   "footer.about": ["About", "關於"],
+  "footer.realUfo": ["Real UFO: are UFOs real?", "Real UFO：UFO 係咪真？"],
   "footer.contact": ["Contact", "聯絡"],
   "footer.faq": ["FAQ", "常見問題"],
   "footer.glossary": ["Glossary", "術語表"],

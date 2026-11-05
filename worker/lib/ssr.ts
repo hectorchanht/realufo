@@ -11,10 +11,12 @@ import { agencyList, longDate, pad2, shortDate, type FaqItem, type ReleaseBlock,
 import type { TopicBlock } from "./topics";
 import { sourceLinks } from "../../web/src/lib/sourceLinks";
 import { DATASET_URL } from "./profiles";
+import { PLACES, placeSlug } from "./places";
+import { yearOf } from "./facets";
 
 // Same copy as the default block in web/index.html.
 export const DEFAULT_DESCRIPTION =
-  "Searchable archive of declassified UAP/UFO records from the Pentagon, CIA, FBI and NASA, with case files, a sighting map and anonymous discussion boards.";
+  "Real UFO files, declassified: a searchable archive of UAP/UFO records from the Pentagon, CIA, FBI and NASA, with case files, a sighting map and anonymous discussion boards.";
 
 export const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -109,6 +111,8 @@ export type HubPageData = {
   highlights?: { lede: string; picks: { id: string; why: string; title: string; kind?: string }[] } | null;
   release?: ReleaseBlock | null;
   topic?: TopicBlock | null;
+  /** Topic hubs: FAQ rendered on the page (JSON-LD is emitted by pages.ts). */
+  faq?: FaqItem[] | null;
   /** Pagination: records is the current page's slice of total files. */
   total: number; page: number; pageSize: number; totalPages: number;
 };
@@ -202,7 +206,7 @@ export function hubBody(h: HubPageData): string {
     h.release ? `<p>${a({ href: "/releases", text: "All releases & next-release estimate" })}</p>` : "",
     section(`Files (${h.total})`, docLinks(h.records)),
     hubPager(h),
-    h.release ? faqHtml(h.release.faq) : "",
+    h.release ? faqHtml(h.release.faq) : h.faq ? faqHtml(h.faq) : "",
     section(`More ${(KIND_HEADING[h.kind] ?? "hubs").toLowerCase()}`, hubLinks(h.siblings)),
   ].join("");
 }
@@ -258,6 +262,7 @@ const NAV: Link[] = [
 ];
 // Same machine-readable links as the SPA's SiteFooter.
 const FOOTER: Link[] = [
+  { href: "/real-ufo", text: "Real UFO: are UFOs real?" },
   { href: "/browse", text: "Browse all files" },
   { href: "/llms.txt", text: "llms.txt" },
   { href: "/llms-full.txt", text: "llms-full.txt" },
@@ -286,6 +291,7 @@ export const homeBody = (latest: RecordLink[], clips: SsrClip[] = []) =>
   tabBody(
     "RealUFO — Declassified UAP Archive",
     DEFAULT_DESCRIPTION,
+    `<section><h2>Are UFOs real?</h2><p>What the declassified government files actually show — the strongest cases, the official verdicts, and how to judge a UFO claim: <a href="/real-ufo">Real UFO files: are UFOs real?</a></p></section>`,
     section("Latest files", docLinks(latest)),
     clips.length ? `<section><h2>Short clips</h2>${clipsGrid(clips)}</section>` : ""
   );
@@ -352,7 +358,7 @@ function media(d: DocData): string {
   const full = d.assets.find((x) => x.role === "full");
   const thumb = d.assets.find((x) => x.role === "thumb");
   if (!full) return "";
-  if (d.record.kind === "image") return `<p><img src="${esc(full.cdn_url)}" alt="${esc(docTitleParts(d.record.id, d.record.title, d.record.kind).title)}" style="max-width:100%"></p>`;
+  if (d.record.kind === "image") return `<p><img src="${esc(full.cdn_url)}" alt="${esc(docTitle(d.record.title, d.record.id, d.record.kind))}" style="max-width:100%"></p>`;
   if (d.record.kind === "video")
     return `<p><video controls preload="none" src="${esc(full.cdn_url)}"${thumb ? ` poster="${esc(thumb.cdn_url)}"` : ""} style="max-width:100%"></video></p>`;
   return "";
@@ -382,11 +388,19 @@ function momentsSection(d: DocData, m: ReturnType<typeof docMoments>): string {
 export function docFooter(d: DocData): Link[] {
   const h = d.hubs ?? {};
   const r = d.record;
+  // Property hubs for this file: its year on the timeline and its place on
+  // the sighting map join the release/agency/location/decade/topic links,
+  // so every property value a searcher might query is one click from the
+  // file — and the hub is one click back (per-property Top 5, 2026-11-05).
+  const year = yearOf(r.incident_date);
+  const place = r.location ? PLACES.find((p) => p.values.includes(r.location!)) : undefined;
   return [
     h.release && { href: hubHref("release", h.release), text: `More from Release ${String(d.release?.no ?? h.release).padStart(2, "0")}` },
     h.agency && { href: hubHref("agency", h.agency), text: `More from ${r.agency_full || r.agency}` },
     h.location && { href: hubHref("location", h.location), text: `More from ${r.location}` },
     h.decade && { href: hubHref("decade", h.decade), text: `More from the ${h.decade}` },
+    year && { href: `/timeline/${year}`, text: `More from ${year}` },
+    place && { href: `/map/${placeSlug(place.name)}`, text: `${place.name} on the sighting map` },
     ...(d.topics ?? []).map((t) => ({ href: hubHref("topic", t.slug), text: `More on ${t.label}` })),
   ].filter((l): l is Link => !!l);
 }
@@ -417,6 +431,10 @@ export function docBody(d: DocData): string {
   return [
     `<p>${a({ href: "/", text: "Home" })} › ${a({ href: "/archive", text: "Archive" })}${r.agency ? ` › ${esc(r.agency)}` : ""}</p>`,
     `<h1>${esc(docTitle(r.title, r.id, r.kind))}</h1>`,
+    // First paragraph carries the file's searchable properties in prose
+    // (ID, agency, kind, incident date/place, release) — generated from
+    // the record, never hand-written (per-property Top 5, 2026-11-05).
+    `<p>File <b>${esc(r.id)}</b> is a declassified ${esc(r.kind)}${r.agency_full || r.agency ? ` from ${esc(r.agency_full || r.agency!)}` : ""}${r.incident_date ? `, recording an incident dated ${esc(r.incident_date)}` : ""}${r.location && r.location !== "N/A" ? ` at ${esc(r.location)}` : ""}${d.release ? `, published in Release ${String(d.release.no).padStart(2, "0")} (${esc(d.release.date)})` : ""}. This page carries the original file, its official summary and its full text.</p>`,
     media(d),
     `<dl>${facts
       .filter(([, v]) => v)
