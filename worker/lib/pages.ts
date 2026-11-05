@@ -8,7 +8,7 @@ import { loadHub, listHubsCached, pageOf } from "../routes/hubs";
 import type { HubKind } from "./hubs";
 import {
   DEFAULT_DESCRIPTION, type DocData, type Link, docBody, docFooter, threadBody, boardBody, caseBody, homeBody, tabBody,
-  section, docLinks, countList, docTitle, boardHref, docHref, hubBody, browseBody, hubHref, docMoments, snippet, askBody, distinctSummary, releasesBody,
+  section, docLinks, countList, docTitle, boardHref, docHref, hubBody, browseBody, hubHref, docMoments, snippet, askBody, distinctSummary, releasesBody, hubSection,
 } from "./ssr";
 import { loadSharedAsk } from "../routes/ask";
 import { feedData } from "../routes/feed";
@@ -99,7 +99,15 @@ const homePage: Loader = async (env, _g, url) => {
   // The feed payload doubles as SSR boot data: crawlers get real Short-clips
   // cards in the pre-render, and the SPA takes it as useFeed() initialData so
   // the first client paint shows content, not skeletons.
-  const [latestRows, feed] = await Promise.all([latest(env), feedData(env).catch(() => null)]);
+  const [latestRows, feed, hubs] = await Promise.all([latest(env), feedData(env).catch(() => null), listHubsCached(env, url.origin).catch(() => [])]);
+  // Crawler-visible hub links on the homepage itself: GSC URL Inspection
+  // reported "Referring page: None detected" for every agency hub and
+  // /about (2026-11-05) — the hubs were only reachable via client-side
+  // navigation and the sitemap. The homepage SSR now links them directly.
+  const hubSectionsHtml = [
+    hubSection("Browse by agency", hubs.filter((h) => h.kind === "agency")),
+    hubSection("Browse by topic", hubs.filter((h) => h.kind === "topic")),
+  ].join("");
   return {
     meta: {
       title: "Real UFO Files — Declassified UAP Archive",
@@ -116,19 +124,21 @@ const homePage: Loader = async (env, _g, url) => {
         },
       },
     },
-    body: homeBody(latestRows, feed?.clips ?? []),
+    body: homeBody(latestRows, feed?.clips ?? [], hubSectionsHtml),
     ...(feed ? { boot: { feed } } : {}),
   };
 };
 
 const archivePage: Loader = async (env, _g, url) => {
-  const [agencies, recent, total] = await Promise.all([
+  const [agencies, recent, total, hubs] = await Promise.all([
     env.DB.prepare(
       "SELECT agency name, count(*) count FROM records WHERE status='live' AND agency IS NOT NULL AND trim(agency)<>'' GROUP BY agency ORDER BY count DESC, name"
     ).all<{ name: string; count: number }>(),
     latest(env),
     env.DB.prepare("SELECT count(*) c FROM records WHERE status='live'").first<{ c: number }>(),
+    listHubsCached(env, url?.origin ?? "https://realufo.org").catch(() => []),
   ]);
+  const agencyHubs = hubs.filter((h) => h.kind === "agency");
   const t = TAB.archive;
   const origin = url?.origin ?? "https://realufo.org";
   const count = total?.c ?? 0;
@@ -166,7 +176,11 @@ const archivePage: Loader = async (env, _g, url) => {
   };
   return {
     meta: { ...t, jsonLd: datasetLd },
-    body: tabBody(t.title, t.description, countList("Agencies", agencies.results), section("Latest files", docLinks(recent))),
+    // Agency names were plain text here, so the archive — a page Google
+    // has crawled — linked to no agency hub at all. Link the hubs (same
+    // listHubsCached source as the routes and sitemap); fall back to the
+    // text list only if the hub list is unavailable.
+    body: tabBody(t.title, t.description, agencyHubs.length ? hubSection("Agencies", agencyHubs) : countList("Agencies", agencies.results), section("Latest files", docLinks(recent))),
   };
 };
 

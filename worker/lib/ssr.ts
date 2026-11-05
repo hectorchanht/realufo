@@ -263,6 +263,8 @@ const NAV: Link[] = [
 // Same machine-readable links as the SPA's SiteFooter.
 const FOOTER: Link[] = [
   { href: "/real-ufo", text: "Real UFO: are UFOs real?" },
+  { href: "/about", text: "About" },
+  { href: "/releases", text: "Release tracker" },
   { href: "/browse", text: "Browse all files" },
   { href: "/llms.txt", text: "llms.txt" },
   { href: "/llms-full.txt", text: "llms-full.txt" },
@@ -287,11 +289,14 @@ export function injectBody(html: string, body: string, pageLinks: Link[] = []): 
 export const tabBody = (title: string, intro: string, ...sections: string[]) =>
   `<h1>${esc(title)}</h1>${paras(intro)}${sections.join("")}`;
 
-export const homeBody = (latest: RecordLink[], clips: SsrClip[] = []) =>
+export const hubSection = (heading: string, hubs: HubLinkData[]) => section(heading, hubLinks(hubs));
+
+export const homeBody = (latest: RecordLink[], clips: SsrClip[] = [], hubSectionsHtml = "") =>
   tabBody(
     "RealUFO — Declassified UAP Archive",
     DEFAULT_DESCRIPTION,
     `<section><h2>Are UFOs real?</h2><p>What the declassified government files actually show — the strongest cases, the official verdicts, and how to judge a UFO claim: <a href="/real-ufo">Real UFO files: are UFOs real?</a></p></section>`,
+    hubSectionsHtml,
     section("Latest files", docLinks(latest)),
     clips.length ? `<section><h2>Short clips</h2>${clipsGrid(clips)}</section>` : ""
   );
