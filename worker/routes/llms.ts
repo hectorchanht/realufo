@@ -38,6 +38,7 @@ export async function llms(req: Request, env: Env) {
     "## Main pages",
     "",
     link("Real UFO: are UFOs real?", "/real-ufo", "what the declassified files actually show — Blue Book's 701 unidentified, ODNI's 144 reports, AARO's verdict, the strongest cases"),
+    link("UAP disclosure timeline", "/disclosure", "the official milestones year by year — 2017 AATIP revelations, confirmed Navy videos, ODNI assessment, sworn hearings, AARO, the Disclosure Act and the 2026 PURSUE releases"),
     link("Archive", "/archive", "search and filter every file"),
     link("Browse", "/browse", "files grouped by release, agency, location and decade"),
     link("Release tracker", "/releases", "every Pentagon UFO file release, the gaps between them and the next-release estimate"),

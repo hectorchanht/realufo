@@ -40,6 +40,8 @@ export const HOME_INTRO: Seg[][] = [
 export const HOME_ARE_REAL: Seg[] = [
   "Yes — as sightings. For more than 75 years, pilots, radar operators and sensors have recorded things investigators could not identify, and governments have filed the reports: Project Blue Book logged 12,618 sightings and left 701 unidentified. But no declassified file proves extraterrestrial visitation, and AARO, the Pentagon's current UAP office, told the Senate it has found no verifiable evidence of extraterrestrial beings, activity or technology. ",
   { a: "/real-ufo", t: "The strongest cases, the official verdicts, and how to judge a UFO claim →" },
+  " Or follow how the official story changed, year by year: ",
+  { a: "/disclosure", t: "the UAP disclosure timeline →" },
 ];
 
 export const HOME_CASES: { slug: string; name: string; blurb: string }[] = [

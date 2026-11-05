@@ -59,6 +59,13 @@ export function injectMeta(html: string, m: MetaInput): string {
     img && `<meta property="og:image" content="${img}">`,
     `<meta name="twitter:card" content="${img ? "summary_large_image" : "summary"}">`,
     `<meta name="twitter:site" content="@realufo_org">`,
+    // Twitter falls back to the OG tags when its own are absent, but the
+    // explicit set is what the 2026-11-05 template sweep found missing on
+    // every page type — mirror the OG values so shares render the same
+    // everywhere with no fallback dependence.
+    `<meta name="twitter:title" content="${t}">`,
+    `<meta name="twitter:description" content="${od}">`,
+    img && `<meta name="twitter:image" content="${img}">`,
     m.jsonLd && ldScript(m.jsonLd),
     m.breadcrumbs &&
       ldScript({

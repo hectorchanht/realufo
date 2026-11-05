@@ -212,14 +212,22 @@ export function hubBody(h: HubPageData): string {
   ].join("");
 }
 
-// Prev / page N of M / next under the file list. Page 1 links back to the
-// bare hub URL so there is exactly one canonical URL per page.
+// Prev / every page number / next under the file list. Page 1 links back
+// to the bare hub URL so there is exactly one canonical URL per page.
+// Every page number is linked (not just prev/next): the 2026-11-05
+// link-graph audit found files on hub page 4+ sitting 5–6 clicks from
+// the homepage through prev/next chains; with all numbers linked, any
+// hub page is one click from page 1 and its files stay within 3 clicks
+// of / (hub → page N → file).
 const hubPager = (h: HubPageData): string => {
   if (h.totalPages < 2) return "";
   const href = (p: number) => `${hubHref(h.kind, h.slug)}${p > 1 ? `?page=${p}` : ""}`;
   const prev = h.page > 1 ? `<a href="${esc(href(h.page - 1))}" rel="prev">← Prev</a>` : "";
   const next = h.page < h.totalPages ? `<a href="${esc(href(h.page + 1))}" rel="next">Next →</a>` : "";
-  return `<nav aria-label="Pages"><p>${[prev, `Page ${h.page} of ${h.totalPages}`, next].filter(Boolean).join(" · ")}</p></nav>`;
+  const nums = Array.from({ length: h.totalPages }, (_, i) => i + 1).map((p) =>
+    p === h.page ? `<span aria-current="page">${p}</span>` : `<a href="${esc(href(p))}">${p}</a>`,
+  );
+  return `<nav aria-label="Pages"><p>${[prev, `Page ${h.page} of ${h.totalPages}: ${nums.join(" ")}`, next].filter(Boolean).join(" · ")}</p></nav>`;
 };
 
 export const browseBody = (hubs: HubLinkData[]) =>
@@ -264,6 +272,7 @@ const NAV: Link[] = [
 // Same machine-readable links as the SPA's SiteFooter.
 const FOOTER: Link[] = [
   { href: "/real-ufo", text: "Real UFO: are UFOs real?" },
+  { href: "/disclosure", text: "UAP disclosure timeline" },
   { href: "/about", text: "About" },
   { href: "/releases", text: "Release tracker" },
   { href: "/browse", text: "Browse all files" },
@@ -346,7 +355,7 @@ const clipsGrid = (clips: SsrClip[]) =>
     .map(
       (c) =>
         `<li><a href="/shorts/${encodeURIComponent(c.id)}">${
-          c.thumb ? `<img src="${esc(c.thumb)}" alt="" loading="lazy" width="132" height="234">` : ""
+          c.thumb ? `<img src="${esc(c.thumb)}" alt="${esc(c.title || c.id)}" loading="lazy" width="132" height="234">` : ""
         }<span>${esc(c.title || c.id)}</span></a></li>`
     )
     .join("")}</ul>`;

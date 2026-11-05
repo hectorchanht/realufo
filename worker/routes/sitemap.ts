@@ -36,10 +36,10 @@ function media(r: Rec): string {
 // entiated dump gives Google no priority signal and us no per-type view).
 // Order inside the full set is deliberate: core pages, hubs and cases first
 // (the pages that must be crawled first), then docs, then UGC/AI last.
-const CORE_PAGES = ["/", "/real-ufo", "/archive", "/boards", "/cases", "/map", "/timeline", "/browse", "/releases", "/shelf", "/newsletter", "/podcast", "/ask", "/privacy", "/terms", "/about", "/contact", "/faq", "/glossary", "/pursue", "/foia", "/sites", "/leaderboard", "/developers"];
+const CORE_PAGES = ["/", "/real-ufo", "/disclosure", "/archive", "/boards", "/cases", "/map", "/timeline", "/browse", "/releases", "/shelf", "/newsletter", "/podcast", "/ask", "/privacy", "/terms", "/about", "/contact", "/faq", "/glossary", "/pursue", "/foia", "/sites", "/leaderboard", "/developers"];
 // Pages whose content changed in the 2026-11-05 SEO pass; honest lastmod so
 // Google re-crawls them first. Bump when their content next changes.
-const CORE_LASTMOD: Record<string, string> = { "/": "2026-11-05", "/real-ufo": "2026-11-05" };
+const CORE_LASTMOD: Record<string, string> = { "/": "2026-11-05", "/real-ufo": "2026-11-05", "/disclosure": "2026-11-05" };
 export type SitemapSection = "pages" | "hubs" | "docs" | "cases" | "threads";
 export const SITEMAP_SECTIONS: SitemapSection[] = ["pages", "hubs", "docs", "cases", "threads"];
 

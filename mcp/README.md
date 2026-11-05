@@ -2,6 +2,8 @@
 
 MCP (Model Context Protocol) server for the [RealUFO Public API](https://realufo.org/developers) — lets Claude Desktop, Claude Code and other MCP clients search the declassified UAP archive, pull record detail and OCR text, list releases and case stories.
 
+The archive at [realufo.org](https://realufo.org) mirrors the declassified UAP/UFO records from the Pentagon's PURSUE releases, AARO, the CIA, FBI, NASA and the National Archives. For the human-readable version, see [Real UFO: are UFOs real?](https://realufo.org/real-ufo) and the [UAP disclosure timeline](https://realufo.org/disclosure).
+
 Zero dependencies. Plain Node 18+.
 
 `REALUFO_BASE_URL` is optional (defaults to `https://realufo.org`); point it at a local worker when developing.

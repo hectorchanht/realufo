@@ -61,6 +61,7 @@ export const routes: RouteObject[] = [
           { path: "/glossary", lazy: screen(() => import("./screens/Glossary")) },
           { path: "/pursue", lazy: screen(() => import("./screens/Pursue")) },
           { path: "/real-ufo", lazy: screen(() => import("./screens/RealUfo")) },
+          { path: "/disclosure", lazy: screen(() => import("./screens/Disclosure")) },
           { path: "/foia", lazy: screen(() => import("./screens/Foia")) },
           { path: "/sites", lazy: screen(() => import("./screens/Sites")) },
           { path: "/compare", lazy: screen(() => import("./screens/Compare")) },

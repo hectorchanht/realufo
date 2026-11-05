@@ -2,6 +2,8 @@
 
 Python client for the [RealUFO Public API](https://realufo.org/developers) — the declassified UAP archive. Read-only, keyless. Zero dependencies (stdlib only).
 
+The archive at [realufo.org](https://realufo.org) mirrors the declassified UAP/UFO records from the Pentagon's PURSUE releases, AARO, the CIA, FBI, NASA and the National Archives — full text, case files and a release tracker. New to the subject? Start with [Real UFO: are UFOs real?](https://realufo.org/real-ufo) — what the files actually show — and the [UAP disclosure timeline](https://realufo.org/disclosure).
+
 ```bash
 pip install realufo
 ```

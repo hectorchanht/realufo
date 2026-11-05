@@ -21,6 +21,7 @@ import { SITES_HTML } from "./sites";
 import { GLOSSARY_HTML } from "./glossary";
 import { PURSUE_HTML } from "./pursue";
 import { REAL_UFO_HTML, REAL_UFO_FAQ } from "./realUfo";
+import { DISCLOSURE_HTML, DISCLOSURE_FAQ } from "./disclosure";
 import { HOME_AGENCY_LEAD, HOME_STATS_FALLBACK, HOME_TOPIC_LEAD } from "./home";
 import { CONTACT_HTML } from "./contact";
 import { FAQ_ITEMS, FAQ_HTML } from "./faq";
@@ -28,7 +29,7 @@ import { SOCIAL_PROFILES } from "./profiles";
 import { ALL_PICKS, affiliateUrl } from "./affiliate";
 import { MAP_INTRO, RELEASES_DESCRIPTION, RELEASES_TITLE } from "./shared";
 import { PLACES, placeSlug } from "./places";
-import { yearOf } from "./facets";
+import { yearOf, wargovReleases } from "./facets";
 import { trackerData } from "../routes/releases";
 import { agencyList, longDate } from "./releases";
 import { TOPIC_RULES, firstSentence } from "./topics";
@@ -116,6 +117,31 @@ const homeStats = async (env: Env, origin: string): Promise<string> => {
   return HOME_STATS_FALLBACK;
 };
 
+// Event-dynamic promotion (SEO Phase 2, 2026-11-05): the newest PURSUE
+// release gets a homepage section of its own — its hub plus its newest
+// files — derived entirely from the live hub list + wargovReleases, so
+// the day a new tranche lands it takes the homepage slot automatically.
+// No hand-picked IDs anywhere; returns "" when the data isn't there.
+const latestReleaseHtml = async (env: Env, hubs: { kind: string; slug: string; label: string; count: number }[]): Promise<string> => {
+  try {
+    const relHubs = hubs.filter((h) => h.kind === "release");
+    if (!relHubs.length) return "";
+    const top = relHubs.reduce((a, b) => (Number(b.slug) > Number(a.slug) ? b : a));
+    const rel = (await wargovReleases(env)).find((r) => r.no === Number(top.slug));
+    if (!rel) return "";
+    const rows = await env.DB.prepare(
+      "SELECT id, title, kind FROM records WHERE status='live' AND archive='wargov' AND doc_date IN (SELECT value FROM json_each(?)) ORDER BY created_at DESC LIMIT 6",
+    ).bind(JSON.stringify(rel.raw)).all<{ id: string; title: string; kind: string }>();
+    if (!rows.results.length) return "";
+    return section(`Latest release — ${top.label}`, [
+      { href: hubHref("release", top.slug), text: `All ${top.count} files from ${top.label} →` },
+      ...docLinks(rows.results),
+    ]);
+  } catch {
+    return "";
+  }
+};
+
 const homePage: Loader = async (env, _g, url) => {
   // The feed payload doubles as SSR boot data: crawlers get real Short-clips
   // cards in the pre-render, and the SPA takes it as useFeed() initialData so
@@ -131,8 +157,14 @@ const homePage: Loader = async (env, _g, url) => {
   // /about (2026-11-05) — the hubs were only reachable via client-side
   // navigation and the sitemap. The homepage SSR now links them directly.
   const hubSectionsHtml = [
+    await latestReleaseHtml(env, hubs),
     hubSection("Browse by agency", hubs.filter((h) => h.kind === "agency"), HOME_AGENCY_LEAD),
     hubSection("Browse by topic", hubs.filter((h) => h.kind === "topic"), HOME_TOPIC_LEAD),
+    // Release hubs linked from / itself (not only via /releases): the
+    // 2026-11-05 link-graph audit put Release 01's later files 5–6
+    // clicks out. With release hubs at depth 1 and the all-numbers hub
+    // pager, every released file is within 3 clicks of the homepage.
+    hubSection("Browse by release", hubs.filter((h) => h.kind === "release")),
   ].join("");
   return {
     meta: {
@@ -256,11 +288,25 @@ const leaderboardPage: Loader = async (env, _g, url) => {
   };
 };
 
-const casesPage: Loader = async (env) => {
+const casesPage: Loader = async (env, _g, url) => {
   const { results } = await env.DB.prepare("SELECT slug,name,lede FROM cases ORDER BY name").all<{ slug: string; name: string; lede: string | null }>();
   const t = TAB.cases;
   const links = results.map((c) => ({ href: `/case/${encodeURIComponent(c.slug)}`, text: c.lede ? `${c.name} — ${snippet(c.lede, 140)}` : c.name }));
-  return { meta: t, body: tabBody(t.title, t.description, section("Cases", links)) };
+  // Every other index page carries CollectionPage+ItemList JSON-LD; the
+  // 2026-11-05 template sweep found /cases was the one index with none.
+  const jsonLd = {
+    "@type": "CollectionPage",
+    name: t.title,
+    description: t.description,
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: results.length,
+      itemListElement: results.map((c, i) => ({
+        "@type": "ListItem", position: i + 1, url: `${url.origin}/case/${encodeURIComponent(c.slug)}`, name: c.name,
+      })),
+    },
+  };
+  return { meta: { ...t, jsonLd }, body: tabBody(t.title, t.description, section("Cases", links)) };
 };
 
 // Crawlers get the places as links: the map itself is canvas-and-buttons.
@@ -741,6 +787,30 @@ const realUfoPage: Loader = async () => ({
   body: `<h1>Real UFO Files: Are UFOs Real?</h1>${REAL_UFO_HTML}`,
 });
 
+// /disclosure — the "UAP disclosure" query family: the year-by-year
+// timeline of official milestones (2017 AATIP revelations → hearings →
+// AARO → the 2026 PURSUE releases), each linked to its record on-site.
+// Evidence-led and static (no D1), like /real-ufo, so it doubles as the
+// Disclosure Day evergreen landing.
+const disclosurePage: Loader = async () => ({
+  meta: {
+    title: "UAP Disclosure: Timeline of Official UFO Revelations, Hearings and File Releases",
+    description: "UAP disclosure, year by year: the 2017 AATIP revelations, the Pentagon's confirmed Navy videos, ODNI's 144-report assessment, sworn hearing testimony, AARO's verdict, the Disclosure Act fight and the 2026 PURSUE file releases — each milestone linked to the record itself.",
+    type: "website",
+    faq: DISCLOSURE_FAQ.map((f) => ({ q: f.q, a: f.aText })),
+    jsonLd: {
+      "@type": "WebPage",
+      name: "UAP Disclosure: Timeline of Official UFO Revelations, Hearings and File Releases",
+      about: { "@type": "Thing", name: "UAP disclosure" },
+    },
+    breadcrumbs: [
+      { name: "Home", href: "/" },
+      { name: "Disclosure", href: "/disclosure" },
+    ],
+  },
+  body: `<h1>UAP Disclosure: The Official Timeline</h1>${DISCLOSURE_HTML}`,
+});
+
 const foiaPage: Loader = async () => ({
   meta: { title: "FOIA", description: "How to file freedom-of-information requests for UAP records: the US FOIA recipe, other jurisdictions, and tips that increase response rates.", type: "website" },
   body: `<h1>FOIA</h1>${FOIA_HTML}`,
@@ -832,6 +902,7 @@ export const ROUTES: { pattern: URLPattern; load: Loader; cacheKey?: (url: URL) 
   { pattern: new URLPattern({ pathname: "/glossary" }), load: glossaryPage },
   { pattern: new URLPattern({ pathname: "/pursue" }), load: pursuePage },
   { pattern: new URLPattern({ pathname: "/real-ufo" }), load: realUfoPage },
+  { pattern: new URLPattern({ pathname: "/disclosure" }), load: disclosurePage },
   { pattern: new URLPattern({ pathname: "/foia" }), load: foiaPage },
   { pattern: new URLPattern({ pathname: "/sites" }), load: sitesPage },
   { pattern: new URLPattern({ pathname: "/compare" }), load: comparePage },
