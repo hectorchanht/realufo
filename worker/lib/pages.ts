@@ -8,7 +8,7 @@ import { loadHub, listHubsCached, pageOf } from "../routes/hubs";
 import type { HubKind } from "./hubs";
 import {
   DEFAULT_DESCRIPTION, type DocData, type Link, docBody, docFooter, threadBody, boardBody, caseBody, homeBody, tabBody,
-  section, docLinks, countList, docTitle, boardHref, docHref, hubBody, browseBody, hubHref, docMoments, snippet, askBody, distinctSummary, releasesBody, hubSection,
+  section, docLinks, countList, docTitle, boardHref, docHref, hubBody, browseBody, hubHref, docMoments, snippet, askBody, distinctSummary, releasesBody, hubSection, homeIntroHtml, homeCasesHtml,
 } from "./ssr";
 import { loadSharedAsk } from "../routes/ask";
 import { feedData } from "../routes/feed";
@@ -21,6 +21,7 @@ import { SITES_HTML } from "./sites";
 import { GLOSSARY_HTML } from "./glossary";
 import { PURSUE_HTML } from "./pursue";
 import { REAL_UFO_HTML, REAL_UFO_FAQ } from "./realUfo";
+import { HOME_AGENCY_LEAD, HOME_STATS_FALLBACK, HOME_TOPIC_LEAD } from "./home";
 import { CONTACT_HTML } from "./contact";
 import { FAQ_ITEMS, FAQ_HTML } from "./faq";
 import { SOCIAL_PROFILES } from "./profiles";
@@ -95,18 +96,43 @@ const TAB = {
   },
 };
 
+// Homepage intro figures — the same live D1 counts /about shows (live
+// records, distinct agencies, release tranches), so the numbers in the
+// intro never drift from the rest of the site. Falls back to a
+// number-free line if the counts can't be read.
+const homeStats = async (env: Env, origin: string): Promise<string> => {
+  try {
+    const [recs, agencies, d] = await Promise.all([
+      env.DB.prepare("SELECT count(*) c FROM records WHERE status='live'").first<{ c: number }>(),
+      env.DB.prepare("SELECT count(DISTINCT agency) c FROM records WHERE status='live' AND agency IS NOT NULL AND trim(agency)<>''").first<{ c: number }>(),
+      trackerData(env, origin).catch(() => null),
+    ]);
+    const parts: string[] = [];
+    if (recs?.c) parts.push(`${recs.c.toLocaleString("en-US")} records`);
+    if (agencies?.c) parts.push(`${agencies.c} agencies`);
+    if (d && d.series.length) parts.push(`${d.series.length} release tranches`);
+    if (parts.length) return parts.join(" · ");
+  } catch { /* keep the static fallback line */ }
+  return HOME_STATS_FALLBACK;
+};
+
 const homePage: Loader = async (env, _g, url) => {
   // The feed payload doubles as SSR boot data: crawlers get real Short-clips
   // cards in the pre-render, and the SPA takes it as useFeed() initialData so
   // the first client paint shows content, not skeletons.
-  const [latestRows, feed, hubs] = await Promise.all([latest(env), feedData(env).catch(() => null), listHubsCached(env, url.origin).catch(() => [])]);
+  const [latestRows, feed, hubs, stats] = await Promise.all([
+    latest(env),
+    feedData(env).catch(() => null),
+    listHubsCached(env, url.origin).catch(() => []),
+    homeStats(env, url.origin),
+  ]);
   // Crawler-visible hub links on the homepage itself: GSC URL Inspection
   // reported "Referring page: None detected" for every agency hub and
   // /about (2026-11-05) — the hubs were only reachable via client-side
   // navigation and the sitemap. The homepage SSR now links them directly.
   const hubSectionsHtml = [
-    hubSection("Browse by agency", hubs.filter((h) => h.kind === "agency")),
-    hubSection("Browse by topic", hubs.filter((h) => h.kind === "topic")),
+    hubSection("Browse by agency", hubs.filter((h) => h.kind === "agency"), HOME_AGENCY_LEAD),
+    hubSection("Browse by topic", hubs.filter((h) => h.kind === "topic"), HOME_TOPIC_LEAD),
   ].join("");
   return {
     meta: {
@@ -124,7 +150,10 @@ const homePage: Loader = async (env, _g, url) => {
         },
       },
     },
-    body: homeBody(latestRows, feed?.clips ?? [], hubSectionsHtml),
+    body: homeBody(latestRows, feed?.clips ?? [], hubSectionsHtml, {
+      introHtml: homeIntroHtml(stats),
+      casesHtml: homeCasesHtml(),
+    }),
     ...(feed ? { boot: { feed } } : {}),
   };
 };

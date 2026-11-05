@@ -27,6 +27,7 @@
 // classes at the same 900px breakpoint AppShell itself uses, with the
 // `data-grid` attribute kept for markup parity.
 import { Link } from "react-router-dom";
+import { HOME_ARE_REAL, HOME_CASES, HOME_INTRO, HOME_STATS_FALLBACK, HOME_STATS_SLOT, type Seg } from "../../../worker/lib/home";
 import { useBootstrap, useFeed, useHubs } from "../api/queries";
 import type { HubSummary, Short } from "../api/types";
 import { DocCard } from "../components/DocCard";
@@ -35,6 +36,89 @@ import { ShortsRow, shortHref } from "../components/ShortsRow";
 import { ThreadRow } from "../components/ThreadRow";
 import { useLang } from "../lib/lang";
 import { useSetPageTitle } from "../lib/pageTitle";
+
+// Homepage prose segments (worker/lib/home.ts, shared with the SSR
+// pre-render): strings render as text with the {{STATS}} slot filled by
+// the live counts, link segments render as router links.
+function Segs({ segs, stats }: { segs: Seg[]; stats?: string }) {
+  return (
+    <>
+      {segs.map((s, i) =>
+        typeof s === "string" ? (
+          <span key={i}>{s.split(HOME_STATS_SLOT).join(stats ?? HOME_STATS_FALLBACK)}</span>
+        ) : s.a.startsWith("/") ? (
+          <Link key={i} to={s.a} className="text-signal underline decoration-dotted underline-offset-2">
+            {s.t}
+          </Link>
+        ) : (
+          <a key={i} href={s.a} className="text-signal underline decoration-dotted underline-offset-2">
+            {s.t}
+          </a>
+        ),
+      )}
+    </>
+  );
+}
+
+// Intro block at the top of the feed: what this archive is and how to
+// use it. The figures come from bootstrap stats + hub counts — the same
+// live numbers the archive CTA below shows; until they resolve, the
+// stats slot falls back to a number-free line (no fake numbers).
+function HomeIntro({ stats }: { stats?: string }) {
+  return (
+    <section aria-labelledby="feed-intro" className="mb-6">
+      <h2 id="feed-intro" className="mx-0.5 mb-3 font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
+        ◆ The declassified archive
+      </h2>
+      <div className="flex flex-col gap-2.5">
+        {HOME_INTRO.map((p, i) => (
+          <p key={i} className="text-[14px] leading-[1.65] text-dim">
+            <Segs segs={p} stats={stats} />
+          </p>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// The short "are UFOs real" answer (the full version lives on /real-ufo)
+// plus the strongest case files with the one-paragraph version of each —
+// same copy as the SSR pre-render.
+function HomeGuide() {
+  return (
+    <>
+      <section aria-labelledby="feed-real" className="mb-6">
+        <h2 id="feed-real" className="mx-0.5 mb-3 font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
+          ◆ Are UFOs real?
+        </h2>
+        <p className="text-[14px] leading-[1.65] text-dim">
+          <Segs segs={HOME_ARE_REAL} />
+        </p>
+      </section>
+
+      <section aria-labelledby="feed-strongest" className="mb-6">
+        <div className="mx-0.5 mb-3 flex items-baseline justify-between">
+          <h2 id="feed-strongest" className="font-pixel text-[9px] font-normal uppercase tracking-[1px] text-faint">
+            ◆ Strongest cases
+          </h2>
+          <Link to="/cases" className="font-mono text-[11px] text-signal">
+            all cases ›
+          </Link>
+        </div>
+        <ul className="flex flex-col gap-3.5">
+          {HOME_CASES.map((c) => (
+            <li key={c.slug}>
+              <Link to={`/case/${c.slug}`} className="text-[14px] font-semibold text-ink">
+                {c.name}
+              </Link>
+              <p className="mt-0.5 text-[13.5px] leading-[1.6] text-dim">{c.blurb}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </>
+  );
+}
 
 // Neutral copy shown until bootstrap's `stats` resolve (no fake numbers).
 const FALLBACK_STATS_LINE = "◆ THE DECLASSIFIED ARCHIVE";
@@ -107,14 +191,28 @@ export function Feed() {
 
   const { data: boot } = useBootstrap();
   const { data: feed, isLoading: feedLoading, isError, error, refetch } = useFeed();
+  const { data: hubsData } = useHubs();
   const feedFailed = isError && !feed;
 
   const featured = feed?.featured ?? [];
   const hot = feed?.hot ?? [];
   const cases = boot?.cases ?? [];
 
+  // Live figures for the intro block: bootstrap's record/archive counts
+  // (the same numbers the archive CTA shows) + the release-tranche count
+  // from the hub list. Undefined until they resolve — the intro then
+  // renders its number-free fallback line instead of guessing.
+  const tranches = hubsData?.hubs.filter((h) => h.kind === "release").length ?? 0;
+  const bs = boot?.stats;
+  const introStats =
+    bs?.records != null
+      ? `${bs.records.toLocaleString()} records · ${(bs.archives ?? 0).toLocaleString()} archives${tranches ? ` · ${tranches} release tranches` : ""}`
+      : undefined;
+
   return (
     <div data-screen="feed" className="animate-[fadeup_.4s_ease_both]">
+      <HomeIntro stats={introStats} />
+
       {feedFailed ? null : <ClipCarousel clips={feed?.clips ?? []} loading={feedLoading} />}
 
       <section aria-labelledby="feed-hot" className="mb-6">
@@ -173,6 +271,8 @@ export function Feed() {
       )}
 
       <BrowseStrip />
+
+      <HomeGuide />
 
       {cases.length > 0 && (
         <section aria-labelledby="feed-cases" className="mb-6">

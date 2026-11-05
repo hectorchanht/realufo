@@ -13,6 +13,7 @@ import { sourceLinks } from "../../web/src/lib/sourceLinks";
 import { DATASET_URL } from "./profiles";
 import { PLACES, placeSlug } from "./places";
 import { yearOf } from "./facets";
+import { HOME_ARE_REAL, HOME_CASES, HOME_INTRO, HOME_STATS_SLOT, type Seg } from "./home";
 
 // Same copy as the default block in web/index.html.
 export const DEFAULT_DESCRIPTION =
@@ -289,17 +290,53 @@ export function injectBody(html: string, body: string, pageLinks: Link[] = []): 
 export const tabBody = (title: string, intro: string, ...sections: string[]) =>
   `<h1>${esc(title)}</h1>${paras(intro)}${sections.join("")}`;
 
-export const hubSection = (heading: string, hubs: HubLinkData[]) => section(heading, hubLinks(hubs));
+export const hubSection = (heading: string, hubs: HubLinkData[], lead?: string) => {
+  const items = hubLinks(hubs);
+  if (!items.length) return "";
+  return `<section><h2>${esc(heading)}</h2>${lead ? `<p>${esc(lead)}</p>` : ""}${ul(items)}</section>`;
+};
 
-export const homeBody = (latest: RecordLink[], clips: SsrClip[] = [], hubSectionsHtml = "") =>
-  tabBody(
-    "RealUFO — Declassified UAP Archive",
-    DEFAULT_DESCRIPTION,
-    `<section><h2>Are UFOs real?</h2><p>What the declassified government files actually show — the strongest cases, the official verdicts, and how to judge a UFO claim: <a href="/real-ufo">Real UFO files: are UFOs real?</a></p></section>`,
+// Homepage prose (lib/home.ts, shared with the SPA feed): segments render
+// to escaped text + links, with the {{STATS}} slot filled by the loader's
+// live counts.
+const segsHtml = (segs: Seg[], stats: string) =>
+  segs
+    .map((s) => (typeof s === "string" ? esc(s.split(HOME_STATS_SLOT).join(stats)) : a({ href: s.a, text: s.t })))
+    .join("");
+
+export const homeIntroHtml = (stats: string) => HOME_INTRO.map((p) => `<p>${segsHtml(p, stats)}</p>`).join("");
+
+export const homeAreRealHtml = () =>
+  `<section><h2>Are UFOs real?</h2><p>${segsHtml(HOME_ARE_REAL, "")}</p></section>`;
+
+export const homeCasesHtml = () =>
+  `<section><h2>Strongest cases</h2><ul>${HOME_CASES.map(
+    (c) => `<li><a href="/case/${c.slug}">${esc(c.name)}</a> — ${esc(c.blurb)}</li>`
+  ).join("")}</ul></section>`;
+
+// `home` carries the loader-rendered intro + strongest-cases sections.
+// Without it (unit tests, degraded paths) the body falls back to the
+// one-line description and the short are-real pointer.
+export const homeBody = (
+  latest: RecordLink[],
+  clips: SsrClip[] = [],
+  hubSectionsHtml = "",
+  home?: { introHtml: string; casesHtml: string }
+) => {
+  const tail = [
     hubSectionsHtml,
     section("Latest files", docLinks(latest)),
-    clips.length ? `<section><h2>Short clips</h2>${clipsGrid(clips)}</section>` : ""
-  );
+    clips.length ? `<section><h2>Short clips</h2>${clipsGrid(clips)}</section>` : "",
+  ];
+  if (!home)
+    return tabBody(
+      "RealUFO — Declassified UAP Archive",
+      DEFAULT_DESCRIPTION,
+      `<section><h2>Are UFOs real?</h2><p>What the declassified government files actually show — the strongest cases, the official verdicts, and how to judge a UFO claim: <a href="/real-ufo">Real UFO files: are UFOs real?</a></p></section>`,
+      ...tail
+    );
+  return `<h1>RealUFO — Declassified UAP Archive</h1>${home.introHtml}${homeAreRealHtml()}${home.casesHtml}${tail.join("")}`;
+};
 
 // Shorts are just videos with static metadata, so the pre-render carries the
 // real cards (crawlers get links, first paint gets content, no skeleton flash).
