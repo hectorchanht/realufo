@@ -62,10 +62,14 @@ jobs:
                       if cur:
                           item["action"] = "already-present"
                           item["status"] = cur[0].get("status")
+                          item["validation_data"] = cur[0].get("validation_data")
+                          item["verification_data"] = cur[0].get("verification_data")
+                          item["certificate_authority"] = cur[0].get("certificate_authority")
                       else:
                           r = api("POST", "/accounts/%s/pages/projects/%s/domains" % (ACC, proj), {"name": dom})
                           item["action"] = "attached"
                           item["status"] = (r.get("result") or {}).get("status")
+                          item["validation_data"] = (r.get("result") or {}).get("validation_data")
                   except Exception as e:
                       item["error"] = str(e)[:500]
                   out["results"].append(item)
