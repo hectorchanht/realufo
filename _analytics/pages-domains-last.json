@@ -1,9 +1,9 @@
 {
-  "pairs": "openmusic=www.openmusic.dawnstudio.app",
+  "pairs": "clipbin=www.clipbin.dawnstudio.app,numerology=www.numerology.dawnstudio.app,openmusic=www.openmusic.hectorchan.com,clipbin=www.clipbin.hectorchan.com",
   "results": [
     {
-      "project": "openmusic",
-      "domain": "www.openmusic.dawnstudio.app",
+      "project": "clipbin",
+      "domain": "www.clipbin.dawnstudio.app",
       "action": "already-present",
       "status": "pending",
       "validation_data": {
@@ -15,6 +15,41 @@
         "error_message": "CNAME record not set"
       },
       "certificate_authority": "google"
+    },
+    {
+      "project": "numerology",
+      "domain": "www.numerology.dawnstudio.app",
+      "action": "already-present",
+      "status": "pending",
+      "validation_data": {
+        "status": "pending",
+        "method": "http"
+      },
+      "verification_data": {
+        "status": "pending",
+        "error_message": "CNAME record not set"
+      },
+      "certificate_authority": "google"
+    },
+    {
+      "project": "openmusic",
+      "domain": "www.openmusic.hectorchan.com",
+      "action": "attached",
+      "status": "initializing",
+      "validation_data": {
+        "status": "initializing",
+        "method": "http"
+      }
+    },
+    {
+      "project": "clipbin",
+      "domain": "www.clipbin.hectorchan.com",
+      "action": "attached",
+      "status": "initializing",
+      "validation_data": {
+        "status": "initializing",
+        "method": "http"
+      }
     }
   ],
   "account": "f1868a071996e836eae6da2b65f37929",
