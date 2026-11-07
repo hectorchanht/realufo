@@ -1,0 +1,5 @@
+{
+  "zone": "dawnstudio.app",
+  "host": "realufo.dawnstudio.app",
+  "error": "HTTP 401 @ POST /zones/61e33b44fb4163f8865193b64216957e/ssl/certificate_packs/order: {\"success\":false,\"errors\":[{\"code\":1450,\"message\":\"Access to configure this resource has not been granted for this zone. This feature is available with the Advanced Certificate Manager.\"}],\"messages\":[]}"
+}
