@@ -1,31 +1,31 @@
 {
-  "generated_at": "2026-10-08T19:19:43.094740Z",
-  "days_queried": 30,
-  "since": "2026-09-08",
+  "generated_at": "2026-11-07T21:07:51.350137Z",
+  "days_queried": 1,
+  "since": "2026-11-06",
   "zones": {
+    "dawnstudio.app": {
+      "requests": 1996,
+      "uniques": 485,
+      "bytes": 21510682,
+      "days_returned": 1
+    },
+    "hectorchan.com": {
+      "requests": 3568,
+      "uniques": 1378,
+      "bytes": 26770465,
+      "days_returned": 1
+    },
+    "realufo.org": {
+      "requests": 23938,
+      "uniques": 2531,
+      "bytes": 21201564126,
+      "days_returned": 1
+    },
     "moneyrate.lol": {
-      "requests": 106179,
-      "uniques": 4769,
-      "bytes": 832459827,
-      "days_returned": 30
-    },
-    "clipbin.lol": {
-      "requests": 2153,
-      "uniques": 255,
-      "bytes": 84008092,
-      "days_returned": 2
-    },
-    "openmusic.lol": {
-      "requests": 113642,
-      "uniques": 2173,
-      "bytes": 3662637962,
-      "days_returned": 30
-    },
-    "holdr.lol": {
-      "requests": 13080,
-      "uniques": 954,
-      "bytes": 166073502,
-      "days_returned": 3
+      "requests": 658,
+      "uniques": 195,
+      "bytes": 4384234,
+      "days_returned": 1
     }
   }
 }
