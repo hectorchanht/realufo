@@ -1,4 +1,5 @@
 {
-  "probe": "state-check",
-  "note": "if this file gets replaced by the workflow, the run reached its python step"
+  "pairs": "rushbin=www.clipbin.dawnstudio.app",
+  "results": [],
+  "error": "name 'ACC' is not defined"
 }
