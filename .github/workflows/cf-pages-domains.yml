@@ -51,7 +51,7 @@ jobs:
                       raise RuntimeError("no accounts visible to token")
                   ACC = accs[0]["id"]
               out["account"] = ACC
-              projects = api("GET", "/accounts/%s/pages/projects?per_page=100" % ACC)["result"]
+              projects = api("GET", "/accounts/%s/pages/projects" % ACC)["result"]
               out["projects_visible"] = sorted(p.get("name") for p in projects)
               for pair in out["pairs"].split(","):
                   proj, dom = pair.strip().split("=", 1)
