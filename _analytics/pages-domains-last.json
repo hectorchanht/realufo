@@ -1,17 +1,20 @@
 {
-  "pairs": "openmusic=www.openmusic.dawnstudio.app,clipbin=www.clipbin.dawnstudio.app",
+  "pairs": "openmusic=www.openmusic.dawnstudio.app",
   "results": [
     {
       "project": "openmusic",
       "domain": "www.openmusic.dawnstudio.app",
       "action": "already-present",
-      "status": "pending"
-    },
-    {
-      "project": "clipbin",
-      "domain": "www.clipbin.dawnstudio.app",
-      "action": "already-present",
-      "status": "pending"
+      "status": "pending",
+      "validation_data": {
+        "status": "pending",
+        "method": "http"
+      },
+      "verification_data": {
+        "status": "pending",
+        "error_message": "CNAME record not set"
+      },
+      "certificate_authority": "google"
     }
   ],
   "account": "f1868a071996e836eae6da2b65f37929",
