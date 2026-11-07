@@ -1,5 +1,6 @@
 {
-  "pairs": "rushbin=www.clipbin.dawnstudio.app",
+  "pairs": "rushbin=www.clipbin.dawnstudio.app,globalnewsshorts=www.globalnewsshorts.dawnstudio.app,numerology-7v4=www.numerology.dawnstudio.app,openmusic=www.openmusic.dawnstudio.app,strangedocs=www.strangedocs.dawnstudio.app,watchthenight=www.watchthenight.dawnstudio.app,dawn-zhconvert=www.zhconvert.dawnstudio.app",
   "results": [],
-  "error": "name 'ACC' is not defined"
+  "account": "f1868a071996e836eae6da2b65f37929",
+  "error": "HTTP 400 @ GET /accounts/f1868a071996e836eae6da2b65f37929/pages/projects?per_page=100: {\n  \"result\": null,\n  \"success\": false,\n  \"errors\": [\n    {\n      \"code\": 8000024,\n      \"message\": \"Invalid list options provided. Review the `page` or `per_page` parameter.\"\n    }\n  ],\n  \"messages\": []\n}\n"
 }
