@@ -97,6 +97,11 @@ export function useSetPageTitle(title: string, sub: string, docTitle?: string): 
 // canonical to "/"). Point canonical/og:url/og:title at the current route and
 // drop the landing page's tags we have no client copy of. Crawlers always get
 // the Worker's full per-route set on a fresh load.
+// Canonical origin pinned to the production host — the same rule as the
+// Worker (worker/lib/meta.ts). On the dawnstudio.app mirror, location.origin
+// would point canonical/og:url at the mirror and split the index signal.
+const CANONICAL_ORIGIN = "https://realufo.org";
+
 const LANDING = {
   path: location.pathname,
   canonical: document.querySelector('link[rel="canonical"]')?.getAttribute("href"),
@@ -108,7 +113,7 @@ let leftLanding = false;
 function syncHead(pathname: string, ogTitle: string) {
   if (pathname === LANDING.path && !leftLanding) return;
   leftLanding = true;
-  const url = (pathname === LANDING.path && LANDING.canonical) || location.origin + pathname;
+  const url = (pathname === LANDING.path && LANDING.canonical) || CANONICAL_ORIGIN + pathname;
   document.querySelector('link[rel="canonical"]')?.setAttribute("href", url);
   document.querySelector('meta[property="og:url"]')?.setAttribute("content", url);
   document.querySelector('meta[property="og:title"]')?.setAttribute("content", ogTitle);

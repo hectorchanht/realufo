@@ -31,6 +31,13 @@ export interface MetaInput {
 // `<` escaped so user text can't close the script element.
 const ldScript = (o: unknown) => `<script type="application/ld+json">${JSON.stringify(o).replace(/</g, "\\u003c")}</script>`;
 
+// Canonical origin is pinned to the production host (Hector 2026-11-07,
+// option A): this same build also serves the realufo.dawnstudio.app mirror,
+// and building canonical/og:url/JSON-LD from the request origin let Google
+// pick the mirror as canonical for /browse, /cases and /map. Every host
+// this build serves declares realufo.org as the canonical home.
+export const CANONICAL_ORIGIN = "https://realufo.org";
+
 // Replaces the `<!--META-->…<!--/META-->` default block (or a bare
 // `<!--META-->` placeholder) in `html` with per-route <title> +
 // description + OpenGraph/Twitter tags + JSON-LD. All interpolated values are
@@ -90,7 +97,8 @@ export function injectMeta(html: string, m: MetaInput): string {
 }
 
 // Site share card (web/public/og.png) for pages without their own image.
-const shareCard = (url: URL) => new URL("/og.png", url).href;
+// Served from the canonical origin so share previews never point at a mirror.
+const shareCard = () => `${CANONICAL_ORIGIN}/og.png`;
 const htmlResponse = (body: string, status = 200) =>
   new Response(body, { status, headers: { "content-type": "text/html;charset=utf-8" } });
 
@@ -105,7 +113,7 @@ const injectBoot = (html: string, boot: unknown) =>
 // Real 404 status (no soft-404s in search); the SPA still boots and shows its own not-found screen.
 const notFound = (html: string, url: URL) =>
   htmlResponse(
-    injectMeta(html, { title: "Page not found", description: DEFAULT_DESCRIPTION, url: url.origin + url.pathname, type: "website", robots: "noindex" }),
+    injectMeta(html, { title: "Page not found", description: DEFAULT_DESCRIPTION, url: CANONICAL_ORIGIN + url.pathname, type: "website", robots: "noindex" }),
     404
   );
 
@@ -163,8 +171,8 @@ export async function serveWithMeta(req: Request, env: Env): Promise<Response> {
       }
       if (!page) return notFound(html, url);
       // Query strings (archive filters, fbclid) never make a separate canonical page.
-      const canonical = url.origin + (page.canonicalPath ?? url.pathname);
-      const image = page.meta.image || shareCard(url);
+      const canonical = CANONICAL_ORIGIN + (page.canonicalPath ?? url.pathname);
+      const image = page.meta.image || shareCard();
       const jsonLd = page.meta.jsonLd && { "@context": "https://schema.org", ...page.meta.jsonLd, url: canonical, image };
       // /ask?q= shows a live AI answer nobody reviewed (AI answers can be wrong): never indexed.
       // Decided here, not in the loader: the page memo is keyed by path, query ignored.
