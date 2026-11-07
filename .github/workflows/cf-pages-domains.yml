@@ -27,7 +27,6 @@ jobs:
           python3 - <<'PYEOF'
           import json, os, urllib.request
           TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
-          ACC = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
           out = {"pairs": os.environ["PAIRS"], "results": []}
           def api(method, path, payload=None, token=None):
               data = json.dumps(payload).encode() if payload is not None else None
