@@ -1,43 +1,15 @@
 {
-  "pairs": "rushbin=www.clipbin.dawnstudio.app,globalnewsshorts=www.globalnewsshorts.dawnstudio.app,numerology-7v4=www.numerology.dawnstudio.app,openmusic=www.openmusic.dawnstudio.app,strangedocs=www.strangedocs.dawnstudio.app,watchthenight=www.watchthenight.dawnstudio.app,dawn-zhconvert=www.zhconvert.dawnstudio.app",
+  "pairs": "clipbin=www.clipbin.dawnstudio.app,numerology=www.numerology.dawnstudio.app",
   "results": [
     {
-      "project": "rushbin",
+      "project": "clipbin",
       "domain": "www.clipbin.dawnstudio.app",
-      "error": "HTTP 404 @ GET /accounts/f1868a071996e836eae6da2b65f37929/pages/projects/rushbin/domains: {\n  \"result\": null,\n  \"success\": false,\n  \"errors\": [\n    {\n      \"code\": 8000007,\n      \"message\": \"Project not found. The specified project name does not match any of your existing projects.\"\n    }\n  ],\n  \"messages\": []\n}\n"
-    },
-    {
-      "project": "globalnewsshorts",
-      "domain": "www.globalnewsshorts.dawnstudio.app",
       "action": "attached",
       "status": "initializing"
     },
     {
-      "project": "numerology-7v4",
+      "project": "numerology",
       "domain": "www.numerology.dawnstudio.app",
-      "error": "HTTP 404 @ GET /accounts/f1868a071996e836eae6da2b65f37929/pages/projects/numerology-7v4/domains: {\n  \"result\": null,\n  \"success\": false,\n  \"errors\": [\n    {\n      \"code\": 8000007,\n      \"message\": \"Project not found. The specified project name does not match any of your existing projects.\"\n    }\n  ],\n  \"messages\": []\n}\n"
-    },
-    {
-      "project": "openmusic",
-      "domain": "www.openmusic.dawnstudio.app",
-      "action": "attached",
-      "status": "initializing"
-    },
-    {
-      "project": "strangedocs",
-      "domain": "www.strangedocs.dawnstudio.app",
-      "action": "attached",
-      "status": "initializing"
-    },
-    {
-      "project": "watchthenight",
-      "domain": "www.watchthenight.dawnstudio.app",
-      "action": "attached",
-      "status": "initializing"
-    },
-    {
-      "project": "dawn-zhconvert",
-      "domain": "www.zhconvert.dawnstudio.app",
       "action": "attached",
       "status": "initializing"
     }
