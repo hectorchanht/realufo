@@ -1,0 +1,87 @@
+name: cf-cert-pack
+# Order a Cloudflare Advanced certificate pack (Total TLS) for ONE hostname via
+# POST /zones/{zid}/ssl/certificate_packs/order. Advanced packs can be created by
+# API with an edit-SSL token (unlike ordering the pack PRODUCT in the dashboard,
+# which is a purchase flow). FAILS LOUDLY; result JSON committed to _analytics/.
+# Usage: workflow_dispatch zone="dawnstudio.app" host="realufo.dawnstudio.app"
+on:
+  workflow_dispatch:
+    inputs:
+      zone:
+        description: "Zone name"
+        required: true
+      host:
+        description: "Hostname to certify (pack = zone apex + *.<host>)"
+        required: true
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "main" }
+      - name: Order advanced cert pack
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE_INPUT: ${{ inputs.zone }}
+          HOST_INPUT: ${{ inputs.host }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, urllib.request
+          TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
+          ZONE = os.environ["ZONE_INPUT"]
+          HOST = os.environ["HOST_INPUT"]
+          out = {"zone": ZONE, "host": HOST}
+          def api(method, path, payload=None):
+              data = json.dumps(payload).encode() if payload is not None else None
+              req = urllib.request.Request(
+                  "https://api.cloudflare.com/client/v4" + path, data=data,
+                  headers={"Authorization": "Bearer " + TOKEN,
+                           "Content-Type": "application/json"}, method=method)
+              try:
+                  raw = urllib.request.urlopen(req, timeout=60).read()
+              except urllib.request.HTTPError as he:
+                  body = he.read().decode()[:600]
+                  raise RuntimeError("HTTP %d @ %s %s: %s" % (he.code, method, path, body))
+              r = json.loads(raw)
+              if not r.get("success"):
+                  raise RuntimeError("api success=false: " + json.dumps(r.get("errors"))[:300] + " @ " + path)
+              return r
+          try:
+              zones = api("GET", "/zones?per_page=50&name=" + ZONE)["result"]
+              if not zones:
+                  raise RuntimeError("zone not found: " + ZONE)
+              zid = zones[0]["id"]
+              packs = api("GET", "/zones/%s/ssl/certificate_packs?per_page=50" % zid)["result"]
+              want = ["*.%s" % HOST]
+              have = [h for p in packs for h in (p.get("hosts") or [])]
+              if want[0] in have:
+                  out["changed"] = False
+                  out["note"] = "pack already covers *." + HOST
+              else:
+                  payload = {"type": "advanced", "hosts": [ZONE, HOST, "*.%s" % HOST],
+                             "validation_method": "txt", "validity_days": 90,
+                             "certificate_authority": "google", "cloudflare_branding": False}
+                  r = api("POST", "/zones/%s/ssl/certificate_packs/order" % zid, payload)
+                  res = r["result"]
+                  out["changed"] = True
+                  out["pack_id"] = res.get("id")
+                  out["pack_status"] = res.get("status")
+          except Exception as e:
+              out["error"] = str(e)[:800]
+          os.makedirs("_analytics", exist_ok=True)
+          fn = "_analytics/cert-pack-%s.json" % HOST
+          open(fn, "w").write(json.dumps(out, indent=2))
+          print(json.dumps(out, indent=2))
+          if out.get("error"):
+              raise SystemExit("FAILED: " + out["error"])
+          PYEOF
+      - name: Commit result
+        if: always()
+        run: |
+          git config user.name "muse"
+          git config user.email "muse@local"
+          git add _analytics/cert-pack-*.json
+          git diff --cached --quiet && echo "no changes" || git commit -m "cf cert pack result ($(date -u +%F))" && git push origin main
