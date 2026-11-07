@@ -1,0 +1,9 @@
+{
+  "zone": "hectorchan.com",
+  "zone_id": "81db0cfb74102188951acc49d9295ffc",
+  "note": "no entrypoint yet, creating phase ruleset",
+  "existing_rules": [],
+  "changed": true,
+  "rules_now": 1,
+  "ruleset_version": "1"
+}
