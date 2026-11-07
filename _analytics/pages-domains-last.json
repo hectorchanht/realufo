@@ -1,17 +1,17 @@
 {
-  "pairs": "clipbin=www.clipbin.dawnstudio.app,numerology=www.numerology.dawnstudio.app",
+  "pairs": "openmusic=www.openmusic.dawnstudio.app,clipbin=www.clipbin.dawnstudio.app",
   "results": [
+    {
+      "project": "openmusic",
+      "domain": "www.openmusic.dawnstudio.app",
+      "action": "already-present",
+      "status": "pending"
+    },
     {
       "project": "clipbin",
       "domain": "www.clipbin.dawnstudio.app",
-      "action": "attached",
-      "status": "initializing"
-    },
-    {
-      "project": "numerology",
-      "domain": "www.numerology.dawnstudio.app",
-      "action": "attached",
-      "status": "initializing"
+      "action": "already-present",
+      "status": "pending"
     }
   ],
   "account": "f1868a071996e836eae6da2b65f37929",
