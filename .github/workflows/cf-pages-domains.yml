@@ -1,0 +1,86 @@
+name: cf-pages-domains
+# Attach custom domains to Cloudflare Pages projects (idempotent) and report each
+# domain's status. Exists because the VM read token has NO Pages read scope, so
+# Pages domain state is invisible from the VM — this workflow commits its result
+# JSON to _analytics/ instead. FAILS LOUDLY on API errors (unlike cf-api.yml).
+# Usage: workflow_dispatch pairs="rushbin=www.clipbin.dawnstudio.app,openmusic=www.openmusic.dawnstudio.app"
+on:
+  workflow_dispatch:
+    inputs:
+      pairs:
+        description: "Comma list of project=domain pairs"
+        required: true
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "main" }
+      - name: Attach + report Pages domains
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PAIRS: ${{ inputs.pairs }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, urllib.request
+          TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
+          ACC = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
+          out = {"pairs": os.environ["PAIRS"], "results": []}
+          def api(method, path, payload=None, token=None):
+              data = json.dumps(payload).encode() if payload is not None else None
+              req = urllib.request.Request(
+                  "https://api.cloudflare.com/client/v4" + path, data=data,
+                  headers={"Authorization": "Bearer " + (token or TOKEN),
+                           "Content-Type": "application/json"}, method=method)
+              try:
+                  raw = urllib.request.urlopen(req, timeout=60).read()
+              except urllib.request.HTTPError as he:
+                  body = he.read().decode()[:500]
+                  raise RuntimeError("HTTP %d @ %s %s: %s" % (he.code, method, path, body))
+              r = json.loads(raw)
+              if not r.get("success"):
+                  raise RuntimeError("api success=false: " + json.dumps(r.get("errors"))[:300] + " @ " + path)
+              return r
+          try:
+              if not ACC:
+                  accs = api("GET", "/accounts?per_page=5")["result"]
+                  if not accs:
+                      raise RuntimeError("no accounts visible to token")
+                  ACC = accs[0]["id"]
+              out["account"] = ACC
+              projects = api("GET", "/accounts/%s/pages/projects?per_page=100" % ACC)["result"]
+              out["projects_visible"] = sorted(p.get("name") for p in projects)
+              for pair in out["pairs"].split(","):
+                  proj, dom = pair.strip().split("=", 1)
+                  item = {"project": proj, "domain": dom}
+                  try:
+                      doms = api("GET", "/accounts/%s/pages/projects/%s/domains" % (ACC, proj))["result"]
+                      cur = [d for d in doms if d.get("name") == dom]
+                      if cur:
+                          item["action"] = "already-present"
+                          item["status"] = cur[0].get("status")
+                      else:
+                          r = api("POST", "/accounts/%s/pages/projects/%s/domains" % (ACC, proj), {"name": dom})
+                          item["action"] = "attached"
+                          item["status"] = (r.get("result") or {}).get("status")
+                  except Exception as e:
+                      item["error"] = str(e)[:500]
+                  out["results"].append(item)
+          except Exception as e:
+              out["error"] = str(e)[:800]
+          os.makedirs("_analytics", exist_ok=True)
+          open("_analytics/pages-domains-last.json", "w").write(json.dumps(out, indent=2))
+          print(json.dumps(out, indent=2))
+          if out.get("error"):
+              raise SystemExit("FAILED: " + out["error"])
+          PYEOF
+      - name: Commit result
+        run: |
+          git config user.name "muse"
+          git config user.email "muse@local"
+          git add _analytics/pages-domains-last.json
+          git diff --cached --quiet && echo "no changes" || git commit -m "cf pages domains result ($(date -u +%F))" && git push origin main
