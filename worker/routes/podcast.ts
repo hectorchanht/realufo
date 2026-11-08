@@ -24,6 +24,7 @@ const EPISODE_CASE_SLUG: Record<string, string> = {
   "ep-3b94c296-5198-41f1-b1b1-4be9f5e32836": "kaikoura",
   "ep-3a251d97-42eb-4e2a-a0f6-104999b730f6": "jal-1628",
   "ep-7e05d28b-1c62-49fb-a0c9-616c8d799cdc": "tehran",
+  "ep-df49bbec-eb4d-4858-8a8c-e18f2a004c5c": "socorro",
 };
 
 const unesc = (s: string) =>
