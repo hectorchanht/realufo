@@ -70,7 +70,7 @@ def vision_json(system: str, text: str, jpeg: bytes, schema: dict, max_tokens: i
         return (choices[0].get("message") or {}).get("content")
     return out.get("response")
 
-CHAT_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8"  # same LLM as Ask (worker/lib/ask.ts)
+CHAT_MODEL = "@cf/qwen/qwen3.8-27b"  # same LLM as Ask (worker/lib/ask.ts)
 
 def chat(system: str, user: str, max_tokens: int = 400, temperature: float = 0.2):
     """System + user text -> the model's reply text (may still hold a <think> block)."""

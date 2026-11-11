@@ -1,6 +1,6 @@
 // Pure helpers for GET /api/ask (Spec 3). No I/O here — routes/ask.ts wires them.
 export const ASK_EMBED_MODEL = "@cf/baai/bge-m3";
-export const ASK_LLM_MODEL = "@cf/qwen/qwen3-30b-a3b-fp8";
+export const ASK_LLM_MODEL = "@cf/qwen/qwen3.8-27b";
 export const ASK_RERANK_MODEL = "@cf/baai/bge-reranker-base";
 export const ASK_TOP_K = 8;
 // Vector scores are flat (~0.55-0.59 for anything "UFO"), so long OCR'd PDFs crowd
