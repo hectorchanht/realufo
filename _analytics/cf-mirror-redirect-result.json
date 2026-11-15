@@ -1,0 +1,16 @@
+{
+  "zone": "dawnstudio.app",
+  "rule": "realufo mirror -> realufo.org 301",
+  "zone_id": "61e33b44fb4163f8865193b64216957e",
+  "existing_rules": [
+    "www.onespends -> apex (PWA origin unity); well-known excluded for cert renewal",
+    "www wildcard -> main site"
+  ],
+  "changed": true,
+  "rules_now": [
+    "www.onespends -> apex (PWA origin unity); well-known excluded for cert renewal",
+    "www wildcard -> main site",
+    "realufo mirror -> realufo.org 301"
+  ],
+  "ruleset_version": "6"
+}
