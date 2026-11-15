@@ -1,0 +1,111 @@
+name: cf-mirror-redirect
+# realufo.dawnstudio.app (dead mirror host: HTTP 522 placeholder AAAA 100::,
+# no Worker route) -> realufo.org 301 for every path, so Google stops picking
+# the mirror as canonical for realufo.org pages (/browse, /map, /case/roswell
+# and the rest of the "Duplicate" bucket). Zone: dawnstudio.app (hardcoded).
+# Idempotent: skips if a rule with the same description already exists.
+# Unlike cf-api.yml this workflow FAILS LOUDLY on any CF API error and commits
+# its result JSON to _analytics/ so the outcome is verifiable from the VM
+# (run logs are unreachable from there).
+on:
+  workflow_dispatch:
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "main" }
+      - name: Ensure realufo mirror redirect rule
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, urllib.request
+          TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
+          ZONE = "dawnstudio.app"
+          DESC = "realufo mirror -> realufo.org 301"
+          out = {"zone": ZONE, "rule": DESC}
+          try:
+              def api(method, path, payload=None):
+                  data = json.dumps(payload).encode() if payload is not None else None
+                  req = urllib.request.Request(
+                      "https://api.cloudflare.com/client/v4" + path, data=data,
+                      headers={"Authorization": "Bearer " + TOKEN,
+                               "Content-Type": "application/json"}, method=method)
+                  try:
+                      raw = urllib.request.urlopen(req, timeout=60).read()
+                  except urllib.request.HTTPError as he:
+                      body = he.read().decode()[:600]
+                      raise RuntimeError("HTTP %d @ %s %s: %s" % (he.code, method, path, body))
+                  r = json.loads(raw)
+                  if not r.get("success"):
+                      raise RuntimeError("api success=false: " + json.dumps(r.get("errors"))[:300] + " @ " + path)
+                  return r
+              zones = api("GET", "/zones?per_page=50&name=" + ZONE)["result"]
+              if not zones:
+                  raise RuntimeError("zone not found: " + ZONE)
+              zid = zones[0]["id"]
+              out["zone_id"] = zid
+              try:
+                  ep = api("GET", "/zones/%s/rulesets/phases/http_request_dynamic_redirect/entrypoint" % zid)["result"]
+                  rules = ep.get("rules") or []
+                  ep_id = ep["id"]
+              except RuntimeError as e:
+                  if "10003" not in str(e) and "404" not in str(e):
+                      raise
+                  out["note"] = "no entrypoint yet, creating phase ruleset"
+                  rules, ep_id = [], None
+              out["existing_rules"] = [r.get("description") for r in rules]
+              if any(r.get("description") == DESC for r in rules):
+                  out["changed"] = False
+                  out["note"] = "rule already exists"
+              else:
+                  new_rule = {
+                      "description": DESC,
+                      "expression": '(http.host eq "realufo.dawnstudio.app" and not starts_with(http.request.uri.path, "/.well-known/"))',
+                      "action": "redirect",
+                      "action_parameters": {"from_value": {
+                          "status_code": 301,
+                          "preserve_query_string": True,
+                          "target_url": {"expression": 'concat("https://realufo.org", http.request.uri.path)'}}},
+                      "enabled": True,
+                  }
+                  payload_rules = []
+                  for r in rules:
+                      keep = {"description": r.get("description"),
+                              "expression": r.get("expression"),
+                              "action": r.get("action"),
+                              "enabled": r.get("enabled", True)}
+                      if r.get("id"):
+                          keep["id"] = r["id"]
+                      if r.get("action_parameters"):
+                          keep["action_parameters"] = r["action_parameters"]
+                      payload_rules.append(keep)
+                  payload_rules.append(new_rule)
+                  if ep_id:
+                      r = api("PUT", "/zones/%s/rulesets/%s" % (zid, ep_id), {"rules": payload_rules})
+                  else:
+                      r = api("POST", "/zones/%s/rulesets" % zid,
+                              {"name": "Redirect rules", "kind": "zone",
+                               "phase": "http_request_dynamic_redirect", "rules": payload_rules})
+                  out["changed"] = True
+                  out["rules_now"] = [x.get("description") for x in (r["result"].get("rules") or [])]
+                  out["ruleset_version"] = r["result"].get("version")
+          except Exception as e:
+              out["error"] = str(e)[:800]
+          os.makedirs("_analytics", exist_ok=True)
+          fn = "_analytics/cf-mirror-redirect-result.json"
+          open(fn, "w").write(json.dumps(out, indent=2))
+          print(json.dumps(out, indent=2))
+          if out.get("error"):
+              raise SystemExit("FAILED: " + out["error"])
+          PYEOF
+      - name: Commit result
+        run: |
+          git config user.name "muse"
+          git config user.email "muse@local"
+          git add _analytics/cf-mirror-redirect-result.json
+          git diff --cached --quiet && echo "no changes" || git commit -m "cf mirror redirect result ($(date -u +%F))" && git push origin main
