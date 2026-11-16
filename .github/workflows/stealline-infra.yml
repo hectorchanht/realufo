@@ -1,35 +1,67 @@
 name: stealline-infra
 # StealLine Phase 1 infra: create the D1 database (idempotent) and apply
-# the migrations + founder seed from the stealline repo. Machine-way route
-# with this repo's working API token, same pattern as stealline-deploy.
+# the migrations + founder seed from the stealline repo. Wrangler runs
+# from a clean temp dir so the app repo's wrangler.toml (which carries a
+# placeholder D1 binding until the real id is known) cannot interfere.
+# Fail-loud pattern: the run commits its result JSON under _analytics/
+# in THIS repo, so the outcome is readable without log access.
 on:
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   infra:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with: { path: realufo }
+      - uses: actions/checkout@v4
         with:
           repository: hectorchanht/stealline
           ref: main
+          path: stealline
       - run: npm i -g wrangler
-      - name: Create D1 database (idempotent) and show id
+      - name: Create D1, apply migrations, verify, record result
         run: |
-          wrangler d1 create stealline-db || true
-          echo "=== D1 LIST ==="
-          wrangler d1 list
-        env:
-          CLOUDFLARE_API_TOKEN: <redacted>
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      - name: Apply migrations + seed
-        run: |
-          for f in migrations/0001_init.sql migrations/0002_seed_founder.sql; do
+          mkdir -p /tmp/w realufo/_analytics/stealline-infra
+          cd /tmp/w
+          set +e
+          wrangler d1 create stealline-db > create.log 2>&1
+          CREATE_RC=$?
+          wrangler d1 list --json > list.json 2> list.err
+          LIST_RC=$?
+          set -e
+          DB_ID=$(python3 -c "import json; d=json.load(open('list.json')); print(next((x['uuid'] for x in d if x['name']=='stealline-db'), ''))")
+          echo "db_id=$DB_ID create_rc=$CREATE_RC list_rc=$LIST_RC"
+          MIG_LOG=""
+          for f in "$GITHUB_WORKSPACE/stealline/migrations/0001_init.sql" "$GITHUB_WORKSPACE/stealline/migrations/0002_seed_founder.sql"; do
             echo "=== applying $f ==="
-            wrangler d1 execute stealline-db --remote --file "$f"
+            wrangler d1 execute stealline-db --remote --file "$f" 2>&1 | tail -3
           done
-          echo "=== VERIFY COUNTS ==="
-          wrangler d1 execute stealline-db --remote --command "SELECT (SELECT COUNT(*) FROM users) AS users, (SELECT COUNT(*) FROM watches) AS watches, (SELECT COUNT(*) FROM listings) AS listings, (SELECT COUNT(*) FROM reveals) AS reveals, (SELECT COUNT(*) FROM credits) AS credits;"
+          wrangler d1 execute stealline-db --remote --json --command "SELECT (SELECT COUNT(*) FROM users) AS users, (SELECT COUNT(*) FROM watches) AS watches, (SELECT COUNT(*) FROM listings) AS listings, (SELECT COUNT(*) FROM reveals) AS reveals, (SELECT COUNT(*) FROM credits) AS credits, (SELECT COUNT(*) FROM matches) AS matches;" > counts.json
+          python3 - "$DB_ID" "$CREATE_RC" <<'PY'
+          import json, sys
+          counts = json.load(open('counts.json'))
+          result = {
+            'db_id': sys.argv[1],
+            'create_rc': int(sys.argv[2]),
+            'create_log_tail': open('create.log').read()[-500:],
+            'counts': counts[0]['results'][0] if counts and counts[0].get('results') else counts,
+          }
+          import os
+          out = os.path.expandvars('$GITHUB_WORKSPACE/realufo/_analytics/stealline-infra/result.json')
+          json.dump(result, open(out, 'w'), indent=1)
+          print(json.dumps(result, indent=1))
+          PY
         env:
           CLOUDFLARE_API_TOKEN: <redacted>
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Commit result
+        run: |
+          cd realufo
+          git config user.name "stealline-infra"
+          git config user.email "actions@github.com"
+          git add _analytics/stealline-infra/result.json
+          git commit -m "stealline-infra result" || echo "no change"
+          git push
