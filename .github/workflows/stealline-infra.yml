@@ -70,6 +70,42 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Phase 2 — cascade worker deploy + wiring
+        run: |
+          set +e
+          mkdir -p /tmp/w
+          cd /tmp/w
+          wrangler d1 execute stealline-db --remote --command "SELECT (SELECT COUNT(*) FROM memberships) AS memberships, (SELECT COUNT(*) FROM cascades) AS cascades, (SELECT COUNT(*) FROM reveal_links) AS reveal_links, (SELECT COUNT(*) FROM reveal_events) AS reveal_events;" > counts2.log 2>&1
+          echo "counts2 rc=$?"
+          cd "$GITHUB_WORKSPACE/stealline/cascade-worker"
+          wrangler deploy > /tmp/w/cascade-deploy.log 2>&1; echo "cascade deploy rc=$?"
+          printf %s "${{ secrets.STEALLINE_INGEST_SECRET }}" | wrangler secret put INGEST_SECRET > /tmp/w/cascade-secret.log 2>&1; echo "cascade secret rc=$?"
+          CAS_URL=$(grep -oE 'https://stealline-cascade\.[A-Za-z0-9.-]*workers\.dev' /tmp/w/cascade-deploy.log | head -1)
+          echo "cascade url: $CAS_URL"
+          if [ -n "$CAS_URL" ]; then
+            printf %s "$CAS_URL" | wrangler pages secret put CASCADE_API --project-name stealline > /tmp/w/cascade-pages-secret.log 2>&1; echo "pages secret rc=$?"
+          else
+            echo "no workers.dev URL in deploy log — CASCADE_API not set; the Pages service binding remains the route" > /tmp/w/cascade-pages-secret.log
+          fi
+          CAS_URL="$CAS_URL" python3 - <<'PY'
+          import json, os
+          p = os.path.expandvars('$GITHUB_WORKSPACE/realufo/_analytics/stealline-infra/result.json')
+          def tail(f, n=1500):
+              try: return open(f).read()[-n:]
+              except Exception as e: return f'<missing {f}: {e}>'
+          try: result = json.load(open(p))
+          except Exception: result = {}
+          result['cascade_url'] = os.environ.get('CAS_URL', '')
+          result['counts2_log'] = tail('/tmp/w/counts2.log', 2000)
+          result['cascade_deploy_log'] = tail('/tmp/w/cascade-deploy.log')
+          result['cascade_secret_log'] = tail('/tmp/w/cascade-secret.log', 600)
+          result['cascade_pages_secret_log'] = tail('/tmp/w/cascade-pages-secret.log', 600)
+          json.dump(result, open(p, 'w'), indent=1)
+          print('result.json extended with cascade results')
+          PY
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Commit result
         if: always()
         run: |
