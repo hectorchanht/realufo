@@ -1,10 +1,9 @@
 name: stealline-infra
 # StealLine Phase 1 infra: create the D1 database (idempotent) and apply
-# the migrations + founder seed from the stealline repo. Wrangler runs
-# from a clean temp dir so the app repo's wrangler.toml (which carries a
-# placeholder D1 binding until the real id is known) cannot interfere.
-# Fail-loud pattern: the run commits its result JSON under _analytics/
-# in THIS repo, so the outcome is readable without log access.
+# the migrations + founder seed from the stealline repo. Fail-soft by
+# design: every command's output lands in _analytics/stealline-infra/
+# result.json in THIS repo, committed even on failure, so the outcome is
+# readable without log access.
 on:
   workflow_dispatch:
 permissions:
@@ -24,44 +23,60 @@ jobs:
       - run: npm i -g wrangler
       - name: Create D1, apply migrations, verify, record result
         run: |
+          set +e
           mkdir -p /tmp/w realufo/_analytics/stealline-infra
           cd /tmp/w
-          set +e
-          wrangler d1 create stealline-db > create.log 2>&1
-          CREATE_RC=$?
-          wrangler d1 list --json > list.json 2> list.err
-          LIST_RC=$?
-          set -e
-          DB_ID=$(python3 -c "import json; d=json.load(open('list.json')); print(next((x['uuid'] for x in d if x['name']=='stealline-db'), ''))")
-          echo "db_id=$DB_ID create_rc=$CREATE_RC list_rc=$LIST_RC"
-          MIG_LOG=""
+          wrangler d1 create stealline-db > create.log 2>&1; echo "create rc=$?"
+          wrangler d1 list > list.log 2>&1; echo "list rc=$?"
+          DB_ID=$(grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' create.log | head -1)
+          if [ -z "$DB_ID" ]; then
+            DB_ID=$(python3 - <<'PY'
+          import re
+          txt = open('list.log').read()
+          # wrangler d1 list prints a table: uuid ... name stealline-db
+          m = re.search(r'([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})[^\n]*stealline-db', txt)
+          if not m:
+              rows = [l for l in txt.splitlines() if 'stealline-db' in l]
+              m = re.search(r'([0-9a-f-]{36})', rows[0]) if rows else None
+          print(m.group(1) if m else '')
+          PY
+          )
+          fi
+          echo "DB_ID=$DB_ID"
           for f in "$GITHUB_WORKSPACE/stealline/migrations/0001_init.sql" "$GITHUB_WORKSPACE/stealline/migrations/0002_seed_founder.sql"; do
             echo "=== applying $f ==="
-            wrangler d1 execute stealline-db --remote --file "$f" 2>&1 | tail -3
+            wrangler d1 execute stealline-db --remote --file "$f" > "mig-$(basename $f).log" 2>&1
+            echo "rc=$? (see result.json)"
           done
-          wrangler d1 execute stealline-db --remote --json --command "SELECT (SELECT COUNT(*) FROM users) AS users, (SELECT COUNT(*) FROM watches) AS watches, (SELECT COUNT(*) FROM listings) AS listings, (SELECT COUNT(*) FROM reveals) AS reveals, (SELECT COUNT(*) FROM credits) AS credits, (SELECT COUNT(*) FROM matches) AS matches;" > counts.json
-          python3 - "$DB_ID" "$CREATE_RC" <<'PY'
-          import json, sys
-          counts = json.load(open('counts.json'))
+          wrangler d1 execute stealline-db --remote --command "SELECT (SELECT COUNT(*) FROM users) AS users, (SELECT COUNT(*) FROM watches) AS watches, (SELECT COUNT(*) FROM listings) AS listings, (SELECT COUNT(*) FROM reveals) AS reveals, (SELECT COUNT(*) FROM credits) AS credits, (SELECT COUNT(*) FROM matches) AS matches;" > counts.log 2>&1
+          echo "counts rc=$?"
+          DB_ID="$DB_ID" python3 - <<'PY'
+          import json, os, glob
+          def tail(p, n=1200):
+              try: return open(p).read()[-n:]
+              except Exception as e: return f'<missing {p}: {e}>'
           result = {
-            'db_id': sys.argv[1],
-            'create_rc': int(sys.argv[2]),
-            'create_log_tail': open('create.log').read()[-500:],
-            'counts': counts[0]['results'][0] if counts and counts[0].get('results') else counts,
+            'db_id': os.environ.get('DB_ID', ''),
+            'create_log': tail('/tmp/w/create.log'),
+            'list_log': tail('/tmp/w/list.log'),
+            'mig_0001': tail('/tmp/w/mig-0001_init.sql.log'),
+            'mig_0002': tail('/tmp/w/mig-0002_seed_founder.sql.log'),
+            'counts_log': tail('/tmp/w/counts.log', 2000),
           }
-          import os
           out = os.path.expandvars('$GITHUB_WORKSPACE/realufo/_analytics/stealline-infra/result.json')
           json.dump(result, open(out, 'w'), indent=1)
-          print(json.dumps(result, indent=1))
+          print('result.json written')
           PY
+          exit 0
         env:
           CLOUDFLARE_API_TOKEN: <redacted>
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Commit result
+        if: always()
         run: |
           cd realufo
           git config user.name "stealline-infra"
           git config user.email "actions@github.com"
           git add _analytics/stealline-infra/result.json
           git commit -m "stealline-infra result" || echo "no change"
-          git push
+          git push || true
