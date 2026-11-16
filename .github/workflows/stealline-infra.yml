@@ -1,0 +1,35 @@
+name: stealline-infra
+# StealLine Phase 1 infra: create the D1 database (idempotent) and apply
+# the migrations + founder seed from the stealline repo. Machine-way route
+# with this repo's working API token, same pattern as stealline-deploy.
+on:
+  workflow_dispatch:
+jobs:
+  infra:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: hectorchanht/stealline
+          ref: main
+      - run: npm i -g wrangler
+      - name: Create D1 database (idempotent) and show id
+        run: |
+          wrangler d1 create stealline-db || true
+          echo "=== D1 LIST ==="
+          wrangler d1 list
+        env:
+          CLOUDFLARE_API_TOKEN: <redacted>
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Apply migrations + seed
+        run: |
+          for f in migrations/0001_init.sql migrations/0002_seed_founder.sql; do
+            echo "=== applying $f ==="
+            wrangler d1 execute stealline-db --remote --file "$f"
+          done
+          echo "=== VERIFY COUNTS ==="
+          wrangler d1 execute stealline-db --remote --command "SELECT (SELECT COUNT(*) FROM users) AS users, (SELECT COUNT(*) FROM watches) AS watches, (SELECT COUNT(*) FROM listings) AS listings, (SELECT COUNT(*) FROM reveals) AS reveals, (SELECT COUNT(*) FROM credits) AS credits;"
+        env:
+          CLOUDFLARE_API_TOKEN: <redacted>
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
