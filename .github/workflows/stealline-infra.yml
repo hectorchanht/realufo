@@ -43,7 +43,7 @@ jobs:
           )
           fi
           echo "DB_ID=$DB_ID"
-          for f in "$GITHUB_WORKSPACE/stealline/migrations/0001_init.sql" "$GITHUB_WORKSPACE/stealline/migrations/0002_seed_founder.sql"; do
+          for f in "$GITHUB_WORKSPACE"/stealline/migrations/*.sql; do
             echo "=== applying $f ==="
             wrangler d1 execute stealline-db --remote --file "$f" > "mig-$(basename $f).log" 2>&1
             echo "rc=$? (see result.json)"
@@ -59,8 +59,7 @@ jobs:
             'db_id': os.environ.get('DB_ID', ''),
             'create_log': tail('/tmp/w/create.log'),
             'list_log': tail('/tmp/w/list.log'),
-            'mig_0001': tail('/tmp/w/mig-0001_init.sql.log'),
-            'mig_0002': tail('/tmp/w/mig-0002_seed_founder.sql.log'),
+            'migrations': {os.path.basename(p): tail(p, 400) for p in sorted(glob.glob('/tmp/w/mig-*.log'))},
             'counts_log': tail('/tmp/w/counts.log', 2000),
           }
           out = os.path.expandvars('$GITHUB_WORKSPACE/realufo/_analytics/stealline-infra/result.json')
