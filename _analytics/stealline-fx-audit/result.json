@@ -14,9 +14,9 @@
     "served_by_colo": "ATL",
     "served_by_primary": true,
     "timings": {
-     "sql_duration_ms": 0.3181
+     "sql_duration_ms": 0.1515
     },
-    "duration": 0.3181,
+    "duration": 0.1515,
     "changes": 0,
     "last_row_id": 0,
     "changed_db": false,
@@ -31,58 +31,67 @@
   {
    "results": [
     {
+     "watch_id": "w-macbook",
+     "listing_id": "japan:fxprobe-20261116",
+     "gap_pct": 18.9,
+     "saving": 104.2,
+     "fx_rate": 0.008916,
+     "fx_date": "2026-11-16",
+     "created_at": "2026-11-16 11:58:26"
+    },
+    {
      "watch_id": "w-pixel",
      "listing_id": "karrot:11687994",
      "gap_pct": 36.4,
      "saving": 200,
-     "fx_rate": 1.4254,
+     "fx_rate": 1,
      "fx_date": "2026-11-16",
-     "created_at": "2026-11-16 11:22:27"
+     "created_at": "2026-11-16 11:58:05"
     },
     {
      "watch_id": "w-macbook",
      "listing_id": "karrot:11293820",
      "gap_pct": 18.2,
      "saving": 100,
-     "fx_rate": 1.4254,
+     "fx_rate": 1,
      "fx_date": "2026-11-16",
-     "created_at": "2026-11-16 11:22:23"
+     "created_at": "2026-11-16 11:58:04"
     },
     {
      "watch_id": "w-iphone",
      "listing_id": "kijiji:1745562467",
      "gap_pct": 0,
      "saving": 0,
-     "fx_rate": 1.4254,
+     "fx_rate": 1,
      "fx_date": "2026-11-16",
-     "created_at": "2026-11-16 11:22:22"
+     "created_at": "2026-11-16 11:58:02"
     },
     {
      "watch_id": "w-iphone",
      "listing_id": "kijiji:1745327989",
      "gap_pct": 0,
      "saving": 0,
-     "fx_rate": 1.4254,
+     "fx_rate": 1,
      "fx_date": "2026-11-16",
-     "created_at": "2026-11-16 11:22:22"
+     "created_at": "2026-11-16 11:58:02"
     },
     {
      "watch_id": "w-iphone",
      "listing_id": "facebook:1168291865621035",
      "gap_pct": 0,
      "saving": 0,
-     "fx_rate": 1.4254,
+     "fx_rate": 1,
      "fx_date": "2026-11-16",
-     "created_at": "2026-11-16 11:22:21"
+     "created_at": "2026-11-16 11:57:58"
     },
     {
      "watch_id": "w-macbook",
      "listing_id": "facebook:1895492135153643",
      "gap_pct": 9.1,
      "saving": 50,
-     "fx_rate": 1.4254,
+     "fx_rate": 1,
      "fx_date": "2026-11-16",
-     "created_at": "2026-11-16 11:22:21"
+     "created_at": "2026-11-16 11:57:58"
     },
     {
      "watch_id": "w-ipad",
@@ -101,14 +110,14 @@
     "served_by_colo": "ATL",
     "served_by_primary": true,
     "timings": {
-     "sql_duration_ms": 0.4695
+     "sql_duration_ms": 0.2562
     },
-    "duration": 0.4695,
+    "duration": 0.2562,
     "changes": 0,
     "last_row_id": 0,
     "changed_db": false,
     "size_after": 593920,
-    "rows_read": 14,
+    "rows_read": 16,
     "rows_written": 0,
     "total_attempts": 1
    }
