@@ -29,7 +29,7 @@ PLAN = {
     "clipbin.lol": ["hello"],
     "holdr.lol": ["hello", "support"],
     "ownerledgr.com": ["hello"],
-    "dawnstudio.app": ["hello"],
+    "dawnstudio.app": ["hello", "hector"],
 }
 
 def api(method, path, body=None):
