@@ -4,12 +4,16 @@
     {
       "project": "stealline",
       "domain": "huntsteals.dawnstudio.app",
-      "action": "attached",
-      "status": "initializing",
+      "action": "already-present",
+      "status": "pending",
       "validation_data": {
-        "status": "initializing",
+        "status": "pending",
         "method": "http"
-      }
+      },
+      "verification_data": {
+        "status": "active"
+      },
+      "certificate_authority": "google"
     }
   ],
   "account": "f1868a071996e836eae6da2b65f37929",
