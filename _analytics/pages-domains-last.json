@@ -5,9 +5,9 @@
       "project": "stealline",
       "domain": "huntsteals.dawnstudio.app",
       "action": "already-present",
-      "status": "pending",
+      "status": "active",
       "validation_data": {
-        "status": "pending",
+        "status": "active",
         "method": "http"
       },
       "verification_data": {
