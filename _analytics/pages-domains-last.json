@@ -1,9 +1,9 @@
 {
-  "pairs": "stealline=stealline.dawnstudio.app",
+  "pairs": "stealline=huntsteals.dawnstudio.app",
   "results": [
     {
       "project": "stealline",
-      "domain": "stealline.dawnstudio.app",
+      "domain": "huntsteals.dawnstudio.app",
       "action": "attached",
       "status": "initializing",
       "validation_data": {
@@ -16,11 +16,11 @@
   "projects_visible": [
     "clipbin",
     "dawn-studio",
-    "dawn-zhconvert",
     "hectorchan",
+    "jadefall",
     "numerology",
-    "onespends",
     "openmusic",
+    "orbfall",
     "stealline",
     "strangedocs",
     "watchthenight"
