@@ -22,4 +22,5 @@ export const ABOUT_HTML = `
 <li>Contact: <a href="mailto:hello@realufo.org">hello@realufo.org</a></li>
 <li>The original static edition is preserved at <a href="https://release.realufo.org/">release.realufo.org</a>.</li>
 </ul>
+<p><a href="https://dawnstudio.app/#manifesto">Dawn's apps are built by one creator, for himself first and for everyone, free — no ads, no data selling, basics free forever.</a></p>
 `;
