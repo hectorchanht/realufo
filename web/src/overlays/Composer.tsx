@@ -317,7 +317,7 @@ export function Composer() {
           />
         )}
 
-        <div className="mb-3 flex gap-2">
+        <div data-scroll className="mb-3 flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
           {STANCE_OPTS.map((o) => {
             const active = stance === o.id;
             return (
@@ -325,7 +325,7 @@ export function Composer() {
                 key={o.id}
                 type="button"
                 onClick={() => setStance(o.id)}
-                className="flex flex-1 items-center justify-center gap-1 rounded-[9px] border px-1 py-2 font-mono text-[10px] font-semibold active:scale-[.96]"
+                className="flex flex-none items-center justify-center gap-1 whitespace-nowrap rounded-[9px] border px-2.5 py-2 font-mono text-[10px] font-semibold active:scale-[.96]"
                 style={{
                   borderColor: o.color,
                   background: active ? o.color : "transparent",

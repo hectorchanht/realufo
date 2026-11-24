@@ -85,6 +85,23 @@ describe("Composer", () => {
     expect(screen.getByPlaceholderText("Thread title")).toBeInTheDocument();
   });
 
+  it("stance row scrolls horizontally; pills never squeeze or clip (Analyst stays reachable on phones)", () => {
+    renderComposer({ mode: "newThread", boardId: "uap" });
+
+    const row = screen.getByRole("button", { name: /believer/i }).parentElement!;
+    expect(row.hasAttribute("data-scroll")).toBe(true);
+    expect(row.className).toContain("overflow-x-auto");
+    expect(row.className).not.toContain("flex-wrap");
+    expect(row.className).toContain("[&>*]:flex-none");
+    for (const label of ["Neutral", "Believer", "Skeptic", "Analyst"]) {
+      const pill = screen.getByRole("button", { name: new RegExp(label, "i") });
+      expect(row.contains(pill)).toBe(true);
+      expect(pill.className).toContain("flex-none");
+      expect(pill.className).toContain("whitespace-nowrap");
+      expect(pill.className).not.toContain("flex-1");
+    }
+  });
+
   it("toasts 'Say something first' and does not submit when the body is empty", () => {
     renderComposer({ mode: "newThread", boardId: "uap" });
 
