@@ -1,0 +1,53 @@
+name: hf-dataset-sync
+permissions:
+  contents: read
+on:
+  # primary trigger: re-export right after a successful daily ingest, so the
+  # Hugging Face dataset (realufo/realufo-uap-archive) tracks the live archive
+  workflow_run:
+    workflows: ["ingest"]
+    types: [completed]
+  schedule:
+    # weekly safety net: Mondays 07:30 UTC, after that day's 06:00 UTC ingest —
+    # catches any day the workflow_run trigger was missed
+    - cron: "30 7 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run: { description: "dry run (export + counts only, no upload)", type: boolean, default: true }
+jobs:
+  sync:
+    # workflow_run fires on any conclusion; only a successful ingest may publish
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install huggingface_hub
+      - run: python3 scripts/test_export_dataset.py
+      # the exporter reads the live site APIs, filters to open licences and
+      # self-checks before writing; a failed self-check exits 1 and fails the job
+      - name: export
+        run: python3 scripts/export_dataset.py --out dataset
+      - name: counts
+        run: |
+          echo "records: $(wc -l < dataset/records.jsonl)"
+          echo "pages:   $(wc -l < dataset/pages.jsonl)"
+          grep -A2 "declassified government" dataset/README.md | head -3
+      # scheduled / workflow_run runs upload live; manual dispatch uploads only
+      # when dry_run=false (same pattern as ingest.yml's LIVE flag)
+      - name: upload
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run == 'false' }}
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: hf upload realufo/realufo-uap-archive dataset/ --repo-type dataset
+  # GitHub disables scheduled workflows after 60 days without repo activity;
+  # re-enabling via the API resets that timer. Separate job so it runs even if sync fails.
+  keepalive:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/hf-dataset-sync.yml/enable"
