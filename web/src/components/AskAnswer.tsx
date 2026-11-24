@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useAsk, useShareAsk } from "../api/queries";
 import { ApiError } from "../api/client";
 import { shareLink, xIntent, type ShareResult } from "../lib/shareLink";
-import { AskCard, ShareNote, CARD, ACTION, ICON_ACTION } from "./AskCard";
+import { AskCard, ShareNote, CARD, ICON_ACTION } from "./AskCard";
 import type { AskResponse } from "../api/types";
 
 function errorCopy(e: unknown) {
@@ -40,9 +40,8 @@ function ShareControls({ question, logId }: { question: string; logId: number })
   if (!url)
     return (
       <>
-        <button type="button" disabled={share.isPending} onClick={publish} className={`${ACTION} inline-flex items-center gap-2`}>
-          <Share2 size={13} strokeWidth={2} aria-hidden="true" />
-          share
+        <button type="button" disabled={share.isPending} onClick={publish} aria-label="share" title="share" className={ICON_ACTION}>
+          <Share2 size={16} strokeWidth={1.75} aria-hidden="true" />
         </button>
         {failed && <span className="font-mono text-[10px] text-dim">couldn't share — try again</span>}
       </>
@@ -66,10 +65,11 @@ function ShareControls({ question, logId }: { question: string; logId: number })
             { onSuccess: () => { setUrl(null); setResult(null); }, onError: () => setUndoFailed(true) }
           );
         }}
-        className={`${ACTION} inline-flex items-center gap-2`}
+        aria-label="undo"
+        title="undo"
+        className={ICON_ACTION}
       >
-        <Undo2 size={13} strokeWidth={2} aria-hidden="true" />
-        undo
+        <Undo2 size={16} strokeWidth={1.75} aria-hidden="true" />
       </button>
       {undoFailed && <span className="font-mono text-[10px] text-dim">couldn't undo — try again</span>}
       <ShareNote result={result} url={url} />
@@ -118,9 +118,8 @@ function AskAnswerBody({ question, onPost }: AskAnswerProps) {
           <>
             {canShare && <ShareControls key={data.log_id} question={question} logId={data.log_id!} />}
             {canPost && (
-              <button type="button" onClick={() => onPost!(data)} className={`${ACTION} inline-flex items-center gap-2`}>
-                <Megaphone size={13} strokeWidth={2} aria-hidden="true" />
-                post to a board
+              <button type="button" onClick={() => onPost!(data)} aria-label="post to a board" title="post to a board" className={ICON_ACTION}>
+                <Megaphone size={16} strokeWidth={1.75} aria-hidden="true" />
               </button>
             )}
           </>

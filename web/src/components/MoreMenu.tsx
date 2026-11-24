@@ -8,7 +8,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
-import { Download, Share, Upload } from "lucide-react";
+import { Download, Share, Smartphone, Upload } from "lucide-react";
 import { promptInstall, useInstallMode } from "../lib/install";
 import { MORE_ICON as MoreIcon, tabHref, type NavItem, type NavTab } from "./navItems";
 import { downloadIdentity, importIdentity } from "../lib/identity";
@@ -68,7 +68,7 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
                 style={{ color: on ? "var(--signal)" : "var(--ink)" }}
               >
                 <Icon size={iconSize} aria-hidden="true" />
-                {item.label}
+                <span className="sr-only">{item.label}</span>
               </Link>
             </li>
           );
@@ -79,13 +79,11 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
       <TextSizer iconSize={iconSize} className={`flex items-center gap-3 px-3 font-mono font-medium ${sheet ? "min-h-[52px] text-[14px]" : "min-h-[44px] text-[13px]"}`} />
       {/* Same person on another device: move the anon id file (lib/identity.ts). */}
       <div className="my-1 border-t border-line" />
-      <button type="button" onClick={saveId} className={row} style={{ color: "var(--ink)" }} title="Download your anonymous ID to use on another device">
+      <button type="button" onClick={saveId} className={row} style={{ color: "var(--ink)" }} aria-label="Download ID" title="Download your anonymous ID to use on another device">
         <Download size={iconSize} aria-hidden="true" />
-        Download ID
       </button>
-      <button type="button" onClick={() => file.current?.click()} className={row} style={{ color: "var(--ink)" }} title="Upload an ID file from another device">
+      <button type="button" onClick={() => file.current?.click()} className={row} style={{ color: "var(--ink)" }} aria-label="Upload ID" title="Upload an ID file from another device">
         <Upload size={iconSize} aria-hidden="true" />
-        Upload ID
       </button>
       <input
         ref={file}
@@ -117,7 +115,7 @@ export function MoreMenu({ items, activeTab, sheet = false }: { items: NavItem[]
         style={{ color: lit ? "var(--signal)" : "var(--dim)", background: !sheet && lit ? "var(--signal-dim)" : undefined }}
       >
         <MoreIcon size={sheet ? 22 : 18} aria-hidden="true" />
-        <span className={lit ? (sheet ? "font-mono text-[9px] font-medium tracking-[.3px]" : "") : "sr-only"}>More</span>
+        <span className="sr-only">More</span>
       </button>
       {open &&
         (sheet
@@ -144,9 +142,8 @@ function InstallItem({ sheet, close }: { sheet: boolean; close: () => void }) {
   };
   return (
     <li>
-      <button type="button" onClick={tap} aria-expanded={mode === "ios" ? help : undefined} className={itemCls(sheet)} style={{ color: "var(--ink)" }}>
-        <Download size={sheet ? 20 : 17} aria-hidden="true" />
-        Install app
+      <button type="button" onClick={tap} aria-expanded={mode === "ios" ? help : undefined} aria-label="Install app" title="Install app" className={itemCls(sheet)} style={{ color: "var(--ink)" }}>
+        <Smartphone size={sheet ? 20 : 17} aria-hidden="true" />
       </button>
       {help && (
         <p className="px-3 pb-2 font-mono text-[12px] leading-relaxed text-dim">

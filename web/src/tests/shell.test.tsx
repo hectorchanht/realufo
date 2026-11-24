@@ -41,14 +41,14 @@ afterEach(() => {
 });
 
 describe("AppShell", () => {
-  it("phone bar: four icon tabs + More; only the active tab shows its label", async () => {
+  it("phone bar: four icon tabs + More; no tab shows a visible label (§8 icon-only)", async () => {
     renderAppAt("/archive?type=shorts");
     await screen.findByPlaceholderText(/search .*shorts/i);
     const bar = within(document.querySelector("[data-bottomtab]") as HTMLElement);
     const shorts = bar.getByRole("link", { name: "Shorts" });
     expect(shorts).toHaveAttribute("aria-current", "page");
     expect(shorts).toHaveAttribute("href", "/archive?type=shorts");
-    expect(within(shorts).getByText("Shorts")).not.toHaveClass("sr-only");
+    expect(within(shorts).getByText("Shorts")).toHaveClass("sr-only");
     expect(within(bar.getByRole("link", { name: "Archive" })).getByText("Archive")).toHaveClass("sr-only");
     expect(bar.getAllByRole("link").map((a) => a.textContent)).toEqual(["Home", "Archive", "Shorts", "Boards"]);
   });
@@ -68,7 +68,7 @@ describe("AppShell", () => {
     fireEvent.click(more);
     fireEvent.click(within(screen.getByRole("navigation", { name: "More" })).getByRole("link", { name: "Map" }));
     await waitFor(() => expect(screen.queryByRole("navigation", { name: "More" })).toBeNull());
-    await waitFor(() => expect(within(screen.getByRole("button", { name: "More" })).getByText("More")).not.toHaveClass("sr-only"));
+    await waitFor(() => expect(within(screen.getByRole("button", { name: "More" })).getByText("More")).toHaveClass("sr-only"));
   });
 
   it("desktop top nav: Home tab, icon tabs with tooltips, More dropdown", async () => {
@@ -77,7 +77,7 @@ describe("AppShell", () => {
     await waitFor(() => expect(document.querySelector("[data-topnav]")).toBeTruthy());
     const topnav = within(document.querySelector("[data-topnav]") as HTMLElement);
     expect(topnav.getByRole("link", { name: "Home" })).toHaveAttribute("title", "Home");
-    expect(topnav.getByRole("link", { name: "Archive" })).not.toHaveAttribute("title");
+    expect(topnav.getByRole("link", { name: "Archive" })).toHaveAttribute("title", "Archive");
     fireEvent.click(topnav.getByRole("button", { name: "More" }));
     expect(topnav.getByRole("link", { name: "Releases" })).toHaveAttribute("href", "/releases");
   });

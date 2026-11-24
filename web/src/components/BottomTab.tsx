@@ -19,7 +19,7 @@ export interface BottomTabProps {
 // Overlays the bottom of the shell (absolute) rather than sitting in flow, so
 // sliding it out never resizes the scroll container — see AppShell.
 export function BottomTab({ activeTab, hideProgress = 0, ref }: BottomTabProps) {
-  // Four icon tabs + More; only the active one shows its label.
+  // Four icon-only tabs + More (Dawn-Design §8 v1.6): labels are sr-only.
   const { tabs, more } = useNavItems();
   const here = useLocation();
   const [focusWithin, setFocusWithin] = useState(false);
@@ -59,7 +59,7 @@ export function BottomTab({ activeTab, hideProgress = 0, ref }: BottomTabProps) 
               style={{ color: active ? "var(--signal)" : "var(--dim)" }}
             >
               <Icon size={22} aria-hidden="true" />
-              <span className={active ? "font-mono text-[9px] font-medium tracking-[.3px]" : "sr-only"}>{item.label}</span>
+              <span className="sr-only">{item.label}</span>
             </Link>
           );
         })}

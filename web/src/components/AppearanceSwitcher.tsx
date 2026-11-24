@@ -1,5 +1,6 @@
 // Accent + scanlines controls, shown in the SiteFooter bottom bar. Dark/light stays
 // a one-click ThemeToggle in the header. State + persistence live in ThemeProvider.
+import { ScanLine } from "lucide-react";
 import { useTheme, type Accent } from "../theme/useTheme";
 
 const ACCENTS: Accent[] = ["phosphor", "cyan", "amber", "violet"];
@@ -39,9 +40,11 @@ export function AppearanceSwitcher() {
           onClick={() => setScanlines(!scanlines)}
           aria-pressed={scanlines}
           aria-label="Scanlines"
-          className="text-dim hover:text-ink"
+          title={`Scanlines: ${scanlines ? "on" : "off"}`}
+          className="grid h-9 w-9 place-items-center rounded-full hover:text-ink"
+          style={{ color: scanlines ? "var(--signal)" : "var(--dim)" }}
         >
-          Scanlines: {scanlines ? "on" : "off"}
+          <ScanLine size={17} aria-hidden="true" />
         </button>
       </li>
     </ul>

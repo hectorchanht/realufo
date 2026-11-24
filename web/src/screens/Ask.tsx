@@ -61,9 +61,8 @@ export function Ask() {
           placeholder="ask the archive — e.g. what did the 1949 Los Alamos conference conclude?"
           className="min-w-0 flex-1 border-0 bg-transparent font-mono text-[12.5px] text-ink outline-none placeholder:text-faint"
         />
-        <button type="submit" className="inline-flex flex-none items-center gap-1 rounded-md bg-signal px-2 py-0.5 font-mono text-[10px] font-bold text-on-signal">
+        <button type="submit" aria-label="Ask" title="Ask" className="inline-flex w-8 flex-none items-center justify-center rounded-md bg-signal px-2 py-0.5 text-on-signal">
           <Send size={11} strokeWidth={2.5} aria-hidden="true" />
-          ASK
         </button>
       </form>
       <p className="-mt-2 mb-3 px-0.5 font-mono text-[9.5px] text-faint">

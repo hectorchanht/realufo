@@ -59,10 +59,11 @@ export default function Podcast() {
       <div data-scroll className="mb-6 flex gap-2 overflow-x-auto pb-1 [&>*]:flex-none">
         <button
           onClick={copyFeed}
-          className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-[13px] text-signal hover:underline"
+          aria-label={copied ? "Copied!" : "Copy RSS feed"}
+          title={copied ? "Copied!" : "Copy RSS feed"}
+          className="grid h-9 w-9 flex-none place-items-center rounded-lg border border-line text-signal"
         >
-          {copied ? <Check size={14} strokeWidth={2.25} aria-hidden="true" /> : <Copy size={14} strokeWidth={2} aria-hidden="true" />}
-          {copied ? "Copied!" : "Copy RSS feed"}
+          {copied ? <Check size={16} strokeWidth={2.25} aria-hidden="true" /> : <Copy size={16} strokeWidth={2} aria-hidden="true" />}
         </button>
         <a
           className="rounded-lg border border-line px-3 py-2 text-[13px] text-signal hover:underline"

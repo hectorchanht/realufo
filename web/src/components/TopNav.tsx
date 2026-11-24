@@ -29,7 +29,7 @@ export interface TopNavProps {
 }
 
 export function TopNav({ activeTab, hideProgress = 0 }: TopNavProps) {
-  // Icon tabs; only the active one spells out its label (title = hover tooltip).
+  // Icon-only tabs (Dawn-Design §8 v1.6): labels live in title + sr-only text.
   const { tabs, more } = useNavItems();
   const { title, sub } = usePageTitle();
   const here = useLocation();
@@ -100,7 +100,7 @@ export function TopNav({ activeTab, hideProgress = 0 }: TopNavProps) {
               to={href}
               onClick={active ? () => retapTab(href, here) : undefined}
               aria-current={active ? "page" : undefined}
-              title={active ? undefined : item.label}
+              title={item.label}
               className={
                 "flex min-h-[44px] min-w-[44px] flex-none items-center justify-center gap-2 rounded-[11px] px-3 font-mono text-[13px] font-medium" +
                 (active ? "" : " hover:bg-surface")
@@ -111,7 +111,7 @@ export function TopNav({ activeTab, hideProgress = 0 }: TopNavProps) {
               }}
             >
               <Icon size={18} aria-hidden="true" />
-              <span className={active ? "" : "sr-only"}>{item.label}</span>
+              <span className="sr-only">{item.label}</span>
             </Link>
           );
         })}
